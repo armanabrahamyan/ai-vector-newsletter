@@ -840,3 +840,82 @@ sources:
       low-noise. Finance-lens Tier-2 (regulatory movement directly relevant to
       productionising AI under EU regulatory constraints). Added 2026-05-24 from
       awesome-list survey.
+
+  # ---- Added 2026-05-24 from council brainstorm: high-frequency cadence ----
+  # Source Engineer's Phase-1 win (per tmp/council-synthesis.md). Existing
+  # sources are weekly/burst publishers; these GitHub release Atom feeds
+  # publish whenever a tagged release lands (often several per week).
+  # LLM Engineer's editorial-focus filter will suppress patch-level noise
+  # (0.0.x bumps) via the significance criterion.
+
+  - name: vLLM releases
+    url: https://github.com/vllm-project/vllm/releases.atom
+    type: atom
+    category: tooling
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      High-velocity inference framework. Tagged releases land multiple times
+      per week. Patch-level bumps are noise; minor/major releases carry real
+      capability shifts. Tier-1 when load-bearing for productionising AI
+      under regulatory constraints (on-prem inference).
+
+  - name: LangChain releases
+    url: https://github.com/langchain-ai/langchain/releases.atom
+    type: atom
+    category: tooling
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      LangChain ships ~8-10 releases per 30 days. Agent framework signal.
+      Most releases are incremental; major/minor land real capability shifts.
+      LLM Engineer suppresses patch noise via significance scoring.
+
+  - name: Ollama releases
+    url: https://github.com/ollama/ollama/releases.atom
+    type: atom
+    category: tooling
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Local-inference runtime. Releases track new model support and runtime
+      improvements. Strong "productionising on-prem" / "no-NVIDIA" signal.
+
+  - name: llama.cpp releases
+    url: https://github.com/ggerganov/llama.cpp/releases.atom
+    type: atom
+    category: tooling
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Local-inference reference implementation. High release cadence; most
+      are incremental. Signal when new quantisation formats or model families
+      land.
+
+  - name: OpenAI Python SDK releases
+    url: https://github.com/openai/openai-python/releases.atom
+    type: atom
+    category: tooling
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      OpenAI client library. Releases often track API surface changes that
+      matter for builders. Higher signal-to-noise than the LangChain or vLLM
+      feeds.
+
+  - name: Anthropic Python SDK releases
+    url: https://github.com/anthropics/anthropic-sdk-python/releases.atom
+    type: atom
+    category: tooling
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Anthropic client library. Same signal logic as the OpenAI SDK feed.
+      Together these two cover the API-shape evolution most builders care
+      about week-to-week.
