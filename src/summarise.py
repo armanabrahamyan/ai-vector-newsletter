@@ -78,31 +78,17 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.6"
+SUMMARISE_PROMPT_VERSION = "v0.7"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.6-2026-05-24``. v0.6 adds the McKinsey-tagline +
-plain-language layer on top of v0.5's audience removal:
-  - HEADLINE PHILOSOPHY block at the top of the HEADLINE section:
-    "headline is a tagline that tells the whole story in one breath."
-    State the insight, not the topic. Subject + verb + so-what in ONE
-    clause.
-  - Expanded HEADLINE DON'T: NO acronyms (LM/VLM/ASR/OCR/MoE/RL/RAG/
-    KYC/AML/...) and NO model names / version numbers / spec-sheet
-    detail in the title unless the spec ITSELF is the news.
-  - Three calibration pairs rewritten in McKinsey-tagline style --
-    drop names, drop jargon, lead with insight. Model name lives in
-    the body.
-  - New LANGUAGE block in the BODY section: house acronym conversions
-    (LM/VLM/ASR/OCR/MoE/RAG/RL/GRPO/PPO/tps/KYC/AML/SR-11-7/etc.) and
-    a SPEC-SHEET replacement rule (replace multi-number spec stacking
-    with a single news number + consequence).
-  - Tightened word-count enforcement in INSTRUCTIONS: "going over 60
-    means you're keeping specs you should have replaced."
-v0.5 baseline preserved (no audience-targeting language; finance lens
-is a subject filter, not a reader pitch)."""
+``summarise-v0.7-2026-05-24``. v0.7 adds VOICE ANCHORS (Stratechery,
+Import AI, The Economist) at the top of the voice block so the LLM
+pulls voice DNA from training data, plus an EM-DASH BAN ('--' and '—'
+forbidden anywhere in headline or body; use commas / parens / semicolons /
+full stops instead). v0.6 baseline preserved (McKinsey tagline,
+plain-language LANGUAGE block, audience removal)."""
 
-PULSE_PROMPT_VERSION = "v0.6"
-"""Audit tag: ``pulse-v0.6-2026-05-24``. v0.6 mirrors summarise."""
+PULSE_PROMPT_VERSION = "v0.7"
+"""Audit tag: ``pulse-v0.7-2026-05-24``. v0.7 mirrors summarise."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -136,14 +122,31 @@ _VOICE_BLOCK = """\
 VOICE -- how AI Vector reads
 
 A daily newsletter about Agentic AI and Generative AI. The product is
-JUDGEMENT, not aggregation -- the reader opens this because we tell
-them what's flimsy, what's real, and what decision it informs. Things
-a feed won't.
+JUDGEMENT, not aggregation. The reader opens this because we tell them
+what's flimsy, what's real, and what decision it informs. Things a feed
+won't.
 
 Write for an intelligent, curious reader who is not necessarily a
 specialist. Plain English over insider shorthand; explain or replace
 acronyms; keep the prose clean and concise. Warm but not chummy.
 Specific not generic. Signal-dense not word-dense.
+
+VOICE ANCHORS (write in the spirit of these, not as a pastiche)
+
+Imagine an AI Vector story sitting on the same shelf as:
+
+  - STRATECHERY (Ben Thompson). Strategic clarity. "X happened, here is
+    what it means for Y" structure. An argument arc within a single
+    piece. Never reaches for jargon when plain English will do.
+  - IMPORT AI (Jack Clark). Synthesis first; every paragraph answers
+    "why does this matter." Long-arc framing across issues. Confident
+    but not breathless.
+  - THE ECONOMIST. Concise declarative authority. Wry without being
+    clever. Explanatory but never patronising. British register.
+
+Goal: an AI Vector story should feel as though it could live in any of
+those three publications without translation, and feel WRONG in a press-
+release dump, a model card, or a hype thread.
 
 AUSTRALIAN ENGLISH throughout.
   organise / optimise / prioritise / realise / recognise / analyse
@@ -361,6 +364,12 @@ DON'T do these
   - Link out; never reproduce full articles.
   - Don't pad. Adjectives must earn their place. "Major" is almost always
     cuttable.
+  - NO EM-DASHES in the prose. Do NOT use "--" (two hyphens) or "—"
+    (the em-dash character). Both are an LLM tic that flattens rhythm.
+    Use a comma for asides, parentheses for parentheticals, a semicolon
+    for closely-linked clauses, a full stop for emphasis. Regular hyphens
+    in compound words ("4-5x", "open-source", "self-hosted", "agent-to-
+    agent") are fine.
 
 LANGUAGE -- plain English, not insider shorthand
 
@@ -976,9 +985,12 @@ ITEMS:
   per the COLLISION PRIORITY rule; 65+ means you've kept specs you
   should have replaced.
 - LANGUAGE: plain English. No acronyms a non-specialist wouldn't
-  recognise (spell out / replace / drop). No spec-sheet stacking --
+  recognise (spell out, replace, or drop). No spec-sheet stacking:
   ONE news number, the rest replaced with their consequence. Model
-  names + versions live in the body, never the title.
+  names and versions live in the body, never the title.
+- PUNCTUATION: NO em-dashes. Do NOT use "--" or "—" anywhere in the
+  headline or body. Use commas, parentheses, semicolons, or full stops
+  instead. Regular hyphens in compound words are fine.
 - HONESTY: use ONLY facts present in source_excerpt (or the title /
   summary / cluster metadata if the excerpt is missing). If a number,
   licence, or artefact (weights / code / demo) is NOT stated in the
