@@ -33,8 +33,10 @@
     section.section-notable article { margin-bottom: 0.5rem; }
     section.section-notable .terse { margin: 0.2rem 0; font-size: 0.95rem; }
     footer { border-top: 1px solid #ddd; padding-top: 1rem; margin-top: 3rem; color: #888; font-size: 0.85rem; }
-    footer a { color: #555; }
-    .generated { margin-top: 0.25rem; }
+    footer a { color: #888; text-decoration: underline; }
+    footer .about { color: #888; line-height: 1.5; margin: 0 0 0.5rem 0; }
+    footer .meta-footer { margin: 0; color: #888; }
+    .generated { margin-top: 0.25rem; color: #aaa; font-size: 0.78rem; }
     @media (max-width: 600px) {
       body { font-size: 15px; padding: 0 1rem; margin: 1rem auto; }
       section.pulse { padding: 1rem 1.25rem; }
@@ -89,7 +91,15 @@
   </main>
 
   <footer>
-    <p>AI Vector — author: Arman · <a href="archive/">archive</a></p>
+    <p class="about">
+      AI Vector is a daily AI newsletter with a financial-services lens. Judgement, not aggregation. AI-drafted, author-ratified.
+    </p>
+    <p class="meta-footer">
+      Arman
+      {%- if issue.issue_number %} · Issue #{{ issue.issue_number }}{% endif %}
+      · {{ issue.date.strftime('%d %B %Y') }}
+      · <a href="archive/">archive</a>
+    </p>
     <p class="generated">Generated {{ issue.generated_at.strftime('%Y-%m-%d %H:%M UTC') }}</p>
   </footer>
 </body>

@@ -308,13 +308,13 @@ def render(
 
     issue = Issue.model_validate_json(issue_in.read_text(encoding="utf-8"))
 
-    env = _build_env()
-    template = env.get_template(TEMPLATE_NAME)
-    html = template.render(issue=issue)
-
     total_stories = len(issue.pulse.stories) + sum(
         len(s.stories) for s in issue.sections
     )
+
+    env = _build_env()
+    template = env.get_template(TEMPLATE_NAME)
+    html = template.render(issue=issue)
     issue_label = (
         f"#{issue.issue_number}" if issue.issue_number is not None
         else "(staging -- not yet numbered)"
