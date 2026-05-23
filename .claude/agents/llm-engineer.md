@@ -87,7 +87,7 @@ and rationale are not decoration — they feed the eval harness and the
   `issue.json` and `clusters.jsonl` to ground it.
 - **For builders** — practical: tools, repos, tips for engineers + DS.
 - **For leaders** — strategic + finance-services implications.
-- **Also notable** — terse linked list.
+- **On the Radar** — terse linked list (internal id `notable`).
 - Footer (Release Engineer renders): author, date, tagline, archive link.
 
 ## Callbacks — your voice multiplier

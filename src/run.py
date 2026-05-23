@@ -197,9 +197,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _resolve_date(arg_value: str | None) -> _dt.date:
-    """Parse ``--date`` or default to today (UTC)."""
+    """Parse ``--date`` or default to today (LOCAL time).
+
+    Local-first by design: a Sydney evening run still belongs to "today"
+    in Sydney, not yesterday in UTC. Item ``published_at`` timestamps
+    stay in UTC under the hood (those are absolute moments); only the
+    issue-date folder naming uses local time. Pass ``--date YYYY-MM-DD``
+    to override.
+    """
     if arg_value is None:
-        return _dt.datetime.now(_dt.timezone.utc).date()
+        return _dt.date.today()
     try:
         return _dt.date.fromisoformat(arg_value)
     except ValueError as exc:
@@ -759,7 +766,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.release:
         run_date = _resolve_date(args.date)
-        back_release = run_date != _dt.datetime.now(_dt.timezone.utc).date()
+        back_release = run_date != _dt.date.today()
         if args.stage or args.stages:
             _LOG.warning(
                 "--stage / --stages are ignored in --release mode."

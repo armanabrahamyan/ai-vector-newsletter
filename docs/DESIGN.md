@@ -153,10 +153,11 @@ score movement against prompt revisions (risk-register item #6).
 
 ### `IssueSection` — one section of the rendered issue
 
-`IssueSection` is the structural unit of the published newsletter. Sections
-follow `PLAN.md §4`: **The Pulse**, **Where it's heading**, **For builders**,
-**For leaders**, **Also notable**. Each section holds a list of summary
-blocks ready for the Jinja2 template.
+`IssueSection` is the structural unit of the published newsletter.
+Sections (post-v0.2 voice work; PLAN §4 originally listed two more that
+have since collapsed): **The Pulse**, **For leaders**, **For geeks**,
+**On the Radar**. Each section holds a list of summary blocks ready for
+the Jinja2 template.
 
 ```python
 from __future__ import annotations
@@ -164,11 +165,10 @@ from typing import Annotated, Literal, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 SectionName = Literal[
-    "pulse",            # The Pulse — 1 story, 2–3 sentences
-    "where_heading",    # Where it's heading — 2–3 trend reads
-    "builders",         # For builders — practical for engineers / DS
-    "leaders",          # For leaders — strategic + FS implications
-    "notable",          # Also notable — terse linked list
+    "pulse",            # The Pulse — 1 story, the most important today
+    "leaders",          # For leaders — strategic angles
+    "geeks",            # For geeks — enthusiasts + builders, hands-on news
+    "notable",          # On the Radar — terse linked list (id stays "notable")
 ]
 
 
@@ -1064,7 +1064,7 @@ and a space for Arman's decision. Decisions get logged here when made.
 |---|---|---|---|---|
 | 1 | **Language / stack** — Python (feedparser, httpx, pydantic v2, jinja2)? | **Open — strong rec** | **Python.** Locked per PLAN §10. pydantic v2 for the contracts (better perf + `Annotated`/`Field` ergonomics), `feedparser` for RSS/Atom, `httpx` for APIs (HN Algolia, HF Daily Papers), `jinja2` for templates, `numpy` for centroid math, `pyyaml` for configs. Lock the Python version in `pyproject.toml` (recommend 3.11+ — `tomllib`, modern type syntax). |  |
 | 2 | **Embeddings model** — which provider available via LiteLLM/Bedrock? | **Open — blocking on platform** | Depends on what Arman's LiteLLM/Bedrock exposes. Architect's preference order: (a) a Bedrock-native embeddings model already available on-prem (lowest egress risk); (b) any solid general-purpose embedder via LiteLLM (Voyage, Cohere embed, OpenAI text-embedding-3 family). Retrieval Engineer decides exact model once the menu is known; threshold (~0.85 cosine) is calibrated *after* model is chosen. **This is one of the §7 day-one questions in disguise.** |  |
-| 3 | **Stories per issue** | **Open — rec** | **8–12 ranked stories** distributed across Pulse (1), Where it's heading (2–3), For builders (2–4), For leaders (1–3), plus an **Also notable tail of ≤5** terse links. Slow days: shrink, don't pad. Eval Engineer watches drift (tier mix) over months. |  |
+| 3 | **Stories per issue** | **Decided (v0.2 voice work)** | **12 ranked stories** distributed across Pulse (1), For leaders (≤4), For geeks (≤5), plus an **On the Radar tail** of the remainder. Slow days: shrink, don't pad. Eval Engineer watches drift (tier mix) over months. | 12, per current `TOP_N_STORIES`. |
 | 4 | **Archive UX** | **Open — rec** | **Flat dated HTML first** (`docs/archive/YYYY-MM-DD.html`). Add an indexed archive page (`docs/archive/index.html`) once we have ~30+ issues — Release Engineer ships it as a small follow-up, not in v0.1. Don't over-engineer the front door before the corpus exists. |  |
 | 5 | **Email distribution** | **Out of scope v0** | Confirmed out of scope per PLAN §8. Re-open when the publication has earned a steady reader base on Pages. |  |
 | 6 | **Finance-AI sources** (specific feeds for the FS lens) | **Open — Source Engineer's TODO** | Source Engineer owns the candidate list. Architect's request: at minimum 3–5 feeds covering (a) trading/markets ML, (b) fraud/AML/KYC ML, (c) model-risk + governance updates (regulator outputs where they publish feeds), (d) agents-in-finance product news. Trust-weight starts at 2; earns 4–5 over months per `finance-lens.md`. |  |

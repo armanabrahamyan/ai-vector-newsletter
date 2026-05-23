@@ -138,7 +138,7 @@ class IncompleteStaging(ReleaseError):
 _SECTION_TITLES: dict[str, str] = {
     "leaders": "For leaders",
     "geeks": "For geeks",
-    "notable": "Also notable",
+    "notable": "On the Radar",
 }
 
 

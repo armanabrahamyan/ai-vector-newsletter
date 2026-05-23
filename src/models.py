@@ -92,7 +92,7 @@ SectionName = Literal[
     "pulse",          # The Pulse -- 1 story, the most important thing today
     "leaders",        # For leaders -- strategic angles
     "geeks",          # For geeks -- enthusiasts + builders, hands-on news
-    "notable",        # Also notable -- terse linked list
+    "notable",        # On the Radar -- terse linked list (internal id "notable")
 ]
 """IssueSection.name -- the four sections of the rendered newsletter.
 

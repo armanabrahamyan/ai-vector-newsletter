@@ -34,7 +34,7 @@ Key responsibilities
    lens are woven into the summary prose when relevant -- never as
    separate fields or labels (v0.3 / schema v4).
 4. Assemble sections per editorial rules: Pulse, For leaders, For geeks,
-   Also notable. Each top-N story is placed in exactly one section.
+   On the Radar. Each top-N story is placed in exactly one section.
 5. Construct + validate the ``Issue`` with ``issue_number=None``;
    atomic-write ``issue.json`` to staging.
 
@@ -78,17 +78,16 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.7"
+SUMMARISE_PROMPT_VERSION = "v0.7.1"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.7-2026-05-24``. v0.7 adds VOICE ANCHORS (Stratechery,
-Import AI, The Economist) at the top of the voice block so the LLM
-pulls voice DNA from training data, plus an EM-DASH BAN ('--' and '—'
-forbidden anywhere in headline or body; use commas / parens / semicolons /
-full stops instead). v0.6 baseline preserved (McKinsey tagline,
-plain-language LANGUAGE block, audience removal)."""
+``summarise-v0.7.1-2026-05-24``. v0.7.1 renames the fourth section's
+display label from "Also notable" to "On the Radar" in the body-
+length guidance. Internal section id stays "notable" (no schema
+change). v0.7 baseline preserved (voice anchors + em-dash ban +
+McKinsey tagline + plain-language + audience removal)."""
 
-PULSE_PROMPT_VERSION = "v0.7"
-"""Audit tag: ``pulse-v0.7-2026-05-24``. v0.7 mirrors summarise."""
+PULSE_PROMPT_VERSION = "v0.7.1"
+"""Audit tag: ``pulse-v0.7.1-2026-05-24``. v0.7.1 mirrors summarise."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -314,7 +313,8 @@ DON'T:
   - Repeat a framing crutch across the issue -- if you lean on one
     compliance / standard reference (SR 11-7, EU AI Act, etc.), use it
     AT MOST ONCE per issue.
-  - Pad to length. UNDER 60 is fine. Also Notable should run shortest.
+  - Pad to length. UNDER 60 is fine. "On the Radar" items should run
+    shortest in the issue.
 
 DIRECTION + FINANCE LENS LIVE IN THE PROSE -- NEVER AS LABELS
 
@@ -491,7 +491,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
         survive, or the Pulse cannot be filled). Better to surface than
         write a broken issue.
     """
-    run_date = date or _dt.datetime.now(_dt.timezone.utc).date()
+    run_date = date or _dt.date.today()
 
     ranked_in = paths.ranked_path(run_date, canonical=False)
     clusters_in = paths.clusters_path(run_date, canonical=False)
@@ -1152,7 +1152,7 @@ def _assemble_sections(
     for cid in geek_ids:
         unplaced.discard(cid)
 
-    # --- Also notable ---------------------------------------------------
+    # --- On the Radar (internal id: "notable") --------------------------
     notable_ids = [
         story.cluster_id for story, _ in blocks if story.cluster_id in unplaced
     ]

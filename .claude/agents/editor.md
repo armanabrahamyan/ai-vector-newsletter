@@ -97,7 +97,7 @@ When flagging stories to Arman:
 - Tier-3 (vendor fluff, model-numbers-go-brrr, AI-tangential): propose cut
   unless he wants it.
 - Tier-2 traditional ML not load-bearing for the field today: propose cut.
-- Tier-1 hitting zero signal-filter dimensions: *Also notable* at best.
+- Tier-1 hitting zero signal-filter dimensions: *On the Radar* at best.
 - Tier-1 hitting two or three dimensions: candidate for The Pulse.
 
 The lens is **focus, not censorship.** We don't refuse to ever cover X; we

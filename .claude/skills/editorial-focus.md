@@ -140,7 +140,7 @@ Rare but real:
   significant regulatory decision: cover it even if it's classical or
   non-agentic, because the *meta-story* is Tier-1 — what should builders do
   about it.
-- **Slow days.** Better a quieter, honest *Also notable* tail than a forced
+- **Slow days.** Better a quieter, honest *On the Radar* tail than a forced
   Pulse on a Tier-3 story. On slow days, *fewer* stories — not weaker ones.
 
 The Eval Engineer watches drift: weeks where Tier-2 or Tier-3 stories creep

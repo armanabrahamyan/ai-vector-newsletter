@@ -177,7 +177,7 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
       * Reads `data/published_urls.txt` (canonical-only exclusion index).
       * Writes ranked.jsonl to STAGING.
     """
-    run_date = date or _dt.datetime.now(_dt.timezone.utc).date()
+    run_date = date or _dt.date.today()
 
     clusters_in = paths.clusters_path(run_date, canonical=False)
     items_in = paths.items_path(run_date, canonical=False)

@@ -81,8 +81,9 @@ section the Architect maintains).
 ### Latest issue (`docs/index.html`)
 - Mobile-first, fast, clean. No tracking scripts. No JS unless it earns
   its place.
-- Sections per PLAN §4: The Pulse, Where it's heading, For builders, For
-  leaders, Also notable.
+- Sections (current, post-v0.2 voice work): The Pulse, For leaders, For
+  geeks, On the Radar. (Originally PLAN §4 listed Where it's heading and
+  For builders as separate sections; both collapsed during voice tuning.)
 - Footer: author (Arman), date, tagline, link to archive.
 - Print stylesheet considered (the audience reads on phones, but the
   finance crowd sometimes prints).
