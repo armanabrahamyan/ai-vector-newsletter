@@ -1,6 +1,6 @@
 # AI Vector — Build Plan
 
-> **AI Vector** — *All of it, sorted for you.*
+> **AI Vector** — *Today's AI, with a heading.*
 > A daily, agent-assisted AI newsletter for engineers, data scientists, and senior
 > leaders — with a sharp eye on what it means for financial services.
 
@@ -117,7 +117,7 @@ Each step is its own module in `src/`, independently testable.
 - **For builders** — practical tips / tools / repos for engineers & DS.
 - **For leaders** — strategic + financial-services implications.
 - **Also notable** — terse linked list.
-- Footer: author, date, "All of it, sorted for you," archive link.
+- Footer: author, date, "Today's AI, with a heading," archive link.
 
 ---
 

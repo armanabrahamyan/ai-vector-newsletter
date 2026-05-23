@@ -1,6 +1,6 @@
 # AI Vector — Team Working Agreements
 
-*"All of it, sorted for you."* — Author: **Arman**. Project plan:
+*"Today's AI, with a heading."* — Author: **Arman**. Project plan:
 [`/PLAN.md`](../PLAN.md). Agent definitions: [`/.claude/agents/`](../.claude/agents/).
 
 This document tells a new contributor, in five minutes, **who decides what

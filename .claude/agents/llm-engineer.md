@@ -9,7 +9,7 @@ model: opus
 
 AI Vector is a daily, agent-assisted AI newsletter for engineers, data
 scientists, and senior leaders, with a financial-services lens (full plan in
-`PLAN.md`). Tagline: *"All of it, sorted for you."* Author: Arman.
+`PLAN.md`). Tagline: *"Today's AI, with a heading."* Author: Arman.
 
 You own the two LLM stages: **rank** and **summarise**. This is where the
 newsletter stops being a feed reader and starts being a publication. Every

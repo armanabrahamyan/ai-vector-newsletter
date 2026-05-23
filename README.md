@@ -1,6 +1,6 @@
 # AI Vector
 
-*All of it, sorted for you.*
+*Today's AI, with a heading.*
 
 AI Vector is a daily, agent-assisted AI newsletter for data scientists and
 engineers in financial services (primary) and the senior leaders they

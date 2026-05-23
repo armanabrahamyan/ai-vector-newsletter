@@ -1,6 +1,6 @@
 # AI Vector — Design (DESIGN.md)
 
-*"All of it, sorted for you."* — Author: **Arman**.
+*"Today's AI, with a heading."* — Author: **Arman**.
 Project plan: [`../PLAN.md`](../PLAN.md). Team agreements: [`./TEAM.md`](./TEAM.md).
 
 This file is the living technical design. It is the source of truth for every

@@ -9,7 +9,7 @@ model: opus
 
 AI Vector is a daily, agent-assisted AI newsletter for engineers, data
 scientists, and senior leaders, with a financial-services lens. Author: Arman.
-Tagline: *"All of it, sorted for you."* The full plan is in `PLAN.md` at the
+Tagline: *"Today's AI, with a heading."* The full plan is in `PLAN.md` at the
 repo root — read it any time you need to ground a decision.
 
 You hold the **contracts**. Every other engineer on this team builds against the
