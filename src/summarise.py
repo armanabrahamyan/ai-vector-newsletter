@@ -78,20 +78,24 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.4"
+SUMMARISE_PROMPT_VERSION = "v0.4.1"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.4-2026-05-24``. v0.4 Pass A: prompt now includes
-source_excerpt (lazy trafilatura fetch of top-3 item URLs) so the LLM
-writes from real source text instead of an empty raw_summary -- the
-single biggest quality fix (~60% of the gap). HONESTY guardrail forbids
-asserting facts not present in source_excerpt. Plus a COLLISION
-PRIORITY block: when constraints can't all fit on a thin item, drop
-from the bottom (word count) never the top (trust flag). v0.3.1
-baseline preserved (consequence-led headlines, body 30-60 hard,
-number+trust-flag+decision-tied close)."""
+``summarise-v0.4.1-2026-05-24``. v0.4.1 cross-issue variety tuning at
+the writer layer (editor pass adds belt-and-braces in Pass B):
+  - X-not-Y demoted from default to one-tool-among-several; verb-led
+    claim is the new default. Reserve contrast for when the OPPOSITION
+    ITSELF is the news.
+  - Declarative-opener calibration example added so the writer learns
+    "sharp first sentence" not "always a rhetorical question." Cap
+    rhetorical-question openers at ~1 per issue.
+  - Close-verb anti-pattern: "worth [a spike/look/sandbox run] when/
+    before you [decision]" is fine once, a drumbeat by the third use.
+    Vary via direct imperative / forward bet / conditional.
+v0.4 baseline preserved (source_excerpt, honesty guardrail, collision
+priority)."""
 
-PULSE_PROMPT_VERSION = "v0.4"
-"""Audit tag: ``pulse-v0.4-2026-05-24``. v0.4 mirrors summarise."""
+PULSE_PROMPT_VERSION = "v0.4.1"
+"""Audit tag: ``pulse-v0.4.1-2026-05-24``. v0.4.1 mirrors summarise."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -159,10 +163,14 @@ DO:
     audiences -- "word-by-word" beats "autoregressive" for the headline;
     "no GPU required" beats "CPU-only inference path"; "labels speakers"
     beats "performs speaker diarisation".
-  - USE THE "X, NOT Y" CONTRAST STRUCTURE when the change can be framed
-    as a sharp comparison -- it forces the consequence into the contrast.
-    "...generate text in parallel, not word-by-word." "...transparency,
-    not eval scores." "...open-weights pledge, not a pivot."
+  - "X, NOT Y" CONTRAST is one tool among several, not the default. It's
+    powerful for a single sharp comparison, but becomes a tic when
+    reached for reflexively. Before using it, TRY A PLAIN VERB-LED claim
+    first ("NVIDIA open-sources diffusion LMs that revise their own
+    tokens mid-generation"). Reserve the contrast for when the OPPOSITION
+    ITSELF is the news -- when what it ISN'T is genuinely surprising.
+    If you find yourself writing "not Y," ask whether a verb-led version
+    lands harder.
   - Name a closed competitor when it sharpens stakes ("...takes aim at
     HeyGen").
   - Surface real significance, not the spec
@@ -236,6 +244,16 @@ DO:
 DON'T:
   - Reuse the same relevance scaffold across articles
     ("For X teams that..."). Vary it.
+  - Don't default every close to "worth [a spike / a look / a sandbox
+    run] when/before you [decision]." It's a fine frame once, a drumbeat
+    by the third use. VARY THE CLOSE:
+      - a direct imperative ("Demand a specialised baseline before
+        signing");
+      - a forward bet ("expect patch backlogs to become the bottleneck,
+        not discovery");
+      - a conditional ("if data can't leave the perimeter, this is your
+        candidate").
+    The DECISION stays; the FRAMING changes.
   - Repeat a framing crutch across the issue -- if you lean on one
     compliance / standard reference (SR 11-7, EU AI Act, etc.), use it
     AT MOST ONCE per issue.
@@ -268,6 +286,18 @@ CALIBRATION (body):
            -- 55 words. Sharp opener. Trust flag ("no code yet"). Decision-
            tied close ("pressure-test in your next architecture review,
            don't ship it").
+
+  Strong (declarative open, NOT a question): "NVIDIA's diffusion LMs
+           generate tokens in parallel blocks and can revise earlier ones
+           -- something autoregressive decoding can't do. Weights
+           (3B/8B/14B) and training code are public on Hugging Face, but
+           benchmarks sit in NVIDIA's own report. Prototype against your
+           latency-sensitive inference path before trusting the speed
+           claims."
+           -- Sharp first sentence WITHOUT a rhetorical question. The
+           question-opener is one device, not the house style; most
+           bodies should open declaratively. Cap rhetorical-question
+           openers at roughly ONE per issue.
 
 DON'T do these
   - Don't open with "In the fast-paced world of AI..." or any cousin.
