@@ -78,24 +78,31 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.4.1"
+SUMMARISE_PROMPT_VERSION = "v0.6"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.4.1-2026-05-24``. v0.4.1 cross-issue variety tuning at
-the writer layer (editor pass adds belt-and-braces in Pass B):
-  - X-not-Y demoted from default to one-tool-among-several; verb-led
-    claim is the new default. Reserve contrast for when the OPPOSITION
-    ITSELF is the news.
-  - Declarative-opener calibration example added so the writer learns
-    "sharp first sentence" not "always a rhetorical question." Cap
-    rhetorical-question openers at ~1 per issue.
-  - Close-verb anti-pattern: "worth [a spike/look/sandbox run] when/
-    before you [decision]" is fine once, a drumbeat by the third use.
-    Vary via direct imperative / forward bet / conditional.
-v0.4 baseline preserved (source_excerpt, honesty guardrail, collision
-priority)."""
+``summarise-v0.6-2026-05-24``. v0.6 adds the McKinsey-tagline +
+plain-language layer on top of v0.5's audience removal:
+  - HEADLINE PHILOSOPHY block at the top of the HEADLINE section:
+    "headline is a tagline that tells the whole story in one breath."
+    State the insight, not the topic. Subject + verb + so-what in ONE
+    clause.
+  - Expanded HEADLINE DON'T: NO acronyms (LM/VLM/ASR/OCR/MoE/RL/RAG/
+    KYC/AML/...) and NO model names / version numbers / spec-sheet
+    detail in the title unless the spec ITSELF is the news.
+  - Three calibration pairs rewritten in McKinsey-tagline style --
+    drop names, drop jargon, lead with insight. Model name lives in
+    the body.
+  - New LANGUAGE block in the BODY section: house acronym conversions
+    (LM/VLM/ASR/OCR/MoE/RAG/RL/GRPO/PPO/tps/KYC/AML/SR-11-7/etc.) and
+    a SPEC-SHEET replacement rule (replace multi-number spec stacking
+    with a single news number + consequence).
+  - Tightened word-count enforcement in INSTRUCTIONS: "going over 60
+    means you're keeping specs you should have replaced."
+v0.5 baseline preserved (no audience-targeting language; finance lens
+is a subject filter, not a reader pitch)."""
 
-PULSE_PROMPT_VERSION = "v0.4.1"
-"""Audit tag: ``pulse-v0.4.1-2026-05-24``. v0.4.1 mirrors summarise."""
+PULSE_PROMPT_VERSION = "v0.6"
+"""Audit tag: ``pulse-v0.6-2026-05-24``. v0.6 mirrors summarise."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -128,12 +135,15 @@ _LOG = logging.getLogger("ai_vector.summarise")
 _VOICE_BLOCK = """\
 VOICE -- how AI Vector reads
 
-A daily AI newsletter for engineers, data scientists, and senior leaders
-in financial services. The product is JUDGEMENT, not aggregation -- the
-reader opens this because we tell them what's flimsy, what's real, and
-what decision it informs. Things a feed won't.
+A daily newsletter about Agentic AI and Generative AI. The product is
+JUDGEMENT, not aggregation -- the reader opens this because we tell
+them what's flimsy, what's real, and what decision it informs. Things
+a feed won't.
 
-Warm but not chummy. Specific not generic. Signal-dense not word-dense.
+Write for an intelligent, curious reader who is not necessarily a
+specialist. Plain English over insider shorthand; explain or replace
+acronyms; keep the prose clean and concise. Warm but not chummy.
+Specific not generic. Signal-dense not word-dense.
 
 AUSTRALIAN ENGLISH throughout.
   organise / optimise / prioritise / realise / recognise / analyse
@@ -144,8 +154,28 @@ AUSTRALIAN ENGLISH throughout.
 Dates: "23 May 2026". Times: "9 a.m." or "09:00".
 
 =======================================================================
-HEADLINE -- skim-only readers must know what they'd gain
+HEADLINE -- a tagline that tells the whole story in one breath
 =======================================================================
+
+PHILOSOPHY: write headlines like a McKinsey slide title.
+
+The headline is a TAGLINE that states the INSIGHT, not the topic. A
+reader who reads ONLY the title knows what happened AND why it matters.
+Subject + verb + so-what in ONE clause. The reader is intelligent and
+curious but NOT necessarily a specialist; the title must land without
+requiring insider vocabulary, model names, or version numbers.
+
+  Topic-only (weak):  "Diffusion language models from NVIDIA"
+  Tagline (strong):   "NVIDIA's new model writes text all at once
+                       instead of one word at a time"
+
+  Topic-only (weak):  "Anthropic Glasswing safety project update"
+  Tagline (strong):   "Claude has found 10,000 critical bugs in the
+                       internet's plumbing in a single month"
+
+  Topic-only (weak):  "BeeLlama llama.cpp fork benchmarks"
+  Tagline (strong):   "A new trick runs large open models four times
+                       faster on a consumer GPU"
 
 CORE RULE: Lead with the consequence or the action, not the name.
 Answer "why do I care" before "what is it called."
@@ -185,26 +215,50 @@ DON'T:
     Plain verbs win: "open-sources", "ships", "releases", "announces".
   - Default to a two-clause colon headline. Prefer a SINGLE sharp clause
     unless the colon earns its place (the first clause is itself the news,
-    e.g. "The RL method behind an AI that out-coded every human: Agentic
-    GRPO").
+    e.g. "The training trick behind an AI that out-coded every human").
+  - NO ACRONYMS in the title -- LM / VLM / ASR / OCR / MoE / GRPO / RL /
+    RAG / KYC / AML / API / GPU / CUDA, etc. Spell them out OR replace
+    with the plain English equivalent OR drop them entirely. If the
+    title needs a reader to recognise an acronym to parse, it fails.
+  - NO model names, version numbers, or spec-sheet details in the title
+    UNLESS the spec ITSELF is the news. "Qwen3.5-4B" doesn't belong; "a
+    small open model" does. "RTX 3090" doesn't belong; "a consumer GPU"
+    does. "1.58-bit" only if the precision IS the news. The reader
+    cares about the CONSEQUENCE, not the spec. Model names + versions
+    live in the BODY, where geeks who search by name find them.
 
-AUDIENCE EXCEPTION (For Geeks section only): readers search by model
-name. KEEP the name but frame it with what it unlocks:
-  "NuExtract3: a 4B model that reads invoices without leaving your servers"
+MODEL NAMES + VERSIONS belong in the BODY, not the title. The title
+carries the insight; the body has the searchable specifics. A reader
+who only reads the title should understand what changed and why it
+matters, without needing to recognise any name.
 
-CALIBRATION:
-  Weak:    "Agentic GRPO: stabilising RL when trajectories run long"
-  Strong:  "The RL method behind an AI that out-coded every human: Agentic GRPO"
+CALIBRATION (headline -- McKinsey tagline style):
 
-  Weak:    "Anthropic shares first Glasswing progress on transparency"
-  Strong:  "Anthropic bets its next safety case on transparency, not eval scores"
+  Weak (topic + jargon):
+       "Agentic GRPO: stabilising RL when trajectories run long"
+  Stronger (tagline, no acronym, no name):
+       "A new training trick built the AI that beat every human in a
+        global coding contest"
+  Note: insight first. The technical name lives in the BODY where the
+  audience who cares searches for it.
 
-  Weak:    "Diffusion LMs come for autoregressive decoding: Nemotron drops parallel text generation"
-  Strong:  "NVIDIA open-sources diffusion LMs that generate text in parallel, not word-by-word"
-    -- Parent brand (NVIDIA) over codename (Nemotron-Labs); plain verb
-       ("open-sources") over slang ("drops"); plain language ("word-by-
-       word") over jargon ("autoregressive decoding"); X-not-Y contrast
-       structure; single clause.
+  Weak (topic + codename):
+       "Anthropic shares first Glasswing progress on transparency"
+  Stronger (tagline, plain English):
+       "Anthropic is making it possible to inspect how Claude actually
+        thinks"
+  Note: project name + program name belong in the body. The insight
+  ("inspect how Claude thinks") is the whole point.
+
+  Weak (jargon + spec + name dump):
+       "Diffusion LMs come for autoregressive decoding: Nemotron drops
+        parallel text generation"
+  Stronger (tagline, plain English):
+       "NVIDIA's new model writes text all at once instead of one word
+        at a time"
+  Note: parent brand kept (well-known); jargon ("autoregressive
+  decoding") replaced with plain English ("one word at a time"); model
+  family ("Nemotron-Labs Diffusion") and parameter sizes move to body.
 
 Headline length: <= ~90 chars, <= 12 words ideally.
 
@@ -223,10 +277,10 @@ THREE THINGS THAT MUST SURVIVE EVERY EDIT:
      "no code yet," "thin sourcing, one Reddit thread," "vendor-supplied
      benchmark." Never drop this when the story warrants it -- judgement
      is the product.
-  3. A RELEVANCE LINE tied to a DECISION, not a department.
-       Department (weak):  "For leaders sizing vendor commitments"
-       Decision (strong):  "useful when you're renegotiating a closed-model
-                            contract"
+  3. A RELEVANCE LINE tied to a DECISION, not a department or group.
+       Group (weak):     "useful for teams managing vendor risk"
+       Decision (strong): "useful when you're renegotiating a closed-
+                          model contract"
 
 WHEN CONSTRAINTS COLLIDE (thin item, won't all fit), resolve in this
 order. Drop from the bottom, never the top.
@@ -308,12 +362,60 @@ DON'T do these
   - Don't pad. Adjectives must earn their place. "Major" is almost always
     cuttable.
 
+LANGUAGE -- plain English, not insider shorthand
+
+The reader is intelligent and curious but NOT necessarily a specialist.
+Don't make them parse acronyms or spec sheets.
+
+ACRONYMS: spell out on first use, OR replace with plain English, OR
+drop entirely. House conversions:
+  - LM          -> "language model"
+  - VLM         -> "vision-language model" or "image-and-text model"
+  - ASR         -> "speech-to-text" or "transcription"
+  - OCR         -> "document extraction" / "reading text from images"
+  - MoE         -> "mixture-of-experts model" (spell out on first use)
+  - RAG         -> "retrieval-augmented generation" / "search-augmented"
+  - RL          -> "reinforcement learning"
+  - GRPO / PPO / DPO -> "training technique" (when the precise name
+                         isn't the news); spell out the first time you
+                         need it
+  - tps / tok/s -> "tokens per second"
+  - KYC / AML   -> "know-your-customer" / "anti-money-laundering" on
+                   first use
+  - SR 11-7, PRA SS1/23, EU AI Act -> spell out the AGENCY first
+                   (US Federal Reserve, Bank of England, EU)
+GPU, CUDA, API, JSON are widely understood -- use as is.
+
+SPEC-SHEET NUMBERS: keep ONE that carries the news; DROP THE REST.
+Replace remaining specs with their CONSEQUENCE. The test: "would a
+reader who doesn't follow model releases week-to-week understand why
+this number matters?" If no, replace.
+
+  "Qwen3.5-4B"   -> "a small open model" (state the size only if it
+                    IS the news)
+  "164 tps on Qwen 3.6 27B (4.40x) and 177.8 tps on Gemma 4 31B (4.93x)"
+                 -> "around four times faster"
+  "0.097 seconds on average, up to four speakers per 30-second window"
+                 -> "accurate to within a tenth of a second, up to
+                     four speakers"
+  "1.58-bit quantised variant on Huawei's Ascend 910B accelerator"
+                 -> "an extreme low-precision model running on Huawei
+                     silicon"
+  "8B VLM"       -> "a small image-and-text model"
+
+If the EXACT model name / version matters (geeks search by it), keep
+it in the BODY -- but EXPLAIN WHAT IT IS in plain English the first
+time. Never in the title.
+
 BEFORE FINALISING, CHECK
-  - Headline: would a reader skimming ONLY headlines know what they'd
-    gain? If the headline needs the body to make sense, it's a label --
-    rewrite.
-  - Body: 30-60 words? One concrete number or mechanism? Trust flag if
-    warranted? A close tied to a SPECIFIC DECISION (not a department)?
+  - Headline: would a non-specialist reader who skims ONLY headlines
+    know what happened AND why it matters? If the headline needs the
+    body to make sense, it's a label -- rewrite. No acronyms? No
+    version numbers? No spec-sheet detail unless the spec IS the news?
+  - Body: 30-60 words? One concrete number or mechanism that carries
+    the news (the rest replaced with their consequence per the LANGUAGE
+    rules)? Trust flag if warranted? Close tied to a SPECIFIC DECISION
+    (not a group or department)? Acronyms spelled out or replaced?
 """
 
 _EDITORIAL_FOCUS_BLOCK = """\
@@ -322,9 +424,9 @@ EDITORIAL FOCUS -- a reminder while writing
 AI Vector is heavier on Agentic AI and Generative AI; traditional ML
 appears only when load-bearing. The signal filter:
 
-  1. TODAY -- does this change something a DS / engineer would do this week?
-  2. TOMORROW -- shifts what to anticipate in the next 1-6 months?
-  3. PRACTICAL -- is there a repo / API / technique / eval to use NOW?
+  1. TODAY -- does this change how someone building or deploying AI works this week?
+  2. TOMORROW -- does it shift what to anticipate in the next 1-6 months?
+  3. PRACTICAL -- is there a repository, API, technique, or evaluation to use NOW?
 
 Land at least one of these in the summary. Two is great. Don't drift into
 generic "AI is changing X" territory -- if the story didn't earn its place,
@@ -332,25 +434,24 @@ the ranker dropped it; if it's here, name WHY.
 """
 
 _FINANCE_LENS_BLOCK = """\
-FINANCE LENS -- guidance for when to weave the FS angle into prose
+FINANCE-SERVICES LENS -- a SUBJECT filter, not a reader pitch
 
-AI Vector is an AI newsletter with a finance eye, not a finance newsletter
-with AI as a topic. The lens ADDS value when it earns its place; it does
-not FILTER OUT the field. When you spot a tight FS angle, embed it in the
-summary prose -- never label it. Most days, most stories will NOT carry
-a finance angle. That is correct.
+Some stories have a NAMEABLE financial-services implication; most don't.
+When they do, weave it into the prose -- never label it. The lens is
+about SUBJECT MATTER, not about writing for a finance audience.
 
-Where an angle earns its place (use as cue, not checklist):
-  - Trading / markets ML; fraud / AML / KYC; model risk & governance
-    (SR 11-7, PRA SS1/23); productionising under regulatory constraints
-    (on-prem, data residency, audit, redaction); agents in finance;
-    benchmark / eval relevance to FS teams.
-  - Leadership cues: vendor lock-in shifts, regulatory movement, build-
-    vs-buy implications.
+Where the lens is genuinely present (use as cue, not checklist):
+  - Trading / markets machine learning; fraud, anti-money-laundering,
+    or know-your-customer detection; model-risk governance (SR 11-7,
+    PRA SS1/23, etc.); productionising under regulatory constraints
+    (on-prem, data residency, audit, redaction); agentic systems used
+    in finance; benchmarks or evaluations that target financial work.
+  - Strategic shifts: vendor lock-in, regulatory movement, build-vs-buy.
 
-If the angle is speculative ("could apply to a bank") or generic ("affects
-financial services"), skip it. Name a role, a constraint, or a regulatory
-hook -- or don't bring it up.
+If the angle is speculative ("could apply to a bank") or generic
+("affects financial services"), skip it. Name a role, a constraint,
+or a regulatory hook -- or don't bring it up. Most stories will NOT
+carry a finance angle. That is correct.
 """
 
 
@@ -838,10 +939,9 @@ def _build_summary_prompt(
     )
 
     return f"""\
-You are writing one story for AI Vector -- a daily AI newsletter for
-engineers, data scientists, and senior leaders, with a financial-services
-lens. The cluster was already RANKED and selected for the issue; your job
-is to write it well.
+You are writing one story for AI Vector -- a daily newsletter about
+Agentic AI and Generative AI. The cluster was already RANKED and
+selected for the issue; your job is to write it well.
 
 {_VOICE_BLOCK}
 {_EDITORIAL_FOCUS_BLOCK}
@@ -864,13 +964,21 @@ ITEMS:
 
 {callback_block}INSTRUCTIONS
 - HEADLINE: follow the HEADLINE rules above. Lead with the consequence
-  or action, not the name. <= ~90 chars, <= 12 words ideally. If this
-  story routes to For Geeks and the model / project name is the search
-  term, keep the name but frame it with what it unlocks.
+  or action, not the name. <= ~90 chars, <= 12 words ideally. Model
+  names and version numbers belong in the BODY, not the title.
 - BODY: 30-60 words HARD. SHAPE: shift -> shipped -> judgement-tied-to-
   decision. Must include: one concrete number or mechanism; a trust flag
   if warranted (vendor benchmark? no code? thin sourcing?); a close tied
-  to a SPECIFIC decision, not a department.
+  to a SPECIFIC decision, not a department or group.
+  Going over 60 is a sign you're stacking spec-sheet detail you should
+  cut -- replace specs with consequence per the LANGUAGE block. 61-62
+  is acceptable ONLY when the alternative is dropping the trust flag
+  per the COLLISION PRIORITY rule; 65+ means you've kept specs you
+  should have replaced.
+- LANGUAGE: plain English. No acronyms a non-specialist wouldn't
+  recognise (spell out / replace / drop). No spec-sheet stacking --
+  ONE news number, the rest replaced with their consequence. Model
+  names + versions live in the body, never the title.
 - HONESTY: use ONLY facts present in source_excerpt (or the title /
   summary / cluster metadata if the excerpt is missing). If a number,
   licence, or artefact (weights / code / demo) is NOT stated in the
