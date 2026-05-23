@@ -1,0 +1,317 @@
+# config/rubric.yaml -- AI Vector ranking rubric (v0 first cut)
+#
+# Per PLAN.md §5. The LLM (called from src/rank.py) scores each cluster
+# 0--100 against each criterion; the weighted sum gives the final score.
+# Per-criterion breakdown + rationale feed the eval harness and the
+# transparency promise.
+#
+# Decision rights (docs/TEAM.md): LLM Engineer owns content; Editor +
+# Eval Engineer review changes; Arman ratifies.
+#
+# Skills baked into this rubric:
+#   - editorial-focus  -> Significance anchors (Tier 1/2/3 + signal filter)
+#   - finance-lens     -> Financial-services impact anchors (two-tier test)
+#
+# Weights match PLAN §5 exactly. Tune ONLY after the Eval Engineer's
+# harness exists (Phase 1) -- per design-first-eval-first, we don't
+# optimise against vibes.
+
+schema_version: 1
+rubric_version: "v0.1-2026-05-23"
+
+# ---------------------------------------------------------------------------
+# Criteria. Each is scored 0--100. Final score = weighted sum, weights sum
+# to 100. The anchors (0/25/50/75/100) are calibration points -- the LLM
+# may return any integer in [0, 100]; the anchors describe what each
+# rough band MEANS so scoring is stable across re-runs and across raters.
+# ---------------------------------------------------------------------------
+
+criteria:
+
+  - name: significance
+    weight: 30
+    description: >
+      Is this a real shift in the field vs. noise? This criterion is where
+      the editorial-focus filter LIVES inside the rubric. Significance
+      roughly equals (tier match) x (signal-filter dimensions passed).
+      See .claude/skills/editorial-focus.md for the underlying definitions.
+    anchors:
+      "0": >
+        Tier-3 per editorial-focus: vendor announcement with no capability
+        shift, model-numbers-go-brrr news, AI-tangential ("AI in X" tropes),
+        hype-cycle / thought-leadership with no underlying news,
+        re-summary of last week. Cut upstream or floored here.
+      "25": >
+        Tier-2 traditional ML that is NOT load-bearing -- academic interest
+        only, doesn't change the practitioner's playbook this quarter.
+        Default-skeptical; rarely above this without specific justification.
+      "50": >
+        Tier-1 (Agentic AI / Generative AI) hitting ZERO or ONE of the
+        three signal-filter dimensions (today / tomorrow / practical).
+        Real topic but weak relevance -- Also notable tail at best.
+      "75": >
+        Tier-1 hitting TWO signal-filter dimensions, OR load-bearing
+        Tier-2 hitting two. A real shift; readers should know about it.
+        Solid For builders / For leaders material.
+      "100": >
+        Tier-1 hitting ALL THREE signal-filter dimensions (changes work
+        today AND shifts what to anticipate tomorrow AND is practically
+        usable now). Pulse-candidate territory.
+
+  - name: builder_utility
+    weight: 25
+    description: >
+      Can a DS or engineer act on this *this week*? New tool, new technique,
+      new constraint, new repo, new API, new eval, new benchmark. Concrete
+      and adoptable beats abstract and inspirational. The "practical now"
+      half of the signal filter has its strongest home here.
+    anchors:
+      "0": >
+        No action a builder can take. Pure commentary, opinion essay,
+        market chatter.
+      "25": >
+        Hypothetically actionable; would need significant translation
+        from the source (paper with no code, vague announcement, idea
+        without artefacts).
+      "50": >
+        Concrete enough to inform a decision next sprint -- a benchmark
+        result that constrains model choice, a technique with enough
+        detail to try, a limitation worth designing around.
+      "75": >
+        Direct adoption path: repo + docs + a clear use case. A builder
+        can clone, read, and decide whether to integrate in an afternoon.
+      "100": >
+        Drop-in. Builders are using this within a week: HF release with
+        quickstart, a working framework with examples, a public benchmark
+        with code, a tool with a documented API.
+
+  - name: leadership_relevance
+    weight: 20
+    description: >
+      Does this shift what a Head of AI / CDO / CTO would PRIORITISE next
+      quarter? Strategy, risk, governance, vendor calculus, talent. This is
+      explicitly NOT generic "AI transformation" pablum -- it must point at
+      a concrete prioritisation change. A high score here is what justifies
+      surfacing leader-only stories that have weak builder utility.
+    anchors:
+      "0": >
+        No leadership angle. Pure builder territory, or pure noise.
+      "25": >
+        Tangential -- maybe worth a footnote in some future strategy doc;
+        no real reprioritisation implied.
+      "50": >
+        A leader should know this exists. Minor priority shift -- an item
+        for the next strategy review, not the current one.
+      "75": >
+        Real recalibration: vendor strategy, hiring plan, risk posture,
+        build-vs-buy calculus, or capability-tier expectation shifts.
+      "100": >
+        Forces a re-plan. New capability tier that changes what's worth
+        building in-house; major regulatory shift (EU AI Act, PRA, OCC,
+        APRA, MAS, NIST AI RMF) that re-scopes deployment; new vendor
+        concentration risk that demands an architectural response.
+
+  - name: financial_services_impact
+    weight: 15
+    description: >
+      Does this matter to financial services? Apply the finance-lens skill's
+      two-tier test. Tier 1 (builders): trading/markets ML, fraud/AML/KYC,
+      model risk & governance (SR 11-7, PRA SS1/23), productionising LLMs
+      under regs (on-prem, data residency, audit), agents in finance, eval
+      relevance. Tier 2 (leaders): strategic shifts, regulatory movement,
+      vendor consolidation. The lens is MODERATE, not maximum -- it adds
+      value, it doesn't filter out the field. Most days, most stories will
+      land here at 25-50. That's correct.
+    anchors:
+      "0": >
+        Zero FS relevance. The two-tier test produces no yeses; the story
+        does not touch the lens at all.
+      "25": >
+        Generic application could conceivably exist in FS; no specifics in
+        the story itself. Default for "general AI news with no FS hook".
+      "50": >
+        Lands clearly for ONE Tier-1 FS audience (e.g. fraud modelling
+        teams OR model risk OR quants) with a nameable angle, not just
+        an inferred one.
+      "75": >
+        Lands for TWO Tier-1 FS audiences, OR lands for one Tier-1
+        audience plus material Tier-2 (leadership / regulatory / vendor)
+        implications.
+      "100": >
+        Directly addresses a hot FS pain: productionising LLMs under
+        SR 11-7 / PRA SS1/23, on-prem / air-gapped inference for banks,
+        agentic compliance review, model lineage and reproducibility
+        for regulators, agentic systems in trading codebases.
+
+  - name: freshness_momentum
+    weight: 10
+    description: >
+      Breaking now, or building? Recency-weighted but NOT pure recency --
+      a paper from 3 weeks ago that's only now hitting industry awareness
+      counts as fresh; today's nth re-summary of last week's release does
+      not. The cross_time_ref signal from Retrieval Engineer's clusters.jsonl
+      is the primary input -- a cluster that continues a story we covered
+      yesterday is less fresh than a cluster that's net-new.
+    anchors:
+      "0": >
+        Old news. We already covered the same launch / paper / event in a
+        recent issue with the same angle.
+      "25": >
+        Mostly stale -- minor follow-up to a story we covered, with no new
+        information beyond what we already published.
+      "50": >
+        Plausibly fresh; some new angle, new data, new corroboration, or
+        a continuation that adds material substance.
+      "75": >
+        Breaking, or visibly building momentum: citations, follow-up work,
+        active community discussion, replication attempts.
+      "100": >
+        Just landed and the field is reacting in real time. Heat is real,
+        not manufactured.
+
+# ---------------------------------------------------------------------------
+# Audience tagging. Independent of score: a story can be high-scoring and
+# still narrowly-targeted (e.g. a builder-only repo release that earns
+# its place). The tags drive section routing in summarise.py
+# (For builders / For leaders), not the rank itself.
+# ---------------------------------------------------------------------------
+
+audience_tags:
+  taxonomy: [builder, leader, finance, general]
+  guidance: >
+    A story can carry multiple tags. `builder` and `leader` describe the
+    primary audience; `finance` overlays when the FS lens earns its place
+    (don't tag `finance` just because the story COULD apply to a bank --
+    tag it when the angle is nameable, per finance-lens.md); `general`
+    when the story is field-wide and doesn't slot to a specific audience.
+    At least one tag is required.
+
+# ---------------------------------------------------------------------------
+# LLM output shape. src/rank.py validates each per-cluster response against
+# the RankedStory pydantic model; this section documents the contract the
+# prompt enforces. Plain YAML rather than embedded JSON-schema to keep it
+# readable and diffable. The pydantic model (Architect-owned) is the
+# source of truth at runtime.
+# ---------------------------------------------------------------------------
+
+llm_output:
+  description: >
+    Per cluster, the ranking LLM returns a single JSON object with the
+    fields below. Invalid JSON => one corrective retry; second failure =>
+    skip the cluster and log to source_health-style error (per
+    llm-engineer.md "Determinism vs. judgment").
+  fields:
+    cluster_id:
+      type: string
+      required: true
+      note: Echoed from the input cluster; lets the harness join scores back.
+    score:
+      type: integer
+      range: [0, 100]
+      required: true
+      note: Weighted sum of breakdown values; computed by rank.py from breakdown for stability, but the LLM also returns it so we can detect arithmetic drift.
+    breakdown:
+      type: object
+      required: true
+      fields:
+        significance:              { type: integer, range: [0, 100] }
+        builder_utility:           { type: integer, range: [0, 100] }
+        leadership_relevance:      { type: integer, range: [0, 100] }
+        financial_services_impact: { type: integer, range: [0, 100] }
+        freshness_momentum:        { type: integer, range: [0, 100] }
+    audience_tags:
+      type: array
+      items: { type: string, enum: [builder, leader, finance, general] }
+      required: true
+      min_items: 1
+    rationale:
+      type: string
+      required: true
+      max_length: 240
+      note: One-line "why this score". Feeds the eval harness AND the transparency promise -- humans read these to audit the ranker. Keep it specific.
+
+# ---------------------------------------------------------------------------
+# Calibration notes. Read before tuning anything.
+# ---------------------------------------------------------------------------
+
+calibration_notes: |
+  Score computation
+  -----------------
+  Weighted final score = sum over criteria of:
+      (criterion.weight / 100) * criterion.breakdown[criterion.name]
+  Weights sum to 100; final score is in [0, 100]. rank.py computes this
+  deterministically from `breakdown`; the LLM-returned `score` is a
+  cross-check, not the source of truth.
+
+  Editorial-focus pre-filter
+  --------------------------
+  Tier-3 clusters (per .claude/skills/editorial-focus.md) should be cut
+  by rank.py BEFORE rubric scoring, OR floored at significance <= 25.
+  The rubric is for the SURVIVORS. If Tier-3 stories are appearing in the
+  top-N, the upstream filter is broken -- fix the prompt or sources,
+  don't relax the rubric.
+
+  Healthy shape
+  -------------
+  A healthy ranked.jsonl is heavy on Tier-1, light on Tier-2, none on
+  Tier-3. If your ranked output isn't that shape, escalate to Source
+  Engineer (sources) or revise the ranking prompt -- don't dial down
+  Significance to compensate.
+
+  First-cut weights
+  -----------------
+  Weights (30/25/20/15/10) match PLAN §5 exactly. Tune AFTER:
+    - Eval Engineer's harness exists (Phase 1) and
+    - We have at least one week of labelled ratified issues to anchor
+      against.
+  Per design-first-eval-first: optimise against the rubric and the
+  labels, not against vibes.
+
+  Builder vs. leader split
+  ------------------------
+  builder_utility (25) and leadership_relevance (20) are split rather
+  than combined on purpose. An "audience-leader" story with weak builder
+  utility (e.g. a major regulatory shift) should still surface via a
+  high leadership_relevance score even if builder_utility is low.
+  Likewise a builder-pure repo release shouldn't be penalised for having
+  no leadership angle. Don't optimise builders out of the rubric by
+  merging the two criteria.
+
+  Significance is load-bearing
+  ----------------------------
+  Significance (30) is where the editorial-focus skill lives most
+  directly. Its anchors are the highest-stakes part of this file. Any
+  change to them changes what the publication is. Don't relax them
+  without Editor + Eval review and Arman's sign-off (per
+  docs/TEAM.md decision rights).
+
+  Finance lens calibration
+  ------------------------
+  financial_services_impact at 15 is INTENTIONALLY moderate. AI Vector
+  is "an AI newsletter with a finance eye," not a finance newsletter
+  with AI as a topic. A field-shaping AI story with zero FS angle should
+  still rank highly because Significance + Builder utility +
+  Leadership relevance + Freshness can carry it. The FS criterion adds
+  value when present; it does not gate.
+
+  Freshness is the smallest weight on purpose
+  -------------------------------------------
+  10 points keeps the rubric from collapsing into a recency feed.
+  A 5-day-old paper that is hitting industry awareness today should
+  still rank ahead of a same-day vendor announcement -- and at these
+  weights, it will.
+
+  Temperature
+  -----------
+  rank.py should call the LLM at LOW temperature for stability across
+  re-runs (per llm-engineer.md). summarise.py can be warmer -- voice
+  needs texture. Same-day re-runs of ranking should produce
+  substantively the same ranked.jsonl.
+
+  Deferred to Phase 1+
+  --------------------
+  - Per-criterion calibration against labelled fixtures (needs Eval).
+  - Whether to add a separate "novelty vs. continuation" criterion or
+    fold it into freshness (current choice: fold in).
+  - Whether top-N cutoff lives here or in rank.py (current: rank.py;
+    PLAN §8 open question for Arman).

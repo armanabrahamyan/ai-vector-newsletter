@@ -1,0 +1,33 @@
+# Secrets — never commit. The repo ships a `.env.example` template instead.
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtualenvs
+.venv/
+
+# Local Claude Code settings (per-machine; not shared via git).
+# The `.local.json` suffix is Claude Code's convention for local-only config.
+.claude/settings.local.json
+
+# Eval reports — generated each time `python -m evals.run_evals` runs.
+# The harness + fixtures are tracked; outputs are not.
+evals/reports/
+
+# Staging archive — transient working state for not-yet-released issues.
+# Canonical archives at data/YYYY-MM-DD/ ARE tracked (the record of what shipped).
+data/staging/
+
+# Local embedding caches / sidecars (per Retrieval Engineer; rebuildable).
+# Note: covers data/<date>/embeddings/ and data/staging/<date>/embeddings/.
+data/embeddings/
+data/*/embeddings/
+
+# Preview HTML — transient (re-rendered every staging run).
+# docs/index.html and docs/archive/*.html ARE tracked (released issues).
+docs/preview/
+
+# macOS noise
+.DS_Store

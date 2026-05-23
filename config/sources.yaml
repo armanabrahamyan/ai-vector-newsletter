@@ -1,0 +1,622 @@
+# config/sources.yaml — AI Vector source list
+# Last updated: 2026-05-23 (Source Engineer research round)
+#
+# Trust weights:
+#   1 = experimental / firehose / unproven
+#   2 = new (default for fresh adds) / watch-tier
+#   3 = established / reliable
+#   4 = known-curated, high signal density
+#   5 = reserved — earn over months of observed quality
+#
+# tier_expectation:
+#   tier-1          — publishes mostly Agentic + Generative AI (the heart of AI Vector)
+#   tier-1-mixed    — Tier 1 AND some Tier 2 / Tier 3 (broad AI news sites)
+#   load-bearing-tier-2 — Tier 2 stories that are often load-bearing for practitioners
+#   risk-tier-3     — high risk of Tier 3 noise; Eval Engineer should watch drift
+#
+# URL probe discipline: all feeds probed via WebFetch or confirmed via WebSearch 2026-05-23.
+# Feeds marked enabled: false are either dead/no-official-feed (with workaround noted),
+# or blocked from the research environment and pending confirmation from the pipeline runner.
+#
+# Third-party community feeds (Olshansk/rss-feeds, taobojlen/anthropic-rss-feed):
+#   These are structured XML feeds maintained by community GitHub projects running on hourly
+#   GitHub Actions. They are treated as RSS feeds (not live scraping) by the pipeline.
+#   Dependency risk: if maintainers pause, feeds go stale silently. Monitor monthly.
+#   See docs/SOURCES_RESEARCH.md for full dependency discussion and Arman's TODO items.
+#
+# Master source list and research rationale: docs/SOURCES_RESEARCH.md
+# That document is the single source of truth. Update it first when adding/removing sources.
+
+sources:
+
+  # ---------------------------------------------------------------------------
+  # LABS / PRIMARY
+  # ---------------------------------------------------------------------------
+
+  - name: Anthropic
+    url: https://raw.githubusercontent.com/taobojlen/anthropic-rss-feed/main/anthropic_news_rss.xml
+    type: rss
+    category: lab
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      No official Anthropic RSS feed exists (confirmed 2026-05-23 — all canonical variants
+      return 404, no feed link in page HTML). Using third-party feed from taobojlen/anthropic-rss-feed
+      (GitHub Actions hourly scraper). Confirmed live 2026-05-23: 15 items, most recent item
+      "Project Glasswing" May 22, 2026. Build date May 23. Dependency risk: if repo pauses,
+      feed goes stale. Re-probe monthly. See docs/SOURCES_RESEARCH.md §Dead Feeds for details.
+      Alternative: Olshansk/rss-feeds feed_anthropic_news.xml also valid (270 items, May 2026).
+      TODO (Arman): approve dependency on community feed vs. AI Vector maintaining own scraper.
+
+  - name: OpenAI
+    url: https://openai.com/news/rss.xml
+    type: rss
+    category: lab
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Primary model-release and capability source.
+      Dense Tier-1 output on release days, quiet otherwise. Note: older openai.com/blog/rss/
+      returns 403 — use only this URL.
+
+  - name: Google DeepMind
+    url: https://deepmind.google/discover/blog/feed/
+    type: rss
+    category: lab
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Covers Gemini, AlphaFold, safety,
+      foundational research. Strong Tier-1 signal density on release weeks.
+
+  - name: Google Research Blog
+    url: https://research.google/blog/rss/
+    type: rss
+    category: lab
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Broader than DeepMind; applied ML,
+      infrastructure, foundation models. Tier-1-mixed: expect both Tier-1 capability
+      posts and Tier-2 classical ML at production scale. Eval Engineer to track tier mix.
+
+  - name: Meta AI Blog
+    url: https://about.fb.com/news/feed/
+    type: rss
+    category: lab
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0, but this is Meta's corporate newsroom,
+      not an AI-specific feed. ai.meta.com/blog has no RSS endpoint (confirmed 2026-05-23).
+      Expect Tier-3 noise mixed with genuine Tier-1 (Llama releases, open-source drops).
+      Trust weight 2. Upgrade URL to ai.meta.com if a feed appears.
+
+  - name: Microsoft Research Blog
+    url: https://www.microsoft.com/en-us/research/blog/feed/
+    type: rss
+    category: lab
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Deep research focus: reasoning, safety,
+      multimodal, systems. Load-bearing Tier-2 — often signals what's coming to Azure/Copilot.
+
+  - name: Microsoft AI Blog
+    url: https://blogs.microsoft.com/ai/feed/
+    type: rss
+    category: lab
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Product-side AI blog (Copilot, Azure AI,
+      partner announcements). Tier-1 on capability shifts; Tier-3 risk on marketing posts.
+      Trust weight 2 until Eval establishes tier-mix baseline.
+
+  - name: Mistral AI News
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_mistral.xml
+    type: rss
+    category: lab
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      No official Mistral RSS feed (all variants 404 as of 2026-05-23). Using Olshansk/rss-feeds
+      community project (hourly GitHub Actions scraper). Confirmed live 2026-05-23; most recent
+      item: "Remote agents in Vibe. Powered by Mistral Medium 3.5" April 29, 2026.
+      High-value for open-weight model releases (Mistral 3, Codestral, etc.).
+      Same dependency risk as Anthropic — see docs/SOURCES_RESEARCH.md.
+
+  - name: Cohere Blog
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_cohere.xml
+    type: rss
+    category: lab
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      No official Cohere RSS feed (confirmed 2026-05-23 — all variants return 404 or HTML).
+      Using Olshansk/rss-feeds community project (hourly). Confirmed live 2026-05-23; most recent
+      item: "Cohere advances sovereign AI capabilities with NVIDIA" March 16, 2026.
+      Note: ~2 month gap between most recent item and build date — Cohere may publish infrequently
+      or scraper has a gap. Trust weight 2 pending Eval baseline.
+
+  - name: Hugging Face Blog
+    url: https://huggingface.co/blog/feed.xml
+    type: rss
+    category: lab
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0 with 400+ entries. Best consistent Tier-1
+      source: model releases, fine-tuning techniques, inference optimisations, open-source tooling.
+      Trust weight 4 — earned. One of the most reliable feeds in the list.
+
+  - name: LangChain Blog
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_langchain.xml
+    type: rss
+    category: lab
+    trust_weight: 3
+    enabled: false
+    tier_expectation: tier-1
+    notes: >
+      LangChain blog migrated from Ghost (blog.langchain.dev) to Webflow (langchain.com/blog).
+      No native RSS exists — langchain.com/blog/rss returns HTML, not XML (confirmed 2026-05-23).
+      Olshansk/rss-feeds lists a feed_langchain.xml — URL not yet probed (not confirmed live).
+      TODO: probe https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_langchain.xml
+      before Phase 2; enable if valid. Blog actively publishing as of May 21, 2026.
+      High-value source for LangGraph, agentic frameworks.
+
+  - name: LlamaIndex Blog
+    url: https://medium.com/feed/llamaindex-blog
+    type: rss
+    category: lab
+    trust_weight: 2
+    enabled: false
+    tier_expectation: tier-1
+    notes: >
+      Medium feed is technically valid RSS (confirmed 2026-05-23) but most recent post
+      is March 2024 — blog migrated to llamaindex.ai/blog (Webflow, no RSS feed found).
+      Primary blog actively publishing (LlamaIndex Newsletter 2026-04-21 confirmed).
+      Real gap: no machine-readable feed for current content.
+      TODO: request feed in Olshansk/rss-feeds project OR flag to Architect for scraper approval.
+      See docs/SOURCES_RESEARCH.md for details.
+
+  # ---------------------------------------------------------------------------
+  # PAPERS (CURATED)
+  # ---------------------------------------------------------------------------
+
+  - name: Hugging Face Daily Papers
+    url: https://huggingface.co/api/daily_papers
+    type: api
+    category: papers
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Community-curated daily paper highlights; high signal-to-noise vs. raw arXiv.
+      Preferred papers source per PLAN §6. Fetch via HF API (huggingface.co/api/daily_papers).
+      Trust weight 4. One of the strongest daily-signal sources in the list.
+
+  - name: arXiv cs.CL
+    url: http://export.arxiv.org/rss/cs.CL
+    type: rss
+    category: papers
+    trust_weight: 1
+    enabled: true
+    tier_expectation: risk-tier-3
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. CL firehose; highest per-paper LLM/language
+      relevance of the arXiv feeds. Trust weight 1; heavy filtering required.
+      Recommendation: start with cs.CL only; disable cs.AI and cs.LG in month 1 and re-enable
+      only if HF Daily Papers misses meaningful signal. See docs/SOURCES_RESEARCH.md §TODO #8.
+
+  - name: arXiv cs.AI
+    url: http://export.arxiv.org/rss/cs.AI
+    type: rss
+    category: papers
+    trust_weight: 1
+    enabled: false
+    tier_expectation: risk-tier-3
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Broad AI firehose. Disabled initially per
+      recommendation: start with cs.CL only. Re-enable after Eval baseline shows signal gap
+      that cs.CL + HF Daily Papers doesn't cover.
+
+  - name: arXiv cs.LG
+    url: http://export.arxiv.org/rss/cs.LG
+    type: rss
+    category: papers
+    trust_weight: 1
+    enabled: false
+    tier_expectation: risk-tier-3
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. ML firehose; broadest of the arXiv feeds.
+      Disabled initially per same recommendation as cs.AI. Re-enable only after Eval data
+      shows it adds signal not covered by other sources.
+
+  # ---------------------------------------------------------------------------
+  # NEWSLETTERS / ANALYSIS
+  # ---------------------------------------------------------------------------
+
+  - name: Import AI
+    url: https://importai.substack.com/feed
+    type: rss
+    category: newsletter
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Jack Clark's weekly; years of consistent
+      Tier-1 output. Safety, capability advances, policy with depth. Trust weight 4.
+
+  - name: The Batch (deeplearning.ai)
+    url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_the_batch.xml
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      No official The Batch RSS feed (confirmed 2026-05-23). Using Olshansk/rss-feeds community
+      project (hourly). Confirmed live 2026-05-23; most recent item: May 22, 2026 (weekly issue).
+      Andrew Ng's weekly; Tier-1-mixed, practitioner-friendly. Trust weight 3.
+      Same dependency risk as Anthropic/Mistral feeds — see docs/SOURCES_RESEARCH.md.
+
+  - name: Ahead of AI (Sebastian Raschka)
+    url: https://magazine.sebastianraschka.com/feed
+    type: rss
+    category: newsletter
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Best practitioner analysis of LLM/ML papers.
+      Deep Tier-1: training techniques, fine-tuning, inference advances. 150k+ subscribers.
+      Trust weight 4. Note: this is the Substack URL (magazine.sebastianraschka.com/feed),
+      not the older sebastianraschka.com/rss_feed.xml (which also works but covers all posts
+      including personal/non-AI content).
+
+  - name: Latent Space
+    url: https://www.latent.space/feed
+    type: rss
+    category: newsletter
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Long-form interviews and deep dives with
+      AI researchers. Tier-1: inference, agents, open-source. Trust weight 4.
+      Publishes 2–3× per month; each item typically high-signal.
+
+  - name: TLDR AI
+    url: https://tldr.tech/api/rss/ai
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Daily digest; good breadth and volume.
+      Useful for catching items that slip other feeds. Tier-1-mixed.
+
+  - name: Last Week in AI
+    url: https://lastweekin.ai/feed
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Weekly AI summary; broad editorial selection.
+      Useful for cross-source signal confirmation. Trust weight 3.
+
+  - name: Simon Willison's Blog
+    url: https://simonwillison.net/atom/everything/
+    type: atom
+    category: newsletter
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid Atom 1.0. Running LLM + tools commentary; practical,
+      high-frequency, signal-dense. Trust weight 4. High post frequency; consider /atom/entries/
+      for only longer posts if volume is too high.
+
+  - name: Eugene Yan's Blog
+    url: https://eugeneyan.com/rss/
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. 210+ posts on recommendations, LLMs, agents,
+      evals, engineering. Most recent: "How to Work and Compound with AI" May 3, 2026.
+      Practitioner-level, Tier-1. Trust weight 3. Monthly cadence; high quality per post.
+
+  - name: Chip Huyen's Blog
+    url: https://huyenchip.com/feed
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Gen AI application design, production ML,
+      agents. Most recent: "Common pitfalls when building generative AI applications" Jan 16, 2025.
+      Lower cadence in 2025–26 but high quality per post. Trust weight 3.
+
+  - name: Lilian Weng's Blog (Lil'Log)
+    url: https://lilianweng.github.io/index.xml
+    type: rss
+    category: newsletter
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Deep technical posts from former OpenAI
+      researcher (now Meta). Most recent: "Why We Think" (test-time compute) May 1, 2025.
+      Very low cadence (~2–4 posts/year) but always Tier-1 when published. Trust weight 4
+      — low cadence, very high signal.
+
+  - name: Jay Alammar / Language Models
+    url: https://newsletter.languagemodels.co/feed
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23. jayalammar.substack.com/feed redirects 301 to
+      newsletter.languagemodels.co/feed (use this URL directly). Most recent: "Inside NeurIPS
+      2025: The Year's AI Research, Mapped" November 2025. Illustrated LLM architecture
+      explainers; highly practitioner-relevant. Low cadence but signal-dense. Trust weight 3.
+
+  - name: The Algorithmic Bridge (Alberto Romero)
+    url: https://www.thealgorithmicbridge.com/feed
+    type: rss
+    category: newsletter
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Most recent: "How America Turned Against AI
+      According to the Poll Data" May 20, 2026. Weekly; 44k subscribers. AI analysis for
+      technical-general audience. Tier-1-mixed — sometimes Tier-3 sentiment/opinion.
+      Trust weight 2; Eval to watch tier mix.
+
+  # ---------------------------------------------------------------------------
+  # RESEARCH BLOGS
+  # ---------------------------------------------------------------------------
+
+  - name: BAIR Blog (Berkeley AI Research)
+    url: https://bair.berkeley.edu/blog/feed.xml
+    type: rss
+    category: research
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Most recent: "Adaptive Parallel Reasoning:
+      The Next Paradigm in Efficient Inference Scaling" May 8, 2026. Academic AI research:
+      RL, vision, NLP, planning. Tier-1-mixed — strong when covering inference/agents;
+      Tier-2 on classical vision/robotics. Trust weight 3. Monthly cadence.
+
+  - name: EleutherAI Blog
+    url: https://blog.eleuther.ai/index.xml
+    type: rss
+    category: research
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Most recent: "Early Indicators of Reward
+      Hacking via Reasoning Interpolation" April 15, 2026. Open-weight AI safety research;
+      reward hacking, alignment, pretraining filters. Load-bearing Tier-2 — directly relevant
+      to production model concerns. Trust weight 3. Low cadence (4–6 posts/year).
+
+  # ---------------------------------------------------------------------------
+  # NEWS / COMMUNITY
+  # ---------------------------------------------------------------------------
+
+  - name: Hacker News (Algolia API)
+    url: https://hn.algolia.com/api/v1/search?query=LLM+OR+%22language+model%22+OR+%22AI+agent%22&tags=story&numericFilters=points%3E100
+    type: api
+    category: community
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      HN Algolia API — no feed probing needed (stable API spec). Query covers LLM, language
+      model, AI agent; points threshold 100 is a calibration placeholder. LLM Engineer to
+      tune in fetch.py. Community often breaks AI stories same day as lab announcements.
+      High signal when community reacts to real capability shifts; Tier-3 risk on hype.
+
+  - name: Ars Technica AI
+    url: https://arstechnica.com/ai/feed/
+    type: rss
+    category: news
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      URL confirmed as working in multiple 2026 RSS directories (daige.st May 2026, feedspot).
+      WebFetch blocked from research environment (anti-scrape on research IP, not server-level).
+      Re-probe from Actions runner in Phase 2 — if blocked there too, try feeds.arstechnica.com/
+      arstechnica/technology-lab. Tier-1-mixed: solid technical depth on model releases,
+      occasional Tier-3 on AI ethics op-eds. Excerpt-only RSS (paywall for full text).
+      Trust weight 3.
+
+  - name: MIT Technology Review AI
+    url: https://www.technologyreview.com/feed/
+    type: rss
+    category: news
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. General MIT TR feed; good depth on
+      regulation, safety, capability shifts. Tier-1-mixed. Trust weight 3.
+
+  - name: The Verge AI
+    url: https://www.theverge.com/ai-artificial-intelligence/rss/index.xml
+    type: rss
+    category: news
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      URL confirmed active in 2026 RSS guides and tools (daige.st, Feeder). WebFetch blocked
+      from research environment. Re-probe from pipeline environment in Phase 2. Tier-1-mixed:
+      covers major model launches quickly but consumer framing; Tier-3 risk on AI-product hype.
+      Trust weight 2. Excerpt-only RSS.
+
+  - name: VentureBeat AI
+    url: https://venturebeat.com/category/ai/feed/
+    type: rss
+    category: news
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Enterprise AI news, product launches, funding.
+      Significant Tier-3 risk (vendor PR, partnership announcements). Trust weight 2.
+      Eval Engineer to watch items_in vs. items_kept ratio.
+
+  - name: r/LocalLLaMA (Reddit)
+    url: https://www.reddit.com/r/LocalLLaMA.json
+    type: api
+    category: community
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Reddit JSON API. r/LocalLLaMA is highest-signal community for open-weight deployments,
+      quantisation, inference, agentic use cases. Tier-1 for builders. Points threshold needed
+      (LLM Engineer to calibrate). Reddit API ToS: authenticated access required at scale.
+
+  - name: r/MachineLearning (Reddit)
+    url: https://www.reddit.com/r/MachineLearning.json
+    type: api
+    category: community
+    trust_weight: 2
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Reddit JSON API. Skews toward papers and research discussion. Load-bearing Tier-2:
+      surfaces paper releases early. Trust weight 2. Same ToS note as r/LocalLLaMA.
+
+  # ---------------------------------------------------------------------------
+  # TOOLING / INFRASTRUCTURE
+  # ---------------------------------------------------------------------------
+
+  - name: Replicate Changelog
+    url: https://replicate.com/changelog/rss
+    type: rss
+    category: tooling
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Model releases, MCP integrations, agent
+      infrastructure changes ("Agent skills for Replicate" April 21, 2026; "MCP server
+      auto-discovery" Feb 10, 2026). Direct signal on agent infrastructure. Trust weight 3.
+
+  # ---------------------------------------------------------------------------
+  # FINANCE-AI LENS
+  # ---------------------------------------------------------------------------
+
+  - name: LLMQuant Newsletter
+    url: https://llmquant.substack.com/feed
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Open-source community for AI + quantitative
+      finance. 2–3 posts per week. Recent items pass both lenses: trading/portfolio ML,
+      agents-in-finance, AML in banking. Most recent: May 22, 2026.
+      Finance-lens Tier-1 territory: trading ML, portfolio ML, agents-in-finance.
+      Trust weight 2 — new addition; earn toward higher weight over months.
+
+  - name: BIS Research Papers (FSI)
+    url: https://www.bis.org/doclist/bis_fsi_publs.rss
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 1.0 (RDF). BIS financial research papers including
+      AI-in-finance work. AI items observed: AI data use in financial services, geography of AI
+      firms, AI agents for payment systems. High credibility; primary research not recycled.
+      Finance-lens Tier-1: model risk, regulatory AI, systemic risk.
+      Note: Most items are macroeconomics (not AI). LLM Engineer must filter aggressively.
+      Trust weight 3 when AI item surfaces; overall item drop-rate will be high.
+
+  - name: Risk.net Cutting Edge
+    url: http://www.risk.net/feeds/rss/category/cutting-edge
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Peer-reviewed quantitative finance papers.
+      Most recent: "MI9: runtime governance for agentic AI systems" May 20, 2026;
+      "Capturing smile dynamics with the quintic volatility model" May 6, 2026.
+      Finance-lens Tier-1: trading ML (volatility, options), model risk governance.
+      Paywall: titles and brief abstracts free; full articles require Risk.net subscription.
+      Pipeline gets headings + summaries only.
+      TODO (Arman): Is Risk.net subscription in scope for full-text access?
+
+  - name: ML Quant Finance (Derek Snow)
+    url: https://blog.ml-quant.com/feed
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Weekly "Quant Letter" with curated links on
+      quantitative ML and finance. Most recent: "Quant Letter: May 2026, Week-3" May 20, 2026.
+      Finance-lens Tier-1: trading, portfolio ML, signal generation. Link-curation format.
+      Trust weight 2 — curator quality unknown; calibrate over months.
+
+  - name: AI in Finance (Christophe Atten)
+    url: https://aiinfinance.substack.com/feed
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Practical LLM deployment in financial services.
+      Recent: "EU AI Act for Finance Teams: What You Actually Need to Do" May 20;
+      "Deploy an LLM to 1800 Employees" May 17. Finance-lens Tier-1: productionising under regs,
+      model governance, agents-in-finance. 2–4 posts per week.
+      Trust weight 2 — watch for drift toward Tier-3 governance thought-pieces.
+
+  - name: Numerai Blog
+    url: https://blog.numer.ai/rss/
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-23 — valid RSS 2.0. Monthly updates on Numerai quant ML
+      tournament and open-source financial ML tooling. Most recent: "UX Improvements, Atomic
+      Staking Progress, Agentic Adoption" May 5, 2026. Finance-lens Tier-1: trading ML in
+      practice, real competition outcomes. Monthly cadence — supplemental, not daily signal.
+      Trust weight 2.

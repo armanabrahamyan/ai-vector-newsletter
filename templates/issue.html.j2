@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Vector {% if issue.issue_number %}#{{ issue.issue_number }} {% else %}(preview) {% endif %}— {{ issue.date.isoformat() }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+      max-width: 720px;
+      margin: 2rem auto;
+      padding: 0 1.25rem;
+      color: #1a1a1a;
+      background: #fdfdfd;
+    }
+    header { border-bottom: 1px solid #ddd; padding-bottom: 1rem; margin-bottom: 2rem; }
+    header h1 { font-size: 1.6rem; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+    header .tagline { color: #555; font-size: 0.95rem; margin: 0.25rem 0 0; font-style: italic; }
+    header .meta { color: #888; font-size: 0.85rem; margin-top: 0.5rem; }
+    section.pulse { background: #fff8e1; border-left: 3px solid #d4a017; padding: 1.25rem 1.5rem; border-radius: 4px; margin-bottom: 2rem; }
+    section.pulse h2 { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: #d4a017; }
+    section.pulse h3 { font-size: 1.2rem; margin: 0.5rem 0 0.75rem; }
+    section.section { margin-bottom: 2.5rem; }
+    section.section h2 { font-size: 1.15rem; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; margin-bottom: 1.25rem; }
+    article { margin-bottom: 1.5rem; }
+    article h3 { font-size: 1.05rem; margin: 0 0 0.5rem 0; font-weight: 600; }
+    .sources { font-size: 0.85rem; color: #666; margin-top: 0.5rem; }
+    .sources a { color: #555; text-decoration: none; margin-right: 0.25rem; }
+    .sources a:hover { text-decoration: underline; }
+    section.section-notable article { margin-bottom: 0.5rem; }
+    section.section-notable .terse { margin: 0.2rem 0; font-size: 0.95rem; }
+    footer { border-top: 1px solid #ddd; padding-top: 1rem; margin-top: 3rem; color: #888; font-size: 0.85rem; }
+    footer a { color: #555; }
+    .generated { margin-top: 0.25rem; }
+    @media (max-width: 600px) {
+      body { font-size: 15px; padding: 0 1rem; margin: 1rem auto; }
+      section.pulse { padding: 1rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Vector</h1>
+    <p class="tagline">All of it, sorted for you.</p>
+    <p class="meta">{% if issue.issue_number %}Issue #{{ issue.issue_number }}{% else %}Preview (staging draft -- not yet released){% endif %} · {{ issue.date.strftime('%A, %d %B %Y') }}</p>
+  </header>
+
+  <main>
+    {# ------------------------------------------------------------------ #}
+    {# The Pulse                                                           #}
+    {# ------------------------------------------------------------------ #}
+    {% set p = issue.pulse.stories[0] %}
+    <section class="pulse">
+      <h2>The Pulse</h2>
+      <h3>{{ p.headline }}</h3>
+      <p>{{ p.summary }}</p>
+      <p class="sources">
+        Sources:
+        {% for url in p.source_urls %}<a href="{{ url }}">[{{ loop.index }}]</a>{% if not loop.last %} {% endif %}{% endfor %}
+      </p>
+    </section>
+
+    {# ------------------------------------------------------------------ #}
+    {# Remaining sections                                                  #}
+    {# ------------------------------------------------------------------ #}
+    {% for section in issue.sections %}
+      {% if section.stories %}
+        <section class="section section-{{ section.name }}">
+          <h2>{{ section_title(section.name) }}</h2>
+          {% for story in section.stories %}
+            <article>
+              <h3>{{ story.headline }}</h3>
+              {% if section.name != 'notable' %}
+                <p>{{ story.summary }}</p>
+              {% else %}
+                <p class="terse">{{ story.summary }}</p>
+              {% endif %}
+              <p class="sources">
+                {% for url in story.source_urls %}<a href="{{ url }}">[{{ loop.index }}]</a>{% if not loop.last %} {% endif %}{% endfor %}
+              </p>
+            </article>
+          {% endfor %}
+        </section>
+      {% endif %}
+    {% endfor %}
+  </main>
+
+  <footer>
+    <p>AI Vector — author: Arman · <a href="archive/">archive</a></p>
+    <p class="generated">Generated {{ issue.generated_at.strftime('%Y-%m-%d %H:%M UTC') }}</p>
+  </footer>
+</body>
+</html>
