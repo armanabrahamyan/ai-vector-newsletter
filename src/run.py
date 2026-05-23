@@ -43,7 +43,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Any, Callable, Iterable
 
 from src import paths
 
@@ -581,7 +581,95 @@ def _run_pipeline(
     _print_staging_summary(
         run_date, stages_succeeded, failed_stage, failure_reason, elapsed,
     )
+    # Council Phase-1: append a metrics line for trend observation. Best-
+    # effort -- never fails the run on logging error.
+    try:
+        _append_run_metrics(run_date, stages_succeeded, failed_stage, elapsed)
+    except Exception as exc:  # noqa: BLE001
+        _LOG.warning("metrics: failed to append run-metrics log: %s", exc)
     return 0 if failed_stage is None else 1
+
+
+def _append_run_metrics(
+    run_date: _dt.date,
+    stages_succeeded: list[str],
+    failed_stage: str | None,
+    elapsed_s: float,
+) -> None:
+    """Append a single JSONL record to ``data/metrics_log.jsonl`` after a
+    pipeline run. Phase-1 observability per the council brainstorm.
+
+    Counts are read from the staging archive at end-of-run, so even partial
+    runs (e.g. ``--stage fetch`` only) write what they have. Missing files
+    are noted but don't break logging.
+    """
+    import json
+    metrics: dict[str, Any] = {
+        "date": run_date.isoformat(),
+        "run_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "stages_succeeded": stages_succeeded,
+        "failed_stage": failed_stage,
+        "elapsed_s": round(elapsed_s, 1),
+    }
+
+    staging_dir = paths.staging_dir(run_date)
+
+    # items count
+    items_path = staging_dir / "items.jsonl"
+    if items_path.exists():
+        metrics["items_kept"] = sum(1 for _ in items_path.open("r", encoding="utf-8"))
+
+    # source health summary
+    health_path = staging_dir / "source_health.json"
+    if health_path.exists():
+        try:
+            health = json.loads(health_path.read_text(encoding="utf-8"))
+            sources = health.get("sources", [])
+            metrics["sources_enabled"] = len(sources)
+            metrics["sources_fired"] = sum(1 for s in sources if s.get("fired"))
+        except Exception:  # noqa: BLE001
+            pass
+
+    # clusters count
+    clusters_path = staging_dir / "clusters.jsonl"
+    if clusters_path.exists():
+        metrics["clusters"] = sum(1 for _ in clusters_path.open("r", encoding="utf-8"))
+
+    # ranked tier breakdown
+    ranked_path = staging_dir / "ranked.jsonl"
+    if ranked_path.exists():
+        tier_counts: dict[str, int] = {}
+        for line in ranked_path.open("r", encoding="utf-8"):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                tier = json.loads(line).get("tier", "?")
+            except json.JSONDecodeError:
+                continue
+            tier_counts[tier] = tier_counts.get(tier, 0) + 1
+        metrics["ranked_total"] = sum(tier_counts.values())
+        metrics["ranked_tier_counts"] = tier_counts
+
+    # issue section counts
+    issue_path = staging_dir / "issue.json"
+    if issue_path.exists():
+        try:
+            issue = json.loads(issue_path.read_text(encoding="utf-8"))
+            section_counts: dict[str, int] = {}
+            section_counts["pulse"] = len(issue.get("pulse", {}).get("stories", []))
+            for section in issue.get("sections", []):
+                section_counts[section.get("name", "?")] = len(section.get("stories", []))
+            metrics["section_counts"] = section_counts
+            metrics["issue_story_count"] = sum(section_counts.values())
+        except Exception:  # noqa: BLE001
+            pass
+
+    log_path = paths.DATA_ROOT / "metrics_log.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(metrics) + "\n")
+    _LOG.info("metrics: appended run record to %s", log_path)
 
 
 def _run_check() -> int:
