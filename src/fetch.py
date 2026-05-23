@@ -798,6 +798,53 @@ def _dispatch_api_source(
 
 
 # ---------------------------------------------------------------------------
+# Cross-issue dedup against canonical archive
+# ---------------------------------------------------------------------------
+
+
+def _load_recent_canonical_item_urls(
+    today: datetime.date,
+    lookback_days: int,
+) -> set[str]:
+    """Load every item URL that appeared in a canonical ``items.jsonl`` in
+    the last ``lookback_days``. Used by ``fetch_day`` to drop items that
+    we've already fetched into yesterday's (or earlier) canonical archive.
+
+    The window matches the recency filter -- an item older than
+    MAX_ITEM_AGE_DAYS would never re-enter the fetch anyway, so the
+    canonical lookback only needs to cover the same window (plus one day
+    of safety margin for timezone edge cases).
+
+    Tolerant of missing dates and malformed lines.
+    """
+    urls: set[str] = set()
+    for delta in range(1, lookback_days + 1):
+        day = today - datetime.timedelta(days=delta)
+        items_path = paths.items_path(day, canonical=True)
+        if not items_path.exists():
+            continue
+        try:
+            with items_path.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        payload = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    url = payload.get("url")
+                    if isinstance(url, str) and url:
+                        urls.add(url)
+        except Exception as exc:  # noqa: BLE001 -- never crash fetch on read error
+            log.warning(
+                "fetch: could not read canonical items %s for dedup: %s",
+                items_path, exc,
+            )
+    return urls
+
+
+# ---------------------------------------------------------------------------
 # Within-batch URL deduplication
 # ---------------------------------------------------------------------------
 
@@ -952,7 +999,29 @@ def fetch_day(
             "filtered %d items older than %d days (cutoff: %s)",
             dropped_old, MAX_ITEM_AGE_DAYS, cutoff.isoformat(),
         )
-    # Recompute kept_count_by_source from the age-filtered items so
+
+    # ---- Cross-issue item dedup (against canonical archive) ----------------
+    # Drop items whose URL has already been fetched into a recent CANONICAL
+    # items.jsonl. Without this, the same Reddit thread / lab blog post
+    # appears in consecutive days' staging (its `published_at` is still
+    # inside the recency window). The existing `data/published_urls.txt`
+    # filter (applied in cluster.py + rank.py) only covers URLs that ended
+    # up in a RELEASED issue's top-N -- not the broader items.jsonl. This
+    # filter closes that gap. Lookback matches MAX_ITEM_AGE_DAYS + 1 (any
+    # item older than the recency window wouldn't be re-fetched anyway).
+    canonical_urls = _load_recent_canonical_item_urls(
+        run_date, MAX_ITEM_AGE_DAYS + 1
+    )
+    before_canon_filter = len(kept_items)
+    kept_items = [item for item in kept_items if str(item.url) not in canonical_urls]
+    dropped_canonical = before_canon_filter - len(kept_items)
+    if dropped_canonical > 0:
+        log.info(
+            "filtered %d items already in canonical archive (last %d days)",
+            dropped_canonical, MAX_ITEM_AGE_DAYS + 1,
+        )
+
+    # Recompute kept_count_by_source after both filters so
     # source_health.items_kept reflects what actually made it through.
     kept_count_by_source = {}
     for item in kept_items:
