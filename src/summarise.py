@@ -26,11 +26,13 @@ Key responsibilities
    appearances of the chain -- the LLM uses these to write credible
    callbacks ("Last week we flagged X; today's update is...").
 3. One LLM call per top story. Prompt inlines the AI Vector voice
-   guidance (Australian English, signal-dense, embed-direction-and-finance-
-   in-prose), the editorial-focus skill, and the finance-lens skill; the
-   LLM returns ``{headline, summary}``. Direction and finance lens are
-   woven into the summary prose when relevant -- never as separate fields
-   or labels (v0.2 / schema v4).
+   guidance (Australian English, judgement-as-product, headline leads
+   with consequence-or-action, body 30-60 words HARD with mandatory
+   number/mechanism + trust-flag-when-warranted + decision-tied
+   relevance line), the editorial-focus skill, and the finance-lens
+   skill; the LLM returns ``{headline, summary}``. Direction and finance
+   lens are woven into the summary prose when relevant -- never as
+   separate fields or labels (v0.3 / schema v4).
 4. Assemble sections per editorial rules: Pulse, For leaders, For geeks,
    Also notable. Each top-N story is placed in exactly one section.
 5. Construct + validate the ``Issue`` with ``issue_number=None``;
@@ -76,15 +78,20 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.2"
+SUMMARISE_PROMPT_VERSION = "v0.4"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.2-2026-05-23``. v0.2: Australian English, shorter budgets
-(50-80 words standard / 90-120 Pulse), direction + finance lens embedded in
-prose (no separate fields), sections collapsed to pulse / leaders / geeks /
-notable."""
+``summarise-v0.4-2026-05-24``. v0.4 Pass A: prompt now includes
+source_excerpt (lazy trafilatura fetch of top-3 item URLs) so the LLM
+writes from real source text instead of an empty raw_summary -- the
+single biggest quality fix (~60% of the gap). HONESTY guardrail forbids
+asserting facts not present in source_excerpt. Plus a COLLISION
+PRIORITY block: when constraints can't all fit on a thin item, drop
+from the bottom (word count) never the top (trust flag). v0.3.1
+baseline preserved (consequence-led headlines, body 30-60 hard,
+number+trust-flag+decision-tied close)."""
 
-PULSE_PROMPT_VERSION = "v0.2"
-"""Audit tag: ``pulse-v0.2-2026-05-23``. v0.2 mirrors summarise."""
+PULSE_PROMPT_VERSION = "v0.4"
+"""Audit tag: ``pulse-v0.4-2026-05-24``. v0.4 mirrors summarise."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -118,53 +125,149 @@ _VOICE_BLOCK = """\
 VOICE -- how AI Vector reads
 
 A daily AI newsletter for engineers, data scientists, and senior leaders
-in financial services. Warm but not chummy. Specific not generic.
-Signal-dense not word-dense. Wit lives in nouns and verbs.
+in financial services. The product is JUDGEMENT, not aggregation -- the
+reader opens this because we tell them what's flimsy, what's real, and
+what decision it informs. Things a feed won't.
 
-The reader is busy and intelligent. Give them enough to decide whether to
-click through to the source -- not a re-read of the article. They keep up
-with us; they deep-dive when they want to.
+Warm but not chummy. Specific not generic. Signal-dense not word-dense.
 
-AUSTRALIAN ENGLISH throughout. Examples that matter:
+AUSTRALIAN ENGLISH throughout.
   organise / optimise / prioritise / realise / recognise / analyse
   behaviour / colour / favourable / centre / fibre / theatre / defence
   licence (noun) / license (verb) / practise (verb) / practice (noun)
   programme (plan) / program (software) / grey / travelled / modelled
   sceptical / judgement (general use)
-Dates: "23 May 2026" (not "May 23, 2026" or "5/23/26").
-Times: "9 a.m." or "09:00" (not "9 AM").
+Dates: "23 May 2026". Times: "9 a.m." or "09:00".
 
-LENGTH BUDGETS (hard)
-  - headline: <= ~90 chars (tight noun phrase, ideally <= 12 words).
-  - summary: 50-80 words for standard stories.
-              90-120 words for the Pulse -- a story is Pulse-class when its
-              score is >= 70 AND the breakdown clearly addresses what
-              shifts today / what to anticipate / what's practical now.
-              Otherwise standard.
+=======================================================================
+HEADLINE -- skim-only readers must know what they'd gain
+=======================================================================
 
-EMBED, DON'T LABEL
+CORE RULE: Lead with the consequence or the action, not the name.
+Answer "why do I care" before "what is it called."
 
-The newsletter's first principles -- direction ("where this points") and
-the financial-services lens -- are RHYTHM, not scaffolding. Weave them
-into the prose WHEN RELEVANT. NEVER write "Where this points:" or "Finance
-lens:" as labelled sentences or phrases. When a story has no direction
-worth pointing to and no finance angle, just write the news cleanly.
-Silence beats filler.
+DO:
+  - Open with a verb or a stake ("Run X on a 6GB laptop", "Stop
+    defaulting to frontier models in procurement").
+  - Promote the most dramatic TRUE claim from the body into the title.
+  - Use the RECOGNISABLE PARENT BRAND when both the parent and a sub-
+    brand / codename could anchor the story. "NVIDIA" lands faster than
+    "Nemotron-Labs"; "OpenAI" beats an internal codename; "Anthropic"
+    beats "Claude" when the org is the actor.
+  - PREFER PLAIN LANGUAGE OVER JARGON in the headline. Technical detail
+    belongs in the body. Headlines must land for skim readers across
+    audiences -- "word-by-word" beats "autoregressive" for the headline;
+    "no GPU required" beats "CPU-only inference path"; "labels speakers"
+    beats "performs speaker diarisation".
+  - USE THE "X, NOT Y" CONTRAST STRUCTURE when the change can be framed
+    as a sharp comparison -- it forces the consequence into the contrast.
+    "...generate text in parallel, not word-by-word." "...transparency,
+    not eval scores." "...open-weights pledge, not a pivot."
+  - Name a closed competitor when it sharpens stakes ("...takes aim at
+    HeyGen").
+  - Surface real significance, not the spec
+    ("no CUDA required" beats "on Ascend 910B").
 
-  GOOD: "Diffusion LMs are not new, but Nemotron's release makes them
-  practical for latency-sensitive serving today; vLLM and TGI will likely
-  add diffusion backends within a quarter."
-    -- direction is baked into the second clause. No header.
+DON'T:
+  - Open with an unfamiliar proper noun + colon ("NuExtract3: ...").
+  - List attributes like a spec sheet ("Apache-2.0 4B VLM for...").
+  - Use clichés instead of a concrete mechanism ("speed-of-light").
+  - Include version numbers or codenames unless they ARE the news.
+  - Use slang verbs in the headline ("drops" / "ships hot" / "comes for").
+    Plain verbs win: "open-sources", "ships", "releases", "announces".
+  - Default to a two-clause colon headline. Prefer a SINGLE sharp clause
+    unless the colon earns its place (the first clause is itself the news,
+    e.g. "The RL method behind an AI that out-coded every human: Agentic
+    GRPO").
 
-  GOOD: "Banks under SR 11-7 get a credible new option for documenting LLM
-  evals -- the methodology is public and citable."
-    -- finance lens is woven into the verb-frame. No "Finance lens:" prefix.
+AUDIENCE EXCEPTION (For Geeks section only): readers search by model
+name. KEEP the name but frame it with what it unlocks:
+  "NuExtract3: a 4B model that reads invoices without leaving your servers"
 
-  BAD:  "Where this points: open-source catches up."
-    -- labelled, generic, filler.
+CALIBRATION:
+  Weak:    "Agentic GRPO: stabilising RL when trajectories run long"
+  Strong:  "The RL method behind an AI that out-coded every human: Agentic GRPO"
 
-  BAD:  "Finance lens: this could apply to fraud teams."
-    -- labelled, speculative, no nameable angle.
+  Weak:    "Anthropic shares first Glasswing progress on transparency"
+  Strong:  "Anthropic bets its next safety case on transparency, not eval scores"
+
+  Weak:    "Diffusion LMs come for autoregressive decoding: Nemotron drops parallel text generation"
+  Strong:  "NVIDIA open-sources diffusion LMs that generate text in parallel, not word-by-word"
+    -- Parent brand (NVIDIA) over codename (Nemotron-Labs); plain verb
+       ("open-sources") over slang ("drops"); plain language ("word-by-
+       word") over jargon ("autoregressive decoding"); X-not-Y contrast
+       structure; single clause.
+
+Headline length: <= ~90 chars, <= 12 words ideally.
+
+=======================================================================
+BODY -- 30 to 60 words. HARD LIMIT. (Same for the Pulse.)
+=======================================================================
+
+SHAPE: lead with the shift -> state what shipped -> close with a
+judgement tied to a SPECIFIC DECISION.
+
+THREE THINGS THAT MUST SURVIVE EVERY EDIT:
+
+  1. ONE concrete number or mechanism. A real figure or real technical
+     detail; not a vague claim.
+  2. THE TRUST FLAG when warranted. Say what's flimsy: "self-reported,"
+     "no code yet," "thin sourcing, one Reddit thread," "vendor-supplied
+     benchmark." Never drop this when the story warrants it -- judgement
+     is the product.
+  3. A RELEVANCE LINE tied to a DECISION, not a department.
+       Department (weak):  "For leaders sizing vendor commitments"
+       Decision (strong):  "useful when you're renegotiating a closed-model
+                            contract"
+
+WHEN CONSTRAINTS COLLIDE (thin item, won't all fit), resolve in this
+order. Drop from the bottom, never the top.
+
+  1. Trust flag -- never sacrificed. Judgement is the product.
+  2. One concrete number or mechanism.
+  3. Decision-tied close.
+  4. Word count -- exceeding 60 by a few words beats dropping 1-3.
+
+DO:
+  - Put the SHARPEST sentence first. Never bury it in clause three.
+  - Make the CLOSE a single forward bet or instruction, not two.
+  - Cut hedge-padding ("the pitch is", "it's worth noting that").
+
+DON'T:
+  - Reuse the same relevance scaffold across articles
+    ("For X teams that..."). Vary it.
+  - Repeat a framing crutch across the issue -- if you lean on one
+    compliance / standard reference (SR 11-7, EU AI Act, etc.), use it
+    AT MOST ONCE per issue.
+  - Pad to length. UNDER 60 is fine. Also Notable should run shortest.
+
+DIRECTION + FINANCE LENS LIVE IN THE PROSE -- NEVER AS LABELS
+
+NEVER write "Where this points:" or "Finance lens:" as labelled sentences
+or phrases. Direction IS the closing judgement-tied-to-decision; finance
+lens shows up in the verb-frame of the relevance line when it earns its
+place. Most stories will NOT carry a finance angle. That is correct.
+
+CALIBRATION (body):
+
+  Weak:   "LLMQuant unpacks Safe Bilevel Delegation, a framework that
+           scores agent handoffs on a 0-1 scale at runtime rather than
+           design time. The pitch: a delegating agent computes a safety
+           score before passing control. For portfolio agents routing
+           decisions to sub-agents, that becomes an auditable artefact
+           model-risk teams will want logged."
+           -- 80 words, no trust flag, "For X teams that..." scaffold,
+           buries the lede in clause three.
+
+  Strong: "When an agent hands a decision to a sub-agent, how do you know
+           the handoff was safe? Safe Bilevel Delegation (via LLMQuant)
+           scores that moment 0-to-1 at runtime, gating execution when
+           confidence drops -- auditable for model-risk teams. No code
+           yet, so pressure-test it in your next architecture review,
+           don't ship it."
+           -- 55 words. Sharp opener. Trust flag ("no code yet"). Decision-
+           tied close ("pressure-test in your next architecture review,
+           don't ship it").
 
 DON'T do these
   - Don't open with "In the fast-paced world of AI..." or any cousin.
@@ -174,6 +277,13 @@ DON'T do these
   - Link out; never reproduce full articles.
   - Don't pad. Adjectives must earn their place. "Major" is almost always
     cuttable.
+
+BEFORE FINALISING, CHECK
+  - Headline: would a reader skimming ONLY headlines know what they'd
+    gain? If the headline needs the body to make sense, it's a label --
+    rewrite.
+  - Body: 30-60 words? One concrete number or mechanism? Trust flag if
+    warranted? A close tied to a SPECIFIC DECISION (not a department)?
 """
 
 _EDITORIAL_FOCUS_BLOCK = """\
@@ -523,7 +633,17 @@ def _summarise_one(
     """One LLM call. Returns a validated ``SummaryBlock`` or ``None`` if
     the call / parse / validation failed after the retry budget."""
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
-    prompt = _build_summary_prompt(story, cluster, items, callbacks)
+
+    # v0.4: fetch the article body for up to the top-3 items so the LLM
+    # sees real source text instead of an empty raw_summary. Closes the
+    # single biggest quality gap (vague / invented numbers / missing trust
+    # flags). Lazy per-top-N -- bodies are NOT persisted to items.jsonl.
+    excerpts: dict[str, str] = {}
+    for it in items[:3]:
+        url = str(it.url)
+        excerpts[url] = _fetch_source_excerpt(url)
+
+    prompt = _build_summary_prompt(story, cluster, items, callbacks, excerpts)
 
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
     if draft is None:
@@ -556,24 +676,110 @@ def _summarise_one(
     return block
 
 
+_SOURCE_EXCERPT_CACHE: dict[str, str] = {}
+"""Per-process cache: URL -> extracted body. A run never refetches the same
+URL twice (rare across clusters but possible). Trafilatura extraction is
+~50-300ms per page; cache hits are free."""
+
+_SOURCE_EXCERPT_TIMEOUT_S = 12.0
+"""Per-fetch hard timeout. Whole-issue source-fetch budget is ~12 items x
+this = ~144s worst case, usually 20-40s in practice."""
+
+_SOURCE_EXCERPT_MAX_WORDS = 500
+"""Soft cap on the excerpt the prompt sees. Beyond this, the LLM doesn't
+get more signal -- it gets more tokens to attend to."""
+
+
+def _fetch_source_excerpt(url: str) -> str:
+    """Fetch ``url`` and extract the main article body via trafilatura.
+
+    Returns ~150-500 words of clean text on success, empty string on any
+    failure (the prompt's honesty rule will then have the LLM say "source
+    body not retrievable" instead of inventing).
+
+    Cached per-process (per-run) -- same URL returns the same excerpt.
+    """
+    if url in _SOURCE_EXCERPT_CACHE:
+        return _SOURCE_EXCERPT_CACHE[url]
+    try:
+        import httpx
+        import trafilatura
+        with httpx.Client(
+            timeout=_SOURCE_EXCERPT_TIMEOUT_S,
+            follow_redirects=True,
+            headers={
+                "User-Agent": (
+                    "AI-Vector/0.1 (https://github.com/armanabrahamyan/"
+                    "ai-vector; daily-newsletter)"
+                ),
+                # Some publishers serve different markup to bots vs browsers;
+                # asking for HTML explicitly avoids JSON / RSS surprises.
+                "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+            },
+        ) as client:
+            resp = client.get(url)
+            resp.raise_for_status()
+            # trafilatura.extract returns None when extraction fails outright.
+            extracted = trafilatura.extract(
+                resp.text,
+                include_comments=False,
+                include_tables=False,
+                favor_recall=False,  # prefer precision -- noise hurts the LLM
+            )
+            text = (extracted or "").strip()
+    except Exception as exc:  # noqa: BLE001 -- summarise tolerates excerpt loss
+        _LOG.warning(
+            "summarise: source excerpt fetch failed for %s: %s: %s",
+            url, type(exc).__name__, exc,
+        )
+        text = ""
+    if text:
+        words = text.split()
+        if len(words) > _SOURCE_EXCERPT_MAX_WORDS:
+            text = " ".join(words[:_SOURCE_EXCERPT_MAX_WORDS]) + " ..."
+    _SOURCE_EXCERPT_CACHE[url] = text
+    return text
+
+
 def _build_summary_prompt(
     story: RankedStory,
     cluster: Cluster,
     items: list[Item],
     callbacks: list[_CallbackRef],
+    excerpts: dict[str, str] | None = None,
 ) -> str:
     """Assemble the per-story summarisation prompt with voice + skills
-    inlined and callback context attached when present."""
+    inlined and callback context attached when present.
+
+    ``excerpts`` maps item URL -> source body text (fetched lazily by
+    ``_summarise_one`` for the top items in the cluster). When provided,
+    each item line carries a ``source_excerpt`` block so the LLM writes
+    from real source text instead of an empty raw_summary.
+    """
+    excerpts = excerpts or {}
     item_lines: list[str] = []
     for it in items[:5]:  # a bit more context than the rank prompt
         title = it.title.strip()
         summary = (it.raw_summary or "").strip()
         if len(summary) > 800:
             summary = summary[:800].rstrip() + "..."
+        url_str = str(it.url)
+        excerpt = (excerpts.get(url_str) or "").strip()
+        if excerpt:
+            # Indent for readability inside the prompt; LLMs handle this fine.
+            indented = "\n".join(f"    {line}" for line in excerpt.splitlines())
+            excerpt_block = f"  source_excerpt: |\n{indented}"
+        else:
+            excerpt_block = (
+                "  source_excerpt: (not retrievable -- source-body fetch "
+                "failed or returned empty; write only from title + summary "
+                "and SAY what's unknown)"
+            )
         item_lines.append(
             f"- [{it.source}, trust={it.trust_weight}] {title}\n"
             f"  url: {it.url}\n"
-            f"  summary: {summary}"
+            f"  summary: {summary}\n"
+            f"{excerpt_block}"
         )
     items_block = "\n".join(item_lines) or "  (no items resolved)"
 
@@ -627,23 +833,31 @@ ITEMS:
 {items_block}
 
 {callback_block}INSTRUCTIONS
-- Write a headline (<= ~90 chars, tight noun phrase) and a summary
-  (50-80 words standard; 90-120 words if Pulse-class per the budget rule
-  above).
-- Weave direction ("where this points") and finance lens INTO the prose
-  WHEN RELEVANT. NEVER use labels like "Where this points:" or "Finance
-  lens:". If neither earns its place, write the news cleanly without.
+- HEADLINE: follow the HEADLINE rules above. Lead with the consequence
+  or action, not the name. <= ~90 chars, <= 12 words ideally. If this
+  story routes to For Geeks and the model / project name is the search
+  term, keep the name but frame it with what it unlocks.
+- BODY: 30-60 words HARD. SHAPE: shift -> shipped -> judgement-tied-to-
+  decision. Must include: one concrete number or mechanism; a trust flag
+  if warranted (vendor benchmark? no code? thin sourcing?); a close tied
+  to a SPECIFIC decision, not a department.
+- HONESTY: use ONLY facts present in source_excerpt (or the title /
+  summary / cluster metadata if the excerpt is missing). If a number,
+  licence, or artefact (weights / code / demo) is NOT stated in the
+  source, do NOT assert it. Say what is genuinely unknown ("benchmarks
+  not yet published", "licence not specified") rather than inventing.
+- Direction and finance lens live in the prose -- NEVER labels.
 - If callback context is present and the connection is tight, weave a
   brief reference in ("last week we flagged X; today's update is..."). If
   the connection is weak, skip it.
-- Australian English throughout (organise, optimise, behaviour, etc.).
+- Australian English throughout.
 - Link out; never reproduce full articles.
 
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
-  "headline": "<editorial headline>",
-  "summary": "<50-80 word body, 90-120 if Pulse-class>"
+  "headline": "<consequence-led headline, <= ~90 chars>",
+  "summary": "<30-60 word body>"
 }}
 """
 

@@ -23,6 +23,12 @@ sentence-transformers>=2.7  # loads BAAI/bge-base-en-v1.5 in src/cluster.py
 numpy>=1.26                 # centroid math and .npz sidecar storage
 scikit-learn>=1.4           # agglomerative clustering in src/cluster.py
 
+# --- Source-body extraction -------------------------------------------------
+# Lazy per-top-N fetch in src/summarise.py: trafilatura pulls the article
+# body out of HTML so the LLM sees real source text instead of an empty
+# raw_summary. ~12 fetches per issue; ~$0 cost, ~10-20s added latency.
+trafilatura>=1.12           # Apache-2.0; gold-standard article extractor
+
 # --- Render -----------------------------------------------------------------
 jinja2>=3.1                 # HTML templates (src/render.py)
 
