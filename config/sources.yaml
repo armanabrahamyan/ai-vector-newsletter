@@ -308,6 +308,20 @@ sources:
       Confirmed live 2026-05-23 — valid RSS 2.0. Daily digest; good breadth and volume.
       Useful for catching items that slip other feeds. Tier-1-mixed.
 
+  - name: AlphaSignal
+    url: https://alphasignalai.substack.com/feed
+    type: rss
+    category: newsletter
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Daily 5-minute digest. AI-curated top 1% of papers, repos, and news.
+      200k+ subscribers; high-signal-density filter already baked in. Strong
+      complement to HF Daily Papers — appears across multiple awesome-lists
+      as the highest-quality general-AI daily newsletter. Added 2026-05-24
+      from tmp/awesome-lists-survey.md (top finding).
+
   - name: Last Week in AI
     url: https://lastweekin.ai/feed
     type: rss
@@ -620,3 +634,209 @@ sources:
       Staking Progress, Agentic Adoption" May 5, 2026. Finance-lens Tier-1: trading ML in
       practice, real competition outcomes. Monthly cadence — supplemental, not daily signal.
       Trust weight 2.
+
+  # ---------------------------------------------------------------------------
+  # FINANCE-AI LENS — deepening round (2026-05-24)
+  # ---------------------------------------------------------------------------
+
+  - name: FRBNY Liberty Street Economics
+    url: https://libertystreeteconomics.newyorkfed.org/feed/
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 2.0, 4 recent items. Federal Reserve Bank of
+      New York public economics blog. Recent AI-relevant items: "AI's Macroeconomic
+      Challenges and Promises" (May 20, 2026), "Do Job Postings Show Early Labor-Market
+      Effects of AI?" (May 14, 2026). Finance-lens: central bank perspective on AI macro
+      impact, systemic risk, financial stability. Broad macro mixed in; LLM Engineer must
+      filter by title keyword. High credibility; primary research from Fed staff.
+      Load-bearing Tier-2 territory: AI economic impacts, agents-in-finance, model risk.
+      Trust weight 3 (established institution, proven publishing cadence).
+
+  - name: Bank Underground (BoE AI posts)
+    url: https://www.bankunderground.co.uk/category/artificial-intelligence/feed/
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 2.0, 5 items in AI category feed. Bank of
+      England staff blog, AI-filtered category feed. Items: "Agentic commerce and the
+      battleground for new payments infrastructure" (May 21, 2026), "Could financial
+      infrastructure be used to govern AI agents?" (Sep 2025), "Leveraging language models
+      for prudential supervision" (May 2024). Finance-lens Tier-1: agents-in-payments,
+      AI governance, LLMs for regulatory supervision. BoE institutional depth.
+      Low volume (4-8 posts/year) but high signal density per post. Low Tier-3 risk.
+      Trust weight 3 — central bank credibility.
+
+  - name: Fed FEDS Working Papers
+    url: https://www.federalreserve.gov/feeds/feds.xml
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 2.0, 16 items. Federal Reserve Finance and
+      Economics Discussion Series (FEDS) working papers. AI-relevant recent items:
+      "Validating Large Language Model Annotations" (LLM validation framework), "AI and
+      Coder Employment: Compiling the Evidence", "The Fed's Fine-Tune" (LLMs to quantify
+      central bank language). Finance-lens: LLM eval methodology applicable to financial ML,
+      macroeconomic AI research, model validation. Broad economics mixed in; LLM Engineer
+      must filter by title. Load-bearing Tier-2: LLM eval frameworks, model risk, AI impacts.
+      Trust weight 3 (established institution).
+
+  - name: Quantocracy
+    url: http://feeds.feedburner.com/Quantocracy
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 2.0 via FeedBurner relay. Weekly curated
+      aggregator of quantitative finance and algorithmic trading research. Recent items:
+      "Quant Links from Quantocracy as of 05/20/2026", "05/17/2026", "05/11/2026". Topics:
+      trend-following, ML for volatility, deep learning, RL for execution, AI agents for
+      quant research. Finance-lens Tier-1: trading ML, signal generation, backtesting, RL.
+      Aggregator format provides cross-source signal validation. Well-established in quant
+      community (5+ years), consistent weekly publishing. Trust weight 3.
+      Note: FeedBurner relay — monitor for stability; canonical source is quantocracy.com.
+
+  - name: Capital One Tech Blog
+    url: https://medium.com/feed/capital-one-tech
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 2.0 via Medium. FS-firm engineering blog.
+      Recent items: "Insights from inaugural Capital One AI Symposium" (Apr 24, 2026),
+      "NLP research foundations at ICLR 2026" (Apr 21, 2026). ~60% AI/ML content,
+      remainder infrastructure/security. Finance-lens Tier-1: agentic AI, NLP in FS,
+      LLM deployment inside a major bank. Tier-3 risk: some posts are infrastructure-only
+      without AI angle. Trust weight 2 — new addition; watch items_kept ratio.
+
+  - name: Accenture Banking Blog
+    url: https://bankingblog.accenture.com/feed
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 2.0, 10 items, ~80% AI/ML focused. Items:
+      "Agentic AI and the future of work in financial services", "A human-centered approach
+      to agentic AI in financial services", "Agentic payments in commerce" (all 2026).
+      Finance-lens Tier-1: agentic AI in FS, workforce transformation, agentic payments.
+      Tier-3 risk: vendor blog (Accenture) — watch for thought-leadership-without-substance.
+      Trust weight 2 — vendor source; Eval Engineer to watch items_kept ratio carefully.
+
+  - name: Net Interest (Marc Rubinstein)
+    url: https://www.netinterest.co/feed
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 2.0, weekly cadence. Former hedge fund PM;
+      covers banking and fintech with recurring AI intersection. Recent: "Griffin's Doors"
+      (May 22, 2026). Finance-lens Tier-2: AI impact on financial analysis, generative AI
+      in investment research, fintech disruption (Citadel + gen AI). Not AI-primary;
+      primarily financial analysis with AI as a recurring sub-theme. Trust weight 2 —
+      watch AI signal density per issue; promote if AI beat strengthens.
+
+  - name: BIS Quarterly Review
+    url: https://www.bis.org/doclist/quarterlyreviews.rss
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-24 — valid RSS 1.0 (RDF), quarterly cadence. BIS Quarterly
+      Review covers financial market developments, monetary policy, and structural analysis.
+      AI references appear when relevant: "Global markets soared on AI enthusiasm" (Sep 2025).
+      Finance-lens: systemic AI risk, global market structure, monetary policy + AI.
+      Very low frequency (4x/year) and AI is not always the theme. Supplemental signal;
+      high credibility when AI does feature. Trust weight 2 — low cadence, not daily signal.
+
+  - name: AQR Capital Research
+    url: https://www.aqr.com/Insights
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: false
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      No RSS feed found 2026-05-24. Multiple URL variants probed (/rss, /feed, /Insights/rss,
+      /Insights/Research/rss, /Insights/Research/feed) all return 404 or HTML error pages.
+      AQR publishes high-quality quantitative finance research (factor investing, ML in asset
+      management) but distributes via website only. Most recent visible item: "Total Portfolio
+      Approach" (May 19, 2026). Finance-lens Tier-1 territory if a feed existed. Enabled:
+      false pending feed discovery. TODO (Arman): AQR email subscription exists; candidate
+      for future scraper if Architect approves.
+
+  - name: Jane Street Tech Blog
+    url: https://www.janestreet.com/tech-blog/
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: false
+    tier_expectation: tier-1
+    notes: >
+      No RSS feed found 2026-05-24. Tried janestreet.com/tech-blog/feed/, /rss.xml,
+      /feed.xml — all 404. Blog exists at janestreet.com/tech-blog/ but no discoverable
+      feed endpoint. Jane Street publishes high-quality engineering content (OCaml, systems,
+      trading infrastructure). Finance-lens Tier-1: FS-firm engineering at elite quant shop.
+      Enabled: false; no feed. High-value if feed ever appears. TODO: check HTML head tags
+      for feed link when not rate-limited; or use Olshansk/rss-feeds if community adds it.
+
+  # ---- Added 2026-05-24 from awesome-list survey (tmp/awesome-lists-survey.md) ----
+  - name: BIS Central Bank Research Hub
+    url: https://www.bis.org/doclist/reshub_papers.rss
+    type: rss
+    category: finance-ai
+    trust_weight: 4
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Meta-feed surfacing AI research from central banks globally (ECB, Fed, BoE,
+      MAS, etc.). Different from "BIS Research Papers" (the bis_fsi_publs.rss feed)
+      which is BIS-FSI-only. Finance-lens Tier-2 (model risk, regulatory movement,
+      governance). Added from awesome-list survey 2026-05-24.
+
+  - name: FCA News
+    url: https://www.fca.org.uk/news/rss.xml
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      UK Financial Conduct Authority. Daily updates. Most items are general
+      regulatory news (not AI-specific); the editorial-focus filter catches
+      AI-relevant publications (synthetic data governance, AI fairness, model
+      risk). High noise:signal — Eval Engineer should watch items_kept ratio.
+      Source Engineer probe got blocked 2026-05-24 (env issue); awesome-list
+      survey confirms feed is live. Re-probe in production environment if it
+      fails. Added 2026-05-24 from awesome-list survey.
+
+  - name: The EU AI Act Newsletter
+    url: https://artificialintelligenceact.substack.com/feed
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Substack tracker focused specifically on EU AI Act developments. Targeted,
+      low-noise. Finance-lens Tier-2 (regulatory movement directly relevant to
+      productionising AI under EU regulatory constraints). Added 2026-05-24 from
+      awesome-list survey.

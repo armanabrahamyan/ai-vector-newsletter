@@ -298,6 +298,123 @@ Anthropic's `/news` page has no `<link rel="alternate">` RSS tag in the HTML hea
 
 ---
 
+## Finance-AI deepening (2026-05-24)
+
+*Follow-up research pass targeting 8–10 new finance-AI sources. 20+ candidates probed via WebFetch. Research by Source Engineer.*
+
+---
+
+### What was researched this round
+
+Six categories were systematically probed:
+
+1. **FS-firm engineering / research blogs**: JP Morgan, Two Sigma, Goldman Sachs, Capital One, Klarna, Stripe, Jane Street, AQR, Bridgewater.
+2. **Central-bank and regulator research**: US Federal Reserve (FEDS, IFDP, Liberty Street), FRBNY, ECB Working Papers, Bank of England / Bank Underground, FCA Insight, OCC, BIS Working Papers, BIS Quarterly Review, RBA Bulletin, IMF, FSB, Federal Reserve (various regional).
+3. **Practitioner writers / specialist commentary**: Net Interest (Marc Rubinstein), Quantocracy, Risk.net additional sections (technology, market-risk, credit-risk, op-risk, derivatives, structured-products), GARP Risk Intelligence, FinRegLab, The Financial Revolutionist.
+4. **Academic / research centres in FS+ML**: Oxford-Man Institute, Stanford HAI, AQR research (no feed found).
+5. **FS-AI industry orgs / events**: NIST AI RMF, AI for Good (ITU), Bank Policy Institute, Financial Stability Board.
+6. **Other practitioner/FS sources**: Accenture Banking Blog, Fintech.Global, IMF Blogs.
+
+**Key pattern observed**: Central-bank research is almost exclusively PDF-distributed; only ~3 of the institutions probed have live RSS feeds with recent items. Many regulator sites (BoE publications, FCA, OCC, IMF, Fed regional banks) block WebFetch with 403 or redirect to homepage. The exception is the FRBNY Liberty Street Economics blog (live, RSS 2.0) and the Fed FEDS series (live, RSS 2.0), and the Bank Underground category feed (live, confirmed AI-relevant posts).
+
+---
+
+### Per-candidate verdicts
+
+#### FS-firm engineering blogs
+
+| Candidate | Feed URL | Verdict | Reason |
+|-----------|----------|---------|--------|
+| JP Morgan AI Research | None confirmed | Excluded | No RSS on public website; researched previously. |
+| Two Sigma Engineering | engineering.twosigma.com (ECONNREFUSED) | Excluded | Connection refused; confirmed dead from prior round. |
+| Goldman Sachs engineering | None | Excluded | No public engineering blog with RSS. |
+| Capital One Tech Blog | `https://medium.com/feed/capital-one-tech` | **P1 (enabled)** | Live RSS via Medium. ~60% AI/ML, FS-firm. "Insights from inaugural Capital One AI Symposium" April 2026. NLP at ICLR 2026. Trust weight 2. |
+| Klarna engineering | engineering.klarna.com (SSL error) | Excluded | SSL cert error; no confirmed feed. Blog may exist but not reachable. |
+| Stripe engineering | stripe.com/blog/feed/rss (404) | Excluded | Confirmed 404 — same result as prior round. Engineering content but not AI-primary. |
+| Jane Street tech blog | No feed (404 on all variants) | **P2 (disabled)** | Blog exists but zero RSS endpoint found. High-value if feed appears. |
+| AQR Capital | No feed (all variants 404/HTML) | **P2 (disabled)** | No RSS found despite active website. High-quality research. Arman's call on scraper. |
+| Accenture Banking Blog | `https://bankingblog.accenture.com/feed` | **P1 (enabled)** | Live RSS, 10 items, ~80% AI/ML, agentic AI heavy. Vendor Tier-3 risk; trust weight 2. |
+
+#### Central-bank and regulator research
+
+| Candidate | Feed URL | Verdict | Reason |
+|-----------|----------|---------|--------|
+| FRBNY Liberty Street Economics | `https://libertystreeteconomics.newyorkfed.org/feed/` | **P1 (enabled)** | Live RSS 2.0, recent AI macroeconomics posts. Fed credibility. Trust weight 3. |
+| Fed FEDS Working Papers | `https://www.federalreserve.gov/feeds/feds.xml` | **P1 (enabled)** | Live RSS 2.0, 16 items, LLM validation papers confirmed. Trust weight 3. |
+| Fed FEDS Notes (newyorkfed.org/libstr) | 403 blocked | Excluded | Blocked in research environment. |
+| Bank Underground (BoE AI feed) | `https://www.bankunderground.co.uk/category/artificial-intelligence/feed/` | **P1 (enabled)** | Live RSS 2.0, 5 AI items, most recent May 21 2026 (agentic commerce + payments). Exceptional signal density. Trust weight 3. |
+| Bank of England publications | 403 blocked | Excluded | BoE root RSS blocked; Bank Underground AI feed covers the signal. |
+| ECB Working Papers | Multiple URL variants — all 404 | Excluded | No working RSS endpoint found for ECB research. PDF-only distribution. |
+| FCA publications | Redirects to blocked endpoint | Excluded | FCA news RSS redirects to HTTP but 403 block; researched previously. |
+| BIS Quarterly Review | `https://www.bis.org/doclist/quarterlyreviews.rss` | **P2 (enabled, low-freq)** | Live RSS 1.0 (RDF), quarterly. AI appears when relevant. Trust weight 2. |
+| BIS Working Papers | Already in list as `bis_fsi_publs.rss` | Existing | Scope check: FSI feed confirmed to cover AI papers. No new URL needed. |
+| RBA Bulletin | rba.gov.au/rss variants — all 404 | Excluded | No confirmed RSS feed endpoint. |
+| OCC | Redirects to homepage | Excluded | No confirmed RSS; redirect to occ.treas.gov homepage. |
+| IMF publications | 403 blocked | Excluded | IMF blocks WebFetch; feed exists but inaccessible from research env. |
+| FSB | `https://www.fsb.org/feed/` — live but no AI items | Excluded | Valid RSS but recent items are meeting summaries, not AI/ML content. |
+| Bank Policy Institute | `https://bpi.com/feed/` — live, no AI focus | Excluded | BPI covers AML/BSA compliance; AI is peripheral, not primary. |
+
+#### Practitioner writers / specialist commentary
+
+| Candidate | Feed URL | Verdict | Reason |
+|-----------|----------|---------|--------|
+| Net Interest (Marc Rubinstein) | `https://www.netinterest.co/feed` | **P2 (enabled)** | Live RSS, weekly. Finance + AI intersection. Not AI-primary but recurring sub-theme. Trust weight 2. Previously borderline P2; confirmed worth enabling. |
+| Quantocracy | `http://feeds.feedburner.com/Quantocracy` | **P1 (enabled)** | Live RSS, weekly aggregator of quant ML links. Finance-lens Tier-1: trading ML, RL, signal generation. Trust weight 3. Surprising find — very consistent. |
+| Risk.net technology | `http://www.risk.net/feeds/rss/category/technology` | Excluded | Last items: July 2025, May 2025. Too stale; AI content sparse. |
+| Risk.net market-risk | `http://www.risk.net/feeds/rss/category/market-risk` | Excluded | Last items: Dec 2024, Nov 2023. Stale feed. |
+| Risk.net credit-risk | `http://www.risk.net/feeds/rss/category/credit-risk` | Excluded | Last items: Mar 2026 vendor spotlights, Oct 2025. Sponsored content heavy; AI items are 2019-2021. |
+| Risk.net op-risk | Category feed — empty (no items) | Excluded | Feed structure valid but zero items. |
+| Risk.net derivatives | `http://www.risk.net/feeds/rss/category/derivatives` | Excluded | Items are Counterparty Radar / fund positioning data (not AI/ML). |
+| Risk.net structured-products | Category feed — last items 2021–2024 | Excluded | Stale; not AI-relevant. |
+| GARP Risk Intelligence | No feed found | Excluded | Email signup only; no RSS. Arman TODO from prior round still open. |
+| FinRegLab | `https://finreglab.org/feed/` | Excluded | Live RSS but slow cadence; cash-flow data / small business focus, not AI-primary. |
+| The Financial Revolutionist | Redirect then 404 | Excluded | thefr.com returns 404 on feed endpoint. |
+| Fintech.Global main feed | `https://fintech.global/feed/` — live, mixed | Excluded | Valid RSS but funding announcements dominate; not practitioner AI/ML depth. |
+
+#### Academic / research centres
+
+| Candidate | Feed URL | Verdict | Reason |
+|-----------|----------|---------|--------|
+| Oxford-Man Institute | ECONNREFUSED | Excluded | No reachable feed. OMI has low publication cadence for newsletter use. |
+| Stanford HAI | `https://hai.stanford.edu/news/rss.xml` — 404 | Excluded | Confirmed 404 (same as prior round attempt). |
+| NYU / MIT / Cambridge | Not probed individually | Deferred | Academic centres typically PDF-only; low daily cadence. Out of scope for this round. |
+| AQR Capital research | No feed (see FS-firm section) | Disabled | Research quality high but no feed endpoint. |
+
+#### Industry orgs / events
+
+| Candidate | Feed URL | Verdict | Reason |
+|-----------|----------|---------|--------|
+| NIST AI | `/feed` and `/rss.xml` — both 404 | Excluded | No working feed endpoint found. |
+| AI for Good (ITU) | `https://aiforgood.itu.int/feed/` — live | Excluded | Valid RSS but focus is global development / robotics competitions, not FS. |
+| FSB | See central-bank section | Excluded | No AI items in feed. |
+
+---
+
+### Verdict count
+
+- **P1 (enabled)**: 6 — FRBNY Liberty Street Economics, Bank Underground AI, Fed FEDS Working Papers, Quantocracy, Capital One Tech Blog, Accenture Banking Blog
+- **P2 (enabled, supplemental)**: 2 — Net Interest, BIS Quarterly Review
+- **Disabled (no feed)**: 2 — AQR Capital Research, Jane Street Tech Blog
+- **Excluded**: ~20 (stale feeds, no feeds, off-topic, blocked)
+
+**Finance-AI total in sources.yaml after this round**: 16 entries (6 original + 8 enabled + 2 disabled)
+
+---
+
+### Patterns noticed
+
+1. **Central-bank research is almost entirely PDF-distributed.** Of ~10 regulator/central-bank institutions probed, only 3 have usable RSS feeds (FRBNY Liberty Street, Fed FEDS, Bank Underground). The rest are 403-blocked, 404, or publish via email/PDF only.
+
+2. **Risk.net additional categories are largely dead or stale.** Only "Cutting Edge" (already in list) is consistently active. All other Risk.net category feeds probed have either zero items, last items from 2021–2024, or sponsored content.
+
+3. **Quantocracy is a sleeper find.** A well-established quant ML aggregator with 5+ years of consistent weekly publishing was not in the prior round. It provides exactly the cross-source signal the newsletter needs for quant ML stories, and it passes the finance-lens two-tier test cleanly.
+
+4. **Bank Underground AI category feed is the highest-quality new find.** The BoE staff blog's AI-filtered feed publishes infrequently but every post is load-bearing: "Agentic commerce and payments infrastructure" (May 2026), "Could financial infrastructure govern AI agents?" (Sep 2025), "LLMs for prudential supervision" (May 2024). This is the exact finance-AI signal AI Vector is seeking.
+
+5. **FS-firm engineering blogs mostly don't have RSS.** Stripe, Goldman, Two Sigma (dead), Klarna (SSL error), and Jane Street (no feed) all fail to provide machine-readable feeds. Only Capital One (Medium) and Accenture (WordPress) have working feeds. This is a systemic gap in the category.
+
+---
+
 ## TODO — Gaps Arman Should Weigh In On
 
 1. **Anthropic + Mistral + Cohere + The Batch feeds depend on Olshansk/rss-feeds (community project)**. If the maintainer stops, feeds go stale with no warning. Options: (a) accept the dependency and monitor monthly, (b) AI Vector maintains its own scrapers for these sources (requires Architect approval per PLAN §0.4). **Arman's call on risk appetite.**
@@ -317,3 +434,13 @@ Anthropic's `/news` page has no `<link rel="alternate">` RSS tag in the HTML hea
 8. **arXiv firehose (cs.AI, cs.CL, cs.LG)**: Three feeds enabled with trust weight 1. These will dominate `items_in` counts but should have low `items_kept`. Recommend starting with cs.CL only (highest LLM relevance), disable cs.AI and cs.LG in the first month, then re-enable based on Eval data.
 
 9. **Paid source policy generally**: If Arman wants the newsletter to have genuine depth on finance-AI, there is a reasonable case for a small paid-source budget (Risk.net, possibly FT Alphaville access). Should this be a standing budget item? Out of scope for Source Engineer to decide.
+
+10. **AQR Capital Research (2026-05-24 deepening round)**: No RSS feed found. AQR publishes high-quality quantitative finance research (factor investing, ML in asset management) but distributes via website only. If Arman values this source, options: (a) email subscribe and pipe through a personal RSS bridge (e.g., Kill the Newsletter), (b) request Architect approval for a dedicated scraper. Very high content quality justifies the effort.
+
+11. **Jane Street Tech Blog (2026-05-24 deepening round)**: No RSS feed endpoint found despite multiple attempts. Jane Street's engineering blog covers OCaml, trading systems, and inference infrastructure — Tier-1 for an FS-AI newsletter. Check `janestreet.com` HTML head tags directly in the pipeline environment (not research env) for a feed link. If still no feed, consider requesting Architect approval for a scraper, or checking Olshansk/rss-feeds periodically.
+
+12. **Accenture Banking Blog (2026-05-24 deepening round)**: Enabled at trust weight 2 as a vendor blog. Eval Engineer should watch items_kept ratio from week 1 — if marketing-heavy posts dominate, trust weight should drop and/or disable. The current 80% AI/ML density may reflect a temporary editorial focus on agentic AI; confirm over 4 weeks of data.
+
+13. **ECB Working Papers**: No working RSS endpoint confirmed after multiple attempts. ECB does have a research section at ecb.europa.eu but feed URLs tried all return 404. If Arman values ECB monetary policy + AI research, this would require either a direct URL discovery (check ECB press RSS pages) or a dedicated scraper.
+
+14. **IMF Blogs and Working Papers**: IMF blocks WebFetch (403). IMF publishes AI-relevant research (FinTech Notes, Staff Discussion Notes on AI). The IMF blog at imf.org/en/Blogs also blocked. If Arman values IMF signal, probe from the pipeline Actions runner directly — institutional feeds sometimes allow known IP ranges.
