@@ -78,34 +78,17 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.8"
+SUMMARISE_PROMPT_VERSION = "v0.7"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.8-2026-05-24``. v0.8 = v0.7 prompt content unchanged;
-the version bump captures the new EDITOR PASS step in summarise()
-that follows the per-story loop. The editor pass uses its own
-prompt versioned independently via ``EDITOR_PROMPT_VERSION``. v0.7
-baseline (voice anchors + em-dash ban) preserved."""
+``summarise-v0.7-2026-05-24``. v0.7 adds VOICE ANCHORS (Stratechery,
+Import AI, The Economist) at the top of the voice block so the LLM
+pulls voice DNA from training data, plus an EM-DASH BAN ('--' and '—'
+forbidden anywhere in headline or body; use commas / parens / semicolons /
+full stops instead). v0.6 baseline preserved (McKinsey tagline,
+plain-language LANGUAGE block, audience removal)."""
 
-PULSE_PROMPT_VERSION = "v0.8"
-"""Audit tag: ``pulse-v0.8-2026-05-24``. v0.8 mirrors summarise."""
-
-EDITOR_PROMPT_VERSION = "v0.1"
-"""Pydantic-validated version string for the issue-level editor pass.
-Audit tag: ``editor-v0.1-2026-05-24``. Bump on editor prompt changes.
-
-The editor pass is a SECOND LLM call (after every per-story summarise
-call) that catches CROSS-ISSUE properties the per-story writer can't
-see: headline variety, framing crutches, body-opener variety, close-
-verb variety, length gradient. Preserves trust flags, numbers, and
-decision-tied closes; doesn't change section assignments.
-"""
-
-EDITOR_TEMPERATURE = 0.4
-"""Cooler than summarise temperature: editor is structural cleanup,
-not generation."""
-
-EDITOR_MAX_TOKENS = 4096
-"""Enough to return ~12 edited stories with reasons."""
+PULSE_PROMPT_VERSION = "v0.7"
+"""Audit tag: ``pulse-v0.7-2026-05-24``. v0.7 mirrors summarise."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -482,140 +465,6 @@ carry a finance angle. That is correct.
 
 
 # ---------------------------------------------------------------------------
-# Editor-pass prompt -- runs once per issue after all per-story summaries.
-# Catches cross-issue properties the per-story writer cannot see.
-# ---------------------------------------------------------------------------
-
-_EDITOR_PROMPT_HEADER = """\
-You are the issue editor for AI Vector, a daily newsletter about
-Agentic AI and Generative AI. Voice anchors: Stratechery, Import AI,
-The Economist. Australian English throughout.
-
-Below are all drafted stories for today's issue. Each carries a
-section (pulse / leaders / geeks / notable), a headline, and a body.
-
-YOUR ONLY JOB: check and fix cross-issue properties the per-story
-writers cannot see. You may rewrite headlines or bodies, but you must
-NOT introduce new facts, change numbers, or drop trust flags,
-concrete mechanisms, or decision-tied closes. You are tightening
-variety, not rewriting content.
-
-=======================================================================
-CROSS-ISSUE RULES TO ENFORCE
-=======================================================================
-
-1. HEADLINE VARIETY
-   If more than ~2 headlines use the same structural pattern, rephrase
-   the weaker offenders. Watch for:
-     - "X, not Y" contrast structures (powerful but tic-prone).
-     - Imperative-verb openers ("Stop X", "Run X", "Score X").
-     - Colon-separated headlines ("X: Y" patterns).
-   The single best use of any one structure earns its place; further
-   repetitions dilute. Keep the strongest; rewrite the rest using a
-   different headline tool (a verb opener, a consequence-led claim,
-   plain language).
-
-2. FRAMING CRUTCH
-   Compliance and standard references (SR 11-7, EU AI Act, PRA SS1/23,
-   NIST AI RMF, GDPR, ISO 42001, etc.) appear AT MOST ONCE across the
-   issue. Keep the single sharpest use; reword the others to name the
-   role or concrete consequence instead.
-
-3. BODY OPENER VARIETY
-   If multiple bodies open with a rhetorical question, cap at ONE per
-   issue. Rewrite the rest to open declaratively, keeping every fact.
-
-4. CLOSE-VERB VARIETY
-   Bodies close with a decision-tied instruction. If more than ~2
-   closes use the same frame -- especially "worth [a spike / look /
-   sandbox run] when/before you [decision]", or every close starting
-   with the same imperative verb ("Prototype", "Treat", "Watch") --
-   rephrase the weaker ones. Vary the verb and the structure:
-     - direct imperative ("Demand a specialised baseline before signing");
-     - forward bet ("expect patch backlogs to become the bottleneck");
-     - conditional ("if X, then don't Y yet").
-   Preserve the DECISION; change the FRAMING. Level weaker closes UP
-   toward the strongest in the issue, not down to a common frame.
-
-5. LENGTH GRADIENT
-   "Also Notable" items should be the SHORTEST in the issue. If any
-   Notable runs longer than the average Leaders / Geeks body, trim it.
-   Preserve trust flag, number, and decision-tied close.
-
-6. PUNCTUATION
-   NO em-dashes ("--" or "—") anywhere. If you spot one, replace with
-   a comma, parens, semicolon, or full stop.
-
-7. ACRONYMS IN TITLES
-   No acronyms in headlines that a non-specialist wouldn't recognise.
-   If you spot one (LM, VLM, ASR, OCR, MoE, GRPO, RL, RAG, KYC, AML,
-   AGI, etc.), spell it out, replace with plain English, or drop.
-
-=======================================================================
-HARD CONSTRAINTS (never break)
-=======================================================================
-
-- Preserve every TRUST FLAG word-for-word ("self-reported", "no code
-  yet", "vendor-supplied benchmark", "thin sourcing, one Reddit
-  thread", "Vendor-reported, pre-disclosure", etc.).
-- Preserve every CONCRETE NUMBER and NAMED MECHANISM exactly.
-- Preserve every DECISION-TIED CLOSE (the closing instruction or
-  forward bet).
-- Do NOT change SECTION ASSIGNMENTS. That's the writer's call.
-- Do NOT introduce or modify SOURCE URLs, model names, dates, prices,
-  or any other fact not already present in the draft.
-- Australian English throughout.
-
-=======================================================================
-ABSTAIN CLEANLY
-=======================================================================
-
-If nothing crosses a threshold, the correct output is "no edits".
-Don't manufacture edits. Returning the drafts unchanged is a normal,
-correct result for a clean issue.
-
-=======================================================================
-INPUT
-=======================================================================
-
-A JSON array of stories in display order. Each story:
-
-  {
-    "story_id": "<opaque id, pass through>",
-    "section":  "pulse" | "leaders" | "geeks" | "notable",
-    "headline": "<current headline>",
-    "summary":  "<current body>"
-  }
-
-=======================================================================
-OUTPUT
-=======================================================================
-
-Return ONLY a JSON object. No markdown fences, no prose around it.
-
-  {
-    "edits": [
-      {
-        "story_id": "<id of an edited story>",
-        "headline": "<new headline (only if changed)>",
-        "summary":  "<new body (only if changed)>",
-        "reason":   "<one short sentence: which cross-issue rule fired>"
-      }
-    ],
-    "notes": "<optional one-liner: anything noticed but not fixed>"
-  }
-
-If no edits warranted:
-
-  { "edits": [], "notes": "no cross-issue violations detected" }
-
-=======================================================================
-STORIES
-=======================================================================
-"""
-
-
-# ---------------------------------------------------------------------------
 # Public entry point.
 # ---------------------------------------------------------------------------
 
@@ -711,14 +560,6 @@ def summarise(date: _dt.date | None = None) -> Issue:
             "summarise: every top-N story failed summarisation -- aborting"
         )
 
-    # --- Editor pass (Pass B) -------------------------------------------
-    # One LLM call that sees ALL drafted stories together and fixes
-    # cross-issue properties the per-story writer cannot see (headline
-    # variety, framing crutches, body-opener / close-verb variety,
-    # length gradient, em-dash slips, acronyms in titles). Abstains
-    # gracefully on failure or when no violations cross the threshold.
-    blocks = _issue_editor_pass(blocks)
-
     # --- Section assembly ------------------------------------------------
     # v0.2: pulse -> leaders -> geeks -> notable (no where_heading; builders
     # subsumed into geeks). "For leaders" first per Arman's reading order.
@@ -739,7 +580,6 @@ def summarise(date: _dt.date | None = None) -> Issue:
             "rank": _read_rank_version(),
             "summarise": SUMMARISE_PROMPT_VERSION,
             "pulse": PULSE_PROMPT_VERSION,
-            "editor": EDITOR_PROMPT_VERSION,
         },
     )
 
@@ -1268,159 +1108,6 @@ def _pick_source_urls(items: list[Item], k: int) -> list[str]:
 # ---------------------------------------------------------------------------
 # Section assembly.
 # ---------------------------------------------------------------------------
-
-def _route_blocks(
-    blocks: list[tuple[RankedStory, SummaryBlock]],
-) -> dict[str, str]:
-    """Lightweight routing: returns ``{cluster_id: section_name}``. Same
-    routing logic as :func:`_assemble_sections` but only computes
-    decisions, doesn't build ``IssueSection`` objects. Used by the editor
-    pass to attach section context to each story before its LLM call.
-    """
-    unplaced = {story.cluster_id for story, _ in blocks}
-    routing: dict[str, str] = {}
-
-    pulse_id = _pick_pulse(blocks)
-    if pulse_id is not None:
-        routing[pulse_id] = "pulse"
-        unplaced.discard(pulse_id)
-
-    for cid in _pick_leaders(blocks, unplaced):
-        routing[cid] = "leaders"
-        unplaced.discard(cid)
-
-    for cid in _pick_geeks(blocks, unplaced):
-        routing[cid] = "geeks"
-        unplaced.discard(cid)
-
-    for cid in unplaced:
-        routing[cid] = "notable"
-
-    return routing
-
-
-def _issue_editor_pass(
-    blocks: list[tuple[RankedStory, SummaryBlock]],
-) -> list[tuple[RankedStory, SummaryBlock]]:
-    """Cross-issue editor pass. One LLM call that sees ALL drafted stories
-    together and fixes properties the per-story writer cannot see:
-    headline variety, framing crutches, body-opener variety, close-verb
-    variety, length gradient, em-dash slips, acronyms in titles.
-
-    Returns the same-shape list with possibly-edited ``SummaryBlock``s.
-    Preserves story_id, source_urls, cross_time_ref, and section
-    routing untouched.
-
-    Abstains gracefully (returns ``blocks`` unchanged) when:
-      - the LLM call fails
-      - the response is not parseable JSON
-      - the editor returns ``"edits": []``
-      - an individual edit fails pydantic validation
-    """
-    if not blocks:
-        return blocks
-
-    routing = _route_blocks(blocks)
-
-    editor_input: list[dict[str, Any]] = []
-    for story, block in blocks:
-        editor_input.append({
-            "story_id": block.story_id,
-            "section": routing.get(story.cluster_id, "notable"),
-            "headline": block.headline,
-            "summary": block.summary,
-        })
-
-    stories_json = json.dumps(editor_input, indent=2, ensure_ascii=False)
-    prompt = f"{_EDITOR_PROMPT_HEADER}\n{stories_json}\n"
-
-    try:
-        raw = _llm_call(
-            prompt,
-            temperature=EDITOR_TEMPERATURE,
-            max_tokens=EDITOR_MAX_TOKENS,
-        )
-    except Exception as exc:  # noqa: BLE001
-        _LOG.warning(
-            "editor pass: LLM call failed (%s); returning drafts unchanged",
-            exc,
-        )
-        return blocks
-
-    parsed = _extract_json_object(raw)
-    if parsed is None:
-        _LOG.warning(
-            "editor pass: response was not parseable JSON; returning "
-            "drafts unchanged"
-        )
-        return blocks
-
-    edits_raw = parsed.get("edits") or []
-    notes = (parsed.get("notes") or "").strip()
-
-    if not isinstance(edits_raw, list) or not edits_raw:
-        _LOG.info(
-            "editor pass: no edits applied (%s)",
-            notes or "no violations reported",
-        )
-        return blocks
-
-    edit_by_id: dict[str, dict[str, Any]] = {}
-    for entry in edits_raw:
-        if not isinstance(entry, dict):
-            continue
-        sid = entry.get("story_id")
-        if isinstance(sid, str):
-            edit_by_id[sid] = entry
-
-    new_blocks: list[tuple[RankedStory, SummaryBlock]] = []
-    applied = 0
-    for story, block in blocks:
-        entry = edit_by_id.get(block.story_id)
-        if entry is None:
-            new_blocks.append((story, block))
-            continue
-        new_headline = entry.get("headline", block.headline)
-        new_summary = entry.get("summary", block.summary)
-        if not isinstance(new_headline, str) or not new_headline.strip():
-            new_headline = block.headline
-        if not isinstance(new_summary, str) or not new_summary.strip():
-            new_summary = block.summary
-        new_headline = new_headline.strip()
-        new_summary = new_summary.strip()
-        if new_headline == block.headline and new_summary == block.summary:
-            new_blocks.append((story, block))
-            continue
-        try:
-            edited = block.model_copy(update={
-                "headline": new_headline,
-                "summary": new_summary,
-            })
-            # Re-run pydantic validation by parsing through the model
-            # constructor (model_copy doesn't re-validate by default).
-            edited = SummaryBlock.model_validate(edited.model_dump())
-        except Exception as exc:  # noqa: BLE001
-            _LOG.warning(
-                "editor pass: edit for %s failed validation (%s); "
-                "keeping original",
-                block.story_id, exc,
-            )
-            new_blocks.append((story, block))
-            continue
-        new_blocks.append((story, edited))
-        applied += 1
-        reason = (entry.get("reason") or "").strip()
-        _LOG.info(
-            "editor edit [%s...]: %s",
-            block.story_id[:14], reason or "(no reason given)",
-        )
-
-    _LOG.info(
-        "editor pass: applied %d of %d proposed edits (%s)",
-        applied, len(edits_raw), notes or "no notes",
-    )
-    return new_blocks
-
 
 def _assemble_sections(
     blocks: list[tuple[RankedStory, SummaryBlock]],
