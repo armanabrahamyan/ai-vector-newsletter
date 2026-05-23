@@ -1,0 +1,79 @@
+{
+  "schema_version": 2,
+  "issue_number": 0,
+  "_eval_note": "SYNTHETIC PLUMBING TEST — issue_number=0 is reserved for synthetic fixtures only. Real issues start at 1. This file exists solely to validate that run_evals.py loads and integrity-checks an Issue without crashing.",
+  "date": "2026-05-23",
+  "pulse": {
+    "schema_version": 1,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 1,
+        "story_id": "c_aabbccdd0004",
+        "headline": "Banks are letting agents triage AML alerts — here's the model risk playbook they're using",
+        "summary": "Three European banks have deployed agentic LLM workflows for AML transaction-monitoring triage, with a human-in-the-loop gate before any suspicious-activity decision. The architecture is notable for how the teams structured model risk documentation under SR 11-7: each LLM decision is logged with a rationale trace and compared against a rule-based baseline for drift detection. Code patterns in the post.",
+        "direction_note": "This is the pattern that model risk teams have been waiting to see work in production. If it holds up under regulator scrutiny, expect it to become the template for agentic-first compliance workflows at major banks in 2027.",
+        "finance_angle": "Directly addresses the SR 11-7 / PRA SS1/23 model documentation question for LLM-powered workflows. The dual-baseline (LLM + rules) drift-detection design is the part model validators will ask about first.",
+        "source_urls": ["https://llmquant.substack.com/p/agentic-compliance-review-2026"],
+        "cross_time_ref": null
+      }
+    ]
+  },
+  "sections": [
+    {
+      "schema_version": 1,
+      "name": "where_heading",
+      "stories": [
+        {
+          "schema_version": 1,
+          "story_id": "c_aabbccdd0001",
+          "headline": "Claude 4 is here: 1M context, agentic tool-use, same API surface",
+          "summary": "Anthropic shipped Claude 4 with a 1M-token context window and enhanced tool-use primitives designed for multi-step agentic workflows. Available via API immediately. Two things worth noting: the tool-use changes are backward-compatible with existing Claude tool schemas, and the 1M-token window is real — not a marketing ceiling with performance cliffs below it, per early user reports.",
+          "direction_note": "Foundation model capability ceilings just moved again. Teams who deferred long-context experiments because the earlier windows were unreliable should revisit that decision this week.",
+          "finance_angle": null,
+          "source_urls": [
+            "https://www.anthropic.com/news/claude-4-launch",
+            "https://openai.com/news/competitor-watch-claude-4"
+          ],
+          "cross_time_ref": null
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "name": "builders",
+      "stories": [
+        {
+          "schema_version": 1,
+          "story_id": "c_aabbccdd0005",
+          "headline": "3x inference speedup on long sequences, no quality loss, code released",
+          "summary": "Adaptive Parallel Decoding (APD) achieves 3x throughput on sequences over 2k tokens using a speculative decoding variant that adapts the number of parallel draft tokens based on sequence entropy. The code and checkpoints are on HuggingFace. Replicate's MCP auto-discovery update this week also ships without config overhead for multi-tool agents.",
+          "direction_note": "",
+          "finance_angle": null,
+          "source_urls": [
+            "https://huggingface.co/papers/2026.05001",
+            "https://replicate.com/changelog/mcp-auto-discovery-v2"
+          ],
+          "cross_time_ref": null
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "name": "leaders",
+      "stories": []
+    },
+    {
+      "schema_version": 1,
+      "name": "notable",
+      "stories": []
+    }
+  ],
+  "generated_at": "2026-05-23T12:00:00Z",
+  "prompt_versions": {
+    "rank": "v0.0-synthetic",
+    "summarise": "v0.0-synthetic",
+    "pulse": "v0.0-synthetic"
+  },
+  "notes": "SYNTHETIC plumbing-test issue. Not ratified, not real. Generated to confirm run_evals.py integrity check passes on a well-formed Issue object."
+}

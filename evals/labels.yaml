@@ -1,0 +1,177 @@
+# evals/labels.yaml — AI Vector Ground-Truth Labels
+#
+# Owner: Eval Engineer (structure + harness integration).
+# Co-owner: Editor (voice_label, tier_label, arman_cut_reasons).
+# Input: Arman's ratification patterns (per-issue, daily).
+#
+# This file is the labelled ground truth the harness runs against.
+# Three sections:
+#   1. per_cluster    — dedup + relevance ground truth per cluster
+#   2. per_issue      — post-publication quality signals per issue
+#   3. per_source     — rolling tier-mix and signal-density observations
+#
+# SYNTHETIC ENTRIES BELOW are clearly marked [SYNTHETIC].
+# They exist only to validate the harness's plumbing and must be
+# replaced with real labels once Phase 2 fixtures land.
+#
+# Label cadence (once Phase 2 is running):
+#   - Editor labels every ratified issue's clusters within 24 hours.
+#   - Arman's cut reasons are logged by Editor after each ratification.
+#   - Per-source rolling entries are updated weekly by Eval Engineer.
+#   - Per-issue entries are filed after publication.
+#
+# Schema version: 1
+
+schema_version: 1
+
+# ---------------------------------------------------------------------------
+# 1. PER-CLUSTER LABELS
+#
+# Fields:
+#   cluster_id:         string  — matches Cluster.cluster_id (c_<12+ hex>)
+#   dataset:            string  — fixture dataset name this cluster came from
+#   ground_truth_group_id: string | null
+#                               — Which clusters should have been merged into
+#                                 one group? Assign the same group_id to all
+#                                 clusters that represent the same canonical
+#                                 story. If null, this cluster is a singleton
+#                                 (no near-duplicate expected).
+#                                 Naming: "g_<date>_<slug>" e.g. "g_20260601_claude4"
+#   human_relevance:    int (1–5)
+#                               — 1: noise / tier-3, should be cut
+#                               — 2: low relevance, also-notable at best
+#                               — 3: relevant, earns a place in the issue
+#                               — 4: strong, For builders or For leaders section
+#                               — 5: pulse-worthy; the day's most important item
+#   voice_label:        in-voice | off-voice | borderline
+#                               — Does the cluster's content fit AI Vector's
+#                                 voice? (Assessed against the ratified archive
+#                                 baseline, not just the story topic.)
+#   tier_label:         tier-1 | tier-2-load-bearing | tier-3
+#                               — Editorial-focus tier per .claude/skills/editorial-focus.md
+#   notes:              str     — Free-form rationale for the labels above.
+#                                 Required when voice_label is off-voice or
+#                                 tier_label is tier-3, to explain the call.
+# ---------------------------------------------------------------------------
+
+per_cluster:
+
+  # [SYNTHETIC] — plumbing-test cluster, NOT real evaluation data.
+  # This cluster intentionally maps to a near-duplicate pair in _synthetic/.
+  - cluster_id: "c_aabbccdd0001"
+    dataset: "_synthetic"
+    ground_truth_group_id: "g_synthetic_claude4"
+    human_relevance: 4
+    voice_label: "in-voice"
+    tier_label: "tier-1"
+    notes: >
+      [SYNTHETIC] Plumbing test. Represents two near-duplicate items about a
+      model release from different sources. Used to validate dedup precision
+      logic when it lands. human_relevance=4 is illustrative only.
+
+  # [SYNTHETIC] — second cluster in the same near-duplicate group.
+  - cluster_id: "c_aabbccdd0002"
+    dataset: "_synthetic"
+    ground_truth_group_id: "g_synthetic_claude4"
+    human_relevance: 4
+    voice_label: "in-voice"
+    tier_label: "tier-1"
+    notes: >
+      [SYNTHETIC] Plumbing test. Should have been merged with c_aabbccdd0001
+      by the clusterer. ground_truth_group_id match is the assertion the
+      dedup eval checks against.
+
+  # [SYNTHETIC] — a Tier-3 cluster that should be cut.
+  - cluster_id: "c_aabbccdd0003"
+    dataset: "_synthetic"
+    ground_truth_group_id: null
+    human_relevance: 1
+    voice_label: "off-voice"
+    tier_label: "tier-3"
+    notes: >
+      [SYNTHETIC] Plumbing test. A vendor-partnership announcement with no
+      capability shift — textbook Tier-3. Included to test that the harness
+      can detect when Tier-3 items appear in the ranked output above threshold.
+
+  # [SYNTHETIC] — a finance-lens Tier-1 cluster.
+  - cluster_id: "c_aabbccdd0004"
+    dataset: "_synthetic"
+    ground_truth_group_id: null
+    human_relevance: 5
+    voice_label: "in-voice"
+    tier_label: "tier-1"
+    notes: >
+      [SYNTHETIC] Plumbing test. An agents-in-finance story (agentic compliance
+      review workflow). Pulse-worthy. Used to validate that finance-lens
+      stories surface at the top of ranked output when they should.
+
+# ---------------------------------------------------------------------------
+# 2. PER-ISSUE LABELS
+#
+# Fields:
+#   issue_number:       int     — matches Issue.issue_number
+#   dataset:            string  — fixture dataset or "real"
+#   voice_overall:      int (1–5)
+#                               — 1: clearly off-voice throughout
+#                               — 3: mostly on-voice with lapses
+#                               — 5: on-voice, would not change a word
+#   direction_landed:   bool    — Did the issue as a whole "point"?
+#                                 (Does each section convey a direction,
+#                                 not just a list? Per PLAN §1 editorial DNA.)
+#   pulse_was_right:    bool    — Was The Pulse the right story for the day?
+#   arman_cut_reasons:  list[str]
+#                               — When Arman cuts a story before ratification,
+#                                 Editor logs the reason here. Vocabulary:
+#                                 "off-voice", "tier-3", "duplicate",
+#                                 "finance-angle-forced", "direction-missing",
+#                                 "summary-too-long", "summary-too-vague",
+#                                 "low-relevance", "arman-judgment"
+#   notes:              str     — Optional context on this issue's decisions.
+# ---------------------------------------------------------------------------
+
+per_issue:
+
+  # [SYNTHETIC] — plumbing-test issue, NOT real evaluation data.
+  - issue_number: 0
+    dataset: "_synthetic"
+    voice_overall: 4
+    direction_landed: true
+    pulse_was_right: true
+    arman_cut_reasons: ["tier-3"]
+    notes: >
+      [SYNTHETIC] Plumbing test. issue_number=0 is used only for the
+      synthetic fixture; real issues start at 1 per the Issue Number
+      Registry in DESIGN.md. arman_cut_reasons entry simulates a Tier-3
+      cut — validates that the harness ingests this field without crashing.
+
+# ---------------------------------------------------------------------------
+# 3. PER-SOURCE LABELS (rolling, Eval-maintained)
+#
+# Fields:
+#   source_name:        string  — matches Item.source (from sources.yaml)
+#   observation_window: string  — ISO date range "YYYY-MM-DD/YYYY-MM-DD"
+#   tier_mix_observed:  dict[tier_label -> count]
+#                               — Observed tier distribution from Eval's
+#                                 manual spot-checks or harness sampling.
+#                                 Keys: "tier-1", "tier-2-load-bearing", "tier-3"
+#   signal_density:     float   — Fraction of enabled items from this source
+#                                 that scored human_relevance >= 3 in any
+#                                 labelled period. Range [0.0, 1.0].
+#                                 Null until enough labels accumulate.
+#   notes:              str     — Observations, trust-weight recommendations.
+# ---------------------------------------------------------------------------
+
+per_source:
+
+  # [SYNTHETIC] — plumbing-test source entry, NOT real evaluation data.
+  - source_name: "HuggingFaceDaily"
+    observation_window: "2026-05-23/2026-05-23"
+    tier_mix_observed:
+      "tier-1": 3
+      "tier-2-load-bearing": 1
+      "tier-3": 0
+    signal_density: null
+    notes: >
+      [SYNTHETIC] Plumbing test entry. Values are illustrative only.
+      Real per-source labels accumulate from the harness's rolling
+      14-day tier-mix tracking once Phase 2 is running.
