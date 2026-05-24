@@ -1,4 +1,4 @@
-# AI Vector
+# AI Vector Newsletter
 
 *Today's AI, with a heading.*
 
@@ -7,6 +7,8 @@ AI Vector is a daily AI newsletter with a financial-services lens. Curated, not 
 Heavy on Agentic AI and Generative AI — what shifts how readers work today, what to anticipate tomorrow, what's practical to use right now. Traditional ML appears only when load-bearing. Every story points somewhere: each carries a direction note and, where it earns one, an explicit financial-services angle.
 
 > **No Token Wasted.** The LLM does the judgment work — what matters, what to say. Code does everything else — fetching, parsing, grouping, rendering. We never spend LLM tokens or accept LLM non-determinism on work that plain code can do reliably.
+
+> **Built to fork.** The architecture is domain-agnostic. Swap `config/sources.yaml`, retune `config/rubric.yaml`, edit the voice in the summarise prompt, and you have *your* daily newsletter — for AI in healthcare, fintech security, climate tech, internal eng updates, anything. The pipeline (fetch → cluster → rank → summarise → render), the staging/released archive model, the templates, and the agent team are all reusable as-is.
 
 **Author:** Arman Abrahamyan  
 **Live:** https://armanabrahamyan.github.io/ai-vector-newsletter/
