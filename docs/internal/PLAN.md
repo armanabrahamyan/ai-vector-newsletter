@@ -78,7 +78,7 @@ Deliverables, all as files in the repo:
 ## 3. Phase 1 — EVAL HARNESS (before tuning anything)
 
 - `evals/fixtures/` — ~30–50 hand-saved real items across a few days,
-  including deliberate near-duplicates (same launch from 5 sources).
+  including deliberate near-duplicates (same story from 5 sources).
 - `evals/labels.yaml` — for the fixtures: which items are the same story
   (dedup ground truth) + a human relevance score 1–5 per story.
 - `evals/run_evals.py` — reports two numbers:

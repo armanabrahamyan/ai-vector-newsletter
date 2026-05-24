@@ -1,5 +1,24 @@
 # AI Vector — Claude Code instructions
 
+## Principle: No Token Wasted
+
+The LLM does the judgment work — what matters, what to say. Code does
+everything else — fetching, parsing, grouping, rendering, scheduling. We
+never spend LLM tokens or accept LLM non-determinism on work that plain
+code can do reliably.
+
+Apply this as a test before adding LLM calls anywhere new: *could code
+do this reliably?* If yes, code does it. If you're about to write a
+prompt for something a regex, parser, or `if` statement can handle, stop
+and write the code instead. If you're about to add deterministic
+post-processing because the LLM keeps getting one detail wrong, ask
+whether the LLM should be making that call at all.
+
+This principle governs all engineering decisions in this repo and is
+called out as a named principle in README.md and `docs/HANDBOOK.md`.
+
+---
+
 ## Team
 
 Seven specialist agents live in `.claude/agents/`. For decisions that cross

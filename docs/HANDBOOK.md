@@ -18,12 +18,17 @@ readable HTML issue. Every story carries a *direction note* — where this
 is heading. Arman reviews every draft and ships when he's happy. Nothing
 auto-publishes, by design.
 
-The split underneath is deliberate. **The LLM does the judgment work** —
-what matters, what to say, what to frame as the Pulse, where the
-financial-services angle earns a mention. **Code does everything else** —
-fetching, parsing, grouping, rendering, scheduling. We never spend LLM
-tokens or accept LLM non-determinism on work that plain code can do
-reliably.
+> ### Principle: No Token Wasted
+>
+> The LLM does the **judgment work** — what matters, what to say, what to
+> frame as the Pulse, where the financial-services angle earns a mention.
+> Code does **everything else** — fetching, parsing, grouping, rendering,
+> scheduling. We never spend LLM tokens or accept LLM non-determinism on
+> work that plain code can do reliably.
+>
+> This is the test for any new piece of work: *could code do this
+> reliably?* If yes, code does it. The LLM is reserved for the calls
+> only judgment can make.
 
 ### Why these five stages
 
@@ -32,7 +37,7 @@ Each stage solves a problem the others can't.
 | Stage | What would break without it |
 |---|---|
 | `fetch`     | No signal at all |
-| `cluster`   | Ten feeds produce ten copies of the same launch |
+| `cluster`   | Ten feeds produce ten copies of the same story |
 | `rank`      | The issue is a chronological list, not an edit |
 | `summarise` | The reader gets a link dump, not a newsletter |
 | `render`    | The output is JSON, not something a human reads |
