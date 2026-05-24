@@ -93,6 +93,7 @@ _scratch/          Throwaway working notes — gitignored
 
 ## Conventions
 
+- **Commit messages use Conventional Commits:** `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `style:`, `test:`, `ci:`. No free-form prefixes, no trailing summaries.
 - No `Co-Authored-By: Claude` lines in commit messages.
 - `.env` is never committed. Use `.env.example` as the template.
 - Staging is never promoted automatically — Arman reviews and runs `--release`.
