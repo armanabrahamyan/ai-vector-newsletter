@@ -430,6 +430,61 @@ in `data/released/`. Use `aiv unrelease --date <d>` first, then re-release.
 
 ---
 
+## 17. Running evals before push
+
+The pre-push convention is one command:
+
+```bash
+aiv eval && git push
+```
+
+If the eval passes, the push proceeds. If it fails, you see why before
+anything hits the remote. This is the main loop for any change touching
+`src/cluster.py`, `src/rank.py`, `src/summarise.py`, `config/rubric.yaml`,
+or any LLM Engineer prompt.
+
+### Flags
+
+```bash
+aiv eval                   # full suite: reference metrics + LLM judge
+aiv eval --no-judge        # fast + free: skip the LLM judge; use for tight iteration
+aiv eval --judge-only      # voice checks only: skip reference-based metrics
+aiv eval --date 2026-05-24 # run against a specific archive date
+aiv eval --fixture _synthetic  # plumbing test: confirms the harness doesn't crash
+aiv eval --vs evals/reports/<prev>.json  # diff today's results against a prior report
+```
+
+`--no-judge` costs nothing — it runs dedup, ranking Spearman, and module
+integrity checks without any LLM calls. Use it every time you change
+deterministic code. Run the full suite (with judge) before pushing prompt
+or rubric changes.
+
+### What the eval gate covers
+
+| Change type | Minimum eval to run |
+|---|---|
+| `config/rubric.yaml` or rank/summarise prompts | `aiv eval` (full, with judge) |
+| `src/cluster.py` or clustering threshold | `aiv eval --no-judge` |
+| `src/fetch.py` or `config/sources.yaml` | `aiv eval --no-judge` |
+| Template or CSS only | skip — render has no eval gate |
+| Schema change in `src/models.py` | `aiv eval --no-judge` (integrity check) |
+
+### Output
+
+The eval writes a timestamped JSON report to
+`evals/reports/YYYY-MM-DD/HHMMSS.json`. That directory is gitignored
+(generated outputs), but `evals/reports/weekly/` is tracked — it holds
+the Eval Engineer's curated weekly behavioural-integrity notes.
+
+The CLI is being built as Phase E of the eval plan (task #68). Until
+it lands, run the harness directly:
+
+```bash
+python -m evals.run_evals --against fixtures --report pretty
+```
+
+---
+
 ## 16. When to bring in the team
 
 For anything beyond daily operation, see `docs/internal/TEAM.md` for the
