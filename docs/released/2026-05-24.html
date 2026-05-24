@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Vector &middot; Issue No. 2 &middot; 24 May 2026</title>
+  <meta name="description" content="Today's AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="stylesheet" href="../fonts/fonts.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fbfaf6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a17;
+    }
+
+    /* ── shell ─────────────────────────────────────────────── */
+    .av-shell {
+      font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      color: #1a1a17;
+      background: #ffffff;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 88px 80px;
+      letter-spacing: -0.003em;
+      font-feature-settings: "kern", "liga", "calt";
+      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
+    }
+
+    /* ── masthead ──────────────────────────────────────────── */
+    .av-masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0c0c0c;
+      margin-bottom: 36px;
+    }
+    .av-brand {
+      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      line-height: 0.85;
+      color: #0c0c0c;
+      text-transform: uppercase;
+    }
+    .av-brand-slash { color: #e6452f; margin: 0 2px; }
+    .av-mast-meta {
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a5a55;
+      text-align: right;
+      line-height: 1.7;
+    }
+
+    /* ── tagline ───────────────────────────────────────────── */
+    .av-tagline {
+      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: #1a1a17;
+      margin: 0 0 32px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .av-tagline-mark { color: #e6452f; margin-right: 12px; }
+
+    /* ── pulse ─────────────────────────────────────────────── */
+    .av-pulse {
+      margin: 0 0 56px;
+      padding: 32px 32px 28px;
+      background: #fdf4f1;
+      border-left: 3px solid #e6452f;
+    }
+    .av-pulse-label {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e6452f;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .av-pulse-bar { width: 32px; height: 2px; background: #e6452f; }
+    .av-pulse-title {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      line-height: 1.15;
+      margin: 0 0 22px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 26ch;
+    }
+    .av-pulse-body {
+      font-size: 18px;
+      line-height: 1.65;
+      color: #2a2a26;
+      margin: 0 0 18px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-pulse-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-pulse-link {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 600;
+    }
+
+    /* ── section ───────────────────────────────────────────── */
+    .av-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #0c0c0c;
+      margin: 0 0 28px;
+    }
+    .av-section-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .av-section-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0;
+      color: #0c0c0c;
+    }
+    .av-section-count {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #6a6a64;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── stories ───────────────────────────────────────────── */
+    .av-story { margin: 0 0 36px; }
+    .av-story-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 28em;
+    }
+    .av-story-body {
+      font-size: 17px;
+      line-height: 1.7;
+      color: #2a2a26;
+      margin: 0 0 14px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-story-foot {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-story-src {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 500;
+    }
+
+    /* ── pills ─────────────────────────────────────────────── */
+    .av-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: "Inter Tight", sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+    .av-pill-act     { color: #8a5448; background: #f5ecea; }
+    .av-pill-try     { color: #4f7a5d; background: #ecf2ed; }
+    .av-pill-read    { color: #5a7090; background: #eef1f6; }
+    .av-pill-watch   { color: #6a6a64; background: #f0efec; }
+    .av-pill-discuss { color: #8a7548; background: #f4eee2; }
+
+    /* ── section intro paragraph ───────────────────────────── */
+    .av-section-intro {
+      font-size: 17px;
+      line-height: 1.6;
+      color: #3a3a36;
+      margin: 0 0 36px;
+      max-width: 40em;
+      text-wrap: pretty;
+    }
+    .av-section-intro-strong {
+      color: #0c0c0c;
+      font-weight: 700;
+    }
+
+    /* ── On the Radar (terse) ──────────────────────────────── */
+    .av-section.on_the_radar .av-story { margin: 0 0 22px; }
+    .av-section.on_the_radar .av-story-body { font-size: 16px; }
+
+    /* ── footer ────────────────────────────────────────────── */
+    .av-footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #0c0c0c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6a6a64;
+    }
+    .av-about {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #8a8a85;
+      line-height: 1.6;
+      max-width: 50em;
+    }
+    .av-archive-link {
+      color: #6a6a64;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    /* ── responsive ────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .av-shell { padding: 36px 24px 48px; }
+      .av-brand { font-size: 42px; }
+      .av-mast-meta { font-size: 10px; letter-spacing: 0.1em; }
+      .av-tagline { font-size: 19px; }
+      .av-pulse { padding: 24px 22px 22px; }
+      .av-pulse-title { font-size: 26px; }
+      .av-pulse-body { font-size: 17px; }
+      .av-section-title { font-size: 22px; }
+      .av-story-title { font-size: 20px; }
+      .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .av-mast-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <article class="av-shell">
+    <header class="av-masthead">
+      <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
+      <div class="av-mast-meta">
+        <div>Sunday, 24 May 2026</div>
+        <div>Issue No. 2 &middot; ~4 min read</div>
+      </div>
+    </header>
+
+    <p class="av-tagline">
+      <span class="av-tagline-mark">&mdash;</span>
+      Today&rsquo;s AI, with a heading.
+    </p>
+
+    
+    
+    <section class="av-pulse">
+      <div class="av-pulse-label">
+        <span class="av-pulse-bar"></span>
+        <span>The Pulse &middot; Story of the day</span>
+      </div>
+      <h2 class="av-pulse-title">For image-heavy PDFs, dedicated text extraction beats letting the model read the page</h2>
+      <p class="av-pulse-body">A community benchmark across 30 long, image-heavy documents found that dedicated text-extraction pipelines hit roughly 59% accuracy while native vision reading landed fifth of six approaches at 52%, and cost more per query. Single-author Reddit post, so treat it as a directional signal. If you&#39;re choosing a document pipeline architecture this week, run your own sample before defaulting to the attach-and-ask pattern.</p>
+      <div class="av-pulse-meta">
+        
+          <a class="av-pulse-link" href="https://reddit.com/r/MachineLearning/comments/1tm0cqg/visioncapable_llms_vs_ocr_for_longdocument">reddit.com&nbsp;&rarr;</a>
+        
+      </div>
+    </section>
+
+    
+    
+      
+        <div class="av-section big_picture">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">The Big Picture</h2>
+            </div>
+            <span class="av-section-count">1 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Regulators set the pace.</span> When official bodies declare that AI has already surpassed skilled human attackers, the compliance clock moves faster than most firms&#39; roadmaps. Governance and supply-chain visibility are no longer aspirational.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">UK regulators warn that frontier AI now outpaces skilled human attackers</h3>
+              <p class="av-story-body">The Financial Conduct Authority, Bank of England, and Treasury issued a joint statement saying frontier AI already exceeds what a skilled practitioner can do, faster and cheaper. Regulated firms must act now: map your third-party software supply chain and test your vulnerability-patching speed before your next operational resilience review.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://www.fca.org.uk/news/statements/fca-boe-treasury-joint-statement-frontier-ai-models-cyber-resilience">fca.org.uk&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section hands_on">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Hands-On</h2>
+            </div>
+            <span class="av-section-count">5 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Local stack, moving fast.</span> Today&#39;s releases cluster around the same bet: more capability, less infrastructure, on hardware you already own. Most are single-source; the pattern is real, the numbers aren&#39;t verified yet.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Cohere&#39;s largest open model now runs locally on Apple Silicon</h3>
+              <p class="av-story-body">A community-built port lets Cohere&#39;s 218-billion-parameter mixture-of-experts model run on Apple Silicon via the MLX framework, with a pull request open for review. The model is Apache 2.0 licensed. Sourced from a single Reddit thread, so validate the implementation yourself before relying on it for anything production-bound.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tlqxeh/command_a_218b_moe_running_on_apple_silicon_mlx">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Local AI inference on NVIDIA hardware just got faster and sharper in one update</h3>
+              <p class="av-story-body">llama.cpp build b9297 ships two upgrades together: NVFP4 quantisation (smaller, faster models on NVIDIA GPUs) and multi-token prediction (generating several tokens at once instead of one). Sourced from a single Reddit thread with no independent benchmarks yet. If you run open-weight models locally on NVIDIA hardware, pull this build and test against your current baseline before trusting the speed claims.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tlohld/nvfp4_mtp_voil%C3%A0_on_llamacpp">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Ollama rebuilds its local inference engine for faster Apple Silicon performance</h3>
+              <p class="av-story-body">Ollama v0.30.0 drops its GGML abstraction layer to talk directly to llama.cpp, and adds Apple Silicon acceleration via MLX. Both changes affect memory use and speed for anyone running models locally. Still pre-release with known gaps; test against your current setup before upgrading a production workflow.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://github.com/ollama/ollama/releases/tag/v0.30.0-rc23">github.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Run a local AI agent without any extra software using a hidden server flag</h3>
+              <p class="av-story-body">An experimental flag in the llama.cpp server quietly ships eight built-in tools: read, write, edit, shell execution, file search, and more. That turns a single binary plus a model file into a working agent harness, no Python orchestration layer needed. Sourced from one Reddit post, so treat it as a starting point for your own testing before building on it.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tluma3/llamacpp_server_have_builtin_native_tools_exec">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Run a dozen-agent stock analysis framework entirely on your own machine</h3>
+              <p class="av-story-body">TradingAgents simulates a full analyst team debating a stock and issuing a trade recommendation. A community-built web interface now replaces the original command-line experience, and it runs against local models via Ollama. Single Reddit source, no independent benchmarks. If you&#39;re prototyping agentic finance workflows without sending data to a cloud provider, clone it this week.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tm2ct0/i_built_a_local_gui_for_the_tradingagents">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section on_the_radar">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">On the Radar</h2>
+            </div>
+            <span class="av-section-count">5 items</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">For awareness only.</span> Today&#39;s cluster is heavy on thin sourcing and unverified benchmarks. The underlying theme is worth noting: small, unglamorous technical choices are quietly shaping how reliably AI systems perform.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Writing specs before code is now the discipline that keeps AI-generated output from drifting</h3>
+              <p class="av-story-body">Multiple independent sources converged on the same finding: AI tools boost individual output while quietly degrading system stability. One study tracked over 10,000 developers and found 98% more merged pull requests alongside 9% more bugs. The case is solid, though it rests on aggregated research, not a single controlled trial. If you&#39;re setting coding-agent guidelines this quarter, mandate a spec phase before generation.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://alphasignalai.substack.com/p/spec-driven-development-is-the-new">alphasignalai.substack.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A Chrome extension runs a small language model locally with no GPU required</h3>
+              <p class="av-story-body">A hobbyist-built Chrome extension surfaces Gemini Nano, the model Chrome quietly downloaded earlier this month, without any developer tooling. It runs fully on-device at roughly 20 tokens per second on 16GB of RAM. Single-source Reddit post, speed figure is unverified. Try it before assuming you need a GPU for lightweight local inference.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tlnqzj/run_chromes_tiny_gemma4_aka_gemini_nano_directly">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">First-person training data beats story-style examples for teaching an AI a character&#39;s voice</h3>
+              <p class="av-story-body">A fine-tuning experiment pitting three data formats against each other found first-person statements generalised best; synthetic document-style data produced the strangest failure: the model knew a character trait but expressed it only 37% of the time. Thin sourcing (single Reddit post), but code and repo are public. If you&#39;re building role-specific fine-tunes, test this format split before committing to a data-generation pipeline.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/MachineLearning/comments/1tlnvf0/i_finetuned_an_llm_to_be_c3po_to_test_which">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A sorting fix makes mixture-of-experts models noticeably faster on Intel hardware</h3>
+              <p class="av-story-body">llama.cpp build b9291 replaces a quadratic-time data-shuffling step in its Intel GPU path with a linear counting-sort, cutting overhead during the prompt-processing phase for mixture-of-experts models like Mixtral and DeepSeek. No published benchmark yet, so measure your own prefill times before treating it as a guaranteed win. Pull the update if you run these models on Intel GPUs.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b9291">github.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A small llama.cpp update quietly speeds up attention on Qualcomm hardware</h3>
+              <p class="av-story-body">The latest llama.cpp build applies a compiler-level repetition optimisation to the softmax step inside flash attention, specifically for Qualcomm&#39;s Hexagon processor. No benchmark figures are published yet, so the real-world gain is unknown. If you run local inference on Qualcomm silicon, pull the build and measure against your own workload before drawing conclusions.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b9301">github.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+
+    <footer class="av-footer">
+      <span>AI Vector &middot; Arman Abrahamyan</span>
+      <span>2026-05-24 &middot; Compiled 2026-05-24 15:51 AEST &middot; <a class="av-archive-link" href="../index.html">all issues</a></span>
+    </footer>
+    <p class="av-about">
+      AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+    </p>
+  </article>
+</body>
+</html>
