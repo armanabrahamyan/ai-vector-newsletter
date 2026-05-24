@@ -35,7 +35,7 @@ from src.fetch import (
     _url_hash,
     fetch_day,
 )
-from src.models import Item, MissedReason, SourceHealth
+from src.models import Item
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -164,10 +164,10 @@ class TestUrlHash:
         assert len(result) == 16
         assert all(c in "0123456789abcdef" for c in result)
 
-    def test_matches_sha256_prefix(self) -> None:
-        url = "https://example.com/"
-        expected = hashlib.sha256(url.encode()).hexdigest()[:16]
-        assert _url_hash(url) == expected
+    # `test_matches_sha256_prefix` cut: re-implemented the function inline
+    # and asserted equality -- a tautology (CONVENTIONS sec. 3). The 16-hex
+    # length contract above is what callers actually rely on; the choice of
+    # algorithm is an implementation detail.
 
 
 # ---------------------------------------------------------------------------
@@ -590,21 +590,10 @@ class TestItemsInVsItemsKept:
 # ---------------------------------------------------------------------------
 
 class TestFiredTrueWithZeroKept:
-    def test_fired_true_items_kept_zero_is_valid_state(self) -> None:
-        """A source can fire successfully but have all items filtered out."""
-        # items_kept=0 is set by fetch_day after dedup/filters, but we can
-        # verify that SourceHealth accepts this shape (models test already
-        # does this at the model level; here we test via fetch internals).
-        sh = SourceHealth(
-            source="quiet_blog",
-            fired=True,
-            items_in=5,
-            items_kept=0,
-            latency_ms=200,
-        )
-        assert sh.fired is True
-        assert sh.items_kept == 0
-        assert sh.missed_reason is None
+    # `test_fired_true_items_kept_zero_is_valid_state` cut: duplicated
+    # test_models.py::TestSourceHealth::test_fired_true_with_zero_items_is_ok.
+    # The fetch-level test below exercises the actual seam (fetch_day producing
+    # the state), which is what we care about.
 
     def test_fetch_day_produces_fired_true_zero_kept_when_all_old(
         self, tmp_data_root: Path

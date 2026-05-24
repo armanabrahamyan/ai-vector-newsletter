@@ -186,7 +186,32 @@ tests share setup naturally.
 
 ---
 
-## 10. What to mock, what not to mock
+## 10. Round-trip tests only earn their keep when invariants ride along
+
+A pydantic `model_dump_json()` → `model_validate_json()` round-trip on a
+model with **only field-level constraints** (no `model_validator`, no
+`field_validator`) tests pydantic, not your code. Cut it.
+
+**A round-trip earns its keep when:**
+
+- The model has a `model_validator(mode="after")` that runs on parse,
+  AND the test exercises a payload that would fail the validator if it
+  silently broke.
+- The model has a `field_validator` doing non-trivial transformation
+  (not just pattern matching), AND the test pins the parsed shape.
+
+**Worked example.** `Cluster.size_must_match_item_ids` is a real
+invariant we own. A round-trip on a valid Cluster *technically* exercises
+it, but the targeted test that constructs an invalid Cluster and asserts
+the right ValidationError message is the load-bearing one. Drop the
+round-trip; keep the targeted invariant test.
+
+For `Item` (no custom validators, only `Field(...)` constraints): no
+round-trip test. Pydantic owns that surface.
+
+---
+
+## 11. What to mock, what not to mock
 
 | Don't mock | Do mock |
 |---|---|

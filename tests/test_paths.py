@@ -54,13 +54,8 @@ class TestPerFileHelpers:
         self, helper, filename, tmp_data_root: Path
     ) -> None:
         assert helper(D, canonical=True) == paths.released_dir(D) / filename
-
-    def test_filename_is_stable(
-        self, helper, filename, tmp_data_root: Path
-    ) -> None:
-        """The filename within the date dir is the contract — never reshape."""
-        assert helper(D, canonical=False).name == filename
-        assert helper(D, canonical=True).name == filename
+    # `test_filename_is_stable` cut: redundant with the two equality checks
+    # above (both already pin the filename via `paths.staging_dir(D) / filename`).
 
 
 class TestCentroidsPath:
@@ -145,15 +140,13 @@ class TestAllReleasedDates:
 
 class TestRoots:
     def test_published_urls_is_at_data_root(self) -> None:
-        """published_urls.txt lives at data/ root, NEVER under any date dir."""
+        """published_urls.txt lives at data/ root, NEVER under any date dir.
+        Surface for the cross-time-dedup contract -- if it ever moves under
+        a date dir, every dedup lookup breaks silently."""
         assert paths.PUBLISHED_URLS_PATH.parent == paths.DATA_ROOT
         assert paths.PUBLISHED_URLS_PATH.name == "published_urls.txt"
-
-    def test_docs_index_is_at_docs_root(self) -> None:
-        assert paths.DOCS_INDEX == paths.DOCS_ROOT / "index.html"
-
-    def test_staging_html_dir_under_docs(self) -> None:
-        assert paths.STAGING_HTML_DIR == paths.DOCS_ROOT / "staging"
-
-    def test_released_html_dir_under_docs(self) -> None:
-        assert paths.RELEASED_HTML_DIR == paths.DOCS_ROOT / "released"
+    # `test_docs_index_is_at_docs_root`, `test_staging_html_dir_under_docs`,
+    # `test_released_html_dir_under_docs` cut: each asserted a module
+    # constant equalled its definition (tautology). The behavioural
+    # contract (staging vs released distinction, files end up under docs/)
+    # is already covered by TestRenderPaths and the test_render.py suite.

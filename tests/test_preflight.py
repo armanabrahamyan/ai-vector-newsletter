@@ -19,17 +19,8 @@ from src.preflight import (
 )
 
 
-# ---------------------------------------------------------------------------
-# CheckResult — small dataclass; round-trip + defaults.
-# ---------------------------------------------------------------------------
-
-class TestCheckResult:
-    def test_passes_with_defaults(self) -> None:
-        r = CheckResult(name="x", passed=True)
-        assert r.passed is True
-        assert r.detail == ""
-        assert r.hint == ""
-        assert r.elapsed_ms is None
+# `TestCheckResult::test_passes_with_defaults` cut: just asserted default
+# values on a dataclass -- a definition test (CONVENTIONS sec. 2).
 
 
 # ---------------------------------------------------------------------------
@@ -144,20 +135,22 @@ class TestRunChecksForStages:
         assert len(results) == 1
 
     def test_cluster_requires_embedding_check(self) -> None:
-        """The cluster stage must require the embedding-model check."""
+        """The cluster stage must require the embedding-model check --
+        this is the wiring that prevents a fresh checkout running the
+        cluster stage and OOMing on a missed model download."""
         assert preflight.check_embedding_model in preflight.STAGE_CHECKS["cluster"]
 
     def test_rank_requires_llm_check(self) -> None:
+        """Same wiring rationale -- catches the "I forgot to set
+        LLM_PROVIDER" failure before the LLM call burns 30s of latency."""
         assert preflight.check_llm_endpoint in preflight.STAGE_CHECKS["rank"]
 
     def test_summarise_requires_llm_check(self) -> None:
         assert preflight.check_llm_endpoint in preflight.STAGE_CHECKS["summarise"]
-
-    def test_fetch_requires_no_checks(self) -> None:
-        assert preflight.STAGE_CHECKS["fetch"] == []
-
-    def test_render_requires_no_checks(self) -> None:
-        assert preflight.STAGE_CHECKS["render"] == []
+    # `test_fetch_requires_no_checks` and `test_render_requires_no_checks`
+    # cut: `test_returns_empty_for_stages_with_no_checks` above already
+    # pins that ["fetch", "render"] yields zero checks via the public
+    # entry point, which is the actual contract.
 
 
 # ---------------------------------------------------------------------------
