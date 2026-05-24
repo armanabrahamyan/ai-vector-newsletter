@@ -171,6 +171,13 @@
       justify-content: center;
       min-width: 100%;
     }
+    /* Make sequence-diagram autonumbers readable */
+    .diagram .mermaid svg .sequenceNumber,
+    .diagram .mermaid svg text.sequenceNumber {
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      fill: #ffffff !important;
+    }
     .diagram-caption {
       font-family: "JetBrains Mono", monospace;
       font-size: 11px;
@@ -712,7 +719,10 @@ classDiagram
       sequence: {
         actorMargin: 50,
         boxMargin: 10,
-        messageMargin: 35
+        messageMargin: 35,
+        messageFontSize: 14,
+        noteFontSize: 13,
+        actorFontSize: 14
       }
     });
   </script>
