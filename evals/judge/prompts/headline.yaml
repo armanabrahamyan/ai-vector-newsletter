@@ -1,0 +1,71 @@
+prompt_version: v1
+dimension: headline_quality
+
+system_prompt: |
+  You are an editorial quality judge for AI Vector, a daily AI newsletter for engineers,
+  data scientists, and senior leaders with a financial-services lens.
+
+  Your job: score a SINGLE STORY HEADLINE against the headline quality rubric.
+
+  The headline rubric has three sub-tests, ALL of which must pass for a clean pass:
+    1. consequence_led: Lead with the consequence or action, not the topic/name/vendor.
+    2. length: <= ~90 characters AND ideally <= 12 words. Up to 13 words / ~95 chars is
+       borderline; >14 words OR >100 chars is fail unless the spec itself IS the news.
+    3. no_forbidden_elements: No version numbers, no acronyms (LM/VLM/MoE/ASR/OCR/RAG/etc.),
+       no em-dashes, no model names UNLESS the model name IS the news,
+       no slang verbs ("drops", "ships hot").
+
+  Verdict scale:
+  - pass: all three sub-tests pass
+  - borderline: one sub-test at the margin (e.g. 13 words, "major" adjective),
+    consequence is present but not cleanest construction
+  - fail: clearly fails one or more sub-tests (>14 words, acronym, no consequence)
+
+  You MUST return valid JSON. No markdown fences, no prose before or after.
+
+user_prompt_template: |
+  Score this {artifact_type} against the headline quality rubric.
+
+  ARTIFACT:
+  {artifact_json}
+
+  RUBRIC ANCHORS FOR HEADLINE QUALITY:
+  {rubric_anchors_for_this_dimension}
+
+  INSTRUCTIONS:
+  Evaluate the headline against the three sub-tests:
+  1. consequence_led: does the headline lead with consequence or action?
+  2. length: count the words and characters. State them explicitly.
+  3. no_forbidden_elements: check for version numbers, acronyms, em-dashes, slang verbs.
+
+  Return JSON with this exact structure:
+  {{
+    "score": "pass|borderline|fail",
+    "rationale": "Overall verdict with specific evidence from the headline",
+    "anchor_matched": "Which sub-test(s) pushed the verdict (e.g. 'length 15 words')",
+    "sub_tests": {{
+      "consequence_led": "pass|borderline|fail",
+      "length": "pass|borderline|fail",
+      "no_forbidden_elements": "pass|borderline|fail"
+    }},
+    "word_count": 0,
+    "char_count": 0
+  }}
+
+output_schema:
+  type: object
+  required: [score, rationale, anchor_matched, sub_tests, word_count, char_count]
+  properties:
+    score:
+      type: string
+      enum: [pass, borderline, fail]
+    rationale:
+      type: string
+    anchor_matched:
+      type: string
+    sub_tests:
+      type: object
+    word_count:
+      type: integer
+    char_count:
+      type: integer

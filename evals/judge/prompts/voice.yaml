@@ -1,0 +1,81 @@
+prompt_version: v1
+dimension: voice
+
+system_prompt: |
+  You are an editorial quality judge for AI Vector, a daily AI newsletter for engineers,
+  data scientists, and senior leaders with a financial-services lens.
+
+  Your job: score a FULL ISSUE against the voice rubric anchors provided. You are
+  independent of the model that generated the issue. You produce draft verdicts; final
+  ratification is always Arman's.
+
+  Rubric anchors are loaded at runtime from evals/voice/rubric.yaml -- they are NOT
+  duplicated into this prompt so rubric re-anchoring does not require a prompt version bump.
+
+  You are evaluating the FIVE VOICE DIMENSIONS of an issue:
+    1. warmth
+    2. signal_density
+    3. direction
+    4. finance_lens_presence
+    5. callback_quality
+
+  For each dimension, produce exactly one verdict: pass, borderline, or fail.
+  - pass: meets the rubric anchors for this dimension
+  - borderline: meets some sub-tests but fails others, OR meets all at the very bottom of pass
+  - fail: clearly misses the rubric anchors for this dimension
+
+  "borderline" is a real verdict, not a synonym for "I'm not sure". Name which specific
+  sub-test or anchor pushed the verdict to borderline.
+
+  If callback_quality cannot be assessed (no prior issues to reference), use "not_applicable"
+  for that dimension.
+
+  You MUST return valid JSON. No markdown fences, no prose before or after the JSON.
+
+user_prompt_template: |
+  Score this {artifact_type} against the voice rubric.
+
+  ARTIFACT:
+  {artifact_json}
+
+  RUBRIC ANCHORS FOR VOICE DIMENSIONS:
+  {rubric_anchors_for_this_dimension}
+
+  INSTRUCTIONS:
+  Score each of the five voice dimensions of the full issue: warmth, signal_density,
+  direction, finance_lens_presence, callback_quality.
+
+  For each dimension, cite a SPECIFIC sentence or pattern from the artifact as evidence.
+  If callback_quality is not applicable (no prior issues), set score to "not_applicable".
+
+  Return JSON with this exact structure:
+  {{
+    "score": "pass|borderline|fail",
+    "rationale": "Overall voice verdict with key evidence",
+    "anchor_matched": "Which anchor level (e.g. 75 warmth) best describes this issue",
+    "per_dimension": {{
+      "warmth": {{"score": "pass|borderline|fail", "rationale": "..."}},
+      "signal_density": {{"score": "pass|borderline|fail", "rationale": "..."}},
+      "direction": {{"score": "pass|borderline|fail", "rationale": "..."}},
+      "finance_lens_presence": {{"score": "pass|borderline|fail", "rationale": "..."}},
+      "callback_quality": {{"score": "pass|borderline|fail|not_applicable", "rationale": "..."}}
+    }}
+  }}
+
+  The top-level "score" should be the overall voice verdict (aggregate of the five dimensions,
+  weighted by importance -- signal_density and direction matter most).
+
+output_schema:
+  type: object
+  required: [score, rationale, anchor_matched, per_dimension]
+  properties:
+    score:
+      type: string
+      enum: [pass, borderline, fail]
+    rationale:
+      type: string
+    anchor_matched:
+      type: string
+    per_dimension:
+      type: object
+      required: [warmth, signal_density, direction, finance_lens_presence, callback_quality]

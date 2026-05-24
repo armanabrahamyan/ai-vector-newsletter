@@ -738,33 +738,447 @@ def eval_ranking_quality(
 
 
 # ---------------------------------------------------------------------------
-# Eval 3 — Voice adherence
-# STATUS: STUB
+# Eval 3 — Voice adherence (Phase C: LLM-as-judge)
+# STATUS: READY
 #
-# Will compute: a voice adherence score for the most recent issue,
-# judged by a separate LLM call against evals/voice/rubric.yaml.
-# Tracked per-issue over time; flags trend deviations.
+# Implements LLM-as-judge quality scoring for:
+#   - Full issue: 5 voice dimensions (warmth, signal_density, direction,
+#     finance_lens_presence, callback_quality)
+#   - Per-story: headline quality, summary quality, signal appropriateness
+#   - Per-section: intro quality
 #
-# Implementation path (Phase 2, after Editor co-develops voice rubric):
-#   - Load issue.json from the dataset.
-#   - Load evals/voice/rubric.yaml (Editor co-authors).
-#   - Call a separate LLM (independent from summarise.py's model where
-#     possible) to score the issue on: warmth, signal density, direction
-#     presence, finance-lens presence-without-overreach, callback quality.
-#   - Compare score to rolling 14-day mean from evals/reports/*.json.
-#   - PASS: score >= baseline - 0.5 std (flag but don't block if 1–2 std
-#     below; block if > 2 std below for three consecutive issues).
+# Judge model: Anthropic Opus (or Haiku) — different from generation model.
+# Caching: SHA-256(artifact_json + prompt_version) — unchanged artifacts
+# cost zero on re-runs.
+#
+# PASS threshold: aggregate fail-rate across all dimensions < 25%
+# (VOICE_FAIL_THRESHOLD). This is the v0 threshold; tune after 5 issues.
+#
+# Agreement with Editor labels: loaded from evals/voice/YYYY-MM-DD.labels.yaml
+# when available. Reported as a sanity metric (disagreement is information,
+# not a test failure).
 # ---------------------------------------------------------------------------
+
+# Aggregate fail-rate threshold. Tunable — v0 default per the plan.
+VOICE_FAIL_THRESHOLD = 0.25
+
+
+def _score_to_numeric(score: str) -> float:
+    """Convert pass/borderline/fail/error to a 0-1 value for aggregation."""
+    return {"pass": 1.0, "borderline": 0.5, "fail": 0.0, "error": 0.0,
+            "not_applicable": 1.0}.get(score, 0.0)
+
+
+def _load_voice_labels(date_str: str) -> Optional[dict]:
+    """Load the Editor's draft labels for a given issue date, if they exist."""
+    labels_path = EVALS_DIR / "voice" / f"{date_str}.labels.yaml"
+    if not labels_path.exists():
+        return None
+    try:
+        import yaml
+    except ImportError:
+        return None
+    with labels_path.open("r", encoding="utf-8") as fh:
+        return yaml.safe_load(fh) or {}
+
+
+def _compute_agreement_rate(judge_results: list[dict], editor_labels: Optional[dict]) -> Optional[float]:
+    """
+    Compute judge-vs-editor agreement rate for stories and voice dimensions.
+
+    Agreement = exact match on pass/borderline/fail verdict.
+    Returns None when no editor labels are available.
+    """
+    if editor_labels is None:
+        return None
+
+    agreed = 0
+    compared = 0
+
+    # Compare voice dimensions
+    editor_dims = editor_labels.get("voice_dimensions", {})
+    for dim_name, dim_data in editor_dims.items():
+        if not isinstance(dim_data, dict):
+            continue
+        editor_label = dim_data.get("label")
+        if editor_label in ("not_applicable", None):
+            continue
+        # Find matching judge result in judge_results
+        for jr in judge_results:
+            if jr.get("dimension") == "voice" and "per_dimension" in jr:
+                pd = jr["per_dimension"]
+                judge_label = pd.get(dim_name, {}).get("score") if isinstance(pd, dict) else None
+                if judge_label and judge_label != "error":
+                    compared += 1
+                    if judge_label == editor_label:
+                        agreed += 1
+                break
+
+    # Compare story-level verdicts
+    editor_stories = editor_labels.get("stories", [])
+    for story_label in editor_stories:
+        story_id = story_label.get("story_id")
+        if not story_id:
+            continue
+        # headline
+        hl_overall = None
+        hl = story_label.get("headline_quality", {})
+        if isinstance(hl, dict):
+            # Derive overall: if any sub-test is fail -> fail; if any borderline -> borderline; else pass
+            sub_vals = [v for k, v in hl.items() if k in ("consequence_led", "length", "no_forbidden_elements")]
+            if "fail" in sub_vals:
+                hl_overall = "fail"
+            elif "borderline" in sub_vals:
+                hl_overall = "borderline"
+            elif all(v == "pass" for v in sub_vals if v):
+                hl_overall = "pass"
+
+        for jr in judge_results:
+            if jr.get("story_id") == story_id and jr.get("dimension") == "headline_quality":
+                judge_hl = jr.get("score")
+                if hl_overall and judge_hl and judge_hl != "error":
+                    compared += 1
+                    if judge_hl == hl_overall:
+                        agreed += 1
+                break
+
+        # summary overall
+        sq = story_label.get("summary_quality", {})
+        if isinstance(sq, dict):
+            sq_sub = [v for k, v in sq.items() if k in ("word_count", "concrete_specific", "trust_flag", "decision_tied_close")]
+            if "fail" in sq_sub:
+                sq_overall = "fail"
+            elif "borderline" in sq_sub:
+                sq_overall = "borderline"
+            elif all(v == "pass" for v in sq_sub if v):
+                sq_overall = "pass"
+            else:
+                sq_overall = None
+
+            for jr in judge_results:
+                if jr.get("story_id") == story_id and jr.get("dimension") == "summary_quality":
+                    judge_sq = jr.get("score")
+                    if sq_overall and judge_sq and judge_sq != "error":
+                        compared += 1
+                        if judge_sq == sq_overall:
+                            agreed += 1
+                    break
+
+        # signal
+        sig = story_label.get("signal_appropriateness", {})
+        if isinstance(sig, dict):
+            editor_sig = sig.get("label")
+            for jr in judge_results:
+                if jr.get("story_id") == story_id and jr.get("dimension") == "signal_appropriateness":
+                    judge_sig = jr.get("score")
+                    if editor_sig and judge_sig and judge_sig != "error":
+                        compared += 1
+                        if judge_sig == editor_sig:
+                            agreed += 1
+                    break
+
+    return (agreed / compared) if compared > 0 else None
+
 
 def eval_voice_adherence(
     dataset_dir: Optional[Path],
     labels: dict,
 ) -> EvalResult:
     """
-    STUB. Voice adherence scored by a separate LLM call against the voice
-    rubric. Returns not_yet_implemented until rubric and corpus exist.
+    Phase C. LLM-as-judge quality scoring for voice dimensions, headline,
+    summary, signal pill, and section intros.
+
+    Requires:
+      - evals/voice/rubric.yaml (Phase A output)
+      - dataset_dir/issue.json
+      - anthropic SDK + ANTHROPIC_API_KEY (or LLM_API_KEY)
+      - EVAL_JUDGE_MODEL env var (default: claude-opus-4-7)
+
+    PASS threshold: aggregate fail-rate < VOICE_FAIL_THRESHOLD (25% v0).
+
+    Agreement with Editor labels in evals/voice/YYYY-MM-DD.labels.yaml is
+    computed as a sanity metric but does NOT affect pass/fail.
     """
-    return _stub_result("voice_adherence")
+    if dataset_dir is None or not dataset_dir.exists():
+        return EvalResult(
+            name="voice_adherence",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Dataset directory not found: {dataset_dir}"},
+        )
+
+    # Determine date string from directory name (e.g. "2026-05-23")
+    dataset_name = dataset_dir.name
+
+    # Load issue.json
+    issue_path = dataset_dir / "issue.json"
+    issue = _load_json(issue_path)
+    if issue is None:
+        return EvalResult(
+            name="voice_adherence",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"issue.json not found in {dataset_dir}"},
+        )
+
+    # Import judge module (lazy -- only when judge eval runs)
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from evals.judge.judge import judge_artifact, _load_rubric, cache_entry_count
+    except ImportError as exc:
+        return EvalResult(
+            name="voice_adherence",
+            passed=False,
+            metric=None,
+            status="fail",
+            error=f"Failed to import evals.judge.judge: {exc}",
+        )
+
+    # Load rubric once -- passed to all judge calls
+    try:
+        rubric = _load_rubric()
+    except (FileNotFoundError, RuntimeError) as exc:
+        return EvalResult(
+            name="voice_adherence",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Rubric unavailable: {exc}"},
+        )
+
+    # Load editor labels for agreement rate (optional)
+    editor_labels = _load_voice_labels(dataset_name)
+
+    # -------------------------------------------------------------------------
+    # Judge calls: collect all results with metadata tags for aggregation.
+    # -------------------------------------------------------------------------
+    all_judge_results: list[dict] = []
+    cache_before = cache_entry_count()
+
+    # (1) Full issue -- voice dimensions
+    # Build a compact representation for the voice judge. The full issue JSON
+    # can exceed 1500 tokens; we distill to: section intros + all stories with
+    # their headline, summary (truncated to 80 chars for context), and signal.
+    # This is sufficient for the 5 voice dimensions (warmth, signal_density,
+    # direction, finance_lens_presence, callback_quality).
+    def _compact_story(s: dict) -> dict:
+        return {
+            "story_id": s.get("story_id"),
+            "headline": s.get("headline", ""),
+            "summary": s.get("summary", "")[:300],  # enough for voice assessment
+            "signal": s.get("signal"),
+        }
+
+    compact_sections = []
+    pulse_obj = issue.get("pulse", {})
+    compact_pulse = {
+        "name": "pulse",
+        "stories": [_compact_story(s) for s in pulse_obj.get("stories", [])],
+    }
+    for sec in issue.get("sections", []):
+        compact_sections.append({
+            "name": sec.get("name"),
+            "intro_lead": sec.get("intro_lead"),
+            "intro_body": sec.get("intro_body"),
+            "stories": [_compact_story(s) for s in sec.get("stories", [])],
+        })
+    issue_artifact = {
+        "date": issue.get("date"),
+        "issue_number": issue.get("issue_number"),
+        "pulse": compact_pulse,
+        "sections": compact_sections,
+    }
+    voice_result = judge_artifact(
+        "voice",
+        "full issue (voice dimensions)",
+        issue_artifact,
+        rubric=rubric,
+    )
+    voice_result["artifact_type"] = "full_issue"
+    all_judge_results.append(voice_result)
+
+    # (2) Per-story: headline, summary, signal
+    # Collect stories from pulse + all sections
+    all_stories: list[tuple[str, dict]] = []  # (section_name, story_dict)
+    pulse = issue.get("pulse", {})
+    for story in pulse.get("stories", []):
+        all_stories.append(("pulse", story))
+    for section in issue.get("sections", []):
+        section_name = section.get("name", "unknown")
+        for story in section.get("stories", []):
+            all_stories.append((section_name, story))
+
+    for section_name, story in all_stories:
+        story_id = story.get("story_id", "unknown")
+        # Headline artifact: headline text + story_id for reference
+        hl_artifact = {
+            "story_id": story_id,
+            "section": section_name,
+            "headline": story.get("headline", ""),
+        }
+        hl_result = judge_artifact(
+            "headline_quality",
+            "story headline",
+            hl_artifact,
+            rubric=rubric,
+        )
+        hl_result["story_id"] = story_id
+        hl_result["section"] = section_name
+        hl_result["artifact_type"] = "headline"
+        all_judge_results.append(hl_result)
+
+        # Summary artifact: headline + summary + source_urls (for trust-flag assessment)
+        summary_artifact = {
+            "story_id": story_id,
+            "section": section_name,
+            "headline": story.get("headline", ""),
+            "summary": story.get("summary", ""),
+            "source_urls": story.get("source_urls", []),
+        }
+        summary_result = judge_artifact(
+            "summary_quality",
+            "story summary",
+            summary_artifact,
+            rubric=rubric,
+        )
+        summary_result["story_id"] = story_id
+        summary_result["section"] = section_name
+        summary_result["artifact_type"] = "summary"
+        all_judge_results.append(summary_result)
+
+        # Signal artifact: headline + summary + signal pill
+        signal_artifact = {
+            "story_id": story_id,
+            "section": section_name,
+            "headline": story.get("headline", ""),
+            "summary": story.get("summary", ""),
+            "signal": story.get("signal", ""),
+        }
+        signal_result = judge_artifact(
+            "signal_appropriateness",
+            "story headline+summary+signal",
+            signal_artifact,
+            rubric=rubric,
+        )
+        signal_result["story_id"] = story_id
+        signal_result["section"] = section_name
+        signal_result["artifact_type"] = "signal"
+        all_judge_results.append(signal_result)
+
+    # (3) Per-section intros (non-pulse sections only)
+    for section in issue.get("sections", []):
+        section_name = section.get("name", "unknown")
+        intro_artifact = {
+            "section": section_name,
+            "intro_lead": section.get("intro_lead"),
+            "intro_body": section.get("intro_body"),
+        }
+        intro_result = judge_artifact(
+            "section_intro_quality",
+            "section intro",
+            intro_artifact,
+            rubric=rubric,
+        )
+        intro_result["section"] = section_name
+        intro_result["artifact_type"] = "intro"
+        all_judge_results.append(intro_result)
+
+    cache_after = cache_entry_count()
+    new_cache_entries = cache_after - cache_before
+    llm_call_count = new_cache_entries  # Each new cache entry == one LLM call
+
+    # -------------------------------------------------------------------------
+    # Aggregate: per-dimension pass/borderline/fail rates
+    # -------------------------------------------------------------------------
+    dim_groups: dict[str, list[str]] = {}
+    for jr in all_judge_results:
+        dim = jr.get("dimension", "unknown")
+        score = jr.get("score", "error")
+        if dim not in dim_groups:
+            dim_groups[dim] = []
+        dim_groups[dim].append(score)
+
+    # Compute rates per dimension
+    per_dimension_rates: dict[str, dict] = {}
+    for dim, scores in dim_groups.items():
+        n = len(scores)
+        pass_n = scores.count("pass")
+        borderline_n = scores.count("borderline")
+        fail_n = scores.count("fail")
+        error_n = scores.count("error")
+        not_applicable_n = scores.count("not_applicable")
+        effective_n = n - error_n - not_applicable_n
+        per_dimension_rates[dim] = {
+            "n": n,
+            "pass": pass_n,
+            "borderline": borderline_n,
+            "fail": fail_n,
+            "error": error_n,
+            "not_applicable": not_applicable_n,
+            "pass_rate": round(pass_n / effective_n, 4) if effective_n > 0 else None,
+            "fail_rate": round(fail_n / effective_n, 4) if effective_n > 0 else None,
+        }
+
+    # Overall aggregate fail rate (across all dimensions, excluding errors + N/A)
+    all_scores = [jr.get("score", "error") for jr in all_judge_results]
+    effective_total = sum(1 for s in all_scores if s not in ("error", "not_applicable"))
+    total_fails = all_scores.count("fail")
+    aggregate_fail_rate = (total_fails / effective_total) if effective_total > 0 else 0.0
+
+    # Overall pass rate (primary metric -- complement of fail rate)
+    total_passes = all_scores.count("pass")
+    aggregate_pass_rate = (total_passes / effective_total) if effective_total > 0 else 0.0
+
+    # -------------------------------------------------------------------------
+    # Agreement rate with Editor labels
+    # -------------------------------------------------------------------------
+    agreement_rate = _compute_agreement_rate(all_judge_results, editor_labels)
+
+    # -------------------------------------------------------------------------
+    # PASS/FAIL determination
+    # -------------------------------------------------------------------------
+    failures: list[str] = []
+    if aggregate_fail_rate >= VOICE_FAIL_THRESHOLD:
+        failures.append(
+            f"Aggregate fail-rate {aggregate_fail_rate:.1%} >= threshold "
+            f"{VOICE_FAIL_THRESHOLD:.1%} ({total_fails}/{effective_total} verdicts failed)"
+        )
+
+    # Per-dimension thresholds (same threshold applied per dimension)
+    for dim, rates in per_dimension_rates.items():
+        fr = rates.get("fail_rate")
+        if fr is not None and fr >= VOICE_FAIL_THRESHOLD:
+            failures.append(
+                f"Dimension '{dim}' fail-rate {fr:.1%} >= threshold {VOICE_FAIL_THRESHOLD:.1%}"
+            )
+
+    passed = len(failures) == 0
+
+    return EvalResult(
+        name="voice_adherence",
+        passed=passed,
+        metric=round(aggregate_pass_rate, 4),
+        status="pass" if passed else "fail",
+        details={
+            "dataset": dataset_name,
+            "judge_model": os.getenv("EVAL_JUDGE_MODEL", "claude-opus-4-7"),
+            "total_artifacts_judged": len(all_judge_results),
+            "llm_calls_this_run": llm_call_count,
+            "cache_entries_before": cache_before,
+            "cache_entries_after": cache_after,
+            "aggregate_pass_rate": round(aggregate_pass_rate, 4),
+            "aggregate_fail_rate": round(aggregate_fail_rate, 4),
+            "fail_threshold": VOICE_FAIL_THRESHOLD,
+            "per_dimension": per_dimension_rates,
+            "agreement_with_editor_labels": (
+                round(agreement_rate, 4) if agreement_rate is not None else None
+            ),
+            "editor_labels_available": editor_labels is not None,
+            "failures": failures,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
