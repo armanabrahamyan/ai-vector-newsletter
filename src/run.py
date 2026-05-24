@@ -17,6 +17,7 @@ the individual stages are owned by their respective engineers.
 from __future__ import annotations
 
 import datetime as _dt
+import json
 import logging
 import os
 import sys
@@ -744,6 +745,168 @@ def check(
     _setup_logging(verbose)
     _load_env()
     sys.exit(_run_check())
+
+
+# ---------------------------------------------------------------------------
+# `aiv eval` -- Phase E ergonomic surface for the eval harness.
+# Mirrors run/release/unrelease/check. The heavy lifting lives in
+# evals/run_evals.py::run_evals; this command is wiring, flag validation,
+# and the diff-mode shim.
+# ---------------------------------------------------------------------------
+
+_EVAL_DATE_HELP = (
+    "Archive date YYYY-MM-DD to eval (default: today + the last 14 released "
+    "days)."
+)
+_EVAL_FIXTURE_HELP = (
+    "Run against a fixture dataset under evals/fixtures/ instead of the real "
+    "released archive (e.g. '_synthetic' for plumbing tests)."
+)
+_EVAL_VS_HELP = (
+    "Diff today's report against a previous report JSON "
+    "(e.g. evals/reports/2026-05-23/091530.json)."
+)
+
+
+def _run_eval(
+    run_date: _dt.date | None,
+    judge_only: bool,
+    no_judge: bool,
+    fixture: str | None,
+    vs_path: str | None,
+    strict: bool,
+) -> int:
+    """Drive the eval harness for the typer `aiv eval` command.
+
+    All flag validation happens here so the subcommand body stays a thin
+    shell. The heavy dispatch is owned by ``evals.run_evals.run_evals``;
+    this function only translates flags into kwargs, picks fixture vs. real
+    mode, prints results, persists the dated report, and runs diff mode
+    when ``--vs`` is set.
+    """
+    if judge_only and no_judge:
+        _LOG.error(
+            "--judge-only and --no-judge are mutually exclusive; pick one."
+        )
+        return 1
+
+    # Lazy import so `aiv --help` stays cheap and the eval harness only
+    # loads when actually invoked. ``evals/`` is not an installed package
+    # (pyproject scopes packages to ``src*``), so we bootstrap the repo
+    # root onto sys.path -- the harness itself does the same trick for
+    # ``from src.models import ...``.
+    _repo_root = Path(__file__).resolve().parent.parent
+    if str(_repo_root) not in sys.path:
+        sys.path.insert(0, str(_repo_root))
+    from evals import run_evals as _eh
+
+    # Fixture mode wins when `--fixture` is set; otherwise we run against
+    # released archive data. `--date` selects the day; absent date means
+    # "today" (the plan also mentions trailing 14d but the dispatch reads
+    # the day-scoped artifacts, so today's date is what we pass through
+    # to run_evals -- the trailing window is a Phase D drift concern that
+    # consumes the released archive directly).
+    if fixture is not None:
+        against = "fixtures"
+        dataset: str | None = fixture
+    else:
+        against = "real"
+        dataset = (run_date or _dt.date.today()).isoformat()
+
+    print("=" * 60)
+    print(" AI Vector -- EVAL")
+    if fixture is not None:
+        print(f" fixture : {fixture}")
+    else:
+        print(f" date    : {dataset}")
+    flag_bits: list[str] = []
+    if judge_only:
+        flag_bits.append("judge-only")
+    if no_judge:
+        flag_bits.append("no-judge")
+    if strict:
+        flag_bits.append("strict")
+    if flag_bits:
+        print(f" flags   : {', '.join(flag_bits)}")
+    print("=" * 60)
+    print()
+
+    try:
+        report, exit_code = _eh.run_evals(
+            dataset=dataset,
+            against=against,
+            judge_only=judge_only,
+            no_judge=no_judge,
+            strict=strict,
+        )
+    except ValueError as exc:
+        _LOG.error("eval: %s", exc)
+        return 1
+
+    _eh._print_pretty(report)
+
+    # Dated layout: evals/reports/YYYY-MM-DD/HHMMSS.json -- one per run.
+    report_path = _eh._save_report_dated(report)
+    print(f"Report written: {report_path}")
+
+    # Diff mode: load the previous report and pretty-print the delta.
+    if vs_path is not None:
+        prev_path = Path(vs_path)
+        try:
+            prev_report = _eh._load_report_for_diff(prev_path)
+        except FileNotFoundError as exc:
+            _LOG.error("eval --vs: %s", exc)
+            return 1
+        except json.JSONDecodeError as exc:
+            _LOG.error("eval --vs: failed to parse %s -- %s", prev_path, exc)
+            return 1
+        _eh._print_diff(prev_report, report)
+
+    return exit_code
+
+
+@app.command(name="eval")
+def eval_cmd(
+    date: Optional[str] = typer.Option(
+        None, metavar="YYYY-MM-DD", help=_EVAL_DATE_HELP,
+    ),
+    judge_only: bool = typer.Option(
+        False, "--judge-only",
+        help="Run only the LLM-judge eval dimensions.",
+    ),
+    no_judge: bool = typer.Option(
+        False, "--no-judge",
+        help="Skip the LLM-judge eval dimensions (fast + free).",
+    ),
+    fixture: Optional[str] = typer.Option(
+        None, "--fixture", metavar="NAME", help=_EVAL_FIXTURE_HELP,
+    ),
+    vs: Optional[str] = typer.Option(
+        None, "--vs", metavar="PATH", help=_EVAL_VS_HELP,
+    ),
+    strict: bool = typer.Option(
+        False, "--strict",
+        help="Exit 1 on any warning (stub / skipped), not just hard fails.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Run the eval harness against the released archive or a fixture.
+
+    Examples:
+      aiv eval                              # full suite, today's released day
+      aiv eval --date 2026-05-23            # specific date
+      aiv eval --judge-only                 # LLM judge only
+      aiv eval --no-judge                   # fast + free, skip judge
+      aiv eval --fixture _synthetic         # plumbing test
+      aiv eval --vs evals/reports/2026-05-23/091530.json
+      aiv eval --strict                     # warnings also exit 1
+    """
+    _setup_logging(verbose)
+    _load_env()
+    # `--date` is optional and only meaningful in real (non-fixture) mode.
+    # `_resolve_date` raises on malformed input.
+    run_date = _resolve_date(date) if date is not None else None
+    sys.exit(_run_eval(run_date, judge_only, no_judge, fixture, vs, strict))
 
 
 # ---------------------------------------------------------------------------

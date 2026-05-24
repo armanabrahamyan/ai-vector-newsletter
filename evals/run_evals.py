@@ -565,13 +565,244 @@ def _print_pretty(report: dict) -> None:
 
 
 def _save_report(report: dict, dataset: Optional[str]) -> None:
-    """Persist the report to evals/reports/."""
+    """Persist the report to ``evals/reports/`` (legacy flat layout).
+
+    Used by the argparse ``python -m evals.run_evals`` entrypoint to keep its
+    existing behaviour unchanged.
+    """
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     today = date.today().isoformat()
     slug = f"-{dataset}" if dataset else ""
     report_path = REPORTS_DIR / f"{today}{slug}.json"
     with report_path.open("w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2)
+
+
+def _save_report_dated(report: dict) -> Path:
+    """Persist the report to ``evals/reports/YYYY-MM-DD/HHMMSS.json``.
+
+    Used by ``aiv eval`` so every run lands in its own file -- diffing two
+    runs from the same day (``--vs``) needs them to be distinguishable. The
+    date subdir keeps the corpus tidy as run counts grow.
+    """
+    now = datetime.now(timezone.utc)
+    day_dir = REPORTS_DIR / now.strftime("%Y-%m-%d")
+    day_dir.mkdir(parents=True, exist_ok=True)
+    report_path = day_dir / f"{now.strftime('%H%M%S')}.json"
+    with report_path.open("w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=2)
+    return report_path
+
+
+# ---------------------------------------------------------------------------
+# Diff mode (``aiv eval --vs <prev>``)
+# ---------------------------------------------------------------------------
+
+def _print_diff(prev_report: dict, curr_report: dict) -> None:
+    """Pretty-print added / removed / changed metrics between two reports.
+
+    Delta-sign on score changes is shown explicitly: ``+`` for improvements,
+    ``-`` for regressions. The interpretation of "improvement" is naive
+    (higher metric = better); per-metric direction is a Phase-B concern when
+    real metrics replace the stubs.
+    """
+    prev_results = {r["name"]: r for r in prev_report.get("results", [])}
+    curr_results = {r["name"]: r for r in curr_report.get("results", [])}
+
+    prev_names = set(prev_results)
+    curr_names = set(curr_results)
+    added = sorted(curr_names - prev_names)
+    removed = sorted(prev_names - curr_names)
+    common = sorted(curr_names & prev_names)
+
+    print("\n=== AI Vector Eval Diff ===")
+    print(f"Previous : {prev_report.get('run_at', '?')} "
+          f"(dataset={prev_report.get('dataset') or '(all)'})")
+    print(f"Current  : {curr_report.get('run_at', '?')} "
+          f"(dataset={curr_report.get('dataset') or '(all)'})")
+    print()
+
+    if added:
+        print("Added metrics:")
+        for name in added:
+            print(f"  [+]  {name}  ({curr_results[name].get('status')})")
+        print()
+    if removed:
+        print("Removed metrics:")
+        for name in removed:
+            print(f"  [-]  {name}  (was {prev_results[name].get('status')})")
+        print()
+
+    changed_lines: list[str] = []
+    for name in common:
+        prev_r = prev_results[name]
+        curr_r = curr_results[name]
+        prev_status = prev_r.get("status")
+        curr_status = curr_r.get("status")
+        prev_metric = prev_r.get("metric")
+        curr_metric = curr_r.get("metric")
+        status_changed = prev_status != curr_status
+        metric_changed = prev_metric != curr_metric
+        if not (status_changed or metric_changed):
+            continue
+        bits: list[str] = []
+        if status_changed:
+            bits.append(f"status {prev_status} -> {curr_status}")
+        if metric_changed:
+            if (isinstance(prev_metric, (int, float))
+                    and isinstance(curr_metric, (int, float))):
+                delta = curr_metric - prev_metric
+                sign = "+" if delta >= 0 else ""
+                bits.append(
+                    f"metric {prev_metric:.3f} -> {curr_metric:.3f} "
+                    f"({sign}{delta:.3f})"
+                )
+            else:
+                bits.append(f"metric {prev_metric} -> {curr_metric}")
+        changed_lines.append(f"  [~]  {name}: {'; '.join(bits)}")
+
+    if changed_lines:
+        print("Changed:")
+        for line in changed_lines:
+            print(line)
+        print()
+    elif not added and not removed:
+        print("No differences.\n")
+
+
+def _load_report_for_diff(path: Path) -> dict:
+    """Load a prior eval report from disk for diff mode."""
+    if not path.exists():
+        raise FileNotFoundError(f"Previous report not found: {path}")
+    with path.open("r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+# ---------------------------------------------------------------------------
+# Core dispatch -- shared by both CLI surfaces (argparse + typer)
+# ---------------------------------------------------------------------------
+
+# Eval dimensions grouped by class. ``run_evals()`` uses these to honour
+# ``--judge-only`` / ``--no-judge`` flags from the typer CLI. Today only
+# voice_adherence is judge-class (per Phase C of the eval plan); the
+# grouping lives here so when Phase C lands more judge dimensions, the
+# only change is adding to ``_JUDGE_EVALS``.
+_JUDGE_EVALS = {"voice_adherence"}
+_REFERENCE_EVALS = {
+    "dedup_quality",
+    "ranking_quality",
+    "module_integrity",
+    "drift_detection",
+}
+
+
+def run_evals(
+    *,
+    dataset: Optional[str] = None,
+    against: str = "fixtures",
+    judge_only: bool = False,
+    no_judge: bool = False,
+    strict: bool = False,
+) -> tuple[dict, int]:
+    """Run the eval suite and return ``(report, exit_code)``.
+
+    Typed entrypoint for ``aiv eval``. Mirrors what ``main()`` does for the
+    argparse CLI, minus the side effects (no printing, no on-disk report
+    write -- the caller chooses how to surface results).
+
+    Args:
+        dataset: Fixture name (``--against fixtures``) or archive date
+            (``--against real``). ``None`` enumerates all fixture datasets
+            when running against fixtures.
+        against: ``"fixtures"`` or ``"real"``.
+        judge_only: Run only LLM-judge eval dimensions (Phase C).
+        no_judge: Skip LLM-judge eval dimensions. Mutually exclusive with
+            ``judge_only`` (the caller enforces).
+        strict: When True, *warnings* in the report (any non-pass status
+            including stubs) bump the exit code to 1 alongside hard fails.
+            Defaults to False so a green-stub run still exits 0.
+
+    Returns:
+        ``(report_dict, exit_code)``. Exit code is 0 on all-pass, 1 on any
+        regression (or any warning when ``strict=True``).
+    """
+    if judge_only and no_judge:
+        raise ValueError(
+            "judge_only and no_judge are mutually exclusive; pick one."
+        )
+
+    if against == "fixtures":
+        if dataset:
+            datasets = [dataset]
+        else:
+            datasets = _list_fixture_datasets() or ["_synthetic"]
+    elif against == "real":
+        if not dataset:
+            raise ValueError(
+                "against='real' requires an explicit dataset (YYYY-MM-DD)."
+            )
+        datasets = [dataset]
+    else:
+        raise ValueError(f"against must be 'fixtures' or 'real' (got {against!r}).")
+
+    if judge_only:
+        active = _JUDGE_EVALS
+    elif no_judge:
+        active = _REFERENCE_EVALS
+    else:
+        active = _JUDGE_EVALS | _REFERENCE_EVALS
+
+    labels = _load_labels()
+    all_results: list[EvalResult] = []
+
+    for dataset_name in datasets:
+        dataset_dir = _resolve_dataset_dir(dataset_name, against)
+
+        # Map of name -> thunk. We dispatch only those in ``active`` so the
+        # judge / no-judge gates trim cost (and, for judge_only, skip
+        # deterministic metrics entirely).
+        dispatch: dict[str, Any] = {
+            "dedup_quality":    lambda: eval_dedup_quality(dataset_dir, labels),
+            "ranking_quality":  lambda: eval_ranking_quality(dataset_dir, labels),
+            "voice_adherence":  lambda: eval_voice_adherence(dataset_dir, labels),
+            "module_integrity": lambda: eval_module_integrity(dataset_dir),
+            "drift_detection":  lambda: eval_drift_detection(dataset_dir, labels),
+        }
+
+        for name, fn in dispatch.items():
+            if name not in active:
+                continue
+            try:
+                result = fn()
+            except Exception as exc:  # noqa: BLE001
+                result = EvalResult(
+                    name=name,
+                    passed=False,
+                    metric=None,
+                    status="fail",
+                    error=f"Eval function raised: {type(exc).__name__}: {exc}",
+                )
+            all_results.append(result)
+
+    # Behavioural integrity always runs (not dataset-scoped and never
+    # blocks). Skip if --judge-only since it isn't a judge metric.
+    if not judge_only:
+        all_results.append(eval_behavioural_integrity())
+
+    report = _build_report(all_results, dataset, against)
+
+    # Standard exit: 1 on any hard regression (passed=False).
+    exit_code = 0 if report["overall_passed"] else 1
+
+    # --strict elevates warnings too: any non-pass status (stub / skipped /
+    # manual) trips a non-zero exit. By design this is loud -- the user
+    # opted in.
+    if strict and exit_code == 0:
+        warning_states = {"not_yet_implemented", "skipped"}
+        if any(r["status"] in warning_states for r in report["results"]):
+            exit_code = 1
+
+    return report, exit_code
 
 
 # ---------------------------------------------------------------------------
@@ -610,68 +841,24 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    # Resolve datasets to run
-    if args.dataset:
-        datasets = [args.dataset]
-    elif args.against == "fixtures":
-        datasets = _list_fixture_datasets() or ["_synthetic"]
-    else:
-        # Real mode without a dataset: could enumerate data/ dirs, but
-        # for safety we require explicit --dataset when --against=real.
-        print(
-            "ERROR: --against=real requires --dataset <YYYY-MM-DD>.",
-            file=sys.stderr,
+    try:
+        report, exit_code = run_evals(
+            dataset=args.dataset,
+            against=args.against,
         )
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-
-    all_results: list[EvalResult] = []
-    labels = _load_labels()
-
-    for dataset_name in datasets:
-        dataset_dir = _resolve_dataset_dir(dataset_name, args.against)
-
-        # Run each eval dimension
-        evals_to_run = [
-            # STUB evals
-            lambda: eval_dedup_quality(dataset_dir, labels),
-            lambda: eval_ranking_quality(dataset_dir, labels),
-            lambda: eval_voice_adherence(dataset_dir, labels),
-            # READY eval
-            lambda: eval_module_integrity(dataset_dir),
-            # STUB eval
-            lambda: eval_drift_detection(dataset_dir, labels),
-        ]
-
-        for eval_fn in evals_to_run:
-            try:
-                result = eval_fn()
-            except Exception as exc:
-                # An eval that crashes is itself a failure
-                result = EvalResult(
-                    name="unknown",
-                    passed=False,
-                    metric=None,
-                    status="fail",
-                    error=f"Eval function raised: {type(exc).__name__}: {exc}",
-                )
-            all_results.append(result)
-
-    # Behavioural integrity is not dataset-specific — run once
-    all_results.append(eval_behavioural_integrity())
-
-    # Build and output report
-    report = _build_report(all_results, args.dataset, args.against)
 
     if args.report == "json":
         print(json.dumps(report, indent=2))
     else:
         _print_pretty(report)
 
-    # Persist report to evals/reports/
+    # Persist report to evals/reports/ (legacy flat layout for this CLI).
     _save_report(report, args.dataset)
 
-    # Exit code: 0 if no regressions, 1 if any
-    return 0 if report["overall_passed"] else 1
+    return exit_code
 
 
 if __name__ == "__main__":
