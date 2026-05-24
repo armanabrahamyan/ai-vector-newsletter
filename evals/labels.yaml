@@ -16,14 +16,16 @@
 # ============================================================
 # BOOTSTRAP CORPUS — 2 dates only (2026-05-23 and 2026-05-24)
 # ============================================================
-# Phase A was executed against the first two released dates.
-# Plan target was 5 dates × ~10 clusters; we have ~2 dates × ~10
-# labelled clusters each (~20 clusters total).
-# All per_cluster entries below from real dates are DRAFT only.
-# ground_truth_group_id and expected_tier are Eval Engineer drafts.
-# human_relevance is left blank for Arman to ratify.
+# Phase A RATIFIED 2026-05-24 by Arman.
+# 21 clusters labelled (10 from 2026-05-23, 11 from 2026-05-24).
+# 6 additional clusters added to labelled corpus for
+# g_20260524_llamacpp_maintenance dedup group.
+# Plan target was 5 dates × ~10 clusters; we have 2 dates × ~10-11
+# labelled clusters each (~27 total including maintenance group).
+# The 2-date bootstrap caveat is unchanged: anchors derived from
+# this corpus should be re-evaluated once 5+ dates are labelled.
 # expected_audience_tags are Eval Engineer drafts (low-confidence flagged).
-# This corpus grows as more dates ship. See RATIFICATION_PENDING.md.
+# This corpus grows as more dates ship.
 # ============================================================
 #
 # Label cadence (once Phase 2 is running):
@@ -49,7 +51,7 @@ schema_version: 1
 #                                 story. If null, this cluster is a singleton
 #                                 (no near-duplicate expected).
 #                                 Naming: "g_<date>_<slug>" e.g. "g_20260601_claude4"
-#   human_relevance:    int (1–5) | "~ # RATIFY: Arman, 1-5"
+#   human_relevance:    int (1–5) | null
 #                               — 1: noise / tier-3, should be cut
 #                               — 2: low relevance, On the Radar at best
 #                               — 3: relevant, earns a place in the issue
@@ -122,349 +124,334 @@ per_cluster:
       stories surface at the top of ranked output when they should.
 
   # ===========================================================================
-  # DATE: 2026-05-23 — DRAFT labels (Eval Engineer). Arman ratifies.
-  # ~10 clusters selected from ranked output (top scorers + notable cuts).
-  # See RATIFICATION_PENDING.md for cluster-by-cluster walkthrough.
+  # DATE: 2026-05-23 — RATIFIED 2026-05-24 by Arman.
+  # 10 clusters labelled from ranked output (top scorers + notable cuts).
   # ===========================================================================
 
-  # DRAFT — top-ranked cluster (score 65). NuExtract3 4B VLM, Apache-2.0,
+  # Ratified score 4. NuExtract3 4B VLM, Apache-2.0,
   # self-hostable structured extraction. Strong hands-on + FS signal.
   - cluster_id: "c_56849ea45c325178"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [hands_on, finance]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees (on_the_radar)
+    expected_tier: "on_the_radar"
     voice_label: ~  # Editor fills post-ratification
     tier_label: ~   # Editor fills post-ratification
     notes: >
-      DRAFT. NuExtract3 4B VLM for structured extraction, Apache-2.0,
+      NuExtract3 4B VLM for structured extraction, Apache-2.0,
       self-hostable (HF Space + weights). FS angle is real: document
       processing under data-residency constraints. Rank.py score 65,
       highest on the day. Tier agreement with rank.py.
 
-  # DRAFT — score 58. BeeLlama v0.2.0: 4-5x inference speedup via DFlash
+  # Ratified score 3. BeeLlama v0.2.0: 4-5x inference speedup via DFlash
   # on single RTX 3090. GitHub repo + quickstart. Directly actionable.
   - cluster_id: "c_66d8cbbdd7440a46"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 3
     expected_audience_tags: [hands_on]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. BeeLlama v0.2.0 DFlash update. 4-5x speedup on RTX 3090
+      BeeLlama v0.2.0 DFlash update. 4-5x speedup on RTX 3090
       for Qwen3.6-27B and Gemma4-31B. Has GitHub repo and quickstart docs.
       Narrow but concrete audience; no FS angle. Rank.py score 58.
 
-  # DRAFT — score 57. Nemotron-Labs diffusion LMs on HF. Inference-speed
+  # Ratified score 4. Nemotron-Labs diffusion LMs on HF. Inference-speed
   # alternative to autoregressive decoding. Benchmarkable today.
   - cluster_id: "c_281ac65379335626"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [hands_on, general]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Nemotron-Labs diffusion LMs on HF. Speed-of-light text
+      Nemotron-Labs diffusion LMs on HF. Speed-of-light text
       generation claim. Practitioners can benchmark today, production
       readiness uncertain. Rank.py score 57.
 
-  # DRAFT — score 55. Apex-Testing: agentic coding benchmark on 65-70
+  # Ratified score 4. Apex-Testing: agentic coding benchmark on 65-70
   # private repos. Real-world evaluation tool.
   - cluster_id: "c_20a06e5b2a467c72"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [hands_on, general]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Apex-Testing real-world agentic coding benchmark. 65-70
+      Apex-Testing real-world agentic coding benchmark. 65-70
       private repos, real codebases, ELO leaderboard. Single source
       (Reddit) but has a website (apex-testing.org). Rank.py score 55.
 
-  # DRAFT — score 44. Safe Bilevel Delegation: quantified trust-handoff
+  # Ratified score 4. Safe Bilevel Delegation: quantified trust-handoff
   # for multi-agent systems. Conceptually relevant to FS agentic workflows.
   - cluster_id: "c_4a9fa5a7bf386dee"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [big_picture, finance]  # low-confidence: may be too conceptual for finance tag
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees; borderline given no repo
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. LLMQuant Newsletter piece on quantified trust-handoff for
+      LLMQuant Newsletter piece on quantified trust-handoff for
       multi-agent delegation. Conceptually relevant to agentic FS. No repo
       or paper link in single-source coverage. Rank.py score 44.
-      # low-confidence on finance tag: agentic FS angle is implied not named.
+      Low-confidence on finance tag: agentic FS angle is implied not named.
 
-  # DRAFT — score 40. Latent Space "All Model Labs are now Agent Labs".
+  # Ratified score 4. Latent Space "All Model Labs are now Agent Labs".
   # Strategic framing piece. big_picture only, no hands-on artefacts.
   - cluster_id: "c_13639cc37f23d132"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [big_picture, general]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees; signals a real strategic shift
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Latent Space synthesis on model labs pivoting to agent labs.
+      Latent Space synthesis on model labs pivoting to agent labs.
       Useful strategic framing; no new artefacts. Rank.py score 40.
       Marginal on_the_radar — pulse would require more substance.
 
-  # DRAFT — score 27. DeepSeek $10.29B round + open-source commitment.
-  # Strategic open-weight ecosystem news. rank.py says cut.
-  - cluster_id: "c_5522007d061bfb5b"
-    dataset: "2026-05-23"
-    ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
-    expected_audience_tags: [big_picture, general]
-    expected_tier: "cut"  # DRAFT: rank.py agrees (cut, score 27)
-    voice_label: ~
-    tier_label: ~
-    notes: >
-      DRAFT. DeepSeek $10B financing round, open-source commitment from
-      Liang Wenfeng. Strategic news but no capability shift; funding story
-      only. Rank.py score 27, tier cut. Agreement.
-
-  # DRAFT — score 34. "The Business Case for Running Your Own AI Models".
-  # Opinion piece. rank.py says cut. Agreement.
-  - cluster_id: "c_8fd3af4b47beee7e"
-    dataset: "2026-05-23"
-    ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
-    expected_audience_tags: [big_picture, finance]  # low-confidence: build-vs-buy angle is real but piece is thin
-    expected_tier: "cut"  # DRAFT: rank.py agrees (cut, score 34)
-    voice_label: ~
-    tier_label: ~
-    notes: >
-      DRAFT. Opinion-led build-vs-buy framing on local model hosting.
-      FS angle (data residency, cost) is real but no new capability,
-      benchmark, or artefact. Rank.py score 34, tier cut. Agreement.
-
-  # DRAFT — score 41. Liveness detection generalisation gap for KYC.
+  # Ratified score 3. Liveness detection generalisation gap for KYC.
   # FS-relevant identity fraud angle; no code or paper.
   - cluster_id: "c_c997d4c916785564"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 3
     expected_audience_tags: [big_picture, finance]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Reddit discussion on liveness/deepfake detection generalisation
+      Reddit discussion on liveness/deepfake detection generalisation
       gap for KYC. No code or paper; the vendor-update-cycle question is
       concrete and FS-relevant for identity fraud teams. Rank.py score 41.
 
-  # DRAFT — score 57 (tied). Needle 26M vs Qwen3-0.6B on CPU function
+  # Ratified score 3. Needle 26M vs Qwen3-0.6B on CPU function
   # calling. 23x smaller, faster, higher accuracy. Actionable for
   # air-gapped/constrained deployments.
   - cluster_id: "c_8750df63d65640fc"
     dataset: "2026-05-23"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 3
     expected_audience_tags: [hands_on, finance]  # low-confidence on finance: air-gapped angle is FS-relevant but not explicit in post
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. CPU-only benchmark: Needle 26M beats Qwen3-0.6B on function
+      CPU-only benchmark: Needle 26M beats Qwen3-0.6B on function
       calling accuracy and speed. 23x smaller model wins. Directly
       actionable for engineers on constrained or air-gapped hardware.
       Rank.py score 57. Finance tag is low-confidence.
 
-  # ===========================================================================
-  # DATE: 2026-05-24 — DRAFT labels (Eval Engineer). Arman ratifies.
-  # ~10 clusters selected from ranked output (top scorers + notable calls).
-  # See RATIFICATION_PENDING.md for cluster-by-cluster walkthrough.
-  # ===========================================================================
-
-  # DRAFT — top-ranked cluster (score 70). Vision-LLMs vs OCR benchmark
-  # on 30 long image-heavy PDFs. Cross-posted r/LocalLLaMA + r/ML.
-  # rank.py correctly grouped these (c_557d8de6f20e0a3b, 2 items, same post).
-  - cluster_id: "c_557d8de6f20e0a3b"
-    dataset: "2026-05-24"
-    ground_truth_group_id: null  # DRAFT: correctly merged by pipeline — same post cross-posted
-    human_relevance: ~  # RATIFY: Arman, 1-5
-    expected_audience_tags: [hands_on, finance]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees (score 70)
+  # Ratified score 4. DeepSeek $10.29B round + open-source commitment.
+  # Strategic open-weight ecosystem news. rank.py says cut.
+  - cluster_id: "c_5522007d061bfb5b"
+    dataset: "2026-05-23"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [big_picture, general]
+    expected_tier: "cut"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Empirical benchmark: OCR pipelines beat native vision LLMs
+      DeepSeek $10B financing round, open-source commitment from
+      Liang Wenfeng. Strategic news but no capability shift; funding story
+      only. Rank.py score 27, tier cut. Agreement.
+
+  # Ratified score 4. "The Business Case for Running Your Own AI Models".
+  # Opinion piece. rank.py says cut. Agreement.
+  - cluster_id: "c_8fd3af4b47beee7e"
+    dataset: "2026-05-23"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [big_picture, finance]  # low-confidence: build-vs-buy angle is real but piece is thin
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      Opinion-led build-vs-buy framing on local model hosting.
+      FS angle (data residency, cost) is real but no new capability,
+      benchmark, or artefact. Rank.py score 34, tier cut. Agreement.
+
+  # ===========================================================================
+  # DATE: 2026-05-24 — RATIFIED 2026-05-24 by Arman.
+  # 11 clusters labelled from ranked output (top scorers + notable calls).
+  # Plus 6 maintenance-patch clusters added for dedup group
+  # g_20260524_llamacpp_maintenance (see below).
+  # ===========================================================================
+
+  # Ratified score 4. Vision-LLMs vs OCR benchmark on 30 long image-heavy PDFs.
+  # Cross-posted r/LocalLLaMA + r/ML.
+  # rank.py correctly grouped these (c_557d8de6f20e0a3b, 2 items, same post).
+  - cluster_id: "c_557d8de6f20e0a3b"
+    dataset: "2026-05-24"
+    ground_truth_group_id: null  # correctly merged by pipeline — same post cross-posted
+    human_relevance: 4
+    expected_audience_tags: [hands_on, finance]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      Empirical benchmark: OCR pipelines beat native vision LLMs
       on image-heavy PDFs (~59% vs ~52% accuracy). FS document-processing
       relevance is direct. Cross-post to r/LocalLLaMA + r/MachineLearning
       correctly merged into one cluster. Rank.py score 70.
 
-  # DRAFT — score 69. FCA/BoE/Treasury joint statement on frontier AI
+  # Ratified score 5. FCA/BoE/Treasury joint statement on frontier AI
   # models and cyber resilience. Direct regulatory signal for UK-regulated
-  # firms. TIER DISAGREEMENT: Eval Engineer proposes pulse; rank.py on_the_radar.
+  # firms. TIER OVERRIDE: Arman ratified as pulse ("THIS IS PULSE, STRONG PULSE").
+  # Overrides rank.py's on_the_radar call.
   - cluster_id: "c_ce540f73ee188ea2"
     dataset: "2026-05-24"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 5
     expected_audience_tags: [big_picture, finance]
-    # DRAFT TIER DISAGREEMENT: rank.py says on_the_radar; Eval Engineer proposes pulse.
-    # Rationale: joint statement from FCA + BoE + Treasury directly names
-    # frontier AI cyber risk as a regulatory concern for UK-regulated firms,
-    # landing on 100/100 financial_services_impact and 90/100 big_picture_relevance.
-    # For an FS-lens newsletter, a tripartite regulator statement that forces a
-    # re-plan of AI risk posture IS pulse-level. The rubric's significance weight
-    # is constrained by the agentic/GenAI Tier-1 focus, which may underweight
-    # this story's actual editorial weight for the target audience.
-    # Arman's call: does this clear pulse for AI Vector?
-    expected_tier: "pulse"
+    expected_tier: "pulse"  # ARMAN OVERRIDE: rank.py said on_the_radar; Arman: "THIS IS PULSE, STRONG PULSE"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT TIER DISAGREEMENT WITH RANK.PY. See expected_tier comment.
       FCA/BoE/Treasury joint statement on frontier AI + cyber resilience.
-      Rank.py score 69, tier on_the_radar. Eval Engineer proposes pulse
-      based on tripartite regulator signal for FS readers.
+      Rank.py score 69, tier on_the_radar. Arman ratified as pulse with
+      strong conviction. Tripartite regulator signal forces concrete
+      reprioritisation of AI risk posture for UK-regulated firms.
+      Tier override logged: expected_tier=pulse overrides rank.py on_the_radar.
 
-  # DRAFT — score 61. Command A+ (218B MoE) on Apple Silicon via MLX.
+  # Ratified score 3. Command A+ (218B MoE) on Apple Silicon via MLX.
   # Apache 2.0, PR open. Directly testable this week.
   - cluster_id: "c_7eb67898d3d843bd"
     dataset: "2026-05-24"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 3
     expected_audience_tags: [hands_on, general]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees (score 61)
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Command A+ 218B MoE running on Apple Silicon via MLX port.
+      Command A+ 218B MoE running on Apple Silicon via MLX port.
       Apache 2.0, PR open on ml-explore/mlx-lm. Engineers can test
       this week. Single Reddit source but detailed implementation notes
       and external PR link. Rank.py score 61.
 
-  # DRAFT — score 61 (tied). llama.cpp b9297 ships NVFP4 + MTP together.
+  # Ratified score 3. llama.cpp b9297 ships NVFP4 + MTP together.
   # Directly actionable for local NVIDIA inference.
-  # DEDUP NOTE: c_7ec76012cc4eac10 and c_58c6a5766fc586a1 are arguably
-  # the same story (b9297 release). See RATIFICATION_PENDING.md.
+  # DEDUP GROUP: paired with c_58c6a5766fc586a1 (b9297 official release).
   - cluster_id: "c_7ec76012cc4eac10"
     dataset: "2026-05-24"
-    # DRAFT DEDUP PROPOSAL: group with c_58c6a5766fc586a1 (b9297 release).
-    # The community Reddit post (this cluster) and the official release entry
-    # (c_58c6a5766fc586a1) are the same underlying event. The pipeline kept
-    # them separate; ground truth should merge them.
     ground_truth_group_id: "g_20260524_llamacpp_b9297"
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 3
     expected_audience_tags: [hands_on]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees (score 61)
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. NVFP4 + MTP combined in llama.cpp b9297 — community post.
+      NVFP4 + MTP combined in llama.cpp b9297 — community post.
       Directly actionable for NVIDIA local inference engineers. Rank.py
-      score 61. DEDUP MISS PROPOSAL: pipeline kept this separate from
+      score 61. DEDUP MISS: pipeline kept this separate from
       c_58c6a5766fc586a1 (same release, official release entry).
-      ground_truth_group_id proposes merging.
+      ground_truth_group_id g_20260524_llamacpp_b9297 ratified by Arman.
 
-  # DRAFT — score 61 (tied). Ollama v0.30.0. Direct llama.cpp integration
+  # Ratified score 4. Ollama v0.30.0. Direct llama.cpp integration
   # + MLX acceleration. Architecture change affecting local inference.
   - cluster_id: "c_755e105526b003bd"
     dataset: "2026-05-24"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [hands_on]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees (score 61)
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Ollama v0.30.0 switches to direct llama.cpp integration and
+      Ollama v0.30.0 switches to direct llama.cpp integration and
       MLX on Apple Silicon. Architecture change with real downstream
       effects on GGUF compatibility and inference performance. Rank.py
       score 61.
 
-  # DRAFT — score 60. llama.cpp server native tools flag (exec_shell,
+  # Ratified score 4. llama.cpp server native tools flag (exec_shell,
   # edit_file, etc.). Turns llama-server into a mini agent harness.
   - cluster_id: "c_cf0b99c06c42a9ba"
     dataset: "2026-05-24"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [hands_on, finance]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees (score 60)
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. llama.cpp server experimental --tools flag adds native
+      llama.cpp server experimental --tools flag adds native
       exec_shell, edit_file, read_file, etc. Enables local agentic
       workflows without Python orchestration. FS finance tag: relevant
       for air-gapped/on-prem deployments. Rank.py score 60.
 
-  # DRAFT — score 56. TradingAgents GUI on Ollama. Local agentic finance
+  # Ratified score 4. TradingAgents GUI on Ollama. Local agentic finance
   # workflow. FS angle is direct and named.
   - cluster_id: "c_6f9686fc752c4d97"
     dataset: "2026-05-24"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [hands_on, finance]
-    expected_tier: "on_the_radar"  # DRAFT: rank.py agrees (score 56)
+    expected_tier: "on_the_radar"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. Local GUI for TradingAgents multi-agent stock analysis
+      Local GUI for TradingAgents multi-agent stock analysis
       framework (Ollama). Apache 2.0. FS angle is direct (trading
       analysis agents, local privacy). Rank.py score 56.
 
-  # DRAFT — score 29. FCA/BoE tokenisation vision for UK wholesale markets.
+  # Ratified score 4. FCA/BoE tokenisation vision for UK wholesale markets.
   # FS-relevant but no AI content. rank.py says cut.
   - cluster_id: "c_25efe5b1351f4e55"
     dataset: "2026-05-24"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 4
     expected_audience_tags: [big_picture, finance]
-    expected_tier: "cut"  # DRAFT: rank.py agrees (cut, score 29)
+    expected_tier: "cut"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. FCA/BoE tokenisation joint vision for UK wholesale markets.
+      FCA/BoE tokenisation joint vision for UK wholesale markets.
       FS-relevant regulatory strategy but zero AI/ML content — Tier-3
       for AI Vector by editorial focus rules. Rank.py score 29. Agreement.
 
-  # DRAFT — score 18 (BIS working paper). Conditional predictive density
+  # Ratified score 3. BIS working paper (score 18). Conditional predictive density
   # tests. Classical econometrics, niche FS quant relevance.
   # NOTE: published_at timestamp 2035-08-31 is clearly a data error.
-  # The BIS hub appears to carry an erroneous future date. Filing as a bug
-  # note — do not fix in src/.
+  # The BIS hub appears to carry an erroneous future date. Filed as bug #70.
   - cluster_id: "c_eb385cd3c25906f6"
     dataset: "2026-05-24"
     ground_truth_group_id: null
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 3
     expected_audience_tags: [finance]  # low-confidence: niche quant/macro only
-    expected_tier: "cut"  # DRAFT: rank.py agrees (cut, score 18)
+    expected_tier: "cut"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. BIS working paper on conditional predictive density tests.
+      BIS working paper on conditional predictive density tests.
       Classical econometrics, niche FS quant relevance. No GenAI/agentic
       angle. Rank.py score 18. Agreement.
       BUG NOTE: published_at is "2035-08-31T14:00:00Z" — clearly a data
-      error in the BIS RSS feed. Do not fix in src/; file as a source
-      data quality issue.
+      error in the BIS RSS feed. Filed as Source Engineer bug #70.
 
-  # DRAFT: llama.cpp b9297 OFFICIAL release entry. Paired with c_7ec76012cc4eac10.
-  # See dedup miss proposal above.
+  # Ratified score 3. llama.cpp b9297 OFFICIAL release entry. Paired with c_7ec76012cc4eac10.
+  # DEDUP GROUP: g_20260524_llamacpp_b9297 (ratified by Arman).
   - cluster_id: "c_58c6a5766fc586a1"
     dataset: "2026-05-24"
-    # DRAFT DEDUP PROPOSAL: same story as c_7ec76012cc4eac10.
     ground_truth_group_id: "g_20260524_llamacpp_b9297"
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    human_relevance: 3
     expected_audience_tags: [hands_on]
-    expected_tier: "cut"  # DRAFT: rank.py says cut (score 29); the merged group should produce one on_the_radar entry
+    expected_tier: "cut"  # the redundant half of the dedup miss; merged group is on_the_radar
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. llama.cpp b9297 official release entry. Pipeline kept this
+      llama.cpp b9297 official release entry. Pipeline kept this
       separate from c_7ec76012cc4eac10 (Reddit community post about the
       same release). Ground truth: these are the same story.
       DEDUP MISS: the merged group (g_20260524_llamacpp_b9297) should
@@ -473,27 +460,120 @@ per_cluster:
       c_7ec76012cc4eac10 score 61 (on_the_radar) — the scoring is
       correct but the dedup missed the merge.
 
-  # DRAFT: FCA/BoE/Treasury motor finance cluster. 4 items all with
+  # Ratified score 2. FCA/BoE/Treasury motor finance cluster. 4 items all with
   # identical timestamp (2026-05-24T05:45:29.139535Z). FCA feed dump.
   # All 4 items are about motor finance / claims management.
-  # DEDUP NOTE: all 4 items in this cluster are genuinely related (same
-  # FCA subject area, same feed dump timestamp). Appropriate grouping.
   - cluster_id: "c_0a75d43e90fe5e1a"
     dataset: "2026-05-24"
-    ground_truth_group_id: null  # DRAFT: correct singleton group — 4 items are the same story
-    human_relevance: ~  # RATIFY: Arman, 1-5
+    ground_truth_group_id: null  # correct singleton group — 4 items are the same story
+    human_relevance: 2
     expected_audience_tags: [finance]  # low-confidence: regulatory consumer finance only
-    expected_tier: "cut"  # DRAFT: rank.py agrees (cut, score 16); zero AI content
+    expected_tier: "cut"
     voice_label: ~
     tier_label: ~
     notes: >
-      DRAFT. FCA motor finance legal challenges cluster (4 items).
+      FCA motor finance legal challenges cluster (4 items).
       All 4 items from FCA News have identical timestamps — RSS feed
       batch dump. Items cover: claims management market review, motor
       finance compensation scheme update, legal challenges statement,
       claims management practices review. All same FS subject area;
       grouping is appropriate. Zero AI content; cut is correct.
       Rank.py score 16. Agreement.
+
+  # ===========================================================================
+  # DATE: 2026-05-24 — llama.cpp MAINTENANCE PATCH GROUP
+  # Added to labelled corpus per Arman's ratification of dedup group
+  # g_20260524_llamacpp_maintenance. All maintenance-only patch releases
+  # (b9286/b9289/b9291/b9292/b9295/b9301) grouped together. EXCLUDES b9297
+  # which is its own group (g_20260524_llamacpp_b9297) because it shipped
+  # the named NVFP4+MTP feature.
+  # ===========================================================================
+
+  # Maintenance patch group — c_1972bc2ac90798c6 holds b9286/b9290/b9294/b9296 (4 items).
+  - cluster_id: "c_1972bc2ac90798c6"
+    dataset: "2026-05-24"
+    ground_truth_group_id: "g_20260524_llamacpp_maintenance"
+    human_relevance: 1
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      llama.cpp maintenance releases b9286/b9290/b9294/b9296 (4 items grouped
+      by pipeline). Routine patch builds; no named feature. Part of
+      g_20260524_llamacpp_maintenance dedup group ratified by Arman.
+      The full maintenance group (b9286 through b9301, excluding b9297)
+      should be treated as one continuous-delivery story and cut as a group.
+
+  # Maintenance patch group — c_4bc546dd18f722a0 (b9289 singleton).
+  - cluster_id: "c_4bc546dd18f722a0"
+    dataset: "2026-05-24"
+    ground_truth_group_id: "g_20260524_llamacpp_maintenance"
+    human_relevance: 1
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      llama.cpp maintenance release b9289 (singleton). Routine patch build;
+      no named feature. Part of g_20260524_llamacpp_maintenance dedup group
+      ratified by Arman.
+
+  # Maintenance patch group — c_047f4cc68b0d21d3 (b9291 singleton).
+  - cluster_id: "c_047f4cc68b0d21d3"
+    dataset: "2026-05-24"
+    ground_truth_group_id: "g_20260524_llamacpp_maintenance"
+    human_relevance: 1
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      llama.cpp maintenance release b9291 (singleton). Routine patch build;
+      no named feature. Part of g_20260524_llamacpp_maintenance dedup group
+      ratified by Arman.
+
+  # Maintenance patch group — c_21866e34a378a98c (b9292 singleton).
+  - cluster_id: "c_21866e34a378a98c"
+    dataset: "2026-05-24"
+    ground_truth_group_id: "g_20260524_llamacpp_maintenance"
+    human_relevance: 1
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      llama.cpp maintenance release b9292 (singleton). Routine patch build;
+      no named feature. Part of g_20260524_llamacpp_maintenance dedup group
+      ratified by Arman.
+
+  # Maintenance patch group — c_d7097191106d6775 (b9295 singleton).
+  - cluster_id: "c_d7097191106d6775"
+    dataset: "2026-05-24"
+    ground_truth_group_id: "g_20260524_llamacpp_maintenance"
+    human_relevance: 1
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      llama.cpp maintenance release b9295 (singleton). Routine patch build;
+      no named feature. Part of g_20260524_llamacpp_maintenance dedup group
+      ratified by Arman.
+
+  # Maintenance patch group — c_8ccc72ef20ded857 (b9301 singleton).
+  - cluster_id: "c_8ccc72ef20ded857"
+    dataset: "2026-05-24"
+    ground_truth_group_id: "g_20260524_llamacpp_maintenance"
+    human_relevance: 1
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      llama.cpp maintenance release b9301 (singleton). Routine patch build;
+      no named feature. Part of g_20260524_llamacpp_maintenance dedup group
+      ratified by Arman.
 
 # ---------------------------------------------------------------------------
 # 2. PER-ISSUE LABELS
