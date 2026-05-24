@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Vector &middot; Issue No. 2.1 &middot; 24 May 2026</title>
+  <title>AI Vector &middot; Issue No. 2.2 &middot; 24 May 2026</title>
   <meta name="description" content="Today's AI, with a heading. A daily AI newsletter with a financial-services lens.">
   <meta name="theme-color" content="#0c0c0c">
   <link rel="stylesheet" href="../fonts/fonts.css">
@@ -292,7 +292,7 @@
       <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
       <div class="av-mast-meta">
         <div>Sunday, 24 May 2026</div>
-        <div>Issue No. 2.1 &middot; ~1 min read</div>
+        <div>Issue No. 2.2 &middot; ~4 min read</div>
       </div>
     </header>
 
@@ -308,8 +308,8 @@
         <span class="av-pulse-bar"></span>
         <span>The Pulse &middot; Story of the day</span>
       </div>
-      <h2 class="av-pulse-title">Feeding PDFs directly to vision models costs more and answers worse</h2>
-      <p class="av-pulse-body">The &#39;just attach the PDF&#39; shortcut underperforms. A single-author benchmark across 171 questions on image-heavy documents found native vision models scored 52% accuracy at $0.26 per query, while extraction pipelines hit nearly 60% for less. Single Reddit thread, no peer review. Before building document question-answering on vision alone, run this test against your own corpus.</p>
+      <h2 class="av-pulse-title">Dedicated text extraction beats letting an AI model read PDFs directly</h2>
+      <p class="av-pulse-body">A Reddit benchmark across 30 image-heavy PDFs found dedicated extraction pipelines (LlamaCloud, Azure) hit 59.6% accuracy on document question-answering; native PDF vision came fifth of six at 52% and was the costliest at $0.26 per query. Single-researcher study, not peer-reviewed. If you&#39;re building document ingestion for contracts or regulatory filings, run your own extraction baseline before assuming vision handles it.</p>
       <div class="av-pulse-meta">
         
           <a class="av-pulse-link" href="https://reddit.com/r/MachineLearning/comments/1tm0cqg/visioncapable_llms_vs_ocr_for_longdocument">reddit.com&nbsp;&rarr;</a>
@@ -320,42 +320,27 @@
     
     
       
-    
-      
-        <div class="av-section hands_on">
+        <div class="av-section big_picture">
           <div class="av-section-head">
             <div class="av-section-title-wrap">
-              <h2 class="av-section-title">Hands-On</h2>
+              <h2 class="av-section-title">The Big Picture</h2>
             </div>
-            <span class="av-section-count">2 stories</span>
+            <span class="av-section-count">1 stories</span>
           </div>
           
-            <p class="av-section-intro"><span class="av-section-intro-strong">Plumbing before performance.</span> Today&#39;s updates are maintenance, not milestones. The pattern is narrow backend fixes that quietly expand which hardware can run which models locally, with no new capabilities attached.
+            <p class="av-section-intro"><span class="av-section-intro-strong">The threat has already arrived.</span> Regulators are signalling that AI-enabled risk is no longer a future planning assumption. Boards that treat cyber governance as a compliance exercise are now structurally exposed.
             </p>
           
           
             <article class="av-story">
-              <h3 class="av-story-title">llama.cpp now runs Qwen3.5 with better precision on consumer hardware</h3>
-              <p class="av-story-body">llama.cpp build b9297 adds NVFP4 multi-token-prediction scale tensors and links Qwen3.5 multi-token-prediction tensors, improving quantised inference fidelity for those models locally. This is a plumbing update, not a capability leap. If you run Qwen3.5 on local hardware, pull the latest build before benchmarking; otherwise, nothing urgent here.</p>
+              <h3 class="av-story-title">UK regulators warn AI-powered attacks now outpace skilled human hackers</h3>
+              <p class="av-story-body">The FCA, Bank of England, and Treasury issued a joint statement warning that frontier AI cyber capabilities already exceed a skilled practitioner&#39;s speed and scale. Regulated firms must act across governance, vulnerability triage, and third-party supply chains. If your board can&#39;t articulate the frontier AI threat today, that&#39;s a governance gap regulators are now watching for.</p>
               <div class="av-story-foot">
                 
-                  <span class="av-pill av-pill-try">try</span>
+                  <span class="av-pill av-pill-act">act</span>
                 
                 
-                  <a class="av-story-src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b9297">github.com&nbsp;&rarr;</a>
-                
-              </div>
-            </article>
-          
-            <article class="av-story">
-              <h3 class="av-story-title">Local inference on Intel hardware gains support for a newer model architecture</h3>
-              <p class="av-story-body">llama.cpp build b9289 extends its Intel SYCL backend to support gated delta networks with sequence lengths greater than one, enabling a broader class of recurrent-style models to run locally on Intel GPUs. Narrow but practical: if you run local inference on Intel silicon, pull this build before testing recurrent architectures.</p>
-              <div class="av-story-foot">
-                
-                  <span class="av-pill av-pill-try">try</span>
-                
-                
-                  <a class="av-story-src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b9289">github.com&nbsp;&rarr;</a>
+                  <a class="av-story-src" href="https://www.fca.org.uk/news/statements/fca-boe-treasury-joint-statement-frontier-ai-models-cyber-resilience">fca.org.uk&nbsp;&rarr;</a>
                 
               </div>
             </article>
@@ -364,11 +349,171 @@
       
     
       
+        <div class="av-section hands_on">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Hands-On</h2>
+            </div>
+            <span class="av-section-count">5 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Promising, but verify first.</span> Today&#39;s releases cluster around local inference gains on Apple Silicon and NVIDIA hardware, yet nearly every claim is self-reported or single-source. Run the builds yourself before drawing conclusions.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Ollama rewires its local model engine for faster Apple Silicon inference</h3>
+              <p class="av-story-body">Ollama v0.30.0 (pre-release) drops its GGML abstraction layer and connects directly to llama.cpp, the runtime powering most local model tools. On Apple Silicon, it now uses MLX for hardware-accelerated inference. No independent benchmarks yet; performance changes are self-reported and still being gathered. If you run models locally on a Mac, benchmark your workload before upgrading production.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://github.com/ollama/ollama/releases/tag/v0.30.0-rc23">github.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Local AI agents now need just one binary, no Python required</h3>
+              <p class="av-story-body">llama.cpp&#39;s server gained an experimental --tools flag that bundles eight built-in capabilities: read files, write files, run shell commands, search with grep, and more. A local model can now act as a basic agent harness with no orchestration framework. Single-source Reddit thread, no benchmarks published. If you run air-gapped inference, test this flag before adding another dependency.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tluma3/llamacpp_server_have_builtin_native_tools_exec">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A frontier-scale open model now runs locally on Apple Silicon</h3>
+              <p class="av-story-body">Cohere&#39;s 218-billion-parameter open model (Apache 2.0) can now run on Apple Silicon via a community-built MLX port, with a pull request open for review. Only 25 billion parameters activate per query, keeping memory viable. The port is unmerged and single-source Reddit, so treat it as experimental before routing production workloads through it.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-watch">watch</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tlqxeh/command_a_218b_moe_running_on_apple_silicon_mlx">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">llama.cpp gets faster and sharper on NVIDIA hardware in one update</h3>
+              <p class="av-story-body">llama.cpp build b9297 lands two upgrades together: NVFP4 (a low-precision format for NVIDIA GPUs) and multi-token prediction, which generates several tokens at once. Sourcing is thin — one Reddit thread, no independent benchmarks. Pull b9297 on NVIDIA hardware and measure your own latency before trusting any speed claims.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tlohld/nvfp4_mtp_voil%C3%A0_on_llamacpp">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Run a multi-agent stock analysis framework locally, no cloud required</h3>
+              <p class="av-story-body">TradingAgents coordinates about a dozen specialised agents (bull, bear, risk analyst) to debate a stock and produce a trade recommendation. A developer forked it and added a local web interface. Single-source Reddit post, no independent benchmarks. If API costs or data residency are a constraint, clone it and test against a real position before relying on it.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tm2ct0/i_built_a_local_gui_for_the_tradingagents">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section on_the_radar">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">On the Radar</h2>
+            </div>
+            <span class="av-section-count">5 items</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Worth a glance.</span> Today&#39;s items share a common ceiling: thin sourcing, no independent benchmarks, or early-stage provenance. The underlying themes are real; the evidence behind each is not yet.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Writing specs before code is now the default for AI-assisted development</h3>
+              <p class="av-story-body">Spec-driven development shifted from optional discipline to structural necessity as AI now generates 46% of code (GitHub, 2025). The problem: AI-generated code is plausible by construction, not correct. Five repos, Thoughtworks, GitHub, Amazon, and a 67-source academic review all converged on the same fix. One credible practitioner calls it rebranded BDD. Raise it before your next greenfield project kicks off.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://alphasignalai.substack.com/p/spec-driven-development-is-the-new">alphasignalai.substack.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">First-person training data beats other formats for teaching AI a character</h3>
+              <p class="av-story-body">When fine-tuning a model to adopt a persona, format matters. Testing 500 examples each, first-person statements outperformed chat transcripts and synthetic documents on generalisation. The synthetic-doc model knew a trait but expressed it only 37% of the time. Single Reddit source; code repo is public. Test format before scaling your next character fine-tune.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/MachineLearning/comments/1tlnvf0/i_finetuned_an_llm_to_be_c3po_to_test_which">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A Chrome extension runs a small AI model locally without a GPU</h3>
+              <p class="av-story-body">A hobbyist Chrome extension (single Reddit source, no independent benchmark) lets you run Gemini Nano locally at roughly 20 tokens per second, no GPU needed. Chrome handles all inference; capability is limited to light tasks like spell-check or quick summaries. If you&#39;re exploring on-device AI without a development setup, try it before assuming you need heavier tooling.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tlnqzj/run_chromes_tiny_gemma4_aka_gemini_nano_directly">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">llama.cpp speeds up attention calculations on Qualcomm hardware</h3>
+              <p class="av-story-body">llama.cpp build b9301 applies a softmax optimisation to its flash attention implementation on Qualcomm&#39;s Hexagon processor, the chip inside many on-device AI deployments. No benchmarks are published yet, so the real-world gain is unknown. If you&#39;re running local inference on Qualcomm hardware, pull the latest build and measure before assuming a meaningful speedup.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b9301">github.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Smarter sorting speeds up mixture-of-experts models on Intel GPUs</h3>
+              <p class="av-story-body">llama.cpp&#39;s Intel GPU backend now uses a counting-sort approach for mixture-of-experts prefill, replacing a loop whose cost scaled with the product of experts and routed rows; now it scales with their sum instead. No benchmarks are published yet, so measure your own workload. If you run mixture-of-experts models on Intel hardware locally, pull build b9291.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b9291">github.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
     
 
     <footer class="av-footer">
       <span>AI Vector &middot; Arman Abrahamyan</span>
-      <span>2026-05-24 &middot; Compiled 2026-05-24 23:30 AEST &middot; <a class="av-archive-link" href="../index.html">all issues</a></span>
+      <span>2026-05-24 &middot; Compiled 2026-05-25 00:00 AEST &middot; <a class="av-archive-link" href="../index.html">all issues</a></span>
     </footer>
     <p class="av-about">
       AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
