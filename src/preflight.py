@@ -11,7 +11,7 @@ that fail LATE in the pipeline:
 
 These are the two checks pip-install cannot catch. Everything else
 (Python version, package imports, config parse, dir writeability) would
-have surfaced loudly at `pip install -r requirements.txt` or first run.
+have surfaced loudly at `pip install -e .` or first run.
 
 Exit 0 on all-pass, 1 on any fail. Each check returns a CheckResult so
 the CLI in run.py can format consistently and we can extend the list
@@ -59,7 +59,7 @@ def check_embedding_model() -> CheckResult:
             name, False,
             detail=f"ImportError: {e}",
             hint=(
-                "run `pip install -r requirements.txt` in your venv "
+                "run `pip install -e .` in your venv "
                 "(huggingface_hub is a sentence-transformers transitive dep)"
             ),
         )

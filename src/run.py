@@ -133,7 +133,7 @@ def _load_env() -> None:
     except ImportError:
         _LOG.warning(
             ".env loading skipped: python-dotenv is not installed "
-            "(see requirements.txt). LLM stages will rely on the ambient "
+            "(install with `pip install -e .`). LLM stages will rely on the ambient "
             "environment only."
         )
         return
