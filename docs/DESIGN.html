@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Vector &middot; Solution Design</title>
+  <meta name="description" content="AI Vector solution design — context, containers, components, and data contracts.">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fbfaf6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      font-feature-settings: "kern", "liga", "calt";
+    }
+    body {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a17;
+      font-size: 17px;
+      line-height: 1.7;
+      letter-spacing: -0.003em;
+    }
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
+      padding: 72px 88px 80px;
+    }
+
+    /* ── masthead ─────────────────────────────────────────── */
+    .masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0c0c0c;
+      margin-bottom: 36px;
+    }
+    .brand {
+      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      line-height: 0.85;
+      margin: 0;
+      color: #0c0c0c;
+      text-transform: uppercase;
+    }
+    .brand .slash { color: #e6452f; margin: 0 2px; }
+    .mast-meta {
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a5a55;
+      text-align: right;
+      line-height: 1.7;
+    }
+
+    /* ── tagline ──────────────────────────────────────────── */
+    .tagline {
+      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: #1a1a17;
+      margin: 0 0 32px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .tagline .mark { color: #e6452f; margin-right: 12px; }
+
+    /* ── section heads ────────────────────────────────────── */
+    h2.section {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #0c0c0c;
+      margin: 36px 0 24px;
+      font-family: "Inter Tight", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      color: #0c0c0c;
+    }
+    h2.section .level {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #6a6a64;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    h3 {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin: 28px 0 10px;
+      color: #0c0c0c;
+    }
+    h4 {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+      color: #e6452f;
+      margin: 20px 0 6px;
+    }
+
+    p { margin: 0 0 16px; max-width: 64ch; text-wrap: pretty; }
+    p.lede {
+      font-size: 18px;
+      max-width: 60ch;
+    }
+
+    /* ── principle callout ───────────────────────────────── */
+    .principle {
+      margin: 32px 0;
+      padding: 24px 28px;
+      background: #fdf4f1;
+      border-left: 3px solid #e6452f;
+    }
+    .principle-label {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e6452f;
+      margin: 0 0 10px;
+    }
+    .principle-name {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 12px;
+      color: #0c0c0c;
+    }
+    .principle-body {
+      font-size: 16px;
+      line-height: 1.65;
+      color: #2a2a26;
+      margin: 0;
+      max-width: 56ch;
+    }
+
+    /* ── diagrams ─────────────────────────────────────────── */
+    .diagram {
+      margin: 24px 0 32px;
+      padding: 28px 24px;
+      background: #fafaf6;
+      border: 1px solid #e8e7e0;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .diagram .mermaid {
+      display: flex;
+      justify-content: center;
+      min-width: 100%;
+    }
+    .diagram-caption {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: #6a6a64;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    /* ── tables ───────────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 15px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid #e8e7e0;
+      vertical-align: top;
+    }
+    th {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6a6a64;
+      border-bottom: 1px solid #0c0c0c;
+    }
+    td code { font-size: 13px; }
+
+    /* ── code ─────────────────────────────────────────────── */
+    code {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 14px;
+      background: #f3f2ec;
+      padding: 1px 6px;
+      border-radius: 3px;
+      color: #1a1a17;
+    }
+    pre {
+      background: #f3f2ec;
+      padding: 16px 20px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* ── footer ───────────────────────────────────────────── */
+    .footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid #0c0c0c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6a6a64;
+    }
+    .footer a {
+      color: #6a6a64;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* ── responsive ───────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .page { padding: 36px 24px 48px; }
+      .brand { font-size: 42px; }
+      .masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .mast-meta { text-align: left; }
+      h2.section { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <header class="masthead">
+      <h1 class="brand">AI<span class="slash">/</span>Vector</h1>
+      <div class="mast-meta">
+        <div>Solution Design</div>
+        <div>v0.9 &middot; C4 model</div>
+      </div>
+    </header>
+
+    <p class="tagline">
+      <span class="mark">&mdash;</span>
+      How AI Vector works, from system context down to data contracts.
+    </p>
+
+    <p class="lede">
+      A daily AI newsletter with a financial-services lens &mdash; curated, not
+      aggregated. Each morning the pipeline reads ~60 sources, deduplicates
+      cross-posts, scores stories against an editorial rubric, drafts the ones
+      that earn a slot, and renders a single readable HTML issue. Arman reviews
+      every draft and ships when he's happy. Nothing auto-publishes, by design.
+    </p>
+
+    <section class="principle">
+      <div class="principle-label">Governing principle</div>
+      <div class="principle-name">No Token Wasted</div>
+      <p class="principle-body">
+        The LLM does the <strong>judgment work</strong> &mdash; what matters,
+        what to say, what to frame as the Pulse. Code does
+        <strong>everything else</strong> &mdash; fetching, parsing, grouping,
+        rendering, scheduling. We never spend LLM tokens or accept LLM
+        non-determinism on work that plain code can do reliably.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h2 class="section">
+      <span>1. System Context</span>
+      <span class="level">C4 Level 1</span>
+    </h2>
+
+    <p>
+      AI Vector sits between four parties: the <strong>editor</strong> (Arman)
+      who ratifies every issue; the <strong>readers</strong> who open the
+      newsletter; the <strong>sources</strong> the pipeline subscribes to; and
+      the <strong>LLM provider</strong> that does the judgment work. GitHub
+      Pages hosts the published HTML.
+    </p>
+
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+    Editor(["👤 Arman<br/>Editor / Author"])
+    Reader(["👥 Readers<br/>DS + engineers in FS"])
+    System["<b>AI Vector</b><br/>Daily newsletter pipeline"]
+    Sources[("📰 ~60 Sources<br/>RSS / Atom / API")]
+    LLM[("🧠 LLM Provider<br/>Anthropic, Bedrock,<br/>OpenAI-compatible")]
+    Pages[("🌐 GitHub Pages<br/>Static hosting")]
+
+    Editor -- "runs <code>aiv run</code><br/>reviews staging<br/>runs <code>aiv release</code>" --> System
+    Sources -- "RSS / Atom / JSON" --> System
+    System -- "rank + summarise" --> LLM
+    LLM -- "scored clusters,<br/>drafted summaries" --> System
+    System -- "writes HTML" --> Pages
+    Pages -- "serves daily issue" --> Reader
+
+    classDef person fill:#fdf4f1,stroke:#e6452f,stroke-width:2px,color:#0c0c0c
+    classDef system fill:#0c0c0c,stroke:#0c0c0c,color:#ffffff
+    classDef external fill:#f3f2ec,stroke:#6a6a64,color:#1a1a17
+    class Editor,Reader person
+    class System system
+    class Sources,LLM,Pages external
+      </div>
+      <div class="diagram-caption">Figure 1 &middot; System context</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h2 class="section">
+      <span>2. Containers</span>
+      <span class="level">C4 Level 2</span>
+    </h2>
+
+    <p>
+      Inside AI Vector, the work splits into five containers. One CLI binary
+      orchestrates everything; the pipeline reads and writes a typed file
+      archive; two external dependencies (the embedding model and the LLM
+      provider) sit beside the pipeline; templates render the final artefact.
+    </p>
+
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+    subgraph aiv ["aiv CLI (typer)"]
+        Run["aiv run"]
+        Release["aiv release"]
+        Unrelease["aiv unrelease"]
+        Check["aiv check"]
+    end
+
+    subgraph pipeline ["Pipeline modules (Python)"]
+        Fetch["fetch.py"]
+        Cluster["cluster.py"]
+        Rank["rank.py"]
+        Summarise["summarise.py"]
+        Render["render.py"]
+    end
+
+    subgraph archive ["Data archive (JSONL + JSON)"]
+        Staging[("data/staging/&lt;date&gt;/")]
+        Released[("data/released/&lt;date&gt;/")]
+        URLs[("published_urls.txt")]
+    end
+
+    Embed[("Local embedding model<br/>BAAI/bge-base-en-v1.5")]
+    LLMc[("LLM client<br/>configurable provider")]
+    Templates["Jinja2 templates"]
+    Docs[("docs/<br/>GitHub Pages surface")]
+
+    aiv --> pipeline
+    pipeline --> archive
+    Cluster --> Embed
+    Rank --> LLMc
+    Summarise --> LLMc
+    Render --> Templates
+    Templates --> Docs
+    archive -.->|promote| Released
+    Released --> URLs
+
+    classDef container fill:#f3f2ec,stroke:#0c0c0c,color:#0c0c0c
+    classDef ext fill:#fdf4f1,stroke:#e6452f,color:#0c0c0c
+    classDef store fill:#ffffff,stroke:#6a6a64,color:#1a1a17
+    class Run,Release,Unrelease,Check,Fetch,Cluster,Rank,Summarise,Render,Templates container
+    class Embed,LLMc ext
+    class Staging,Released,URLs,Docs store
+      </div>
+      <div class="diagram-caption">Figure 2 &middot; Containers inside AI Vector</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Container</th><th>Responsibility</th><th>Owner</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>aiv</code> CLI</td><td>Single entry point. Routes <code>run</code> / <code>release</code> / <code>unrelease</code> / <code>check</code> subcommands.</td><td>Architect</td></tr>
+        <tr><td>Pipeline modules</td><td>Five stages, each independently testable. See §3.</td><td>Per-stage</td></tr>
+        <tr><td>Data archive</td><td>Typed file store. Staging is gitignored; released is immutable history.</td><td>Architect</td></tr>
+        <tr><td>Embedding model</td><td>Local sentence-transformers; no API call. Cached at <code>~/.cache/huggingface/</code>.</td><td>Retrieval Engineer</td></tr>
+        <tr><td>LLM client</td><td>Provider-agnostic. Native Anthropic + Bedrock; OpenAI-compatible for the rest.</td><td>LLM Engineer</td></tr>
+        <tr><td>Templates</td><td>Jinja2 → HTML. Self-hosted fonts.</td><td>Release Engineer</td></tr>
+        <tr><td><code>docs/</code></td><td>GitHub Pages surface. Released HTML + landing index + HANDBOOK.</td><td>Release Engineer</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h2 class="section">
+      <span>3. The Pipeline</span>
+      <span class="level">C4 Level 3</span>
+    </h2>
+
+    <p>
+      Five stages, run in order. Each reads its predecessor's file and writes
+      its own &mdash; that's the handoff contract that lets you re-run any
+      subset cheaply. The split between deterministic stages and LLM stages
+      is the &ldquo;No Token Wasted&rdquo; principle made structural.
+    </p>
+
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+    Sources(["sources.yaml"]) --> Fetch["fetch"]
+    Fetch -->|items.jsonl| Cluster["cluster"]
+    Cluster -->|clusters.jsonl| Rank["rank"]
+    Rank -->|ranked.jsonl| Summarise["summarise"]
+    Summarise -->|issue.json| Render["render"]
+    Render --> HTML(["staging&lt;br&gt;HTML"])
+
+    Embed[("embedding<br/>model")]
+    LLM[("LLM")]
+    Trafilatura[("trafilatura<br/>body extractor")]
+
+    Cluster -.-> Embed
+    Rank -.-> LLM
+    Summarise -.-> LLM
+    Summarise -.-> Trafilatura
+
+    classDef deterministic fill:#f3f2ec,stroke:#0c0c0c,color:#0c0c0c,stroke-width:2px
+    classDef judgment fill:#fdf4f1,stroke:#e6452f,color:#0c0c0c,stroke-width:2px
+    classDef io fill:#ffffff,stroke:#6a6a64,color:#1a1a17
+    class Fetch,Cluster,Render deterministic
+    class Rank,Summarise judgment
+    class Sources,HTML,Embed,LLM,Trafilatura io
+      </div>
+      <div class="diagram-caption">Figure 3 &middot; Pipeline stages (red = LLM judgment, dark = deterministic code)</div>
+    </div>
+
+    <h4>fetch</h4>
+    <p>
+      Reads <code>config/sources.yaml</code>; pulls ~60 feeds in parallel via
+      <code>feedparser</code> + <code>httpx</code>; normalises each entry into
+      an <code>Item</code>; exact-URL deduplicates. Writes
+      <code>items.jsonl</code> + <code>source_health.json</code>. No LLM.
+      ~15–30s.
+    </p>
+
+    <h4>cluster</h4>
+    <p>
+      Embeds each item locally with BAAI/bge-base-en-v1.5; agglomerative
+      clustering at a cosine threshold; cross-links to released centroids
+      from the last 14 days so &ldquo;OpenAI launches X&rdquo; doesn't
+      reappear three days running. Writes <code>clusters.jsonl</code> +
+      <code>embeddings/centroids.npz</code>. No LLM. ~20–60s.
+    </p>
+
+    <h4>rank</h4>
+    <p>
+      One LLM call per cluster. Scores 0–100 against
+      <code>config/rubric.yaml</code>:
+      <code>significance · hands_on_utility · big_picture_relevance · financial_services_impact · freshness_momentum</code>.
+      Tags audiences. Assigns tier: <code>pulse</code> /
+      <code>on_the_radar</code> / <code>cut</code>. Writes
+      <code>ranked.jsonl</code>. ~$0.05–0.10 with Sonnet. ~60–90s.
+    </p>
+
+    <h4>summarise</h4>
+    <p>
+      For top-N stories, fetches the article body via <code>trafilatura</code>,
+      then LLM-drafts: headline, body, direction note, signal pill
+      (<code>act / try / read / watch / discuss</code>). Writes section intros
+      per section. Assembles into the <code>Issue</code> model. Writes
+      <code>issue.json</code>. ~$0.10–0.15. ~60–180s.
+    </p>
+
+    <h4>render</h4>
+    <p>
+      Jinja2 → HTML. No LLM, no network. Writes
+      <code>docs/staging/&lt;date&gt;.html</code>. <code>aiv release</code>
+      re-renders into <code>docs/released/&lt;date&gt;.html</code> and
+      rebuilds the landing index. &lt;1s.
+    </p>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h2 class="section">
+      <span>4. The Daily Run</span>
+      <span class="level">C4 Dynamic</span>
+    </h2>
+
+    <p>
+      A complete day from idle to published issue. The pipeline run takes
+      2–5 minutes; the review-and-release gate is intentionally human.
+    </p>
+
+    <div class="diagram">
+      <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant A as Arman
+    participant CLI as aiv
+    participant P as Pipeline
+    participant LLM as LLM
+    participant FS as data/staging/
+    participant Pages as docs/
+
+    A->>CLI: aiv run
+    CLI->>P: fetch
+    P->>P: pull ~60 feeds
+    P->>FS: items.jsonl + source_health.json
+    CLI->>P: cluster
+    P->>P: embed + group near-duplicates
+    P->>FS: clusters.jsonl
+    CLI->>P: rank
+    P->>LLM: score each cluster
+    LLM-->>P: scored + tagged
+    P->>FS: ranked.jsonl
+    CLI->>P: summarise
+    P->>LLM: draft headlines + bodies
+    LLM-->>P: signal pills + intros
+    P->>FS: issue.json
+    CLI->>P: render
+    P->>Pages: staging/&lt;date&gt;.html
+    Note over A: review the draft
+    A->>CLI: aiv release
+    CLI->>FS: promote staging → released
+    CLI->>Pages: released/&lt;date&gt;.html + index.html
+    Note over Pages: GitHub Pages serves the new issue
+      </div>
+      <div class="diagram-caption">Figure 4 &middot; A complete day, from <code>aiv run</code> to publish</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h2 class="section">
+      <span>5. Data Contracts</span>
+      <span class="level">C4 Level 4</span>
+    </h2>
+
+    <p>
+      Five pydantic models thread the pipeline. Each stage's output is the
+      next stage's input &mdash; the file shape is the contract. Schema
+      changes go through the Architect.
+    </p>
+
+    <div class="diagram">
+      <div class="mermaid">
+classDiagram
+    class Item {
+        +str id
+        +str source
+        +HttpUrl url
+        +str title
+        +datetime published_at
+        +str raw_summary
+        +datetime fetched_at
+    }
+    class Cluster {
+        +str cluster_id
+        +list~str~ item_ids
+        +str canonical_title
+        +list~str~ sources
+        +datetime earliest_published
+        +str? cross_time_ref
+    }
+    class RankedStory {
+        +str cluster_id
+        +int score
+        +dict breakdown
+        +list~AudienceTag~ audience_tags
+        +RankTier tier
+        +str rationale
+    }
+    class SummaryBlock {
+        +str headline
+        +str summary
+        +list~HttpUrl~ source_urls
+        +Signal? signal
+    }
+    class IssueSection {
+        +SectionName name
+        +list~SummaryBlock~ stories
+        +str? intro_lead
+        +str? intro_body
+    }
+    class Issue {
+        +int? issue_number
+        +date date
+        +IssueSection pulse
+        +list~IssueSection~ sections
+        +str author
+        +datetime generated_at
+    }
+    Item "many" --> "1" Cluster : grouped into
+    Cluster "1" --> "1" RankedStory : scored as
+    RankedStory "1" --> "1" SummaryBlock : drafted as
+    SummaryBlock "many" --> "1" IssueSection : grouped into
+    IssueSection "many" --> "1" Issue : composed into
+      </div>
+      <div class="diagram-caption">Figure 5 &middot; Data contracts (full definitions in <code>src/models.py</code>)</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <h2 class="section">
+      <span>6. Principles</span>
+      <span class="level">discipline</span>
+    </h2>
+
+    <p>
+      The four principles that govern engineering decisions in this repo.
+      Any change that violates one of these deserves an explicit Architect
+      sign-off in the PR description.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Principle</th><th>What it means in practice</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>No Token Wasted</strong></td>
+          <td>LLM for judgment only. If code can do it reliably, code does it. The test before any new LLM call: <em>could code do this reliably?</em></td>
+        </tr>
+        <tr>
+          <td><strong>Curated, not aggregated</strong></td>
+          <td>Every issue has a point of view. Arman ratifies. Nothing auto-publishes.</td>
+        </tr>
+        <tr>
+          <td><strong>Design-first, eval-first</strong></td>
+          <td>Lock the data contracts before code; build the eval harness before tuning. We optimise against the rubric, not vibes.</td>
+        </tr>
+        <tr>
+          <td><strong>Subscribe, don't scrape</strong></td>
+          <td>RSS / Atom / API only. HTML scraping is a rare, isolated fallback. Compliance + fragility both demand this.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <footer class="footer">
+      <span>AI Vector &middot; Solution Design &middot; v0.9</span>
+      <span><a href="HANDBOOK.md">handbook</a> &middot; <a href="index.html">issues</a></span>
+    </footer>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      themeVariables: {
+        fontFamily: '"Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif',
+        fontSize: "14px",
+        primaryColor: "#fdf4f1",
+        primaryTextColor: "#0c0c0c",
+        primaryBorderColor: "#e6452f",
+        lineColor: "#6a6a64",
+        secondaryColor: "#f3f2ec",
+        tertiaryColor: "#ffffff",
+        background: "#fafaf6",
+        mainBkg: "#f3f2ec",
+        secondBkg: "#fdf4f1",
+        tertiaryBkg: "#ffffff",
+        actorBkg: "#f3f2ec",
+        actorBorder: "#0c0c0c",
+        actorTextColor: "#0c0c0c",
+        actorLineColor: "#6a6a64",
+        signalColor: "#0c0c0c",
+        signalTextColor: "#0c0c0c",
+        labelBoxBkgColor: "#fdf4f1",
+        labelBoxBorderColor: "#e6452f",
+        labelTextColor: "#0c0c0c",
+        noteBkgColor: "#fdf4f1",
+        noteBorderColor: "#e6452f",
+        noteTextColor: "#0c0c0c",
+        classText: "#0c0c0c"
+      },
+      flowchart: {
+        curve: "basis",
+        padding: 16,
+        nodeSpacing: 50,
+        rankSpacing: 60
+      },
+      sequence: {
+        actorMargin: 50,
+        boxMargin: 10,
+        messageMargin: 35
+      }
+    });
+  </script>
+</body>
+</html>

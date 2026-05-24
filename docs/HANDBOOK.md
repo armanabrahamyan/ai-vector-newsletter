@@ -6,6 +6,9 @@ you're trying to do; everything is in plain language and copy-pasteable.
 If you're new, read the next two sections first — they're the whole
 picture in 60 seconds. Then jump to whatever you need.
 
+For the full system design (C4 context → containers → components →
+data contracts), see [DESIGN.html](DESIGN.html).
+
 ---
 
 ## How AI Vector works
