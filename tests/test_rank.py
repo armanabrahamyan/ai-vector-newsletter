@@ -12,15 +12,30 @@ parsing. We do NOT mock the function under test (CONVENTIONS sec. 3).
 The Anthropic + Bedrock branches use vendor SDKs whose contracts are
 better covered by the vendor's own test suite + the integration eval; we
 deliberately don't pin them here.
+
+Additionally pins the deterministic post-LLM continuation penalty (#81)
+in ``TestContinuationPenalty`` -- the rule that caps
+``breakdown["significance"]`` at 50 for any cluster carrying a
+``cross_time_ref`` so a follow-up to yesterday's story can't crowd fresh
+items out of high-scoring slots.
 """
 from __future__ import annotations
 
+import datetime as _dt
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.rank import _llm_call_openai_compatible
+from src.models import Cluster
+from src.rank import (
+    _CONTINUATION_SIGNIFICANCE_CAP,
+    _ParsedScore,
+    _apply_continuation_penalty,
+    _llm_call_openai_compatible,
+    _weighted_score,
+)
+from tests.conftest import FIXED_EARLIER
 
 
 def _ok_response(content: str = "ranked output") -> MagicMock:
@@ -232,3 +247,135 @@ class TestResponseParsing:
                     "p", model="gpt-4", temperature=0.5,
                     max_tokens=100, timeout=30.0,
                 )
+
+
+# ===========================================================================
+# Continuation penalty (#81) -- post-LLM deterministic downweighting.
+#
+# A continuation (Cluster.cross_time_ref is not None) is a follow-up to a
+# story we covered on a previous day. Allowing the LLM to score it 65+ on
+# significance crowds genuinely-new stories out of high slots. The penalty
+# caps breakdown["significance"] at 50 (rubric anchor 50 = "single signal-
+# filter dimension hit"); the caller recomputes score via _weighted_score.
+#
+# Anchor case: c_2e53967d020fb800 on 2026-05-25 -- llama.cpp how-to
+# follow-up scored 44 with significance=65, became Pulse by default.
+# Penalty drops significance 65->50, score 44->40.
+# ===========================================================================
+
+def _parsed(significance: int) -> _ParsedScore:
+    return _ParsedScore(
+        breakdown={
+            "significance": significance,
+            "hands_on_utility": 75,
+            "big_picture_relevance": 0,
+            "financial_services_impact": 15,
+            "freshness_momentum": 40,
+        },
+        audience_tags=["hands_on"],
+        rationale="test",
+    )
+
+
+def _cluster(cluster_id: str, *, cross_time_ref: str | None) -> Cluster:
+    return Cluster(
+        cluster_id=cluster_id,
+        item_ids=["i1"],
+        canonical_title="t",
+        sources=["src_a"],
+        earliest_published=FIXED_EARLIER,
+        size=1,
+        cross_time_ref=cross_time_ref,
+    )
+
+
+class TestContinuationPenalty:
+    """The deterministic post-LLM continuation penalty -- the safer alternative
+    to a prompt change for this rule (see #75/#77 cliff)."""
+
+    def test_no_change_when_cross_time_ref_is_none(self) -> None:
+        """Fresh stories must not be touched. Most stories are fresh; this is
+        the common path -- a bug here would be a global regression."""
+        parsed = _parsed(significance=80)
+        cluster = _cluster("c_" + "1" * 14, cross_time_ref=None)
+        _apply_continuation_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == 80
+
+    def test_caps_significance_when_continuation(self) -> None:
+        """The smoking-gun anchor: continuation with significance=65 must
+        drop to the cap. Mirrors c_2e53967d020fb800 / 2026-05-25."""
+        parsed = _parsed(significance=65)
+        cluster = _cluster(
+            "c_" + "2" * 14, cross_time_ref="c_" + "f" * 14,
+        )
+        _apply_continuation_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _CONTINUATION_SIGNIFICANCE_CAP
+        assert _CONTINUATION_SIGNIFICANCE_CAP == 50
+
+    def test_score_recomputes_correctly_after_cap(self) -> None:
+        """The pydantic invariant `score == weighted_sum(breakdown)` must
+        still hold after the penalty mutates breakdown. We recompute via
+        the same _weighted_score helper RankedStory uses."""
+        parsed = _parsed(significance=65)
+        cluster = _cluster(
+            "c_" + "3" * 14, cross_time_ref="c_" + "f" * 14,
+        )
+        # Anchor expected: 0.3*65 + 0.25*75 + 0 + 0.15*15 + 0.10*40 = 44.5 -> 44
+        score_before = _weighted_score(parsed.breakdown)
+        assert score_before == 44
+
+        _apply_continuation_penalty(parsed, cluster)
+        # After cap: 0.3*50 + 0.25*75 + 0 + 0.15*15 + 0.10*40 = 40.0 -> 40
+        score_after = _weighted_score(parsed.breakdown)
+        assert score_after == 40
+
+    def test_other_breakdown_dimensions_untouched(self) -> None:
+        """The penalty must only touch significance. hands_on_utility,
+        big_picture_relevance, financial_services_impact, freshness_momentum
+        all stay as the LLM rated them -- the rule is about whether the
+        story is NEW, not about its other merits."""
+        parsed = _parsed(significance=70)
+        cluster = _cluster(
+            "c_" + "4" * 14, cross_time_ref="c_" + "f" * 14,
+        )
+        before = dict(parsed.breakdown)
+        _apply_continuation_penalty(parsed, cluster)
+        for key in (
+            "hands_on_utility",
+            "big_picture_relevance",
+            "financial_services_impact",
+            "freshness_momentum",
+        ):
+            assert parsed.breakdown[key] == before[key], (
+                f"{key} should not be affected by the continuation penalty"
+            )
+
+    def test_noop_when_significance_already_below_cap(self) -> None:
+        """If the LLM already scored significance <= 50, the rule is a no-op
+        -- and importantly, no warning log fires either (the rule didn't
+        need to act)."""
+        parsed = _parsed(significance=40)
+        cluster = _cluster(
+            "c_" + "5" * 14, cross_time_ref="c_" + "f" * 14,
+        )
+        _apply_continuation_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == 40
+
+    def test_noop_at_exact_cap(self) -> None:
+        """Boundary: significance == cap. No mutation, no log churn."""
+        parsed = _parsed(significance=_CONTINUATION_SIGNIFICANCE_CAP)
+        cluster = _cluster(
+            "c_" + "6" * 14, cross_time_ref="c_" + "f" * 14,
+        )
+        _apply_continuation_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _CONTINUATION_SIGNIFICANCE_CAP
+
+    def test_caps_high_significance_continuation(self) -> None:
+        """A continuation the LLM rated near the top of significance still
+        gets pinned to the cap, not to "5 below where it was"."""
+        parsed = _parsed(significance=95)
+        cluster = _cluster(
+            "c_" + "7" * 14, cross_time_ref="c_" + "f" * 14,
+        )
+        _apply_continuation_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _CONTINUATION_SIGNIFICANCE_CAP

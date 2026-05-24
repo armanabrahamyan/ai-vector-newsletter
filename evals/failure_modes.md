@@ -478,6 +478,91 @@ place; root cause at the prompt level still open).
 
 ---
 
+### FM-13: Continuation surfaces as Pulse, displacing fresh signal
+
+**What it is.** A cluster correctly tagged as a continuation (carrying
+`Cluster.cross_time_ref` set to a prior day's chain root) reaches the
+issue's Pulse slot. The reader opens the publication and the lead is "we
+already told you about X yesterday; here is more of it." The Pulse is
+meant to be the day's freshest editorial anchor; leading with a follow-
+up signals "there is nothing new today" even when fresher (lower-scored)
+stories are available.
+
+Two upstream contributions made this possible:
+1. `rank.py` scored the continuation purely on its content, with no
+   downweighting for the fact that the original signal had already been
+   recognised on a prior day. A how-to follow-up to yesterday's
+   announcement scored `significance = 65` (rubric anchor 65 sits
+   between "two signal-filter dimensions" and "three").
+2. `summarise.py`'s `_pick_pulse` selected the highest-scored surviving
+   cluster with no preference between FRESH and continuation stories.
+   When the continuation outscored the fresh competition, it landed as
+   Pulse by default.
+
+The smoking gun: `c_2e53967d020fb800` ("How I do use the recent llama.cpp
+native tools to do web rag ... directly from inside the llama-server's
+webui", 2026-05-25). `cross_time_ref = c_cf0b99c06c42a9ba`,
+`significance = 65`, `score = 44`. Routed to Pulse despite a fresh
+Hugging Face benchmark tracker (`c_78dabe7884f76ef8`, score 39) being
+available.
+
+**Detection signal.**
+- Any `issue.json` where the Pulse story's `cross_time_ref` is not null
+  AND at least one non-pulse story in the issue has `cross_time_ref ==
+  null`. The fixed deterministic logic in `_pick_pulse` (#82) makes this
+  invariant strict for new issues; staging surveillance for the rule
+  would catch regressions.
+- The log line `Pulse non-continuation bias fired -- demoted
+  continuation <id> ...` (#82) firing more than ~1-2 times per week is a
+  signal that rank.py is systematically over-rating continuations on the
+  pre-cap significance dimension.
+- The log line `continuation penalty applied to <id>: significance
+  N->50, score N->M ...` (#81) firing on every continuation in a daily
+  run is expected; a sudden absence is the signal (rule turned off,
+  cross_time_ref attribution broke, or there are no continuations
+  today).
+- The degraded-mode log `NO FRESH SIGNAL FOR PULSE` firing means the
+  whole top of the issue is follow-ups. The operator should consider
+  whether the issue should ship at all.
+
+**Eval mechanism.** Regression fixture
+(`evals/fixtures/_regressions/2026-05-25_continuation_as_pulse.md`)
+documents the cluster shape and the expected post-fix behaviour. Unit
+tests pin both rules: `tests/test_rank.py::TestContinuationPenalty`
+covers the deterministic penalty (cross_time_ref None -> no change;
+set -> significance capped, score recomputed); `tests/test_summarise.py
+::TestPulseSelectionContinuationBias` covers the selection rule (fresh
+beats continuation regardless of score; degraded mode when all
+continuations; Pulse-class quality bar still applies within the chosen
+pool). A future eval extension can assert the on-disk invariant
+directly: no `issue.json` ships with a continuation Pulse when a fresh
+story was available.
+
+**Mitigation.**
+1. `summarise.py` Pulse selection biased against continuations (#82,
+   `_pick_pulse` v0.3 -- `PULSE_PROMPT_VERSION` bumped to v0.9 to record
+   the behavioural change). Fresh stories beat continuations regardless
+   of score; within the chosen pool the >= 2 signal-dimensions quality
+   bar still applies; degraded mode (all continuations) picks the best
+   and ships with a WARNING log.
+2. `rank.py` deterministic continuation penalty (#81,
+   `_apply_continuation_penalty`). Caps
+   `breakdown["significance"]` at 50 when `cluster.cross_time_ref` is
+   set; score recomputed via the same `_weighted_score` the pydantic
+   validator uses. NOT a prompt change -- the #75/#77 cliff is the
+   precedent that deterministic post-processing is the safer path for
+   hard-constraint rules. `RANK_PROMPT_VERSION` stays at v0.1 because
+   the prompt text is unchanged.
+
+**Severity.** Medium -- doesn't crash the issue, but a continuation
+sitting in Pulse materially degrades the editorial first impression and
+trains the reader to skim past the lead.
+
+**Last occurrence.** 2026-05-25 (staging; caught and fixed before
+release in tasks #81 + #82).
+
+---
+
 ---
 
 ## Regression discipline

@@ -88,6 +88,14 @@ prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 # into "< 60 for everything else". If you're tempted to re-try this change,
 # read the #77 postmortem first; full-corpus shape assertions (not just
 # labelled-corpus quality) are a precondition.
+#
+# Task #81 (2026-05-25): continuation penalty added as DETERMINISTIC
+# post-LLM logic (see _apply_continuation_penalty), not a prompt change.
+# RANK_PROMPT_VERSION intentionally stays at v0.1 -- the prompt text is
+# unchanged. The penalty caps `breakdown["significance"]` at 50 for any
+# cluster with `cross_time_ref` set, then score is recomputed via the
+# normal weighted-sum path. Lesson from #75/#77: prefer deterministic
+# post-processing over prompt edits where the rule is a hard constraint.
 
 MAX_ITEMS_IN_CLUSTER_PROMPT = 3
 """How many member items to inline in the per-cluster prompt body."""
@@ -497,9 +505,21 @@ def _rank_one(
     if parsed is None:
         return None
 
+    # Task #81: deterministic post-LLM continuation penalty. If the cluster
+    # carries a cross_time_ref (it's a follow-up to a story we covered on
+    # a previous day), cap breakdown["significance"] at 50 (rubric anchor
+    # 50 = "single signal-filter dimension hit"). A continuation is rarely
+    # the day's freshest signal; allowing it to score 65+ on significance
+    # crowds genuinely-new stories out of Pulse / Big Picture slots. The
+    # penalty is applied to BREAKDOWN; score is recomputed below so the
+    # pydantic invariant `score == weighted_sum(breakdown)` still holds.
+    # Logged when fired so operators see the rule's effect.
+    _apply_continuation_penalty(parsed, cluster)
+
     # Recompute score from breakdown x weights -- ignore any LLM-returned
     # `score` field. Pydantic enforces the same invariant; recomputing here
-    # absorbs LLM arithmetic noise before pydantic raises.
+    # absorbs LLM arithmetic noise (and the continuation penalty above)
+    # before pydantic raises.
     score = _weighted_score(parsed.breakdown)
 
     # The LLM picks audience tags; tier is the editorial slot. rank.py's
@@ -730,6 +750,50 @@ def _weighted_score(breakdown: dict[str, int]) -> int:
         for name, value in breakdown.items()
     )
     return max(0, min(100, round(raw)))
+
+
+_CONTINUATION_SIGNIFICANCE_CAP = 50
+"""Significance ceiling for stories with ``cluster.cross_time_ref`` set --
+rubric anchor 50 = "single signal-filter dimension hit". See
+``_apply_continuation_penalty``."""
+
+
+def _apply_continuation_penalty(parsed: "_ParsedScore", cluster: Cluster) -> None:
+    """Task #81: cap ``breakdown["significance"]`` at 50 for any cluster that
+    is a CONTINUATION (``cluster.cross_time_ref is not None``).
+
+    Rationale. A continuation is a follow-up to a story we covered on a
+    previous day -- llama.cpp ships a feature on day N; someone writes a
+    how-to on day N+1; the how-to is the same chain. By construction, the
+    significance has been mostly recognised already. Letting the LLM score
+    the follow-up at 65+ on significance crowds genuinely-new stories out
+    of Pulse / Big Picture slots and produces issues like 2026-05-25 where
+    a how-to follow-up became Pulse despite the original announcement
+    having already shipped.
+
+    Deterministic, NOT a prompt change. The v0.2 prompt-sharpening
+    experiment (#75) caused a cliff (#77); this is the safer surgical
+    alternative. Mutates ``parsed.breakdown`` in place. Score is recomputed
+    by the caller via ``_weighted_score``.
+
+    No-op when the cluster is fresh (``cross_time_ref is None``) or the
+    LLM-returned significance was already at or below the cap. Logs when
+    the rule fires so operators can see its effect.
+    """
+    if cluster.cross_time_ref is None:
+        return
+    before = parsed.breakdown.get("significance", 0)
+    if before <= _CONTINUATION_SIGNIFICANCE_CAP:
+        return
+    score_before = _weighted_score(parsed.breakdown)
+    parsed.breakdown["significance"] = _CONTINUATION_SIGNIFICANCE_CAP
+    score_after = _weighted_score(parsed.breakdown)
+    _LOG.info(
+        "continuation penalty applied to %s: significance %d->%d, "
+        "score %d->%d (cross_time_ref=%s; #81)",
+        cluster.cluster_id, before, _CONTINUATION_SIGNIFICANCE_CAP,
+        score_before, score_after, cluster.cross_time_ref,
+    )
 
 
 def _assign_initial_tier(

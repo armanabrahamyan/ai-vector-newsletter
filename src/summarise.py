@@ -92,9 +92,12 @@ SUMMARISE_PROMPT_VERSION = "v0.9"
     (better to ship than to silently drop a top-N story)
 v0.8 vocabulary unchanged (big_picture / hands_on / on_the_radar)."""
 
-PULSE_PROMPT_VERSION = "v0.8"
-"""Audit tag: ``pulse-v0.8-2026-05-24``. v0.8 mirrors summarise v0.9's
-length-cap hardening."""
+PULSE_PROMPT_VERSION = "v0.9"
+"""Audit tag: ``pulse-v0.9-2026-05-25``. v0.9 (#82): the Pulse SELECTION
+RULE now biases against continuations -- a fresh (cross_time_ref is None)
+story beats any continuation regardless of score. This is a behavioural
+change in ``_pick_pulse``, not a prompt change. v0.8 mirrored summarise
+v0.9's length-cap hardening."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -1455,32 +1458,87 @@ def _signal_dimensions_hit(story: RankedStory) -> int:
 def _pick_pulse(
     blocks: list[tuple[RankedStory, SummaryBlock]],
 ) -> str | None:
-    """The Pulse selection rule (v0.2 -- direction_note is no longer a
-    separate field, so we no longer filter on its presence).
+    """The Pulse selection rule (v0.3 -- task #82: bias against continuations).
 
-    Primary: highest-scoring story that hits >= 2 signal-filter dimensions
-    (significance, hands_on_utility, freshness_momentum >= 70).
+    Selection order:
 
-    Fallback (logged): highest breakdown.significance among all blocks.
-    Returns None only if blocks is empty (caller aborts)."""
+      1. **Prefer non-continuation for Pulse.** A continuation (the
+         SummaryBlock carries a non-null ``cross_time_ref``) is a follow-up
+         to a story we covered on a previous day. The Pulse is meant to be
+         the day's freshest editorial anchor; leading with a continuation
+         tells the reader "we have nothing new today". So: among surviving
+         blocks, any FRESH (cross_time_ref is None) story beats any
+         continuation regardless of score.
+
+      2. Within the chosen pool (FRESH if any exist; else continuations),
+         prefer stories that hit >= 2 signal-filter dimensions
+         (significance, hands_on_utility, freshness_momentum >= 70). This
+         is the Pulse-class quality bar inherited from v0.2.
+
+      3. Within the chosen pool, prefer the highest score (blocks arrive in
+         score-desc order; the sort below preserves that as the tiebreaker).
+
+    Degraded mode. If ALL surviving stories are continuations, we still
+    have to fill ``Issue.pulse`` (the model requires exactly 1 story). We
+    pick the best continuation and log a WARNING -- the operator sees the
+    issue is light on fresh signal. ``Issue.pulse=None`` is not allowed by
+    the schema, so we ship with the smell loud rather than crash.
+
+    Returns None only if ``blocks`` is empty (caller aborts).
+    """
     if not blocks:
         return None
-    primary = [
-        (story, block) for story, block in blocks
-        if _signal_dimensions_hit(story) >= 2
-    ]
-    if primary:
-        # blocks already arrives in score-desc order; pick the first.
-        return primary[0][0].cluster_id
-    _LOG.warning(
-        "summarise: no Pulse-class story today (none hit >= 2 signal "
-        "dimensions); using top-significance fallback"
-    )
-    fallback = max(
-        blocks,
-        key=lambda sb: (sb[0].breakdown.get("significance", 0), sb[0].score),
-    )
-    return fallback[0].cluster_id
+
+    # Partition by continuation status. cross_time_ref lives on the
+    # SummaryBlock (mirrored from Cluster at construction time in
+    # _summarise_one). This is the deterministic seam -- no LLM, no prompt.
+    fresh = [(s, b) for s, b in blocks if b.cross_time_ref is None]
+    continuations = [(s, b) for s, b in blocks if b.cross_time_ref is not None]
+
+    pool: list[tuple[RankedStory, SummaryBlock]]
+    if fresh:
+        pool = fresh
+    else:
+        # Degraded mode: every surviving story is a follow-up. Still must
+        # pick one (Issue.pulse requires exactly 1 block).
+        _LOG.warning(
+            "summarise: NO FRESH SIGNAL FOR PULSE -- every surviving story "
+            "is a continuation (carries cross_time_ref). Using best "
+            "continuation as Pulse and shipping the smell. Consider whether "
+            "today's issue should ship at all."
+        )
+        pool = continuations
+
+    # Within the pool: Pulse-class quality bar first, then score order.
+    pulse_class = [sb for sb in pool if _signal_dimensions_hit(sb[0]) >= 2]
+    if pulse_class:
+        chosen = pulse_class[0]  # pool preserves score-desc order
+    else:
+        # Fallback within the pool: highest breakdown.significance, then score.
+        chosen = max(
+            pool,
+            key=lambda sb: (sb[0].breakdown.get("significance", 0), sb[0].score),
+        )
+        if fresh:
+            _LOG.warning(
+                "summarise: no Pulse-class FRESH story today (none hit >= 2 "
+                "signal dimensions); using top-significance fresh fallback"
+            )
+
+    # Operator visibility: log when we demoted a higher-scored continuation
+    # for a lower-scored fresh story. This is the rule firing.
+    if fresh and continuations:
+        top_continuation = continuations[0][0]  # blocks were score-desc
+        if top_continuation.score > chosen[0].score:
+            _LOG.info(
+                "summarise: Pulse non-continuation bias fired -- demoted "
+                "continuation %s (score=%d) in favour of fresh story %s "
+                "(score=%d). #82.",
+                top_continuation.cluster_id, top_continuation.score,
+                chosen[0].cluster_id, chosen[0].score,
+            )
+
+    return chosen[0].cluster_id
 
 
 def _pick_big_picture(
