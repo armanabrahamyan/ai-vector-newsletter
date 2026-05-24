@@ -26,11 +26,11 @@
       letter-spacing: -0.003em;
     }
     .page {
-      max-width: 920px;
+      max-width: 1100px;
       margin: 0 auto;
       background: #ffffff;
       box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
-      padding: 72px 88px 80px;
+      padding: 72px 96px 80px;
     }
 
     /* ── masthead ─────────────────────────────────────────── */
@@ -343,10 +343,21 @@ flowchart TB
     </h2>
 
     <p>
-      Inside AI Vector, the work splits into five containers. One CLI binary
-      orchestrates everything; the pipeline reads and writes a typed file
-      archive; two external dependencies (the embedding model and the LLM
-      provider) sit beside the pipeline; templates render the final artefact.
+      <em>A note on the word &ldquo;container&rdquo;.</em> In C4, a container
+      is a separately runnable or deployable unit (an application, a database,
+      a service) &mdash; the name predates Docker and means &ldquo;something
+      that contains code&rdquo;, not a Linux container. AI Vector is really a
+      single Python process, so what follows is closer to <strong>building
+      blocks</strong> or <strong>modules</strong> than strict C4 containers.
+      We keep the C4 label for the layered thinking, not for purity.
+    </p>
+
+    <p>
+      Inside AI Vector, the work splits into seven building blocks. One CLI
+      binary orchestrates everything; the pipeline reads and writes a typed
+      file archive; two external dependencies (the embedding model and the
+      LLM provider) sit beside the pipeline; templates render the final
+      artefact.
     </p>
 
     <div class="diagram">
