@@ -21,6 +21,20 @@ when the decision is irreversible. Don't make structural calls unilaterally.
 
 ---
 
+## Operator's handbook (`docs/HANDBOOK.md`)
+
+Daily-driver reference for Arman: problem-first, copy-pasteable, covers
+every granular control lever (stage subsets, date overrides, dry runs,
+LLM provider swaps, manual edits, troubleshooting, etc).
+
+**Hydrate when:** a CLI flag changes; a new operator scenario surfaces
+(e.g. "I want to do X" comes up and isn't already covered); a
+troubleshooting tip is worth remembering. This doc earns its keep by
+being the first thing Arman reaches for when something feels off.
+**Owner:** Release Engineer maintains; any agent can propose updates.
+
+---
+
 ## Living docs (`docs/internal/`)
 
 These files need to stay in sync with the code. When you change something they
@@ -74,8 +88,8 @@ resolved.
 ## Key paths
 
 ```
-docs/              GitHub Pages surface — HTML only, no markdown
-docs/internal/     Living docs — update with the code
+docs/              GitHub Pages surface — HTML + HANDBOOK.md (operator-facing only)
+docs/internal/     Living internal docs — update with the code
 docs/released/     Published issue HTML (tracked)
 docs/staging/      Staging preview HTML (gitignored)
 docs/fonts/        Self-hosted woff2 + fonts.css
@@ -97,4 +111,4 @@ _scratch/          Throwaway working notes — gitignored
 - No `Co-Authored-By: Claude` lines in commit messages.
 - `.env` is never committed. Use `.env.example` as the template.
 - Staging is never promoted automatically — Arman reviews and runs `--release`.
-- `docs/` serves GitHub Pages. Never put markdown files directly in `docs/` root.
+- `docs/` serves GitHub Pages. The only markdown allowed at `docs/` root is `HANDBOOK.md` (operator-facing). Internal living docs go in `docs/internal/`.
