@@ -78,10 +78,15 @@ from pydantic import (
 SourceType = Literal["rss", "atom", "api", "html"]
 """How an Item was fetched. `html` is the isolated-fallback path only."""
 
-AudienceTag = Literal["builder", "leader", "finance", "general"]
-"""Who a RankedStory / SummaryBlock is for. At least one tag is required."""
+AudienceTag = Literal["hands_on", "big_picture", "finance", "general"]
+"""Who a RankedStory / SummaryBlock is for. At least one tag is required.
 
-RankTier = Literal["pulse", "where_heading", "builders", "leaders", "notable", "cut"]
+Renamed in v0.8 (2026-05-24) to match section names:
+  - ``builder`` -> ``hands_on``
+  - ``leader``  -> ``big_picture``
+"""
+
+RankTier = Literal["pulse", "on_the_radar", "cut"]
 """
 Editorial slot a RankedStory belongs in. `summarise.py` reads this to assign
 sections; Editor may relabel; `cut` is below threshold and excluded from the
@@ -90,19 +95,32 @@ issue (kept in ranked.jsonl for transparency / eval).
 
 SectionName = Literal[
     "pulse",          # The Pulse -- 1 story, the most important thing today
-    "leaders",        # For leaders -- strategic angles
-    "geeks",          # For geeks -- enthusiasts + builders, hands-on news
-    "notable",        # On the Radar -- terse linked list (internal id "notable")
+    "big_picture",    # The Big Picture -- strategic angles
+    "hands_on",       # Hands-On -- enthusiasts + builders, hands-on news
+    "on_the_radar",   # On the Radar -- terse linked list
 ]
 """IssueSection.name -- the four sections of the rendered newsletter.
 
-Removed in schema v4:
-- ``where_heading``: dropped. "Where it's heading" is the newsletter's
-  whole purpose, not a separate section; the Pulse + each summary carries
-  the direction in prose when relevant.
-- ``builders``: subsumed into ``geeks``. Most builders read as geeks; one
-  warmer section beats two narrower ones.
+Renamed in schema v5 (2026-05-24):
+- ``leaders`` -> ``big_picture`` (display: "The Big Picture")
+- ``geeks`` -> ``hands_on`` (display: "Hands-On")
+- ``notable`` -> ``on_the_radar`` (display: "On the Radar")
 """
+
+Signal = Literal["act", "try", "read", "watch", "discuss"]
+"""Per-story editorial verdict shown as a small pill in the rendered HTML.
+
+Added in v0.9 (Phase B). Optional on SummaryBlock so older issues parse
+without it; missing => pill is not rendered.
+
+  - ``act``     : a vendor / contract / architecture decision worth making
+                  this quarter. The Big Picture territory.
+  - ``try``     : sandbox it this week. Hands-On territory.
+  - ``read``    : informational; absorb the framing.
+  - ``watch``   : too thin / too early to act on. Default for On the Radar.
+  - ``discuss`` : design concept worth raising at a review, not shippable.
+"""
+
 
 MissedReason = Literal[
     "timeout",
@@ -134,12 +152,14 @@ _PROMPT_VERSION_PATTERN = r"^v\d+(\.\d+)*$"
 
 RUBRIC_WEIGHTS: dict[str, int] = {
     "significance": 30,
-    "builder_utility": 25,
-    "leadership_relevance": 20,
+    "hands_on_utility": 25,
+    "big_picture_relevance": 20,
     "financial_services_impact": 15,
     "freshness_momentum": 10,
 }
-"""Weights in [0, 100] that sum to 100. Sourced from config/rubric.yaml v0.1."""
+"""Weights in [0, 100] that sum to 100. Sourced from config/rubric.yaml.
+Renamed in v0.8 (2026-05-24): builder_utility -> hands_on_utility,
+leadership_relevance -> big_picture_relevance, to align with section names."""
 
 
 # ---------------------------------------------------------------------------
@@ -296,7 +316,7 @@ class RankedStory(BaseModel):
     """
 
     audience_tags: Annotated[list[AudienceTag], Field(min_length=1)]
-    """Who this is for; e.g. ["builder", "finance"]."""
+    """Who this is for; e.g. ["hands_on", "finance"]."""
 
     rationale: Annotated[str, Field(min_length=1, max_length=1000)]
     """One-line LLM rationale for transparency and eval."""
@@ -408,6 +428,10 @@ class SummaryBlock(BaseModel):
     re-join. Continuation chain root, when set.
     """
 
+    signal: Signal | None = None
+    """Editorial verdict pill (Phase B). LLM-tagged in summarise.py.
+    Optional so pre-Phase-B archive issues still parse."""
+
     model_config = ConfigDict(extra="forbid")
 
 
@@ -424,7 +448,7 @@ class IssueSection(BaseModel):
 
     Per DESIGN.md, the per-section invariants are:
       - `pulse` must contain exactly 1 SummaryBlock.
-      - `notable` may be empty on a slow day.
+      - `on_the_radar` may be empty on a slow day.
 
     Schema v4 (2026-05-23): direction-note enforcement removed; direction
     lives in summary prose now ("Where it's heading" is no longer a section,
@@ -436,7 +460,16 @@ class IssueSection(BaseModel):
     """Which section this is."""
 
     stories: list[SummaryBlock]
-    """May be empty for "notable" on a slow day; pulse must have exactly 1."""
+    """May be empty for "on_the_radar" on a slow day; pulse must have exactly 1."""
+
+    intro_lead: Annotated[str, Field(max_length=80)] | None = None
+    """Bold lead phrase rendered before the intro body. Phase B; LLM-written
+    per section per day (e.g. "Bench before you budget."). None for the
+    pulse section and for any pre-Phase-B issues."""
+
+    intro_body: Annotated[str, Field(max_length=400)] | None = None
+    """One or two sentences (~30 words) framing the day's pattern in this
+    section. Phase B; LLM-written. None for pulse / pre-Phase-B issues."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -510,7 +543,7 @@ class Issue(BaseModel):
 
     notes: Annotated[str, Field(max_length=2000)] = ""
     """
-    Optional engine-side notes (e.g. "slow day; notable tail shortened").
+    Optional engine-side notes (e.g. "slow day; On the Radar tail shortened").
     Not rendered.
     """
 

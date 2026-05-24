@@ -34,7 +34,7 @@ The editorial DNA is **strong signal, narrow lane**:
 - Foundation-model releases that change the capability ceiling or floor
 - New training / post-training techniques with practical implications
 - Inference advances (latency, cost, context window, modality) that change
-  what builders can ship
+  what practitioners can ship
 - Multimodal — vision, voice, video — when the capability is actually new
 - Open-source model launches that change the deployment calculus
 - RAG, structured outputs, prompt techniques, context engineering — when
@@ -85,8 +85,8 @@ For every Tier-1 or Tier-2 candidate, ask:
 A story should hit **at least one** of these clearly. Two is great. Three is
 Pulse material.
 
-A story that hits none — even if it's in Tier 1 — is buzz. It goes in *Also
-notable* at best; more often, out.
+A story that hits none — even if it's in Tier 1 — is buzz. It goes in
+*On the Radar* at best; more often, out.
 
 ## What this skill is NOT
 
@@ -138,8 +138,8 @@ Rare but real:
 
 - **Field-shaping events.** A major safety paper, a major outage, a
   significant regulatory decision: cover it even if it's classical or
-  non-agentic, because the *meta-story* is Tier-1 — what should builders do
-  about it.
+  non-agentic, because the *meta-story* is Tier-1 — what should practitioners
+  do about it.
 - **Slow days.** Better a quieter, honest *On the Radar* tail than a forced
   Pulse on a Tier-3 story. On slow days, *fewer* stories — not weaker ones.
 

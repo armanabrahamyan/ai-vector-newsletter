@@ -1,6 +1,6 @@
 ---
 name: finance-lens
-description: Shared rubric for "does this matter to financial services?" — primary lens for DS + engineers in FS (agents in trading/fraud/KYC, model risk, productionising under regs), with leadership angle as secondary. Invoke when ranking, summarising, sourcing, or editing for the finance angle.
+description: Shared rubric for "does this matter to financial services?" — primary lens for DS + engineers in FS (agents in trading/fraud/KYC, model risk, productionising under regs), with senior-leader angle as secondary. Invoke when ranking, summarising, sourcing, or editing for the finance angle.
 ---
 
 # Finance lens — what makes a story land for AI Vector's audience
@@ -13,7 +13,7 @@ with AI as a topic. If a story is huge for AI generally, it ships; the lens
 
 ## The two-tier test
 
-### Tier 1 — does it land for builders in FS? (the heavier weight)
+### Tier 1 — does it land for hands-on readers in FS? (the heavier weight)
 
 Ask, in order, until you get a "yes" or you've exhausted the list:
 
@@ -39,9 +39,9 @@ Ask, in order, until you get a "yes" or you've exhausted the list:
    long-context document analysis).
 
 If **two or more** of the above are clear yeses, this is a strong finance-lens
-story for the **builder** audience. Tag `audience: builder, finance`.
+story for the **hands-on** audience. Tag `audience: hands_on, finance`.
 
-### Tier 2 — does it land for leaders in FS? (the lighter weight)
+### Tier 2 — does it land for senior leaders in FS? (the lighter weight)
 
 Only after Tier 1, ask:
 
@@ -54,7 +54,7 @@ Only after Tier 1, ask:
 9. **Vendor / platform consolidation** — Hyperscaler announcements,
    model-provider terms, on-prem options changing. Affects build-vs-buy.
 
-Tag `audience: leader, finance` when Tier 2 fires without Tier 1.
+Tag `audience: big_picture, finance` when Tier 2 fires without Tier 1.
 
 ## What the lens is *not*
 

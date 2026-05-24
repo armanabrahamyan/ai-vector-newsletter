@@ -21,17 +21,20 @@ evals/reports/
 data/staging/
 
 # Local embedding caches / sidecars (per Retrieval Engineer; rebuildable).
-# Note: covers data/<date>/embeddings/ and data/staging/<date>/embeddings/.
+# Note: covers data/released/<date>/embeddings/ and data/staging/<date>/embeddings/.
 data/embeddings/
-data/*/embeddings/
+data/released/*/embeddings/
+data/staging/*/embeddings/
 
-# Preview HTML — transient (re-rendered every staging run).
-# docs/index.html and docs/archive/*.html ARE tracked (released issues).
-docs/preview/
+# Staging HTML — transient (re-rendered every staging run).
+# docs/index.html and docs/released/*.html ARE tracked (released issues).
+docs/staging/
 
 # macOS noise
 .DS_Store
 
-# Scratch / throwaway working notes (rendered prompts, experiments).
-# Not history-worthy.
-tmp/
+# Scratch / throwaway working notes (rendered prompts, experiments,
+# extracted artifact dumps). Not history-worthy. The directory itself
+# is tracked via _scratch/.gitkeep so it exists in fresh clones.
+_scratch/*
+!_scratch/.gitkeep

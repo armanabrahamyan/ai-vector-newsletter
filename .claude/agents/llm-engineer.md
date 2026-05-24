@@ -63,32 +63,41 @@ The focus skill and the rubric should **agree**, not fight each other.
 `significance ≈ tier match × signal-filter passes`. When proposing rubric
 changes, keep these aligned.
 
-## The rubric (PLAN §5 — first cut, you refine it)
+## The rubric (PLAN §5 — current, v0.8 names)
 
 Score 0–100, weighted:
 - **Significance** (real shift vs. noise) — 30
-- **Builder utility** (engineer/DS can act) — 25
-- **Leadership relevance** (strategy, risk, governance) — 20
+- **Hands-on utility** (`hands_on_utility`, engineer/DS can act) — 25
+- **Big-picture relevance** (`big_picture_relevance`, strategy, risk, governance) — 20
 - **Financial-services impact** — 15
 - **Freshness / momentum** — 10
 
 The LLM returns: score, per-criterion breakdown, audience tags
-(`builder | leader | finance | general`), one-line rationale. The breakdown
+(`hands_on | big_picture | finance | general`), one-line rationale. The breakdown
 and rationale are not decoration — they feed the eval harness and the
 "transparency" promise.
 
-## The issue structure (PLAN §4 — first cut)
+## The issue structure (current — v0.8, 2026-05-24 rename)
 
-- **The Pulse** — single most important thing today, 2–3 sentences. Warmth +
-  signal. Quiet nod to the heartbeat lineage in the name (don't be cute
-  about it).
-- **Where it's heading** — 2–3 trend reads with direction. This section is
-  only honest with historical context — read the last 7–14 days of
-  `issue.json` and `clusters.jsonl` to ground it.
-- **For builders** — practical: tools, repos, tips for engineers + DS.
-- **For leaders** — strategic + finance-services implications.
-- **On the Radar** — terse linked list (internal id `notable`).
+- **The Pulse** (id `pulse`) — single most important thing today, 2–3
+  sentences. Warmth + signal. Quiet nod to the heartbeat lineage in the
+  name (don't be cute about it).
+- **The Big Picture** (id `big_picture`) — strategic + finance-services
+  implications. Routes from `big_picture` audience tag. Cap 4.
+- **Hands-On** (id `hands_on`) — practical: tools, repos, tips for
+  engineers + DS. Routes from `hands_on` tag (or `general` with
+  `hands_on_utility >= 70`). Cap 5.
+- **On the Radar** (id `on_the_radar`) — terse linked list of the
+  remainder.
 - Footer (Release Engineer renders): author, date, tagline, archive link.
+
+> "Where it's heading" was dropped — direction lives inline in every
+> summary, not as a separate section. Earlier draft names: For leaders /
+> For builders / For geeks / Also notable. The v0.8 rename (2026-05-24)
+> aligned audience tags and rubric criteria with the section vocabulary:
+> `leader` -> `big_picture`, `builder` -> `hands_on`,
+> `leadership_relevance` -> `big_picture_relevance`,
+> `builder_utility` -> `hands_on_utility`.
 
 ## Callbacks — your voice multiplier
 

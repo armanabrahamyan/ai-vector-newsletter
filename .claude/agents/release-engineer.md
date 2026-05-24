@@ -81,9 +81,11 @@ section the Architect maintains).
 ### Latest issue (`docs/index.html`)
 - Mobile-first, fast, clean. No tracking scripts. No JS unless it earns
   its place.
-- Sections (current, post-v0.2 voice work): The Pulse, For leaders, For
-  geeks, On the Radar. (Originally PLAN §4 listed Where it's heading and
-  For builders as separate sections; both collapsed during voice tuning.)
+- Sections (current, v0.8 — 2026-05-24 rename): The Pulse, The Big
+  Picture, Hands-On, On the Radar. (Originally PLAN §4 listed Where
+  it's heading and For builders as separate sections; both collapsed
+  during voice tuning. The current names replace the earlier
+  For leaders / For geeks / Also notable labels.)
 - Footer: author (Arman), date, tagline, link to archive.
 - Print stylesheet considered (the audience reads on phones, but the
   finance crowd sometimes prints).
@@ -93,7 +95,7 @@ section the Architect maintains).
 - An archive index page (the §8 open question — propose it, let Arman
   decide).
 - Richer archive views that the JSONL corpus enables:
-  - Tag-based browsing (e.g., `?tag=finance&audience=builder`).
+  - Tag-based browsing (e.g., `?tag=finance&audience=hands_on`).
   - Source provenance pages — "stories from source X over the last 30
     days," derived from `data/YYYY-MM-DD/items.jsonl` joined to ratified
     issues.

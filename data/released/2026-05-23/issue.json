@@ -1,0 +1,167 @@
+{
+  "schema_version": 4,
+  "issue_number": 1,
+  "date": "2026-05-23",
+  "pulse": {
+    "schema_version": 2,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 1,
+        "story_id": "c_56849ea45c325178",
+        "headline": "A small open model pulls structured data from invoices and forms without sending files to the cloud",
+        "summary": "NuExtract3 is a small image-and-text model built for extracting structured information from PDFs, invoices, tables, and screenshots, released under a permissive open licence with weights on Hugging Face. Single-source disclosure: the announcement comes from the vendor themselves on Reddit. If data residency stops you using a closed extraction API, test this against your own document corpus before committing.",
+        "source_urls": [
+          "https://reddit.com/r/MachineLearning/comments/1tkejqr/nuextract3_released_openweight_4b_vlm_for"
+        ],
+        "cross_time_ref": null,
+        "signal": "try"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 2,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 1,
+          "story_id": "c_4a9fa5a7bf386dee",
+          "headline": "A new framework turns AI-to-AI handoffs into a number you can audit",
+          "summary": "Safe Bilevel Delegation scores each moment an agent passes control to a sub-agent on a zero-to-one scale, gating execution when confidence drops. Single-source coverage with no paper link, no code, and no benchmarks published yet. Treat it as a design concept worth raising in your next agentic architecture review, not something to build on.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/when-should-an-ai-hand-the-wheel"
+          ],
+          "cross_time_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 1,
+          "story_id": "c_c997d4c916785564",
+          "headline": "Identity verification vendors can't say how fast they update deepfake detection",
+          "summary": "Synthetic media generation has outpaced the threat models baked into most liveness detection systems, which were trained on static images and basic replay attacks. When two identity verification vendors were asked directly about this gap, both gave confident-sounding answers that didn't address it. Thin sourcing (one Reddit thread), but the question is concrete: ask your vendor for a dated retraining schedule before renewing.",
+          "source_urls": [
+            "https://reddit.com/r/MachineLearning/comments/1tjv27t/can_liveness_detection_models_generalise_to"
+          ],
+          "cross_time_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 1,
+          "story_id": "c_13639cc37f23d132",
+          "headline": "Every major AI model lab is now building its own agent product",
+          "summary": "The pattern is now undeniable: OpenAI, Anthropic, DeepSeek, and AI21 are all moving from selling raw models to shipping full agent products with workflows, memory, and interfaces on top. Synthesis from Latent Space, no new data. If you're evaluating AI vendors, the model API is no longer the right comparison point; audit the full stack.",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-all-model-labs-are-now-agent"
+          ],
+          "cross_time_ref": null,
+          "signal": "act"
+        }
+      ],
+      "intro_lead": "Trust gaps are widening.",
+      "intro_body": "Across agents, identity tools, and model vendors, the same problem surfaces: the infrastructure is moving faster than anyone's ability to verify what it's actually doing."
+    },
+    {
+      "schema_version": 2,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 1,
+          "story_id": "c_04fad2b47962173f",
+          "headline": "A weekend routing layer cut a $160 AI coding bill to $16",
+          "summary": "One developer wired a routing layer over a self-hosted mixture-of-experts model so 95% of agentic coding steps never touch a premium API. On a 400-step Python refactor, that meant $7.60 to the open model and $8 to Claude Opus, totalling $15.60 at 93% success. Single-source Reddit report; replicate before trusting the numbers at scale.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tljn16/16_refactor_400_steps_95_routed_to_open_moe"
+          ],
+          "cross_time_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 1,
+          "story_id": "c_66d8cbbdd7440a46",
+          "headline": "A new trick runs large open models nearly five times faster on a consumer GPU",
+          "summary": "BeeLlama v0.2.0 pushes Gemma 4 31B to around five times baseline generation speed on a single RTX 3090, with Qwen 3.6 27B close behind, via a speculative-decoding overhaul called DFlash. Code and quick-start guides are on GitHub. Benchmarks come from a single Reddit post, so verify against your own workload before committing to the fork.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tkpz2y/beellama_v020_major_dflash_update_single_rtx_3090"
+          ],
+          "cross_time_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 1,
+          "story_id": "c_281ac65379335626",
+          "headline": "NVIDIA's new text model generates whole blocks at once and can revise its own output",
+          "summary": "Standard language models write one word at a time and cannot correct earlier mistakes. NVIDIA's Nemotron-Labs Diffusion generates tokens in parallel blocks and iteratively revises them, which also lets you trade compute for speed at runtime. Weights and training code are public, but speed benchmarks come from NVIDIA's own report. Prototype against your latency-sensitive workload before trusting the claims.",
+          "source_urls": [
+            "https://huggingface.co/blog/nvidia/nemotron-labs-diffusion"
+          ],
+          "cross_time_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 1,
+          "story_id": "c_8750df63d65640fc",
+          "headline": "A tiny specialist model beats a 23x larger rival on tool-calling speed and accuracy",
+          "summary": "On a 4-core CPU with no GPU, a 26-million-parameter model purpose-built for function calls outran a 600-million-parameter generalist: 72% tool-match accuracy versus 56%, and 4.4x faster. Single Reddit benchmark, no independent replication yet. If you're sizing a tool-use agent for air-gapped or edge hardware, test a specialist before defaulting to a small generalist.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tljs5o/benchmarked_needle_26m_vs_qwen306b_on_cpu"
+          ],
+          "cross_time_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 1,
+          "story_id": "c_20a06e5b2a467c72",
+          "headline": "A community-built benchmark tests coding agents on real private codebases, not curated demos",
+          "summary": "Apex-Testing drops models into 65-70 private GitHub repositories built specifically to resist benchmarking tricks. Source is a single Reddit post (trust score: low), so treat results as directional, not definitive. Before committing to a coding-agent vendor, run your shortlist through it alongside your own codebase sample.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tlh4vq/apextesting_realworld_real_repos_agentic_coding"
+          ],
+          "cross_time_ref": null,
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Verify before you deploy.",
+      "intro_body": "Today's gains, faster inference, cheaper routing, sharper tool-calling, look compelling on paper. Most rest on single-source benchmarks, so treat them as directions to test, not decisions to make."
+    },
+    {
+      "schema_version": 2,
+      "name": "on_the_radar",
+      "stories": [
+        {
+          "schema_version": 1,
+          "story_id": "c_04609e6134a495f6",
+          "headline": "A community fine-tune gives the best open speech-to-text model the speaker labels it was missing",
+          "summary": "Cohere's open speech-to-text model lacked speaker identification and timestamps despite having the underlying tokens for both. A community fine-tune on Hugging Face now adds both, with timing accurate to within a tenth of a second on average. Single Reddit thread, no independent benchmark. Drop it into your transcription pipeline before committing to a proprietary alternative.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tkunbg/i_finetuned_cohere_transcribe_to_support"
+          ],
+          "cross_time_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 1,
+          "story_id": "c_68bb73b0d846a762",
+          "headline": "A practical benchmark repo for running large models on AMD graphics cards",
+          "summary": "One engineer's 16GB AMD Radeon test repo captures what synthetic leaderboards skip: exact launch settings, context lengths that actually fit, and real throughput figures. Single source (Reddit), no independent verification. If you're evaluating non-NVIDIA hardware for local inference before committing to a setup, the repo is worth checking against your target model size.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tl4o1m/clubrdna16_practical_16gb_amdradeon_local_llm"
+          ],
+          "cross_time_ref": null,
+          "signal": "watch"
+        }
+      ],
+      "intro_lead": "For awareness only.",
+      "intro_body": "Both items rest on single Reddit threads with no independent verification. The pattern here is community-driven, practical signal that deserves a watch, not yet a decision."
+    }
+  ],
+  "generated_at": "2026-05-24T03:19:45.807553Z",
+  "prompt_versions": {
+    "rank": "v0.1",
+    "summarise": "v0.8",
+    "pulse": "v0.7.1"
+  },
+  "notes": ""
+}

@@ -229,12 +229,12 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
             continue
         ranked.append(story)
         _LOG.info(
-            "[cluster %s] score=%d (sig:%d bu:%d lr:%d fs:%d fm:%d) tags=%s",
+            "[cluster %s] score=%d (sig:%d ho:%d bp:%d fs:%d fm:%d) tags=%s",
             cluster.cluster_id,
             story.score,
             story.breakdown.get("significance", 0),
-            story.breakdown.get("builder_utility", 0),
-            story.breakdown.get("leadership_relevance", 0),
+            story.breakdown.get("hands_on_utility", 0),
+            story.breakdown.get("big_picture_relevance", 0),
             story.breakdown.get("financial_services_impact", 0),
             story.breakdown.get("freshness_momentum", 0),
             list(story.audience_tags),
@@ -494,7 +494,7 @@ def _rank_one(
     # The LLM picks audience tags; tier is the editorial slot. rank.py's
     # job is to assign an initial tier -- summarise.py and the Editor may
     # relabel. Below-threshold -> "cut"; everything else starts as
-    # "notable" and summarise.py promotes by section logic. (DESIGN.md
+    # "on_the_radar" and summarise.py promotes by section logic. (DESIGN.md
     # says tier is the bridge between rank and summarise; the strong
     # opinion on which threshold drives "cut" lives below.)
     tier = _assign_initial_tier(score, parsed.breakdown)
@@ -543,8 +543,8 @@ def _build_rank_prompt(
 
     return f"""\
 You are scoring a single AI-news cluster for AI Vector -- a daily,
-agent-assisted AI newsletter for engineers, data scientists, and senior
-leaders, with a financial-services lens.
+agent-assisted AI newsletter for engineers, data scientists, and the
+senior leaders they work with, with a financial-services lens.
 
 {_EDITORIAL_FOCUS_BLOCK}
 {rubric_block}
@@ -563,8 +563,9 @@ ITEMS (top {MAX_ITEMS_IN_CLUSTER_PROMPT} by source trust):
 INSTRUCTIONS
 Score the cluster against the rubric. Apply the EDITORIAL FOCUS pre-filter
 first -- Tier-3 stories MUST score significance <= 25. Audience tags are
-independent of score: pick the subset of {{builder, leader, finance, general}}
-that this story is actually for (at least one).
+independent of score: pick the subset of {{hands_on, big_picture, finance, general}}
+that this story is actually for (at least one). `hands_on` = practitioner
+(DS / engineer) audience; `big_picture` = senior-leader audience.
 
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
@@ -573,12 +574,12 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
   "score": <int 0-100>,
   "breakdown": {{
     "significance": <int 0-100>,
-    "builder_utility": <int 0-100>,
-    "leadership_relevance": <int 0-100>,
+    "hands_on_utility": <int 0-100>,
+    "big_picture_relevance": <int 0-100>,
     "financial_services_impact": <int 0-100>,
     "freshness_momentum": <int 0-100>
   }},
-  "audience_tags": [<one or more of: "builder", "leader", "finance", "general">],
+  "audience_tags": [<one or more of: "hands_on", "big_picture", "finance", "general">],
   "rationale": "<one sentence, <= 240 chars, specific not generic>"
 }}
 """
@@ -729,8 +730,8 @@ def _assign_initial_tier(
 
     Heuristic (intentionally conservative):
       - score < 35 or significance <= 25 -> "cut"
-      - otherwise -> "notable" (summarise.py promotes to pulse / leaders /
-        geeks based on its own routing logic; v0.2 sections)
+      - otherwise -> "on_the_radar" (summarise.py promotes to pulse /
+        big_picture / hands_on based on its own routing logic; v0.8 sections)
 
     DESIGN.md ambiguity: the spec leaves "where exactly tier is decided"
     split across rank and summarise. We resolve it by having rank set a
@@ -739,7 +740,7 @@ def _assign_initial_tier(
     sig = breakdown.get("significance", 0)
     if score < 35 or sig <= 25:
         return "cut"
-    return "notable"
+    return "on_the_radar"
 
 
 # ---------------------------------------------------------------------------

@@ -33,8 +33,8 @@ Key responsibilities
    skill; the LLM returns ``{headline, summary}``. Direction and finance
    lens are woven into the summary prose when relevant -- never as
    separate fields or labels (v0.3 / schema v4).
-4. Assemble sections per editorial rules: Pulse, For leaders, For geeks,
-   On the Radar. Each top-N story is placed in exactly one section.
+4. Assemble sections per editorial rules: The Pulse, The Big Picture,
+   Hands-On, On the Radar. Each top-N story is placed in exactly one section.
 5. Construct + validate the ``Issue`` with ``issue_number=None``;
    atomic-write ``issue.json`` to staging.
 
@@ -49,6 +49,7 @@ import datetime as _dt
 import json
 import logging
 import os
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -78,13 +79,16 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.7.1"
+SUMMARISE_PROMPT_VERSION = "v0.8"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.7.1-2026-05-24``. v0.7.1 renames the fourth section's
-display label from "Also notable" to "On the Radar" in the body-
-length guidance. Internal section id stays "notable" (no schema
-change). v0.7 baseline preserved (voice anchors + em-dash ban +
-McKinsey tagline + plain-language + audience removal)."""
+``summarise-v0.8-2026-05-24``. v0.8 renames sections AND audience tags
+to a consistent vocabulary:
+  sections: leaders -> big_picture, geeks -> hands_on, notable -> on_the_radar
+  audience tags: leader -> big_picture, builder -> hands_on
+  rubric criteria: leadership_relevance -> big_picture_relevance,
+                   builder_utility -> hands_on_utility
+v0.7.1 voice baseline preserved (voice anchors + em-dash ban + McKinsey
+tagline + plain-language + audience removal)."""
 
 PULSE_PROMPT_VERSION = "v0.7.1"
 """Audit tag: ``pulse-v0.7.1-2026-05-24``. v0.7.1 mirrors summarise."""
@@ -227,7 +231,7 @@ DON'T:
     small open model" does. "RTX 3090" doesn't belong; "a consumer GPU"
     does. "1.58-bit" only if the precision IS the news. The reader
     cares about the CONSEQUENCE, not the spec. Model names + versions
-    live in the BODY, where geeks who search by name find them.
+    live in the BODY, where hands-on readers who search by name find them.
 
 MODEL NAMES + VERSIONS belong in the BODY, not the title. The title
 carries the insight; the body has the searchable specifics. A reader
@@ -412,9 +416,9 @@ this number matters?" If no, replace.
                      silicon"
   "8B VLM"       -> "a small image-and-text model"
 
-If the EXACT model name / version matters (geeks search by it), keep
-it in the BODY -- but EXPLAIN WHAT IT IS in plain English the first
-time. Never in the title.
+If the EXACT model name / version matters (hands-on readers search by
+it), keep it in the BODY -- but EXPLAIN WHAT IT IS in plain English
+the first time. Never in the title.
 
 BEFORE FINALISING, CHECK
   - Headline: would a non-specialist reader who skims ONLY headlines
@@ -561,10 +565,19 @@ def summarise(date: _dt.date | None = None) -> Issue:
         )
 
     # --- Section assembly ------------------------------------------------
-    # v0.2: pulse -> leaders -> geeks -> notable (no where_heading; builders
-    # subsumed into geeks). "For leaders" first per Arman's reading order.
-    pulse_section, leaders_section, geeks_section, notable_section = \
+    # v0.8: pulse -> big_picture -> hands_on -> on_the_radar.
+    # The Big Picture comes first per Arman's reading order.
+    pulse_section, big_picture_section, hands_on_section, on_the_radar_section = \
         _assemble_sections(blocks)
+
+    # --- Section intros (Phase B) ---------------------------------------
+    # One LLM call per non-pulse section, fed the section's stories so the
+    # intro reads the day's pattern. Pulse never carries an intro -- its
+    # whole job is to BE the framing. Failures degrade gracefully: the
+    # template hides missing intros, the issue still ships.
+    _populate_section_intro(big_picture_section)
+    _populate_section_intro(hands_on_section)
+    _populate_section_intro(on_the_radar_section)
 
     # --- Construct + validate -------------------------------------------
     # issue_number is intentionally None in staging output. Numbering is a
@@ -574,7 +587,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
         issue_number=None,
         date=run_date,
         pulse=pulse_section,
-        sections=[leaders_section, geeks_section, notable_section],
+        sections=[big_picture_section, hands_on_section, on_the_radar_section],
         generated_at=_dt.datetime.now(_dt.timezone.utc),
         prompt_versions={
             "rank": _read_rank_version(),
@@ -587,12 +600,12 @@ def summarise(date: _dt.date | None = None) -> Issue:
 
     pulse_headline = issue.pulse.stories[0].headline if issue.pulse.stories else "?"
     _LOG.info(
-        "summarised top %d: pulse=%r / leaders: %d / geeks: %d / "
-        "notable: %d | issue #(staging -- not yet numbered) -> %s",
+        "summarised top %d: pulse=%r / big_picture: %d / hands_on: %d / "
+        "on_the_radar: %d | issue #(staging -- not yet numbered) -> %s",
         len(blocks), pulse_headline,
-        len(leaders_section.stories),
-        len(geeks_section.stories),
-        len(notable_section.stories),
+        len(big_picture_section.stories),
+        len(hands_on_section.stories),
+        len(on_the_radar_section.stories),
         issue_out,
     )
     return issue
@@ -759,9 +772,11 @@ def _iter_blocks(issue_payload: dict[str, Any]) -> Iterable[dict[str, Any]]:
 class _SummaryDraft:
     """Intermediate shape parsed from the LLM JSON, before pydantic. Keeps
     parser logic and constructor logic clean. v0.2: direction_note and
-    finance_angle no longer separate fields -- both live in summary prose."""
+    finance_angle no longer separate fields -- both live in summary prose.
+    v0.9 (Phase B): adds ``signal`` (editorial verdict pill)."""
     headline: str
     summary: str
+    signal: str | None = None
 
 
 def _summarise_one(
@@ -805,6 +820,7 @@ def _summarise_one(
             summary=draft.summary,
             source_urls=source_urls,  # type: ignore[arg-type]
             cross_time_ref=cluster.cross_time_ref,
+            signal=draft.signal,  # type: ignore[arg-type]
         )
     except Exception:  # noqa: BLE001
         _LOG.exception(
@@ -1002,12 +1018,27 @@ ITEMS:
   the connection is weak, skip it.
 - Australian English throughout.
 - Link out; never reproduce full articles.
+- SIGNAL: pick ONE verdict pill that captures what the reader should DO:
+    * "act"     -- vendor / contract / architecture decision worth making
+                   this quarter. Typical for Big Picture stories with a
+                   nameable prioritisation change.
+    * "try"     -- drop into a sandbox this week. Typical for Hands-On
+                   tools / repos / techniques you can clone or pip-install.
+    * "read"    -- absorb the framing; no clear action yet. Use sparingly.
+    * "watch"   -- too thin / too early to act on; monitor for follow-up.
+                   Default for On the Radar items.
+    * "discuss" -- design concept worth raising at a review, not yet
+                   shippable. Right call for single-source frameworks
+                   without code / benchmarks.
+  Choose by what the body actually argues. If the body says "raise this
+  at your next architecture review", that's "discuss", not "act".
 
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
   "headline": "<consequence-led headline, <= ~90 chars>",
-  "summary": "<30-60 word body>"
+  "summary": "<30-60 word body>",
+  "signal": "<one of: act | try | read | watch | discuss>"
 }}
 """
 
@@ -1065,9 +1096,18 @@ def _parse_summary_json(raw: str) -> _SummaryDraft | None:
         return None
     if not isinstance(summary, str) or not summary.strip():
         return None
+    # Signal is optional in the parsed shape; pydantic enforces the Literal
+    # set when SummaryBlock is constructed. Garbage values get dropped here.
+    signal_raw = payload.get("signal")
+    signal: str | None = None
+    if isinstance(signal_raw, str):
+        candidate = signal_raw.strip().lower()
+        if candidate in {"act", "try", "read", "watch", "discuss"}:
+            signal = candidate
     return _SummaryDraft(
         headline=headline.strip(),
         summary=summary.strip(),
+        signal=signal,
     )
 
 
@@ -1084,9 +1124,34 @@ def _items_for_cluster(
     return out
 
 
+_REDDIT_SLUG_RE = re.compile(
+    r"^https?://(?:www\.|old\.|new\.)?reddit\.com/r/[^/]+/comments/[^/]+/([^/?#]+)",
+    re.IGNORECASE,
+)
+
+
+def _url_dedup_key(url: str) -> str:
+    """Compute a semantic dedup key for source URLs.
+
+    For Reddit URLs, two cross-posts of the same content live at different
+    URLs (different subreddits, different comment IDs) but share the same
+    URL slug. We dedup on that slug so a story doesn't render two "[1] [2]"
+    links pointing at the same discussion.
+
+    For everything else the key is the raw URL string -- no semantic
+    grouping, just string identity.
+    """
+    m = _REDDIT_SLUG_RE.match(url)
+    if m:
+        return f"reddit::{m.group(1).lower()}"
+    return url
+
+
 def _pick_source_urls(items: list[Item], k: int) -> list[str]:
     """Top-k unique URLs from cluster members, sorted by trust_weight
-    (then by recency as a tiebreaker). Deterministic given the inputs."""
+    (then by recency as a tiebreaker). Deterministic given the inputs.
+    Reddit cross-posts (same slug, different subreddits) dedup to one URL
+    -- the higher-trust subreddit wins by sort order."""
     sorted_items = sorted(
         items,
         key=lambda it: (it.trust_weight, it.published_at),
@@ -1096,9 +1161,10 @@ def _pick_source_urls(items: list[Item], k: int) -> list[str]:
     out: list[str] = []
     for it in sorted_items:
         url = str(it.url)
-        if url in seen:
+        key = _url_dedup_key(url)
+        if key in seen:
             continue
-        seen.add(url)
+        seen.add(key)
         out.append(url)
         if len(out) >= k:
             break
@@ -1113,19 +1179,19 @@ def _assemble_sections(
     blocks: list[tuple[RankedStory, SummaryBlock]],
 ) -> tuple[IssueSection, IssueSection, IssueSection, IssueSection]:
     """Place every summarised story into exactly one section. Returns the
-    four sections in display order: pulse, leaders, geeks, notable.
+    four sections in display order: pulse, big_picture, hands_on, on_the_radar.
 
-    Editorial routing rules (v0.2 -- post 2026-05-23 voice update):
+    Editorial routing rules (v0.8 -- 2026-05-24 section rename):
       - Pulse: highest-scoring story that hits >= 2 signal-filter dimensions
-        (significance, builder_utility, freshness_momentum >= 70). Fallback
+        (significance, hands_on_utility, freshness_momentum >= 70). Fallback
         (logged): highest breakdown.significance.
-      - Leaders: stories tagged `leader`. Hard cap at 4. First, per Arman.
-      - Geeks: stories tagged `builder`, OR tagged `general` with
-        builder_utility >= 70. Hard cap at 5. Subsumes the old "builders"
-        section.
-      - Notable: everything left, in score-desc order.
+      - The Big Picture: stories tagged `big_picture`. Hard cap at 4.
+        First, per Arman's reading order.
+      - Hands-On: stories tagged `hands_on`, OR tagged `general` with
+        hands_on_utility >= 70. Hard cap at 5.
+      - On the Radar: everything left, in score-desc order.
 
-    Direction notes and finance angles are now embedded in summary prose,
+    Direction notes and finance angles are embedded in summary prose,
     not separate fields (schema v4); the assembler no longer filters on
     direction_note presence.
     """
@@ -1142,18 +1208,18 @@ def _assemble_sections(
         )
     unplaced.discard(pulse_id)
 
-    # --- For leaders (first per Arman's reading order) ------------------
-    leader_ids = _pick_leaders(blocks, unplaced)
-    for cid in leader_ids:
+    # --- The Big Picture (first per Arman's reading order) --------------
+    big_picture_ids = _pick_big_picture(blocks, unplaced)
+    for cid in big_picture_ids:
         unplaced.discard(cid)
 
-    # --- For geeks (absorbs the old "builders" section) -----------------
-    geek_ids = _pick_geeks(blocks, unplaced)
-    for cid in geek_ids:
+    # --- Hands-On -------------------------------------------------------
+    hands_on_ids = _pick_hands_on(blocks, unplaced)
+    for cid in hands_on_ids:
         unplaced.discard(cid)
 
-    # --- On the Radar (internal id: "notable") --------------------------
-    notable_ids = [
+    # --- On the Radar ---------------------------------------------------
+    on_the_radar_ids = [
         story.cluster_id for story, _ in blocks if story.cluster_id in unplaced
     ]
 
@@ -1161,19 +1227,19 @@ def _assemble_sections(
         name="pulse",
         stories=[by_id[pulse_id][1]],
     )
-    leaders_section = IssueSection(
-        name="leaders",
-        stories=[by_id[cid][1] for cid in leader_ids],
+    big_picture_section = IssueSection(
+        name="big_picture",
+        stories=[by_id[cid][1] for cid in big_picture_ids],
     )
-    geeks_section = IssueSection(
-        name="geeks",
-        stories=[by_id[cid][1] for cid in geek_ids],
+    hands_on_section = IssueSection(
+        name="hands_on",
+        stories=[by_id[cid][1] for cid in hands_on_ids],
     )
-    notable_section = IssueSection(
-        name="notable",
-        stories=[by_id[cid][1] for cid in notable_ids],
+    on_the_radar_section = IssueSection(
+        name="on_the_radar",
+        stories=[by_id[cid][1] for cid in on_the_radar_ids],
     )
-    return (pulse_section, leaders_section, geeks_section, notable_section)
+    return (pulse_section, big_picture_section, hands_on_section, on_the_radar_section)
 
 
 def _signal_dimensions_hit(story: RankedStory) -> int:
@@ -1182,7 +1248,7 @@ def _signal_dimensions_hit(story: RankedStory) -> int:
     practical. Mapping (best-effort, documented here):
       - today      ~ freshness_momentum >= 70
       - tomorrow   ~ significance       >= 70
-      - practical  ~ builder_utility    >= 70
+      - practical  ~ hands_on_utility   >= 70
     Counts how many of those clear the 70 anchor."""
     b = story.breakdown
     hits = 0
@@ -1190,7 +1256,7 @@ def _signal_dimensions_hit(story: RankedStory) -> int:
         hits += 1
     if b.get("significance", 0) >= 70:
         hits += 1
-    if b.get("builder_utility", 0) >= 70:
+    if b.get("hands_on_utility", 0) >= 70:
         hits += 1
     return hits
 
@@ -1202,7 +1268,7 @@ def _pick_pulse(
     separate field, so we no longer filter on its presence).
 
     Primary: highest-scoring story that hits >= 2 signal-filter dimensions
-    (significance, builder_utility, freshness_momentum >= 70).
+    (significance, hands_on_utility, freshness_momentum >= 70).
 
     Fallback (logged): highest breakdown.significance among all blocks.
     Returns None only if blocks is empty (caller aborts)."""
@@ -1226,42 +1292,155 @@ def _pick_pulse(
     return fallback[0].cluster_id
 
 
-def _pick_leaders(
+def _pick_big_picture(
     blocks: list[tuple[RankedStory, SummaryBlock]],
     available: set[str],
 ) -> list[str]:
-    """Tagged 'leader' and not yet placed. Hard cap at 4. v0.2: leaders is
-    the first section after Pulse, per editorial direction."""
+    """Tagged 'big_picture' and not yet placed. Hard cap at 4. The Big
+    Picture is the first section after Pulse, per editorial direction."""
     out: list[str] = []
     for story, _block in blocks:
         if story.cluster_id not in available:
             continue
-        if "leader" in set(story.audience_tags):
+        if "big_picture" in set(story.audience_tags):
             out.append(story.cluster_id)
         if len(out) >= 4:
             break
     return out
 
 
-def _pick_geeks(
+def _pick_hands_on(
     blocks: list[tuple[RankedStory, SummaryBlock]],
     available: set[str],
 ) -> list[str]:
-    """Tagged 'builder', OR tagged 'general' with builder_utility >= 70.
-    Hard cap at 5. v0.2: subsumes the old "builders" section -- most
-    builders read as geeks; one warmer section beats two narrower ones."""
+    """Tagged 'hands_on', OR tagged 'general' with hands_on_utility >= 70.
+    Hard cap at 5."""
     out: list[str] = []
     for story, _block in blocks:
         if story.cluster_id not in available:
             continue
         tags = set(story.audience_tags)
-        if "builder" in tags or (
-            "general" in tags and story.breakdown.get("builder_utility", 0) >= 70
+        if "hands_on" in tags or (
+            "general" in tags and story.breakdown.get("hands_on_utility", 0) >= 70
         ):
             out.append(story.cluster_id)
         if len(out) >= 5:
             break
     return out
+
+
+# ---------------------------------------------------------------------------
+# Section intros (Phase B).
+#
+# One LLM call per non-pulse section, fed the section's already-written
+# stories so the intro reads the day's pattern rather than restating it.
+# Failures degrade gracefully -- the section's intro_lead / intro_body
+# stay None and the template hides the block.
+# ---------------------------------------------------------------------------
+
+_SECTION_INTRO_HINTS: dict[str, str] = {
+    "big_picture": (
+        "Senior-leader framing: strategic shifts, vendor calculus, risk, "
+        "governance, regulation. The lead phrase should orient (\"What to "
+        "watch.\" / \"Decisions to weigh.\"); the body reads the PATTERN "
+        "across these stories in one or two sentences."
+    ),
+    "hands_on": (
+        "Practitioner framing: tools, repos, benchmarks, techniques. The "
+        "lead phrase should orient (\"Bench before you budget.\" / "
+        "\"Sandbox tonight.\"); the body reads the PATTERN -- are the day's "
+        "wins single-source benchmarks? Drop-in releases? Capability "
+        "shifts? -- in one or two sentences."
+    ),
+    "on_the_radar": (
+        "Awareness-only framing: items thin on sourcing or early in "
+        "trajectory. The lead phrase should signal posture (\"For "
+        "awareness only.\" / \"Worth a glance.\"); the body explains "
+        "WHY these sit here rather than higher up, in one short sentence."
+    ),
+}
+
+
+def _populate_section_intro(section: IssueSection) -> None:
+    """Generate {intro_lead, intro_body} for a section via one LLM call.
+    Mutates the section in place. Silent on failure -- the rendered
+    issue still ships without an intro for the affected section."""
+    if not section.stories:
+        return
+    hint = _SECTION_INTRO_HINTS.get(section.name)
+    if hint is None:
+        return
+    temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
+
+    story_lines: list[str] = []
+    for st in section.stories:
+        body = st.summary if len(st.summary) <= 280 else st.summary[:280] + "..."
+        story_lines.append(f"- HEADLINE: {st.headline}\n  BODY: {body}")
+    stories_block = "\n".join(story_lines)
+
+    prompt = f"""\
+You are writing the section intro for the "{section.name}" section of
+today's AI Vector issue -- a daily AI newsletter with a financial-services
+lens, McKinsey-tagline voice, plain English, no em-dashes.
+
+SECTION CONTEXT
+{hint}
+
+STORIES IN THIS SECTION
+{stories_block}
+
+INSTRUCTIONS
+- LEAD: a tight bold phrase (2-5 words, full-stop at the end). It IS
+  the section's editorial posture for today.
+- BODY: one or two sentences, 20-35 words total, that reads the DAY'S
+  PATTERN across these stories. What does the editor want the reader
+  to notice? Frame, don't restate. Don't list. Don't reference specific
+  headlines verbatim.
+- VOICE: McKinsey tagline (insight, not topic). Plain language.
+  Australian English. No em-dashes (use comma, parenthesis, semicolon,
+  full stop). No jargon a non-specialist couldn't parse.
+- HONESTY: if the section's pattern is "these are all single-source
+  benchmarks", say so. Don't oversell weak signal.
+
+Return ONLY a single JSON object (no markdown fences, no commentary):
+
+{{
+  "lead": "<2-5 words, full-stop at end>",
+  "body": "<20-35 word framing sentence(s)>"
+}}
+"""
+    try:
+        raw = _llm_call(prompt, temperature=temperature, max_tokens=400)
+    except Exception:  # noqa: BLE001
+        _LOG.warning(
+            "summarise: section-intro LLM call failed for %s -- skipping intro",
+            section.name,
+        )
+        return
+    payload = _extract_json_object(raw)
+    if not isinstance(payload, dict):
+        _LOG.warning(
+            "summarise: section-intro JSON parse failed for %s -- skipping",
+            section.name,
+        )
+        return
+    lead = payload.get("lead")
+    body = payload.get("body")
+    if not isinstance(lead, str) or not isinstance(body, str):
+        return
+    lead = lead.strip()
+    body = body.strip()
+    if not lead or not body:
+        return
+    try:
+        section.intro_lead = lead
+        section.intro_body = body
+    except Exception:  # noqa: BLE001 -- length validators may fire
+        _LOG.warning(
+            "summarise: section-intro validation failed for %s "
+            "(lead=%r, body=%r)",
+            section.name, lead[:80], body[:80],
+        )
 
 
 # ---------------------------------------------------------------------------

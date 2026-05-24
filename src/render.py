@@ -35,10 +35,13 @@ from __future__ import annotations
 import datetime
 import json
 import logging
+import math
 import os
 import shutil
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -50,6 +53,7 @@ from src.models import Issue
 # ---------------------------------------------------------------------------
 
 TEMPLATE_NAME = "issue.html.j2"
+INDEX_TEMPLATE_NAME = "index.html.j2"
 TEMPLATE_DIR = Path("templates")
 
 # Peripheral files copied from staging -> canonical during release_promote
@@ -136,9 +140,9 @@ class IncompleteStaging(ReleaseError):
 # ---------------------------------------------------------------------------
 
 _SECTION_TITLES: dict[str, str] = {
-    "leaders": "For leaders",
-    "geeks": "For geeks",
-    "notable": "On the Radar",
+    "big_picture": "The Big Picture",
+    "hands_on": "Hands-On",
+    "on_the_radar": "On the Radar",
 }
 
 
@@ -147,12 +151,52 @@ def _section_title(name: str) -> str:
     return _SECTION_TITLES.get(name, name)
 
 
+_SYDNEY_TZ = ZoneInfo("Australia/Sydney")
+
+
+def _aest(dt: datetime.datetime) -> str:
+    """Format a (timezone-aware) datetime in Sydney local time, with the
+    correct AEST/AEDT abbreviation for the date. Falls back to UTC label
+    if the datetime is naive."""
+    if dt.tzinfo is None:
+        return dt.strftime("%Y-%m-%d %H:%M UTC")
+    local = dt.astimezone(_SYDNEY_TZ)
+    return local.strftime("%Y-%m-%d %H:%M ") + local.tzname()
+
+
+def _source_label(url) -> str:
+    """Extract a clean source label from a URL: hostname with the leading
+    `www.` stripped. Falls back to the raw URL if parsing fails."""
+    s = str(url)
+    try:
+        host = urlparse(s).hostname or s
+    except Exception:  # noqa: BLE001
+        return s
+    if host.startswith("www."):
+        host = host[4:]
+    return host
+
+
+def _read_minutes(issue: Issue) -> int:
+    """Rough read-time estimate: total summary word count / 200 wpm,
+    rounded up. Minimum 1 minute. Used in the masthead meta line."""
+    words = 0
+    for block in issue.pulse.stories:
+        words += len(block.summary.split())
+    for section in issue.sections:
+        for block in section.stories:
+            words += len(block.summary.split())
+    return max(1, math.ceil(words / 200))
+
+
 def _build_env() -> Environment:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         autoescape=select_autoescape(["html", "j2"]),
     )
     env.globals["section_title"] = _section_title
+    env.filters["aest"] = _aest
+    env.filters["source_label"] = _source_label
     return env
 
 
@@ -272,6 +316,91 @@ def _load_published_urls() -> set[str]:
 
 
 # ---------------------------------------------------------------------------
+# Landing-page index -- the docs/index.html that lists every released issue.
+# ---------------------------------------------------------------------------
+
+
+def _collect_index_entries() -> list[dict]:
+    """Walk every canonical issue.json and pull the fields the landing page
+    needs: date, issue_number, pulse headline. Returns newest-first.
+    Tolerant of unreadable / partial files (skipped with a warning)."""
+    entries: list[dict] = []
+    for d in paths.all_released_dates():
+        issue_path = paths.issue_path(d, canonical=True)
+        try:
+            payload = json.loads(issue_path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            log.warning(
+                "index: skipping %s during landing-page build (%s)",
+                issue_path, exc,
+            )
+            continue
+        pulse_stories = (payload.get("pulse") or {}).get("stories") or []
+        headline = ""
+        if pulse_stories and isinstance(pulse_stories[0], dict):
+            headline = (pulse_stories[0].get("headline") or "").strip()
+        entries.append({
+            "date": d,
+            "issue_number": payload.get("issue_number"),
+            "pulse_headline": headline,
+        })
+    entries.sort(key=lambda e: e["date"], reverse=True)
+    return entries
+
+
+def _latest_kicker_label(d: datetime.date) -> str:
+    """The chip text shown next to "Latest issue" in the hero block.
+    "Today" / "Yesterday" when applicable, otherwise the issue's weekday."""
+    today = datetime.date.today()
+    if d == today:
+        return "Today"
+    if d == today - datetime.timedelta(days=1):
+        return "Yesterday"
+    return d.strftime("%a %d %b")
+
+
+def _render_index_landing() -> Path:
+    """Render docs/index.html as the landing page: latest issue hero
+    block + monthly-grouped archive list below. Writes atomically.
+    Called from `render(mode='release')` and from `unrelease()` so the
+    landing always reflects the surviving canonical archive.
+
+    Template contract:
+      latest          -- newest entry dict (date, issue_number, pulse_headline), or None
+      latest_kicker   -- chip label string ("Today", "Yesterday", "Wed 22 May")
+      archive_data    -- JSON-ready list of past entries (entries[1:]) shaped
+                         as {date, num, headline, href} for the embedded
+                         search/accordion script. May be empty.
+      generated_at    -- UTC datetime, formatted by the `aest` filter.
+    """
+    env = _build_env()
+    template = env.get_template(INDEX_TEMPLATE_NAME)
+    entries = _collect_index_entries()
+
+    latest = entries[0] if entries else None
+    latest_kicker = _latest_kicker_label(latest["date"]) if latest else ""
+    archive_data = [
+        {
+            "date": e["date"].isoformat(),
+            "num": e["issue_number"],
+            "headline": e["pulse_headline"],
+            "href": f"released/{e['date'].isoformat()}.html",
+        }
+        for e in entries[1:]
+    ]
+
+    html = template.render(
+        latest=latest,
+        latest_kicker=latest_kicker,
+        archive_data=archive_data,
+        generated_at=datetime.datetime.now(datetime.timezone.utc),
+    )
+    out = paths.DOCS_INDEX
+    _atomic_write(out, html)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # render() -- the Jinja2 entry point, used by both preview and release flows.
 # ---------------------------------------------------------------------------
 
@@ -314,14 +443,14 @@ def render(
 
     env = _build_env()
     template = env.get_template(TEMPLATE_NAME)
-    html = template.render(issue=issue)
+    html = template.render(issue=issue, read_minutes=_read_minutes(issue))
     issue_label = (
         f"#{issue.issue_number}" if issue.issue_number is not None
         else "(staging -- not yet numbered)"
     )
 
     if mode == "preview":
-        out = paths.preview_html_path(date)
+        out = paths.staging_html_path(date)
         _atomic_write(out, html)
         log.info(
             "rendered preview issue %s to %s (%d stories)",
@@ -329,16 +458,17 @@ def render(
         )
         return out
 
-    # mode == "release": write both index.html and the archive page.
-    index_out = paths.DOCS_INDEX
-    archive_out = paths.archive_html_path(date)
-    _atomic_write(index_out, html)
+    # mode == "release": write the per-issue archive page, then refresh
+    # the landing index (which now lists all canonical issues; the full
+    # issue HTML lives only at its dated permalink).
+    archive_out = paths.released_html_path(date)
     _atomic_write(archive_out, html)
+    index_out = _render_index_landing()
     log.info(
-        "rendered canonical issue %s to %s + %s (%d stories)",
-        issue_label, index_out, archive_out, total_stories,
+        "rendered canonical issue %s to %s (%d stories); refreshed %s",
+        issue_label, archive_out, total_stories, index_out,
     )
-    return index_out
+    return archive_out
 
 
 # ---------------------------------------------------------------------------
@@ -358,7 +488,7 @@ def release_promote(date: datetime.date) -> Issue:
       3. Read + pydantic-validate the staging ``Issue``. Warn if
          ``issue_number`` was somehow already set in staging (overwrite).
       4. Derive the next ``issue_number`` from
-         ``paths.all_canonical_dates()`` -> max + 1 (or 1 if no canonical
+         ``paths.all_released_dates()`` -> max + 1 (or 1 if no canonical
          history). Log the derivation.
       5. Copy peripheral files atomically (items.jsonl, source_health.json,
          clusters.jsonl, ranked.jsonl, embeddings/centroids.npz) from
@@ -398,7 +528,7 @@ def release_promote(date: datetime.date) -> Issue:
         )
 
     # --- Step 4: derive issue_number --------------------------------------
-    canonical_dates = paths.all_canonical_dates()
+    canonical_dates = paths.all_released_dates()
     existing_numbers: list[int] = []
     for d in canonical_dates:
         try:
@@ -424,16 +554,16 @@ def release_promote(date: datetime.date) -> Issue:
     )
 
     # --- Step 5: copy peripheral files staging -> canonical --------------
-    canonical_dir = paths.canonical_dir(date)
-    canonical_dir.mkdir(parents=True, exist_ok=True)
-    (canonical_dir / "embeddings").mkdir(parents=True, exist_ok=True)
+    released_dir = paths.released_dir(date)
+    released_dir.mkdir(parents=True, exist_ok=True)
+    (released_dir / "embeddings").mkdir(parents=True, exist_ok=True)
 
     staging_dir = paths.staging_dir(date)
     for name in _PERIPHERAL_FILES:
-        _atomic_copy(staging_dir / name, canonical_dir / name)
+        _atomic_copy(staging_dir / name, released_dir / name)
     _atomic_copy(
         staging_dir / _PERIPHERAL_EMBEDDINGS,
-        canonical_dir / _PERIPHERAL_EMBEDDINGS,
+        released_dir / _PERIPHERAL_EMBEDDINGS,
     )
 
     # --- Step 6: write canonical issue.json LAST (the commit marker) -----
@@ -504,33 +634,33 @@ def unrelease(date: datetime.date) -> int:
     log.info("unrelease: removed canonical commit marker %s", canonical_issue)
 
     # --- ...then peripheral files in reverse listing order ----------------
-    canonical_dir = paths.canonical_dir(date)
+    released_dir = paths.released_dir(date)
     for name in reversed(_PERIPHERAL_FILES):
-        p = canonical_dir / name
+        p = released_dir / name
         if p.exists():
             p.unlink()
             log.debug("unrelease: removed %s", p)
-    embeddings_file = canonical_dir / _PERIPHERAL_EMBEDDINGS
+    embeddings_file = released_dir / _PERIPHERAL_EMBEDDINGS
     if embeddings_file.exists():
         embeddings_file.unlink()
         log.debug("unrelease: removed %s", embeddings_file)
 
     # --- Step 3: best-effort empty-directory cleanup ----------------------
-    embeddings_dir = canonical_dir / "embeddings"
+    embeddings_dir = released_dir / "embeddings"
     if embeddings_dir.exists():
         try:
             embeddings_dir.rmdir()
         except OSError:
             log.debug("unrelease: %s not empty, leaving in place", embeddings_dir)
-    if canonical_dir.exists():
+    if released_dir.exists():
         try:
-            canonical_dir.rmdir()
+            released_dir.rmdir()
         except OSError:
-            log.debug("unrelease: %s not empty, leaving in place", canonical_dir)
+            log.debug("unrelease: %s not empty, leaving in place", released_dir)
 
     # --- Step 4: rebuild data/published_urls.txt from canonical history --
     surviving_urls: set[str] = set()
-    for d in paths.all_canonical_dates():
+    for d in paths.all_released_dates():
         try:
             payload = json.loads(
                 paths.issue_path(d, canonical=True).read_text(encoding="utf-8")
@@ -548,6 +678,14 @@ def unrelease(date: datetime.date) -> int:
 
     paths.PUBLISHED_URLS_PATH.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_lines(paths.PUBLISHED_URLS_PATH, sorted(surviving_urls))
+
+    # --- Step 5: clean up the published HTML surface ---------------------
+    archive_html = paths.released_html_path(date)
+    if archive_html.exists():
+        archive_html.unlink()
+        log.debug("unrelease: removed %s", archive_html)
+    index_out = _render_index_landing()
+    log.debug("unrelease: refreshed landing index %s", index_out)
 
     removed = len(before - surviving_urls)
     log.info(

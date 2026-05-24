@@ -489,7 +489,7 @@ def _dry_run_staging(run_date: _dt.date, stages: list[str]) -> None:
 
 def _dry_run_release(run_date: _dt.date) -> None:
     date_str = run_date.isoformat()
-    canonical_dir = paths.canonical_dir(run_date)
+    released_dir = paths.released_dir(run_date)
     staging_dir = paths.staging_dir(run_date)
     print(f"[dry-run] RELEASE for date={date_str}:")
     print(f"  1. idempotency check: {paths.issue_path(run_date, canonical=True)} "
@@ -497,32 +497,32 @@ def _dry_run_release(run_date: _dt.date) -> None:
     print(f"  2. validate staging:  {paths.issue_path(run_date, canonical=False)} "
           "must exist")
     print( "  3. derive issue_number: max(canonical) + 1")
-    print(f"  4. copy peripherals:  {staging_dir}/ -> {canonical_dir}/")
+    print(f"  4. copy peripherals:  {staging_dir}/ -> {released_dir}/")
     print("       items.jsonl, source_health.json, clusters.jsonl, "
           "ranked.jsonl, embeddings/centroids.npz")
     print(f"  5. write canonical issue.json LAST -> "
           f"{paths.issue_path(run_date, canonical=True)}")
     print(f"  6. render canonical -> {paths.DOCS_INDEX} + "
-          f"{paths.archive_html_path(run_date)}")
+          f"{paths.released_html_path(run_date)}")
     print(f"  7. append URLs -> {paths.PUBLISHED_URLS_PATH}")
 
 
 def _dry_run_unrelease(run_date: _dt.date) -> None:
     date_str = run_date.isoformat()
-    canonical_dir = paths.canonical_dir(run_date)
+    released_dir = paths.released_dir(run_date)
     print(f"[dry-run] UNRELEASE for date={date_str}:")
     print(f"  would delete (in this order):")
     print(f"    1. {paths.issue_path(run_date, canonical=True)}  (commit marker, FIRST)")
     # Reverse order matches the implementation.
     for name in ("ranked.jsonl", "clusters.jsonl", "source_health.json", "items.jsonl"):
-        p = canonical_dir / name
+        p = released_dir / name
         existence = "exists" if p.exists() else "absent"
         print(f"    -. {p}  ({existence})")
-    embeddings_file = canonical_dir / "embeddings" / "centroids.npz"
+    embeddings_file = released_dir / "embeddings" / "centroids.npz"
     print(f"    -. {embeddings_file}  "
           f"({'exists' if embeddings_file.exists() else 'absent'})")
-    print(f"    -. {canonical_dir}/embeddings/  (rmdir if empty)")
-    print(f"    -. {canonical_dir}/             (rmdir if empty)")
+    print(f"    -. {released_dir}/embeddings/  (rmdir if empty)")
+    print(f"    -. {released_dir}/             (rmdir if empty)")
     print(f"  would rebuild: {paths.PUBLISHED_URLS_PATH} from surviving canonical "
           "issue.json files")
     print( "  issue-number gap will be preserved (no renumbering)")
@@ -720,7 +720,7 @@ def _run_release(run_date: _dt.date, dry_run: bool, back_release: bool) -> int:
         paths.DOCS_INDEX,
         paths.PUBLISHED_URLS_PATH,
         grew_by,
-        paths.archive_html_path(run_date),
+        paths.released_html_path(run_date),
     )
     _LOG.info(_BANNER_RULE)
     return 0
@@ -775,7 +775,7 @@ def _print_staging_summary(
                 paths.issue_path(run_date, canonical=False),
             )
         if "render" in stages_succeeded:
-            _LOG.info(" preview: %s", paths.preview_html_path(run_date))
+            _LOG.info(" preview: %s", paths.staging_html_path(run_date))
         _LOG.info(
             " status: OK -- run 'python -m src.run --release' to ship."
         )

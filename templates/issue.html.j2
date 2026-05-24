@@ -3,104 +3,368 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Vector {% if issue.issue_number %}#{{ issue.issue_number }} {% else %}(preview) {% endif %}— {{ issue.date.isoformat() }}</title>
+  <title>AI Vector {% if issue.issue_number %}&middot; Issue No. {{ issue.issue_number }} {% else %}(preview) {% endif %}&middot; {{ issue.date.strftime('%d %B %Y') }}</title>
+  <meta name="description" content="Today's AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="stylesheet" href="../fonts/fonts.css">
   <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
-      font-size: 16px;
-      line-height: 1.55;
-      max-width: 720px;
-      margin: 2rem auto;
-      padding: 0 1.25rem;
-      color: #1a1a1a;
-      background: #fdfdfd;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fbfaf6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
-    header { border-bottom: 1px solid #ddd; padding-bottom: 1rem; margin-bottom: 2rem; }
-    header h1 { font-size: 1.6rem; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
-    header .tagline { color: #555; font-size: 0.95rem; margin: 0.25rem 0 0; font-style: italic; }
-    header .meta { color: #888; font-size: 0.85rem; margin-top: 0.5rem; }
-    section.pulse { background: #fff8e1; border-left: 3px solid #d4a017; padding: 1.25rem 1.5rem; border-radius: 4px; margin-bottom: 2rem; }
-    section.pulse h2 { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: #d4a017; }
-    section.pulse h3 { font-size: 1.2rem; margin: 0.5rem 0 0.75rem; }
-    section.section { margin-bottom: 2.5rem; }
-    section.section h2 { font-size: 1.15rem; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; margin-bottom: 1.25rem; }
-    article { margin-bottom: 1.5rem; }
-    article h3 { font-size: 1.05rem; margin: 0 0 0.5rem 0; font-weight: 600; }
-    .sources { font-size: 0.85rem; color: #666; margin-top: 0.5rem; }
-    .sources a { color: #555; text-decoration: none; margin-right: 0.25rem; }
-    .sources a:hover { text-decoration: underline; }
-    section.section-notable article { margin-bottom: 0.5rem; }
-    section.section-notable .terse { margin: 0.2rem 0; font-size: 0.95rem; }
-    footer { border-top: 1px solid #ddd; padding-top: 1rem; margin-top: 3rem; color: #888; font-size: 0.85rem; }
-    footer a { color: #888; text-decoration: underline; }
-    footer .about { color: #888; line-height: 1.5; margin: 0 0 0.5rem 0; }
-    footer .meta-footer { margin: 0; color: #888; }
-    .generated { margin-top: 0.25rem; color: #aaa; font-size: 0.78rem; }
-    @media (max-width: 600px) {
-      body { font-size: 15px; padding: 0 1rem; margin: 1rem auto; }
-      section.pulse { padding: 1rem 1.25rem; }
+    body {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a17;
+    }
+
+    /* ── shell ─────────────────────────────────────────────── */
+    .av-shell {
+      font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      color: #1a1a17;
+      background: #ffffff;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 88px 80px;
+      letter-spacing: -0.003em;
+      font-feature-settings: "kern", "liga", "calt";
+      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
+    }
+
+    /* ── masthead ──────────────────────────────────────────── */
+    .av-masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0c0c0c;
+      margin-bottom: 36px;
+    }
+    .av-brand {
+      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      line-height: 0.85;
+      color: #0c0c0c;
+      text-transform: uppercase;
+    }
+    .av-brand-slash { color: #e6452f; margin: 0 2px; }
+    .av-mast-meta {
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a5a55;
+      text-align: right;
+      line-height: 1.7;
+    }
+
+    /* ── tagline ───────────────────────────────────────────── */
+    .av-tagline {
+      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: #1a1a17;
+      margin: 0 0 32px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .av-tagline-mark { color: #e6452f; margin-right: 12px; }
+
+    /* ── pulse ─────────────────────────────────────────────── */
+    .av-pulse {
+      margin: 0 0 56px;
+      padding: 32px 32px 28px;
+      background: #fdf4f1;
+      border-left: 3px solid #e6452f;
+    }
+    .av-pulse-label {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e6452f;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .av-pulse-bar { width: 32px; height: 2px; background: #e6452f; }
+    .av-pulse-title {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      line-height: 1.15;
+      margin: 0 0 22px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 26ch;
+    }
+    .av-pulse-body {
+      font-size: 18px;
+      line-height: 1.65;
+      color: #2a2a26;
+      margin: 0 0 18px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-pulse-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-pulse-link {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 600;
+    }
+
+    /* ── section ───────────────────────────────────────────── */
+    .av-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #0c0c0c;
+      margin: 0 0 28px;
+    }
+    .av-section-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .av-section-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0;
+      color: #0c0c0c;
+    }
+    .av-section-count {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #6a6a64;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── stories ───────────────────────────────────────────── */
+    .av-story { margin: 0 0 36px; }
+    .av-story-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 28em;
+    }
+    .av-story-body {
+      font-size: 17px;
+      line-height: 1.7;
+      color: #2a2a26;
+      margin: 0 0 14px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-story-foot {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-story-src {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 500;
+    }
+
+    /* ── pills ─────────────────────────────────────────────── */
+    .av-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: "Inter Tight", sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+    .av-pill-act     { color: #8a5448; background: #f5ecea; }
+    .av-pill-try     { color: #4f7a5d; background: #ecf2ed; }
+    .av-pill-read    { color: #5a7090; background: #eef1f6; }
+    .av-pill-watch   { color: #6a6a64; background: #f0efec; }
+    .av-pill-discuss { color: #8a7548; background: #f4eee2; }
+
+    /* ── section intro paragraph ───────────────────────────── */
+    .av-section-intro {
+      font-size: 17px;
+      line-height: 1.6;
+      color: #3a3a36;
+      margin: 0 0 36px;
+      max-width: 40em;
+      text-wrap: pretty;
+    }
+    .av-section-intro-strong {
+      color: #0c0c0c;
+      font-weight: 700;
+    }
+
+    /* ── On the Radar (terse) ──────────────────────────────── */
+    .av-section.on_the_radar .av-story { margin: 0 0 22px; }
+    .av-section.on_the_radar .av-story-body { font-size: 16px; }
+
+    /* ── footer ────────────────────────────────────────────── */
+    .av-footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #0c0c0c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6a6a64;
+    }
+    .av-about {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #8a8a85;
+      line-height: 1.6;
+      max-width: 50em;
+    }
+    .av-archive-link {
+      color: #6a6a64;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    /* ── responsive ────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .av-shell { padding: 36px 24px 48px; }
+      .av-brand { font-size: 42px; }
+      .av-mast-meta { font-size: 10px; letter-spacing: 0.1em; }
+      .av-tagline { font-size: 19px; }
+      .av-pulse { padding: 24px 22px 22px; }
+      .av-pulse-title { font-size: 26px; }
+      .av-pulse-body { font-size: 17px; }
+      .av-section-title { font-size: 22px; }
+      .av-story-title { font-size: 20px; }
+      .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .av-mast-meta { text-align: left; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>AI Vector</h1>
-    <p class="tagline">Today's AI, with a heading.</p>
-    <p class="meta">{% if issue.issue_number %}Issue #{{ issue.issue_number }}{% else %}Preview (staging draft -- not yet released){% endif %} · {{ issue.date.strftime('%A, %d %B %Y') }}</p>
-  </header>
+  <article class="av-shell">
+    <header class="av-masthead">
+      <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
+      <div class="av-mast-meta">
+        <div>{{ issue.date.strftime('%A, %d %B %Y') }}</div>
+        <div>
+          {%- if issue.issue_number -%}
+            Issue No. {{ issue.issue_number }}
+          {%- else -%}
+            Preview &middot; staging
+          {%- endif -%}
+          {%- if read_minutes %} &middot; ~{{ read_minutes }} min read{% endif -%}
+        </div>
+      </div>
+    </header>
 
-  <main>
-    {# ------------------------------------------------------------------ #}
-    {# The Pulse                                                           #}
-    {# ------------------------------------------------------------------ #}
+    <p class="av-tagline">
+      <span class="av-tagline-mark">&mdash;</span>
+      Today&rsquo;s AI, with a heading.
+    </p>
+
+    {# ── Pulse ───────────────────────────────────────────── #}
     {% set p = issue.pulse.stories[0] %}
-    <section class="pulse">
-      <h2>The Pulse</h2>
-      <h3>{{ p.headline }}</h3>
-      <p>{{ p.summary }}</p>
-      <p class="sources">
-        Sources:
-        {% for url in p.source_urls %}<a href="{{ url }}">[{{ loop.index }}]</a>{% if not loop.last %} {% endif %}{% endfor %}
-      </p>
+    <section class="av-pulse">
+      <div class="av-pulse-label">
+        <span class="av-pulse-bar"></span>
+        <span>The Pulse &middot; Story of the day</span>
+      </div>
+      <h2 class="av-pulse-title">{{ p.headline }}</h2>
+      <p class="av-pulse-body">{{ p.summary }}</p>
+      <div class="av-pulse-meta">
+        {% for url in p.source_urls %}
+          <a class="av-pulse-link" href="{{ url }}">{{ url | source_label }}&nbsp;&rarr;</a>
+        {% endfor %}
+      </div>
     </section>
 
-    {# ------------------------------------------------------------------ #}
-    {# Remaining sections                                                  #}
-    {# ------------------------------------------------------------------ #}
+    {# ── Remaining sections ─────────────────────────────── #}
     {% for section in issue.sections %}
       {% if section.stories %}
-        <section class="section section-{{ section.name }}">
-          <h2>{{ section_title(section.name) }}</h2>
+        <div class="av-section {{ section.name }}">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">{{ section_title(section.name) }}</h2>
+            </div>
+            <span class="av-section-count">{{ section.stories|length }} {% if section.name == 'on_the_radar' %}items{% else %}stories{% endif %}</span>
+          </div>
+          {% if section.intro_lead or section.intro_body %}
+            <p class="av-section-intro">
+              {%- if section.intro_lead %}<span class="av-section-intro-strong">{{ section.intro_lead }}</span> {% endif -%}
+              {{ section.intro_body or '' }}
+            </p>
+          {% endif %}
           {% for story in section.stories %}
-            <article>
-              <h3>{{ story.headline }}</h3>
-              {% if section.name != 'notable' %}
-                <p>{{ story.summary }}</p>
-              {% else %}
-                <p class="terse">{{ story.summary }}</p>
-              {% endif %}
-              <p class="sources">
-                {% for url in story.source_urls %}<a href="{{ url }}">[{{ loop.index }}]</a>{% if not loop.last %} {% endif %}{% endfor %}
-              </p>
+            <article class="av-story">
+              <h3 class="av-story-title">{{ story.headline }}</h3>
+              <p class="av-story-body">{{ story.summary }}</p>
+              <div class="av-story-foot">
+                {% if story.signal %}
+                  <span class="av-pill av-pill-{{ story.signal }}">{{ story.signal }}</span>
+                {% endif %}
+                {% for url in story.source_urls %}
+                  <a class="av-story-src" href="{{ url }}">{{ url | source_label }}&nbsp;&rarr;</a>
+                {% endfor %}
+              </div>
             </article>
           {% endfor %}
-        </section>
+        </div>
       {% endif %}
     {% endfor %}
-  </main>
 
-  <footer>
-    <p class="about">
-      AI Vector is a daily AI newsletter with a financial-services lens. Judgement, not aggregation. AI-drafted, author-ratified.
+    <footer class="av-footer">
+      <span>AI Vector &middot; {{ issue.author if issue.author is defined else 'Arman Abrahamyan' }}</span>
+      <span>{{ issue.date.isoformat() }} &middot; Compiled {{ issue.generated_at | aest }} &middot; <a class="av-archive-link" href="../index.html">all issues</a></span>
+    </footer>
+    <p class="av-about">
+      AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
     </p>
-    <p class="meta-footer">
-      Arman
-      {%- if issue.issue_number %} · Issue #{{ issue.issue_number }}{% endif %}
-      · {{ issue.date.strftime('%d %B %Y') }}
-      · <a href="archive/">archive</a>
-    </p>
-    <p class="generated">Generated {{ issue.generated_at.strftime('%Y-%m-%d %H:%M UTC') }}</p>
-  </footer>
+  </article>
 </body>
 </html>

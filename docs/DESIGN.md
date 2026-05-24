@@ -128,18 +128,18 @@ from __future__ import annotations
 from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
-AudienceTag = Literal["builder", "leader", "finance", "general"]
+AudienceTag = Literal["hands_on", "big_picture", "finance", "general"]
 
 
 class RankedStory(BaseModel):
     schema_version: int = 1                                                 # bump on shape change
     cluster_id: Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]         # FK to Cluster
     score: Annotated[int, Field(ge=0, le=100)]                              # final weighted score (rubric sum)
-    breakdown: dict[str, Annotated[int, Field(ge=0, le=100)]]               # per-criterion sub-scores; keys match rubric.yaml criterion names
-    audience_tags: Annotated[list[AudienceTag], Field(min_length=1)]        # who this is for; e.g. ["builder", "finance"]
+    breakdown: dict[str, Annotated[int, Field(ge=0, le=100)]]               # per-criterion sub-scores; keys match rubric.yaml criterion names (significance, hands_on_utility, big_picture_relevance, financial_services_impact, freshness_momentum)
+    audience_tags: Annotated[list[AudienceTag], Field(min_length=1)]        # who this is for; e.g. ["hands_on", "finance"]
     rationale: Annotated[str, Field(min_length=1, max_length=1000)]         # one-line LLM rationale for transparency and eval
-    tier: Literal["pulse", "where_heading", "builders", "leaders", "notable", "cut"]
-                                                                            # editorial slot assignment (LLM Engineer picks; Editor may relabel; "cut" = below threshold)
+    tier: Literal["pulse", "on_the_radar", "cut"]
+                                                                            # editorial slot assignment (rank.py picks; summarise.py promotes to a section; "cut" = below threshold)
     prompt_version: Annotated[str, Field(pattern=r"^v\d+(\.\d+)*$")]        # version of the rank prompt that produced this (e.g. "v1.2"); supports A/B + audit
 ```
 
@@ -154,10 +154,10 @@ score movement against prompt revisions (risk-register item #6).
 ### `IssueSection` — one section of the rendered issue
 
 `IssueSection` is the structural unit of the published newsletter.
-Sections (post-v0.2 voice work; PLAN §4 originally listed two more that
-have since collapsed): **The Pulse**, **For leaders**, **For geeks**,
-**On the Radar**. Each section holds a list of summary blocks ready for
-the Jinja2 template.
+Sections (current, v0.8 — 2026-05-24 rename; PLAN §4 originally listed
+two more that have since collapsed): **The Pulse**, **The Big Picture**,
+**Hands-On**, **On the Radar**. Each section holds a list of summary
+blocks ready for the Jinja2 template.
 
 ```python
 from __future__ import annotations
@@ -166,9 +166,9 @@ from pydantic import BaseModel, Field, HttpUrl
 
 SectionName = Literal[
     "pulse",            # The Pulse — 1 story, the most important today
-    "leaders",          # For leaders — strategic angles
-    "geeks",            # For geeks — enthusiasts + builders, hands-on news
-    "notable",          # On the Radar — terse linked list (id stays "notable")
+    "big_picture",      # The Big Picture — strategic angles
+    "hands_on",         # Hands-On — enthusiasts + builders, hands-on news
+    "on_the_radar",     # On the Radar — terse linked list
 ]
 
 
@@ -187,7 +187,7 @@ class SummaryBlock(BaseModel):
 class IssueSection(BaseModel):
     schema_version: int = 1                                                 # bump on shape change
     name: SectionName                                                       # which section this is
-    stories: list[SummaryBlock]                                             # may be empty for "notable" on a slow day; pulse must have exactly 1
+    stories: list[SummaryBlock]                                             # may be empty for "on_the_radar" on a slow day; pulse must have exactly 1
 ```
 
 **Notes on choices.** `SummaryBlock` separates `headline` (what reads in the
@@ -215,11 +215,11 @@ class Issue(BaseModel):
     issue_number: Optional[Annotated[int, Field(ge=1)]] = None              # None in staging; assigned at release time (max canonical + 1). See Archive: staging vs canonical
     date: date                                                              # the issue date (YYYY-MM-DD); matches the archive folder
     pulse: IssueSection                                                     # The Pulse — exactly 1 SummaryBlock
-    sections: list[IssueSection]                                            # remaining sections in display order: where_heading, builders, leaders, notable
+    sections: list[IssueSection]                                            # remaining sections in display order: big_picture, hands_on, on_the_radar
     generated_at: datetime                                                  # UTC timestamp when summarise.py wrote this
     prompt_versions: dict[str, Annotated[str, Field(pattern=r"^v\d+(\.\d+)*$")]]
                                                                             # which prompt revisions produced this issue; keys: "rank", "summarise", "pulse", optionally "callback"
-    notes: Annotated[str, Field(max_length=2000)] = ""                      # optional engine-side notes (e.g. "slow day; notable tail shortened"); not rendered
+    notes: Annotated[str, Field(max_length=2000)] = ""                      # optional engine-side notes (e.g. "slow day; On the Radar tail shortened"); not rendered
 ```
 
 **Notes on choices.** `pulse` is a separate field, not just the first
@@ -1064,7 +1064,7 @@ and a space for Arman's decision. Decisions get logged here when made.
 |---|---|---|---|---|
 | 1 | **Language / stack** — Python (feedparser, httpx, pydantic v2, jinja2)? | **Open — strong rec** | **Python.** Locked per PLAN §10. pydantic v2 for the contracts (better perf + `Annotated`/`Field` ergonomics), `feedparser` for RSS/Atom, `httpx` for APIs (HN Algolia, HF Daily Papers), `jinja2` for templates, `numpy` for centroid math, `pyyaml` for configs. Lock the Python version in `pyproject.toml` (recommend 3.11+ — `tomllib`, modern type syntax). |  |
 | 2 | **Embeddings model** — which provider available via LiteLLM/Bedrock? | **Open — blocking on platform** | Depends on what Arman's LiteLLM/Bedrock exposes. Architect's preference order: (a) a Bedrock-native embeddings model already available on-prem (lowest egress risk); (b) any solid general-purpose embedder via LiteLLM (Voyage, Cohere embed, OpenAI text-embedding-3 family). Retrieval Engineer decides exact model once the menu is known; threshold (~0.85 cosine) is calibrated *after* model is chosen. **This is one of the §7 day-one questions in disguise.** |  |
-| 3 | **Stories per issue** | **Decided (v0.2 voice work)** | **12 ranked stories** distributed across Pulse (1), For leaders (≤4), For geeks (≤5), plus an **On the Radar tail** of the remainder. Slow days: shrink, don't pad. Eval Engineer watches drift (tier mix) over months. | 12, per current `TOP_N_STORIES`. |
+| 3 | **Stories per issue** | **Decided (v0.2 voice work; renamed v0.8)** | **12 ranked stories** distributed across The Pulse (1), The Big Picture (≤4), Hands-On (≤5), plus an **On the Radar tail** of the remainder. Slow days: shrink, don't pad. Eval Engineer watches drift (tier mix) over months. | 12, per current `TOP_N_STORIES`. |
 | 4 | **Archive UX** | **Open — rec** | **Flat dated HTML first** (`docs/archive/YYYY-MM-DD.html`). Add an indexed archive page (`docs/archive/index.html`) once we have ~30+ issues — Release Engineer ships it as a small follow-up, not in v0.1. Don't over-engineer the front door before the corpus exists. |  |
 | 5 | **Email distribution** | **Out of scope v0** | Confirmed out of scope per PLAN §8. Re-open when the publication has earned a steady reader base on Pages. |  |
 | 6 | **Finance-AI sources** (specific feeds for the FS lens) | **Open — Source Engineer's TODO** | Source Engineer owns the candidate list. Architect's request: at minimum 3–5 feeds covering (a) trading/markets ML, (b) fraud/AML/KYC ML, (c) model-risk + governance updates (regulator outputs where they publish feeds), (d) agents-in-finance product news. Trust-weight starts at 2; earns 4–5 over months per `finance-lens.md`. |  |

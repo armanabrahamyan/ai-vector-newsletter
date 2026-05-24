@@ -110,14 +110,22 @@ Each step is its own module in `src/`, independently testable.
    `docs/index.html` (latest) + `docs/archive/YYYY-MM-DD.html`.
 6. **`run.py`** — orchestrates 1→5, idempotent, safe to re-run same day.
 
-### Issue structure (first cut — refine in DESIGN.md)
+### Issue structure (current, v0.8 — 2026-05-24 section rename)
 - **The Pulse** — the single most important thing today, 2–3 sentences. (warmth
   + signal; quiet nod to the heartbeat lineage)
-- **Where it's heading** — 2–3 trend reads with direction.
-- **For builders** — practical tips / tools / repos for engineers & DS.
-- **For leaders** — strategic + financial-services implications.
-- **Also notable** — terse linked list.
+- **The Big Picture** — strategic + financial-services implications (audience tag: `big_picture`).
+- **Hands-On** — practical tips / tools / repos for engineers & DS (audience tag: `hands_on`).
+- **On the Radar** — terse linked list of the remaining stories.
 - Footer: author, date, "Today's AI, with a heading," archive link.
+
+> Earlier drafts split this into Pulse / Where it's heading / For builders /
+> For leaders / Also notable. "Where it's heading" was absorbed into prose
+> (direction lives in each summary, not a separate section); builders +
+> geeks merged into Hands-On; "Also notable" relabelled to On the Radar.
+> v0.8 (2026-05-24) also renamed audience tags and rubric criteria to
+> match section names: `leader` → `big_picture`, `builder` → `hands_on`,
+> `leadership_relevance` → `big_picture_relevance`,
+> `builder_utility` → `hands_on_utility`.
 
 ---
 
@@ -125,13 +133,13 @@ Each step is its own module in `src/`, independently testable.
 
 Score each story 0–100, weighted:
 - **Significance** (is this a real shift vs. noise?) — 30
-- **Builder utility** (can an engineer/DS act on it?) — 25
-- **Leadership relevance** (strategy, risk, governance) — 20
+- **Hands-on utility** (`hands_on_utility`, can an engineer/DS act on it?) — 25
+- **Big-picture relevance** (`big_picture_relevance`, strategy, risk, governance) — 20
 - **Financial-services impact** (banking, regulation, risk, fraud, agents in
   finance) — 15
 - **Freshness / momentum** (breaking, or building) — 10
 
-Tag each story with audiences: `builder | leader | finance | general`.
+Tag each story with audiences: `hands_on | big_picture | finance | general`.
 The LLM returns score + per-criterion breakdown + rationale (for the eval
 harness and for transparency).
 
@@ -180,7 +188,7 @@ If egress is blocked → fetch may need to run from an approved network.
 
 - [ ] Language/stack: Python assumed (feedparser, httpx, pydantic, jinja2). OK?
 - [ ] Embeddings model available via your LiteLLM/Bedrock? Which one?
-- [ ] How many stories per issue? (suggest 8–12 ranked + a "notable" tail)
+- [ ] How many stories per issue? (suggest 8–12 ranked + an "On the Radar" tail)
 - [ ] Archive: flat dated HTML now; index page later?
 - [ ] Distribution beyond Pages later (email digest)? Out of scope for v0.
 - [ ] Finance-AI sources: which specific feeds? (need your input)

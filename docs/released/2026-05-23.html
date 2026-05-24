@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Vector &middot; Issue No. 1 &middot; 23 May 2026</title>
+  <meta name="description" content="Today's AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="stylesheet" href="../fonts/fonts.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fbfaf6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a17;
+    }
+
+    /* ── shell ─────────────────────────────────────────────── */
+    .av-shell {
+      font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      color: #1a1a17;
+      background: #ffffff;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 88px 80px;
+      letter-spacing: -0.003em;
+      font-feature-settings: "kern", "liga", "calt";
+      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
+    }
+
+    /* ── masthead ──────────────────────────────────────────── */
+    .av-masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0c0c0c;
+      margin-bottom: 36px;
+    }
+    .av-brand {
+      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      line-height: 0.85;
+      color: #0c0c0c;
+      text-transform: uppercase;
+    }
+    .av-brand-slash { color: #e6452f; margin: 0 2px; }
+    .av-mast-meta {
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a5a55;
+      text-align: right;
+      line-height: 1.7;
+    }
+
+    /* ── tagline ───────────────────────────────────────────── */
+    .av-tagline {
+      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: #1a1a17;
+      margin: 0 0 32px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .av-tagline-mark { color: #e6452f; margin-right: 12px; }
+
+    /* ── pulse ─────────────────────────────────────────────── */
+    .av-pulse {
+      margin: 0 0 56px;
+      padding: 32px 32px 28px;
+      background: #fdf4f1;
+      border-left: 3px solid #e6452f;
+    }
+    .av-pulse-label {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e6452f;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .av-pulse-bar { width: 32px; height: 2px; background: #e6452f; }
+    .av-pulse-title {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      line-height: 1.15;
+      margin: 0 0 22px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 26ch;
+    }
+    .av-pulse-body {
+      font-size: 18px;
+      line-height: 1.65;
+      color: #2a2a26;
+      margin: 0 0 18px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-pulse-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-pulse-link {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 600;
+    }
+
+    /* ── section ───────────────────────────────────────────── */
+    .av-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #0c0c0c;
+      margin: 0 0 28px;
+    }
+    .av-section-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .av-section-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0;
+      color: #0c0c0c;
+    }
+    .av-section-count {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #6a6a64;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── stories ───────────────────────────────────────────── */
+    .av-story { margin: 0 0 36px; }
+    .av-story-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 28em;
+    }
+    .av-story-body {
+      font-size: 17px;
+      line-height: 1.7;
+      color: #2a2a26;
+      margin: 0 0 14px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-story-foot {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-story-src {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 500;
+    }
+
+    /* ── pills ─────────────────────────────────────────────── */
+    .av-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: "Inter Tight", sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+    .av-pill-act     { color: #8a5448; background: #f5ecea; }
+    .av-pill-try     { color: #4f7a5d; background: #ecf2ed; }
+    .av-pill-read    { color: #5a7090; background: #eef1f6; }
+    .av-pill-watch   { color: #6a6a64; background: #f0efec; }
+    .av-pill-discuss { color: #8a7548; background: #f4eee2; }
+
+    /* ── section intro paragraph ───────────────────────────── */
+    .av-section-intro {
+      font-size: 17px;
+      line-height: 1.6;
+      color: #3a3a36;
+      margin: 0 0 36px;
+      max-width: 40em;
+      text-wrap: pretty;
+    }
+    .av-section-intro-strong {
+      color: #0c0c0c;
+      font-weight: 700;
+    }
+
+    /* ── On the Radar (terse) ──────────────────────────────── */
+    .av-section.on_the_radar .av-story { margin: 0 0 22px; }
+    .av-section.on_the_radar .av-story-body { font-size: 16px; }
+
+    /* ── footer ────────────────────────────────────────────── */
+    .av-footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #0c0c0c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6a6a64;
+    }
+    .av-about {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #8a8a85;
+      line-height: 1.6;
+      max-width: 50em;
+    }
+    .av-archive-link {
+      color: #6a6a64;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    /* ── responsive ────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .av-shell { padding: 36px 24px 48px; }
+      .av-brand { font-size: 42px; }
+      .av-mast-meta { font-size: 10px; letter-spacing: 0.1em; }
+      .av-tagline { font-size: 19px; }
+      .av-pulse { padding: 24px 22px 22px; }
+      .av-pulse-title { font-size: 26px; }
+      .av-pulse-body { font-size: 17px; }
+      .av-section-title { font-size: 22px; }
+      .av-story-title { font-size: 20px; }
+      .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .av-mast-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <article class="av-shell">
+    <header class="av-masthead">
+      <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
+      <div class="av-mast-meta">
+        <div>Saturday, 23 May 2026</div>
+        <div>Issue No. 1 &middot; ~4 min read</div>
+      </div>
+    </header>
+
+    <p class="av-tagline">
+      <span class="av-tagline-mark">&mdash;</span>
+      Today&rsquo;s AI, with a heading.
+    </p>
+
+    
+    
+    <section class="av-pulse">
+      <div class="av-pulse-label">
+        <span class="av-pulse-bar"></span>
+        <span>The Pulse &middot; Story of the day</span>
+      </div>
+      <h2 class="av-pulse-title">A small open model pulls structured data from invoices and forms without sending files to the cloud</h2>
+      <p class="av-pulse-body">NuExtract3 is a small image-and-text model built for extracting structured information from PDFs, invoices, tables, and screenshots, released under a permissive open licence with weights on Hugging Face. Single-source disclosure: the announcement comes from the vendor themselves on Reddit. If data residency stops you using a closed extraction API, test this against your own document corpus before committing.</p>
+      <div class="av-pulse-meta">
+        
+          <a class="av-pulse-link" href="https://reddit.com/r/MachineLearning/comments/1tkejqr/nuextract3_released_openweight_4b_vlm_for">reddit.com&nbsp;&rarr;</a>
+        
+      </div>
+    </section>
+
+    
+    
+      
+        <div class="av-section big_picture">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">The Big Picture</h2>
+            </div>
+            <span class="av-section-count">3 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Trust gaps are widening.</span> Across agents, identity tools, and model vendors, the same problem surfaces: the infrastructure is moving faster than anyone&#39;s ability to verify what it&#39;s actually doing.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A new framework turns AI-to-AI handoffs into a number you can audit</h3>
+              <p class="av-story-body">Safe Bilevel Delegation scores each moment an agent passes control to a sub-agent on a zero-to-one scale, gating execution when confidence drops. Single-source coverage with no paper link, no code, and no benchmarks published yet. Treat it as a design concept worth raising in your next agentic architecture review, not something to build on.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://llmquant.substack.com/p/when-should-an-ai-hand-the-wheel">llmquant.substack.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Identity verification vendors can&#39;t say how fast they update deepfake detection</h3>
+              <p class="av-story-body">Synthetic media generation has outpaced the threat models baked into most liveness detection systems, which were trained on static images and basic replay attacks. When two identity verification vendors were asked directly about this gap, both gave confident-sounding answers that didn&#39;t address it. Thin sourcing (one Reddit thread), but the question is concrete: ask your vendor for a dated retraining schedule before renewing.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/MachineLearning/comments/1tjv27t/can_liveness_detection_models_generalise_to">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Every major AI model lab is now building its own agent product</h3>
+              <p class="av-story-body">The pattern is now undeniable: OpenAI, Anthropic, DeepSeek, and AI21 are all moving from selling raw models to shipping full agent products with workflows, memory, and interfaces on top. Synthesis from Latent Space, no new data. If you&#39;re evaluating AI vendors, the model API is no longer the right comparison point; audit the full stack.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://www.latent.space/p/ainews-all-model-labs-are-now-agent">latent.space&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section hands_on">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Hands-On</h2>
+            </div>
+            <span class="av-section-count">5 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Verify before you deploy.</span> Today&#39;s gains, faster inference, cheaper routing, sharper tool-calling, look compelling on paper. Most rest on single-source benchmarks, so treat them as directions to test, not decisions to make.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A weekend routing layer cut a $160 AI coding bill to $16</h3>
+              <p class="av-story-body">One developer wired a routing layer over a self-hosted mixture-of-experts model so 95% of agentic coding steps never touch a premium API. On a 400-step Python refactor, that meant $7.60 to the open model and $8 to Claude Opus, totalling $15.60 at 93% success. Single-source Reddit report; replicate before trusting the numbers at scale.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tljn16/16_refactor_400_steps_95_routed_to_open_moe">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A new trick runs large open models nearly five times faster on a consumer GPU</h3>
+              <p class="av-story-body">BeeLlama v0.2.0 pushes Gemma 4 31B to around five times baseline generation speed on a single RTX 3090, with Qwen 3.6 27B close behind, via a speculative-decoding overhaul called DFlash. Code and quick-start guides are on GitHub. Benchmarks come from a single Reddit post, so verify against your own workload before committing to the fork.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tkpz2y/beellama_v020_major_dflash_update_single_rtx_3090">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">NVIDIA&#39;s new text model generates whole blocks at once and can revise its own output</h3>
+              <p class="av-story-body">Standard language models write one word at a time and cannot correct earlier mistakes. NVIDIA&#39;s Nemotron-Labs Diffusion generates tokens in parallel blocks and iteratively revises them, which also lets you trade compute for speed at runtime. Weights and training code are public, but speed benchmarks come from NVIDIA&#39;s own report. Prototype against your latency-sensitive workload before trusting the claims.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://huggingface.co/blog/nvidia/nemotron-labs-diffusion">huggingface.co&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A tiny specialist model beats a 23x larger rival on tool-calling speed and accuracy</h3>
+              <p class="av-story-body">On a 4-core CPU with no GPU, a 26-million-parameter model purpose-built for function calls outran a 600-million-parameter generalist: 72% tool-match accuracy versus 56%, and 4.4x faster. Single Reddit benchmark, no independent replication yet. If you&#39;re sizing a tool-use agent for air-gapped or edge hardware, test a specialist before defaulting to a small generalist.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tljs5o/benchmarked_needle_26m_vs_qwen306b_on_cpu">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A community-built benchmark tests coding agents on real private codebases, not curated demos</h3>
+              <p class="av-story-body">Apex-Testing drops models into 65-70 private GitHub repositories built specifically to resist benchmarking tricks. Source is a single Reddit post (trust score: low), so treat results as directional, not definitive. Before committing to a coding-agent vendor, run your shortlist through it alongside your own codebase sample.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tlh4vq/apextesting_realworld_real_repos_agentic_coding">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section on_the_radar">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">On the Radar</h2>
+            </div>
+            <span class="av-section-count">2 items</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">For awareness only.</span> Both items rest on single Reddit threads with no independent verification. The pattern here is community-driven, practical signal that deserves a watch, not yet a decision.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A community fine-tune gives the best open speech-to-text model the speaker labels it was missing</h3>
+              <p class="av-story-body">Cohere&#39;s open speech-to-text model lacked speaker identification and timestamps despite having the underlying tokens for both. A community fine-tune on Hugging Face now adds both, with timing accurate to within a tenth of a second on average. Single Reddit thread, no independent benchmark. Drop it into your transcription pipeline before committing to a proprietary alternative.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tkunbg/i_finetuned_cohere_transcribe_to_support">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A practical benchmark repo for running large models on AMD graphics cards</h3>
+              <p class="av-story-body">One engineer&#39;s 16GB AMD Radeon test repo captures what synthetic leaderboards skip: exact launch settings, context lengths that actually fit, and real throughput figures. Single source (Reddit), no independent verification. If you&#39;re evaluating non-NVIDIA hardware for local inference before committing to a setup, the repo is worth checking against your target model size.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-watch">watch</span>
+                
+                
+                  <a class="av-story-src" href="https://reddit.com/r/LocalLLaMA/comments/1tl4o1m/clubrdna16_practical_16gb_amdradeon_local_llm">reddit.com&nbsp;&rarr;</a>
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+
+    <footer class="av-footer">
+      <span>AI Vector &middot; Arman Abrahamyan</span>
+      <span>2026-05-23 &middot; Compiled 2026-05-24 13:19 AEST &middot; <a class="av-archive-link" href="../index.html">all issues</a></span>
+    </footer>
+    <p class="av-about">
+      AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+    </p>
+  </article>
+</body>
+</html>

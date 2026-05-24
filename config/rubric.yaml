@@ -16,8 +16,13 @@
 # harness exists (Phase 1) -- per design-first-eval-first, we don't
 # optimise against vibes.
 
-schema_version: 1
-rubric_version: "v0.1-2026-05-23"
+schema_version: 2
+rubric_version: "v0.2-2026-05-24"
+# v0.2: criterion + audience-tag rename to match v0.8 section vocabulary.
+#   builder_utility       -> hands_on_utility
+#   leadership_relevance  -> big_picture_relevance
+#   audience tag builder  -> hands_on
+#   audience tag leader   -> big_picture
 
 # ---------------------------------------------------------------------------
 # Criteria. Each is scored 0--100. Final score = weighted sum, weights sum
@@ -48,26 +53,27 @@ criteria:
       "50": >
         Tier-1 (Agentic AI / Generative AI) hitting ZERO or ONE of the
         three signal-filter dimensions (today / tomorrow / practical).
-        Real topic but weak relevance -- Also notable tail at best.
+        Real topic but weak relevance -- On the Radar tail at best.
       "75": >
         Tier-1 hitting TWO signal-filter dimensions, OR load-bearing
         Tier-2 hitting two. A real shift; readers should know about it.
-        Solid For builders / For leaders material.
+        Solid Hands-On / The Big Picture material.
       "100": >
         Tier-1 hitting ALL THREE signal-filter dimensions (changes work
         today AND shifts what to anticipate tomorrow AND is practically
         usable now). Pulse-candidate territory.
 
-  - name: builder_utility
+  - name: hands_on_utility
     weight: 25
     description: >
       Can a DS or engineer act on this *this week*? New tool, new technique,
       new constraint, new repo, new API, new eval, new benchmark. Concrete
       and adoptable beats abstract and inspirational. The "practical now"
-      half of the signal filter has its strongest home here.
+      half of the signal filter has its strongest home here. Feeds the
+      Hands-On section.
     anchors:
       "0": >
-        No action a builder can take. Pure commentary, opinion essay,
+        No action a practitioner can take. Pure commentary, opinion essay,
         market chatter.
       "25": >
         Hypothetically actionable; would need significant translation
@@ -78,30 +84,31 @@ criteria:
         result that constrains model choice, a technique with enough
         detail to try, a limitation worth designing around.
       "75": >
-        Direct adoption path: repo + docs + a clear use case. A builder
+        Direct adoption path: repo + docs + a clear use case. A practitioner
         can clone, read, and decide whether to integrate in an afternoon.
       "100": >
-        Drop-in. Builders are using this within a week: HF release with
-        quickstart, a working framework with examples, a public benchmark
-        with code, a tool with a documented API.
+        Drop-in. Hands-on readers are using this within a week: HF release
+        with quickstart, a working framework with examples, a public
+        benchmark with code, a tool with a documented API.
 
-  - name: leadership_relevance
+  - name: big_picture_relevance
     weight: 20
     description: >
       Does this shift what a Head of AI / CDO / CTO would PRIORITISE next
       quarter? Strategy, risk, governance, vendor calculus, talent. This is
       explicitly NOT generic "AI transformation" pablum -- it must point at
       a concrete prioritisation change. A high score here is what justifies
-      surfacing leader-only stories that have weak builder utility.
+      surfacing big-picture-only stories that have weak hands-on utility.
+      Feeds the Big Picture section.
     anchors:
       "0": >
-        No leadership angle. Pure builder territory, or pure noise.
+        No senior-leader angle. Pure hands-on territory, or pure noise.
       "25": >
         Tangential -- maybe worth a footnote in some future strategy doc;
         no real reprioritisation implied.
       "50": >
-        A leader should know this exists. Minor priority shift -- an item
-        for the next strategy review, not the current one.
+        A senior leader should know this exists. Minor priority shift --
+        an item for the next strategy review, not the current one.
       "75": >
         Real recalibration: vendor strategy, hiring plan, risk posture,
         build-vs-buy calculus, or capability-tier expectation shifts.
@@ -115,13 +122,14 @@ criteria:
     weight: 15
     description: >
       Does this matter to financial services? Apply the finance-lens skill's
-      two-tier test. Tier 1 (builders): trading/markets ML, fraud/AML/KYC,
-      model risk & governance (SR 11-7, PRA SS1/23), productionising LLMs
-      under regs (on-prem, data residency, audit), agents in finance, eval
-      relevance. Tier 2 (leaders): strategic shifts, regulatory movement,
-      vendor consolidation. The lens is MODERATE, not maximum -- it adds
-      value, it doesn't filter out the field. Most days, most stories will
-      land here at 25-50. That's correct.
+      two-tier test. Tier 1 (hands-on / practitioner): trading/markets ML,
+      fraud/AML/KYC, model risk & governance (SR 11-7, PRA SS1/23),
+      productionising LLMs under regs (on-prem, data residency, audit),
+      agents in finance, eval relevance. Tier 2 (big-picture / senior
+      leader): strategic shifts, regulatory movement, vendor consolidation.
+      The lens is MODERATE, not maximum -- it adds value, it doesn't filter
+      out the field. Most days, most stories will land here at 25-50.
+      That's correct.
     anchors:
       "0": >
         Zero FS relevance. The two-tier test produces no yeses; the story
@@ -135,8 +143,8 @@ criteria:
         an inferred one.
       "75": >
         Lands for TWO Tier-1 FS audiences, OR lands for one Tier-1
-        audience plus material Tier-2 (leadership / regulatory / vendor)
-        implications.
+        audience plus material Tier-2 (senior-leader / regulatory /
+        vendor) implications.
       "100": >
         Directly addresses a hot FS pain: productionising LLMs under
         SR 11-7 / PRA SS1/23, on-prem / air-gapped inference for banks,
@@ -171,20 +179,21 @@ criteria:
 
 # ---------------------------------------------------------------------------
 # Audience tagging. Independent of score: a story can be high-scoring and
-# still narrowly-targeted (e.g. a builder-only repo release that earns
+# still narrowly-targeted (e.g. a hands-on-only repo release that earns
 # its place). The tags drive section routing in summarise.py
-# (For builders / For leaders), not the rank itself.
+# (Hands-On / The Big Picture), not the rank itself.
 # ---------------------------------------------------------------------------
 
 audience_tags:
-  taxonomy: [builder, leader, finance, general]
+  taxonomy: [hands_on, big_picture, finance, general]
   guidance: >
-    A story can carry multiple tags. `builder` and `leader` describe the
-    primary audience; `finance` overlays when the FS lens earns its place
-    (don't tag `finance` just because the story COULD apply to a bank --
-    tag it when the angle is nameable, per finance-lens.md); `general`
-    when the story is field-wide and doesn't slot to a specific audience.
-    At least one tag is required.
+    A story can carry multiple tags. `hands_on` (practitioner: DS,
+    engineer) and `big_picture` (senior leader: Head of AI, CDO, CTO)
+    describe the primary audience; `finance` overlays when the FS lens
+    earns its place (don't tag `finance` just because the story COULD
+    apply to a bank -- tag it when the angle is nameable, per
+    finance-lens.md); `general` when the story is field-wide and doesn't
+    slot to a specific audience. At least one tag is required.
 
 # ---------------------------------------------------------------------------
 # LLM output shape. src/rank.py validates each per-cluster response against
@@ -215,13 +224,13 @@ llm_output:
       required: true
       fields:
         significance:              { type: integer, range: [0, 100] }
-        builder_utility:           { type: integer, range: [0, 100] }
-        leadership_relevance:      { type: integer, range: [0, 100] }
+        hands_on_utility:          { type: integer, range: [0, 100] }
+        big_picture_relevance:     { type: integer, range: [0, 100] }
         financial_services_impact: { type: integer, range: [0, 100] }
         freshness_momentum:        { type: integer, range: [0, 100] }
     audience_tags:
       type: array
-      items: { type: string, enum: [builder, leader, finance, general] }
+      items: { type: string, enum: [hands_on, big_picture, finance, general] }
       required: true
       min_items: 1
     rationale:
@@ -267,15 +276,15 @@ calibration_notes: |
   Per design-first-eval-first: optimise against the rubric and the
   labels, not against vibes.
 
-  Builder vs. leader split
-  ------------------------
-  builder_utility (25) and leadership_relevance (20) are split rather
-  than combined on purpose. An "audience-leader" story with weak builder
+  Hands-on vs. big-picture split
+  ------------------------------
+  hands_on_utility (25) and big_picture_relevance (20) are split rather
+  than combined on purpose. A `big_picture`-only story with weak hands-on
   utility (e.g. a major regulatory shift) should still surface via a
-  high leadership_relevance score even if builder_utility is low.
-  Likewise a builder-pure repo release shouldn't be penalised for having
-  no leadership angle. Don't optimise builders out of the rubric by
-  merging the two criteria.
+  high big_picture_relevance score even if hands_on_utility is low.
+  Likewise a hands-on-pure repo release shouldn't be penalised for
+  having no senior-leader angle. Don't optimise hands-on readers out
+  of the rubric by merging the two criteria.
 
   Significance is load-bearing
   ----------------------------
