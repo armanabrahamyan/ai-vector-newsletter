@@ -79,19 +79,22 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.8"
+SUMMARISE_PROMPT_VERSION = "v0.9"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.8-2026-05-24``. v0.8 renames sections AND audience tags
-to a consistent vocabulary:
-  sections: leaders -> big_picture, geeks -> hands_on, notable -> on_the_radar
-  audience tags: leader -> big_picture, builder -> hands_on
-  rubric criteria: leadership_relevance -> big_picture_relevance,
-                   builder_utility -> hands_on_utility
-v0.7.1 voice baseline preserved (voice anchors + em-dash ban + McKinsey
-tagline + plain-language + audience removal)."""
+``summarise-v0.9-2026-05-24``. v0.9 hardens length caps (tasks #73 + #74):
+  - headline: HARD 90 chars / 12 words (was "ideally <= 90 / <= 12"); the
+    LLM is told strings that exceed get rejected, must count before returning
+  - body: 60 words HARD; collision allowance still applies but the prose
+    no longer hints "61-62 is acceptable" in the user-facing prompt
+  - post-LLM enforcement in ``_call_and_parse_summary``: a single retry
+    with a corrective prompt when either cap is breached; if a second
+    attempt still breaches, the story is kept but a warning is logged
+    (better to ship than to silently drop a top-N story)
+v0.8 vocabulary unchanged (big_picture / hands_on / on_the_radar)."""
 
-PULSE_PROMPT_VERSION = "v0.7.1"
-"""Audit tag: ``pulse-v0.7.1-2026-05-24``. v0.7.1 mirrors summarise."""
+PULSE_PROMPT_VERSION = "v0.8"
+"""Audit tag: ``pulse-v0.8-2026-05-24``. v0.8 mirrors summarise v0.9's
+length-cap hardening."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -266,11 +269,23 @@ CALIBRATION (headline -- McKinsey tagline style):
   decoding") replaced with plain English ("one word at a time"); model
   family ("Nemotron-Labs Diffusion") and parameter sizes move to body.
 
-Headline length: <= ~90 chars, <= 12 words ideally.
+HEADLINE LENGTH -- HARD CAP. Maximum 90 characters AND maximum 12 words.
+There is NO "ideally" here -- a headline that exceeds either limit is
+REJECTED and you will be asked to rewrite. Count the words AND count the
+characters BEFORE returning. If you are at 13 words, cut one. If you are
+at 91+ chars, cut. The cap is a constraint of the form, not a target. A
+sharp 9-word headline beats a flabby 12-word one; aim for the floor of
+the range, not the ceiling.
 
 =======================================================================
 BODY -- 30 to 60 words. HARD LIMIT. (Same for the Pulse.)
 =======================================================================
+
+HARD CAP: the body MUST be between 30 and 60 words. 61+ words is
+REJECTED. The Pulse is held to the SAME cap (60 words HARD); the lead
+story is not a license to write longer prose. Count the words before
+returning. If you are at 62, cut adjectives, a hedge, or a spec; do
+not submit at 61+.
 
 SHAPE: lead with the shift -> state what shipped -> close with a
 judgement tied to a SPECIFIC DECISION.
@@ -294,7 +309,9 @@ order. Drop from the bottom, never the top.
   1. Trust flag -- never sacrificed. Judgement is the product.
   2. One concrete number or mechanism.
   3. Decision-tied close.
-  4. Word count -- exceeding 60 by a few words beats dropping 1-3.
+  4. Word count -- the 60-word cap is HARD. If you cannot fit
+     trust flag + number + close in 60 words, cut a clause, sharpen
+     a verb, drop a hedge. The cap holds.
 
 DO:
   - Put the SHARPEST sentence first. Never bury it in clause three.
@@ -420,15 +437,19 @@ If the EXACT model name / version matters (hands-on readers search by
 it), keep it in the BODY -- but EXPLAIN WHAT IT IS in plain English
 the first time. Never in the title.
 
-BEFORE FINALISING, CHECK
-  - Headline: would a non-specialist reader who skims ONLY headlines
-    know what happened AND why it matters? If the headline needs the
-    body to make sense, it's a label -- rewrite. No acronyms? No
-    version numbers? No spec-sheet detail unless the spec IS the news?
-  - Body: 30-60 words? One concrete number or mechanism that carries
-    the news (the rest replaced with their consequence per the LANGUAGE
-    rules)? Trust flag if warranted? Close tied to a SPECIFIC DECISION
-    (not a group or department)? Acronyms spelled out or replaced?
+BEFORE FINALISING, CHECK (mandatory -- run these counts before returning)
+  - Headline word count: <= 12 words? COUNT them. 13 is a fail.
+  - Headline character count: <= 90 chars? COUNT them. 91 is a fail.
+  - Headline content: would a non-specialist reader who skims ONLY
+    headlines know what happened AND why it matters? If the headline
+    needs the body to make sense, it's a label -- rewrite. No acronyms?
+    No version numbers? No spec-sheet detail unless the spec IS the news?
+  - Body word count: between 30 and 60 words? COUNT them. 61 is a fail.
+    The Pulse is held to the same cap.
+  - Body content: One concrete number or mechanism that carries the news
+    (the rest replaced with their consequence per the LANGUAGE rules)?
+    Trust flag if warranted? Close tied to a SPECIFIC DECISION (not a
+    group or department)? Acronyms spelled out or replaced?
 """
 
 _EDITORIAL_FOCUS_BLOCK = """\
@@ -989,17 +1010,18 @@ ITEMS:
 
 {callback_block}INSTRUCTIONS
 - HEADLINE: follow the HEADLINE rules above. Lead with the consequence
-  or action, not the name. <= ~90 chars, <= 12 words ideally. Model
-  names and version numbers belong in the BODY, not the title.
-- BODY: 30-60 words HARD. SHAPE: shift -> shipped -> judgement-tied-to-
-  decision. Must include: one concrete number or mechanism; a trust flag
-  if warranted (vendor benchmark? no code? thin sourcing?); a close tied
-  to a SPECIFIC decision, not a department or group.
-  Going over 60 is a sign you're stacking spec-sheet detail you should
-  cut -- replace specs with consequence per the LANGUAGE block. 61-62
-  is acceptable ONLY when the alternative is dropping the trust flag
-  per the COLLISION PRIORITY rule; 65+ means you've kept specs you
-  should have replaced.
+  or action, not the name. HARD CAPS: maximum 12 words AND maximum 90
+  characters. Both are enforced -- a headline that exceeds either is
+  rejected and you will be asked to rewrite. COUNT the words AND
+  characters before returning. Model names and version numbers belong
+  in the BODY, not the title.
+- BODY: 30 to 60 words HARD CAP. 61 words is a fail. The Pulse is held
+  to the SAME cap (60 words). Count before returning. SHAPE: shift ->
+  shipped -> judgement-tied-to-decision. Must include: one concrete
+  number or mechanism; a trust flag if warranted (vendor benchmark?
+  no code? thin sourcing?); a close tied to a SPECIFIC decision, not
+  a department or group. If you cannot fit all three in 60 words,
+  cut a clause or sharpen a verb -- the cap holds.
 - LANGUAGE: plain English. No acronyms a non-specialist wouldn't
   recognise (spell out, replace, or drop). No spec-sheet stacking:
   ONE news number, the rest replaced with their consequence. Model
@@ -1036,19 +1058,69 @@ ITEMS:
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
-  "headline": "<consequence-led headline, <= ~90 chars>",
-  "summary": "<30-60 word body>",
+  "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
+  "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
   "signal": "<one of: act | try | read | watch | discuss>"
 }}
 """
 
 
+# Length caps -- mirrored from the prompt + the judge rubric in
+# evals/judge/prompts/headline.yaml and summary.yaml. Single source of
+# truth for the post-LLM enforcement check below.
+_HEADLINE_MAX_WORDS = 12
+_HEADLINE_MAX_CHARS = 90
+_BODY_MIN_WORDS = 30
+_BODY_MAX_WORDS = 60
+
+
+def _length_violations(draft: _SummaryDraft) -> list[str]:
+    """Return a list of human-readable length-cap violations against the
+    HARD caps stated in the prompt. Empty list means the draft is within
+    spec. Used by ``_call_and_parse_summary`` to trigger a single corrective
+    retry (tasks #73 + #74)."""
+    issues: list[str] = []
+    hw = len(draft.headline.split())
+    hc = len(draft.headline)
+    bw = len(draft.summary.split())
+    if hw > _HEADLINE_MAX_WORDS:
+        issues.append(
+            f"headline is {hw} words (HARD cap is {_HEADLINE_MAX_WORDS})"
+        )
+    if hc > _HEADLINE_MAX_CHARS:
+        issues.append(
+            f"headline is {hc} characters (HARD cap is {_HEADLINE_MAX_CHARS})"
+        )
+    if bw > _BODY_MAX_WORDS:
+        issues.append(
+            f"summary body is {bw} words (HARD cap is {_BODY_MAX_WORDS}); "
+            "the Pulse is held to the same cap"
+        )
+    if bw < _BODY_MIN_WORDS:
+        issues.append(
+            f"summary body is {bw} words (minimum is {_BODY_MIN_WORDS})"
+        )
+    return issues
+
+
 def _call_and_parse_summary(
     prompt: str, temperature: float, cluster_id: str
 ) -> _SummaryDraft | None:
-    """LLM call + retry on parse failure (one retry, mirrors rank.py)."""
+    """LLM call + retry on parse failure (one retry, mirrors rank.py) +
+    a separate single retry on length-cap violation (tasks #73 + #74).
+
+    Order of operations:
+      1. Call the LLM. If JSON parse fails, retry once with a corrective
+         prompt; if it fails again, return None (story is dropped).
+      2. With a valid draft in hand, check length caps. If any are
+         breached, retry ONCE with a corrective prompt that quotes the
+         specific overruns. If the second attempt still breaches, KEEP
+         the draft (log a warning) -- we'd rather ship a marginally-
+         overlong headline than lose a top-N story.
+    """
     attempts = JSON_RETRY_BUDGET + 1
     current_prompt = prompt
+    draft: _SummaryDraft | None = None
     for attempt in range(1, attempts + 1):
         try:
             raw = _llm_call(current_prompt, temperature=temperature, max_tokens=1600)
@@ -1060,7 +1132,7 @@ def _call_and_parse_summary(
             return None
         draft = _parse_summary_json(raw)
         if draft is not None:
-            return draft
+            break
         _LOG.warning(
             "summarise: JSON parse failed for cluster_id=%s (attempt %d/%d)",
             cluster_id, attempt, attempts,
@@ -1072,7 +1144,76 @@ def _call_and_parse_summary(
                 "prose) matching the schema. Original request follows.\n\n"
                 + prompt
             )
-    return None
+    if draft is None:
+        return None
+
+    # --- Length-cap enforcement (single corrective retry) ---------------
+    violations = _length_violations(draft)
+    if not violations:
+        return draft
+
+    _LOG.info(
+        "summarise: length cap breached for cluster_id=%s on first pass: %s -- "
+        "requesting one corrective regenerate",
+        cluster_id, "; ".join(violations),
+    )
+    corrective = (
+        "Your previous response BREACHED the HARD length caps. The "
+        "following violations were found:\n\n"
+        + "\n".join(f"  - {v}" for v in violations)
+        + "\n\nRewrite the JSON so that:\n"
+        f"  - headline is AT MOST {_HEADLINE_MAX_WORDS} words AND AT MOST "
+        f"{_HEADLINE_MAX_CHARS} characters\n"
+        f"  - summary is BETWEEN {_BODY_MIN_WORDS} AND {_BODY_MAX_WORDS} "
+        "words (the Pulse is held to the same cap)\n\n"
+        "COUNT THE WORDS AND CHARACTERS before returning. Keep the same "
+        "facts, tone, trust flag, and decision-tied close; just tighten "
+        "the language. Cut adjectives, hedges, and spec-sheet detail "
+        "first. Return ONLY JSON, no markdown fences, no commentary. "
+        "Original request follows.\n\n"
+        + prompt
+    )
+    try:
+        raw = _llm_call(corrective, temperature=temperature, max_tokens=1600)
+    except Exception:  # noqa: BLE001
+        _LOG.warning(
+            "summarise: corrective LLM call failed for cluster_id=%s -- "
+            "keeping first-pass draft (still over cap)", cluster_id,
+        )
+        return draft
+    retried = _parse_summary_json(raw)
+    if retried is None:
+        _LOG.warning(
+            "summarise: corrective response failed to parse for cluster_id=%s "
+            "-- keeping first-pass draft (still over cap)", cluster_id,
+        )
+        return draft
+    new_violations = _length_violations(retried)
+    if new_violations:
+        _LOG.warning(
+            "summarise: cluster_id=%s STILL over cap after corrective retry: "
+            "%s -- keeping the tighter of the two drafts (this is a soft "
+            "fail; the issue ships but the judge will flag it)",
+            cluster_id, "; ".join(new_violations),
+        )
+        # Prefer the retried draft if it's strictly tighter than the
+        # original on at least one axis and no worse on the others; otherwise
+        # keep the first draft. Cheap, deterministic.
+        if (
+            len(retried.headline) <= len(draft.headline)
+            and len(retried.headline.split()) <= len(draft.headline.split())
+            and len(retried.summary.split()) <= len(draft.summary.split())
+        ):
+            return retried
+        return draft
+    _LOG.info(
+        "summarise: corrective retry brought cluster_id=%s within caps "
+        "(headline=%dw/%dc, body=%dw)",
+        cluster_id,
+        len(retried.headline.split()), len(retried.headline),
+        len(retried.summary.split()),
+    )
+    return retried
 
 
 def _parse_summary_json(raw: str) -> _SummaryDraft | None:
