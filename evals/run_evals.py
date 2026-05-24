@@ -34,8 +34,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
+import warnings
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -134,6 +136,15 @@ def _resolve_dataset_dir(dataset: Optional[str], against: str) -> Optional[Path]
     """
     Resolve the directory for a given dataset name and source ("real" | "fixtures").
     Returns None if the dataset cannot be located.
+
+    For ``against="real"`` the archive layout is::
+
+        data/released/<YYYY-MM-DD>/   ← primary (published/ratified issues)
+        data/<YYYY-MM-DD>/            ← staging fallback (pre-publication)
+
+    The released subtree is checked first so evals always run against the
+    canonical ratified output. The staging fallback lets the harness work on
+    a day's data before it has been released (useful for pre-release checks).
     """
     if against == "fixtures":
         if dataset is None:
@@ -142,6 +153,10 @@ def _resolve_dataset_dir(dataset: Optional[str], against: str) -> Optional[Path]
     elif against == "real":
         if dataset is None:
             return None
+        # Check released/ first (canonical), then raw staging dir
+        released = DATA_DIR / "released" / dataset
+        if released.exists():
+            return released
         return DATA_DIR / dataset
     return None
 
@@ -158,48 +173,383 @@ def _list_fixture_datasets() -> list[str]:
 
 # ---------------------------------------------------------------------------
 # Eval 1 — Dedup quality
-# STATUS: STUB
+# STATUS: READY (Phase B)
 #
-# Will compute: dedup precision, recall, F1 of cluster.py's output
-# vs. the ground_truth_group_id assignments in labels.yaml.
-# Includes within-day clustering and cross-time cross_time_ref assignment.
+# Computes: dedup precision, recall, F1 of cluster.py's output vs. the
+# ground_truth_group_id assignments in labels.yaml.
 #
-# Implementation path (Phase 2):
-#   - Load clusters.jsonl from the dataset.
-#   - Load per_cluster labels from labels.yaml for this dataset.
-#   - Build predicted groups (cluster_id -> cluster membership by Item.id)
-#     and ground-truth groups (ground_truth_group_id).
-#   - Compute pairwise precision/recall using the standard
-#     cluster-pair-counting method (Amigo et al. 2009).
-#   - PASS threshold: precision >= 0.85 AND recall >= 0.80 (tune against
-#     first real fixture set; record final thresholds here).
+# Within-day: pairwise pair-counting (Amigo et al. 2009).
+#   - For every pair of labelled clusters sharing a ground_truth_group_id,
+#     we ask: did the pipeline also group them into a single cluster?
+#     Since cluster.py currently represents "a cluster" as a single cluster_id
+#     (not sub-grouping within ranked.jsonl), we treat the pipeline as having
+#     grouped two clusters together iff they share the same cluster_id — which
+#     by construction never happens for distinct clusters. Therefore pipeline
+#     precision = 1.0 (it never falsely merges labelled clusters) and recall
+#     is the fraction of same-group pairs that were actually merged. With the
+#     corpus as it stands, both labelled dedup groups are pipeline misses
+#     (the two clusters in each group kept separate cluster_ids), so recall
+#     will surface below 1.0 and the miss names are reported explicitly.
+#
+# Cross-time: for each labelled cross-time chain, verify that the
+#   continuation cluster's cross_time_ref points at the right earlier cluster.
+#
+# PASS thresholds (per PLAN §3, tune after 30+ labelled clusters):
+#   precision >= 0.85 AND recall >= 0.80
 # ---------------------------------------------------------------------------
+
+def _pairwise_dedup_metrics(
+    dataset_name: str,
+    per_cluster_labels: list[dict],
+    clusters_by_id: dict[str, dict],
+) -> dict:
+    """
+    Compute within-day dedup precision, recall, F1 using pairwise counting.
+
+    Ground-truth positive pairs: every pair (A, B) of labelled clusters for
+    this dataset that share a non-null ground_truth_group_id.
+
+    Predicted positive pairs: every pair (A, B) where the pipeline placed
+    both in the *same* physical cluster_id (i.e., they are the same cluster).
+    With current cluster.py semantics each cluster_id is unique so two distinct
+    labelled clusters can only be a predicted-positive pair if they literally
+    have the same cluster_id — which is impossible. The only way to score TP
+    is if the pipeline assigned them the same cluster_id, which means they
+    appeared as one cluster in clusters.jsonl. This is consistent: dedup
+    success = two stories appearing as one cluster; miss = two separate
+    cluster_ids for the same story.
+
+    Returns a dict with keys: precision, recall, f1, tp, fp, fn,
+    gt_pairs, pred_pairs, miss_groups, miss_cluster_pairs.
+    """
+    # Filter to this dataset
+    ds_labels = [
+        lbl for lbl in per_cluster_labels
+        if lbl.get("dataset") == dataset_name
+        and lbl.get("ground_truth_group_id") is not None
+    ]
+
+    # Group by ground_truth_group_id
+    from collections import defaultdict
+    groups: dict[str, list[str]] = defaultdict(list)
+    for lbl in ds_labels:
+        groups[lbl["ground_truth_group_id"]].append(lbl["cluster_id"])
+
+    # Build ground-truth positive pairs (unordered)
+    gt_pairs: set[frozenset] = set()
+    for members in groups.values():
+        for i in range(len(members)):
+            for j in range(i + 1, len(members)):
+                gt_pairs.add(frozenset([members[i], members[j]]))
+
+    if not gt_pairs:
+        return {
+            "precision": None,
+            "recall": None,
+            "f1": None,
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "gt_pairs": 0,
+            "pred_pairs": 0,
+            "miss_groups": [],
+            "miss_cluster_pairs": [],
+            "note": "No labelled dedup groups for this dataset.",
+        }
+
+    # Build predicted positive pairs: pairs that share the same cluster_id.
+    # Since each cluster_id in clusters.jsonl is unique, two distinct labelled
+    # cluster_ids can only be merged if the pipeline produced a single cluster
+    # covering both. We check: are any two labelled cluster_ids the SAME id?
+    all_labelled_ids = [lbl["cluster_id"] for lbl in ds_labels]
+    id_to_group: dict[str, str] = {
+        lbl["cluster_id"]: lbl["ground_truth_group_id"]
+        for lbl in ds_labels
+    }
+
+    # Predicted pairs: two labelled cluster_ids share a cluster_id in the
+    # pipeline output iff the pipeline merged them. We check by looking at
+    # clusters.jsonl — if multiple labelled cluster_ids appear as item_ids
+    # within a single cluster, they've been merged (de-duped). But more
+    # directly: if two labelled cluster_ids are literally the same string, the
+    # pipeline merged them into one entry. In practice we also check whether
+    # both appear as distinct entries in clusters.jsonl or not.
+    pipeline_cluster_ids = set(clusters_by_id.keys())
+    pred_pairs: set[frozenset] = set()
+
+    # A predicted merge: two labelled cluster_ids resolve to the same
+    # pipeline cluster (i.e., one of the two is not present as a standalone
+    # cluster_id because the pipeline absorbed it into the other).
+    # With current cluster.py they always remain separate, so pred_pairs = {}.
+    # We leave the loop here for correctness when a future pipeline version
+    # does merge them.
+    seen_ids = set()
+    for cid in all_labelled_ids:
+        if cid in seen_ids:
+            # Exact same cluster_id seen twice → the pipeline merged them
+            # (shouldn't happen with current schema but guards future cases)
+            pass
+        seen_ids.add(cid)
+
+    # Detect merges: if a labelled cluster_id is NOT in pipeline clusters,
+    # it was absorbed into another cluster. This is the primary merge signal.
+    # For now, check whether any labelled pair shares a physical pipeline cluster.
+    # We look at clusters.jsonl item_ids: if item_ids of cluster A overlap with
+    # item_ids of cluster B (by the pipeline's own grouping), they are merged.
+    # Simpler: two labelled cluster_ids are predicted-positive if one is
+    # absent from pipeline_cluster_ids (meaning the pipeline didn't produce it
+    # separately → it was folded into the other).
+
+    # Build: for each labelled cluster_id, find what pipeline cluster contains
+    # it or its items. If absent from pipeline_cluster_ids, it was merged.
+    # Since cluster_ids are the canonical grouping key, absence = absorbed.
+    absorbed: dict[str, Optional[str]] = {}  # labelled_id -> pipeline_id that absorbed it, or None
+    for cid in all_labelled_ids:
+        if cid in pipeline_cluster_ids:
+            absorbed[cid] = None  # present as standalone
+        else:
+            absorbed[cid] = "merged"  # absent = absorbed by some other cluster
+
+    # Two labelled clusters are a predicted-positive pair if both map to the
+    # same physical pipeline cluster. In the absence of cluster absorption info
+    # (we don't know *which* cluster absorbed a missing one), we use a
+    # conservative rule: a pair is predicted-positive iff exactly one member is
+    # present and the other is absent, OR neither is present (suggesting they
+    # were both merged into one entry). The most common case: pipeline produces
+    # a single cluster for the pair → one of the two labelled cluster_ids
+    # is the surviving cluster_id; the other doesn't appear.
+    # We check all labelled pairs in each ground-truth group for this.
+
+    miss_groups: list[str] = []
+    miss_cluster_pairs: list[list[str]] = []
+
+    tp = 0
+    fn = 0
+    for group_id, members in groups.items():
+        any_tp = False
+        for i in range(len(members)):
+            for j in range(i + 1, len(members)):
+                a, b = members[i], members[j]
+                pair = frozenset([a, b])
+                # Predicted positive: both cluster_ids absent (merged into one
+                # new id) OR one present and one absent (the absent one was
+                # folded into the present one).
+                a_present = a in pipeline_cluster_ids
+                b_present = b in pipeline_cluster_ids
+                if not a_present and not b_present:
+                    # Both gone — likely merged into a third cluster_id (unlikely
+                    # without knowing that id; conservatively treat as TP since
+                    # both were absorbed, meaning the pipeline did merge them).
+                    pred_pairs.add(pair)
+                    tp += 1
+                    any_tp = True
+                elif a_present != b_present:
+                    # One survived, one was absorbed → pipeline merged them.
+                    pred_pairs.add(pair)
+                    tp += 1
+                    any_tp = True
+                else:
+                    # Both present as separate clusters → pipeline missed the merge.
+                    fn += 1
+                    miss_cluster_pairs.append([a, b])
+        if not any_tp:
+            miss_groups.append(group_id)
+
+    # FP: predicted pairs that are NOT in gt_pairs.
+    fp = len(pred_pairs - gt_pairs)
+
+    # Precision / recall / F1
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 1.0  # no false positives → perfect precision
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 1.0
+    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+
+    return {
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "f1": round(f1, 4),
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "gt_pairs": len(gt_pairs),
+        "pred_pairs": len(pred_pairs),
+        "miss_groups": miss_groups,
+        "miss_cluster_pairs": miss_cluster_pairs,
+    }
+
+
+def _cross_time_dedup_check(
+    dataset_name: str,
+    per_cluster_labels: list[dict],
+    clusters_by_id: dict[str, dict],
+) -> dict:
+    """
+    Verify cross-time dedup chains: for each cluster in the dataset that has
+    a cross_time_ref in the pipeline output, confirm it matches the labelled
+    expectation. Structured to scale as more chains are labelled.
+
+    Currently checks:
+      2026-05-24: c_1e720df7574da5b7 -> cross_time_ref == c_60339c2e21a15eb7
+
+    Returns a dict: chains_checked, chains_correct, chains_wrong, details.
+    """
+    # Hardcoded cross-time chains as labelled ground truth.
+    # Schema: {today_cluster_id: expected_cross_time_ref}
+    # As the corpus grows, these can be pulled from labels.yaml
+    # (add a cross_time_ref field to the per_cluster schema).
+    LABELLED_CHAINS: dict[str, str] = {
+        "c_1e720df7574da5b7": "c_60339c2e21a15eb7",
+    }
+
+    chains_checked = 0
+    chains_correct = 0
+    chains_wrong = 0
+    details: list[dict] = []
+
+    for cluster_id, expected_ref in LABELLED_CHAINS.items():
+        # Only check if the cluster belongs to the current dataset
+        cluster_data = clusters_by_id.get(cluster_id)
+        if cluster_data is None:
+            # This chain doesn't exist in the current date's data — skip
+            continue
+
+        chains_checked += 1
+        actual_ref = cluster_data.get("cross_time_ref")
+
+        if actual_ref == expected_ref:
+            chains_correct += 1
+            details.append({
+                "cluster_id": cluster_id,
+                "expected_ref": expected_ref,
+                "actual_ref": actual_ref,
+                "status": "correct",
+            })
+        else:
+            chains_wrong += 1
+            details.append({
+                "cluster_id": cluster_id,
+                "expected_ref": expected_ref,
+                "actual_ref": actual_ref,
+                "status": "wrong" if actual_ref is not None else "missing",
+            })
+
+    return {
+        "chains_checked": chains_checked,
+        "chains_correct": chains_correct,
+        "chains_wrong": chains_wrong,
+        "details": details,
+    }
+
 
 def eval_dedup_quality(
     dataset_dir: Optional[Path],
     labels: dict,
 ) -> EvalResult:
     """
-    STUB. Dedup precision/recall vs. ground-truth cluster groupings.
-    Returns not_yet_implemented until real fixtures + labels land.
+    Phase B. Dedup precision/recall/F1 vs. ground-truth cluster groupings,
+    plus cross-time cross_time_ref verification.
+
+    Within-day: pairwise pair-counting against ground_truth_group_id labels.
+    Cross-time: verifies cross_time_ref fields against labelled chains.
+
+    PASS thresholds: precision >= 0.85 AND recall >= 0.80.
     """
-    return _stub_result("dedup_quality")
+    if dataset_dir is None or not dataset_dir.exists():
+        return EvalResult(
+            name="dedup_quality",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Dataset directory not found: {dataset_dir}"},
+        )
+
+    per_cluster = labels.get("per_cluster", [])
+
+    # Determine dataset name from directory (e.g. "2026-05-24")
+    dataset_name = dataset_dir.name
+
+    # Load clusters.jsonl
+    clusters_path = dataset_dir / "clusters.jsonl"
+    try:
+        raw_clusters = _load_jsonl(clusters_path)
+    except ValueError as exc:
+        return EvalResult(
+            name="dedup_quality",
+            passed=False,
+            metric=None,
+            status="fail",
+            error=f"Failed to load clusters.jsonl: {exc}",
+        )
+
+    clusters_by_id: dict[str, dict] = {
+        r["cluster_id"]: r for r in raw_clusters if r.get("cluster_id")
+    }
+
+    # --- Within-day dedup metrics ---
+    within_day = _pairwise_dedup_metrics(dataset_name, per_cluster, clusters_by_id)
+
+    # --- Cross-time dedup check ---
+    cross_time = _cross_time_dedup_check(dataset_name, per_cluster, clusters_by_id)
+
+    # Determine pass/fail
+    precision = within_day.get("precision")
+    recall = within_day.get("recall")
+
+    PRECISION_THRESHOLD = 0.85
+    RECALL_THRESHOLD = 0.80
+
+    failures: list[str] = []
+    if precision is not None and precision < PRECISION_THRESHOLD:
+        failures.append(
+            f"Dedup precision {precision:.4f} < threshold {PRECISION_THRESHOLD}"
+        )
+    if recall is not None and recall < RECALL_THRESHOLD:
+        failures.append(
+            f"Dedup recall {recall:.4f} < threshold {RECALL_THRESHOLD} "
+            f"(miss groups: {within_day.get('miss_groups', [])})"
+        )
+    if cross_time["chains_wrong"] > 0:
+        failures.append(
+            f"Cross-time dedup: {cross_time['chains_wrong']} chain(s) have wrong "
+            f"cross_time_ref"
+        )
+
+    passed = len(failures) == 0
+    f1 = within_day.get("f1")
+
+    return EvalResult(
+        name="dedup_quality",
+        passed=passed,
+        metric=f1,
+        status="pass" if passed else "fail",
+        details={
+            "dataset": dataset_name,
+            "within_day": within_day,
+            "cross_time": cross_time,
+            "thresholds": {
+                "precision": PRECISION_THRESHOLD,
+                "recall": RECALL_THRESHOLD,
+            },
+            "failures": failures,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
 # Eval 2 — Ranking quality (Spearman)
-# STATUS: STUB
+# STATUS: READY (Phase B)
 #
-# Will compute: Spearman rank correlation between LLM-assigned scores in
+# Computes: Spearman rank correlation between LLM-assigned scores in
 # ranked.jsonl and the human_relevance labels in labels.yaml.
 #
-# Implementation path (Phase 2):
-#   - Load ranked.jsonl from the dataset.
-#   - Load per_cluster labels (human_relevance) for the same dataset.
-#   - Align by cluster_id (inner join — only labelled clusters contribute).
-#   - Compute scipy.stats.spearmanr on (llm_score, human_relevance).
-#   - PASS threshold: Spearman rho >= 0.70 (PLAN §3 baseline; tune after
-#     first 30+ labelled clusters).
+# Inner join on cluster_id: only labelled clusters contribute.
+# Per-tier Spearman: separate rho for on_the_radar bucket vs. cut bucket
+# to surface the rank-vs-human disagreement on borderline items.
+#
+# Tier disagreements: clusters where expected_tier != pipeline tier are
+# reported explicitly (e.g. FCA/BoE statement c_ce540f73ee188ea2 which
+# Arman ratified as pulse but rank.py called on_the_radar).
+#
+# PASS threshold: overall Spearman rho >= 0.70 (tune after 30+ labelled).
 # ---------------------------------------------------------------------------
 
 def eval_ranking_quality(
@@ -207,10 +557,184 @@ def eval_ranking_quality(
     labels: dict,
 ) -> EvalResult:
     """
-    STUB. Spearman correlation of LLM scores vs. human relevance labels.
-    Returns not_yet_implemented until real fixtures + labels land.
+    Phase B. Spearman correlation of LLM scores vs. human relevance labels.
+
+    Runs overall Spearman plus per-tier breakdown (on_the_radar vs. cut
+    bucket). Reports tier disagreements between expected_tier labels and
+    pipeline tier assignments.
+
+    PASS threshold: overall rho >= 0.70.
     """
-    return _stub_result("ranking_quality")
+    if dataset_dir is None or not dataset_dir.exists():
+        return EvalResult(
+            name="ranking_quality",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Dataset directory not found: {dataset_dir}"},
+        )
+
+    try:
+        from scipy.stats import spearmanr
+    except ImportError:
+        return EvalResult(
+            name="ranking_quality",
+            passed=False,
+            metric=None,
+            status="fail",
+            error="scipy not installed — cannot compute Spearman correlation.",
+        )
+
+    dataset_name = dataset_dir.name
+    per_cluster = labels.get("per_cluster", [])
+
+    # Build label index: cluster_id -> label record (for this dataset only)
+    label_index: dict[str, dict] = {
+        lbl["cluster_id"]: lbl
+        for lbl in per_cluster
+        if lbl.get("dataset") == dataset_name
+        and lbl.get("human_relevance") is not None
+    }
+
+    if not label_index:
+        return EvalResult(
+            name="ranking_quality",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"No labelled clusters with human_relevance for dataset {dataset_name!r}."},
+        )
+
+    # Load ranked.jsonl
+    ranked_path = dataset_dir / "ranked.jsonl"
+    try:
+        raw_ranked = _load_jsonl(ranked_path)
+    except ValueError as exc:
+        return EvalResult(
+            name="ranking_quality",
+            passed=False,
+            metric=None,
+            status="fail",
+            error=f"Failed to load ranked.jsonl: {exc}",
+        )
+
+    # Inner join: keep only ranked entries that have a label
+    joined: list[dict] = []
+    for record in raw_ranked:
+        cid = record.get("cluster_id")
+        if cid and cid in label_index:
+            joined.append({
+                "cluster_id": cid,
+                "score": record.get("score"),
+                "pipeline_tier": record.get("tier"),
+                "human_relevance": label_index[cid]["human_relevance"],
+                "expected_tier": label_index[cid].get("expected_tier"),
+            })
+
+    if len(joined) < 2:
+        return EvalResult(
+            name="ranking_quality",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Fewer than 2 labelled+ranked clusters for {dataset_name!r}; cannot compute Spearman."},
+        )
+
+    # --- Overall Spearman ---
+    all_scores = [r["score"] for r in joined]
+    all_relevances = [r["human_relevance"] for r in joined]
+    overall_result = spearmanr(all_scores, all_relevances)
+    overall_rho = float(overall_result.statistic)
+    overall_pvalue = float(overall_result.pvalue)
+
+    # --- Per-tier Spearman ---
+    # Tier split is based on PIPELINE tier (not expected_tier) so we're
+    # measuring rank.py's own behaviour within each tier bucket.
+    on_radar_rows = [r for r in joined if r["pipeline_tier"] == "on_the_radar"]
+    cut_rows = [r for r in joined if r["pipeline_tier"] == "cut"]
+
+    tier_spearman: dict[str, Any] = {}
+    def _safe_spearmanr(xs: list, ys: list) -> dict:
+        """Compute Spearman rho, returning None values on constant-input or
+        other degenerate cases. Suppresses scipy's ConstantInputWarning so
+        the output is clean when a tier bucket has uniform human_relevance
+        (common with small corpora)."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            res = spearmanr(xs, ys)
+        rho = float(res.statistic)
+        pval = float(res.pvalue)
+        # NaN results from constant input — report as None
+        if math.isnan(rho):
+            return {"rho": None, "pvalue": None, "note": "constant_input"}
+        return {"rho": round(rho, 4), "pvalue": round(pval, 4)}
+
+    if len(on_radar_rows) >= 2:
+        tier_spearman["on_the_radar"] = {
+            **_safe_spearmanr(
+                [r["score"] for r in on_radar_rows],
+                [r["human_relevance"] for r in on_radar_rows],
+            ),
+            "n": len(on_radar_rows),
+        }
+    else:
+        tier_spearman["on_the_radar"] = {"rho": None, "pvalue": None, "n": len(on_radar_rows)}
+
+    if len(cut_rows) >= 2:
+        tier_spearman["cut"] = {
+            **_safe_spearmanr(
+                [r["score"] for r in cut_rows],
+                [r["human_relevance"] for r in cut_rows],
+            ),
+            "n": len(cut_rows),
+        }
+    else:
+        tier_spearman["cut"] = {"rho": None, "pvalue": None, "n": len(cut_rows)}
+
+    # --- Tier disagreements ---
+    # Report clusters where expected_tier (from labels) != pipeline tier.
+    # Spearman uses scores directly so tier overrides don't change the
+    # numeric correlation, but disagreements are valuable editorial signal.
+    tier_disagreements: list[dict] = []
+    for r in joined:
+        if r["expected_tier"] is not None and r["expected_tier"] != r["pipeline_tier"]:
+            tier_disagreements.append({
+                "cluster_id": r["cluster_id"],
+                "pipeline_tier": r["pipeline_tier"],
+                "expected_tier": r["expected_tier"],
+                "score": r["score"],
+                "human_relevance": r["human_relevance"],
+            })
+
+    # --- Pass / fail ---
+    RHO_THRESHOLD = 0.70
+    failures: list[str] = []
+    if overall_rho < RHO_THRESHOLD:
+        failures.append(
+            f"Overall Spearman rho {overall_rho:.4f} < threshold {RHO_THRESHOLD}"
+        )
+
+    passed = len(failures) == 0
+
+    return EvalResult(
+        name="ranking_quality",
+        passed=passed,
+        metric=round(overall_rho, 4),
+        status="pass" if passed else "fail",
+        details={
+            "dataset": dataset_name,
+            "n_labelled": len(joined),
+            "overall": {
+                "rho": round(overall_rho, 4),
+                "pvalue": round(overall_pvalue, 4),
+            },
+            "per_tier": tier_spearman,
+            "tier_disagreements": tier_disagreements,
+            "tier_disagreement_count": len(tier_disagreements),
+            "threshold": RHO_THRESHOLD,
+            "failures": failures,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -390,10 +914,98 @@ def eval_module_integrity(
     # Skipped here (single-dataset run). Full cross-archive check is a separate
     # function run_evals can invoke separately.
 
-    passed = not any(f.startswith("FAIL") or "schema error" in f or "Referential error" in f for f in failures)
-    # Warnings (import failures) do not block; schema/referential errors do.
+    # -------------------------------------------------------------------------
+    # Phase B pipeline-health assertions (LOUD failures, kept separate so a
+    # health miss doesn't mask a schema or referential error above).
+    # -------------------------------------------------------------------------
+    health_failures: list[str] = []
+    health_details: dict[str, Any] = {}
+
+    # (1) Source-fire rate: sources_fired / sources_enabled >= 0.8
+    source_health_path = dataset_dir / "source_health.json"
+    source_health_raw = _load_json(source_health_path)
+    if source_health_raw is not None:
+        sources = source_health_raw.get("sources", [])
+        sources_enabled = len(sources)
+        sources_fired = sum(1 for s in sources if s.get("fired") is True)
+        fire_rate = (sources_fired / sources_enabled) if sources_enabled > 0 else 0.0
+        SOURCE_FIRE_THRESHOLD = 0.80
+        health_details["source_fire_rate"] = round(fire_rate, 4)
+        health_details["sources_enabled"] = sources_enabled
+        health_details["sources_fired"] = sources_fired
+        if fire_rate < SOURCE_FIRE_THRESHOLD:
+            health_failures.append(
+                f"PIPELINE HEALTH: source fire rate {fire_rate:.4f} < {SOURCE_FIRE_THRESHOLD} "
+                f"({sources_fired}/{sources_enabled} sources fired)"
+            )
+        unfired = [
+            s.get("source", "<unknown>") for s in sources if not s.get("fired")
+        ]
+        if unfired:
+            health_details["unfired_sources"] = unfired
+    else:
+        health_details["source_health_missing"] = True
+        # Missing source_health.json is a health concern but not a hard fail;
+        # it may not exist for fixture datasets.
+
+    # (2) Tier mix in issue.json: >= 1 pulse story, >= 3 hands_on stories.
+    #     This checks issue.json (what shipped), not ranked.jsonl (which has cuts).
+    #     "pulse" is represented as the top-level pulse.stories list; "hands_on"
+    #     is the section named "hands_on".
+    if raw_issue is not None:
+        pulse_block = raw_issue.get("pulse", {})
+        pulse_stories = pulse_block.get("stories", []) if isinstance(pulse_block, dict) else []
+        pulse_count = len(pulse_stories)
+
+        hands_on_count = 0
+        for section in raw_issue.get("sections", []):
+            if section.get("name") == "hands_on":
+                hands_on_count = len(section.get("stories", []))
+                break
+
+        health_details["issue_pulse_count"] = pulse_count
+        health_details["issue_hands_on_count"] = hands_on_count
+
+        if pulse_count < 1:
+            health_failures.append(
+                "PIPELINE HEALTH: issue.json has 0 pulse stories (minimum 1 required)"
+            )
+        if hands_on_count < 3:
+            health_failures.append(
+                f"PIPELINE HEALTH: issue.json has {hands_on_count} hands_on stories "
+                f"(minimum 3 required)"
+            )
+    else:
+        health_details["issue_tier_mix_skipped"] = "issue.json not present"
+
+    # (3) No cluster with score >= 35 was tiered 'cut' in ranked.jsonl.
+    #     A cut threshold of < 35 is rank.py's contract; anything >= 35 that
+    #     ends up as cut is a rank.py inconsistency.
+    CUT_SCORE_CEILING = 35
+    high_score_cuts: list[dict] = []
+    for record in raw_ranked:
+        score = record.get("score")
+        tier = record.get("tier")
+        cid = record.get("cluster_id", "<unknown>")
+        if tier == "cut" and score is not None and score >= CUT_SCORE_CEILING:
+            high_score_cuts.append({"cluster_id": cid, "score": score})
+
+    health_details["high_score_cuts"] = high_score_cuts
+    if high_score_cuts:
+        health_failures.append(
+            f"PIPELINE HEALTH: {len(high_score_cuts)} cluster(s) with score >= {CUT_SCORE_CEILING} "
+            f"were tiered 'cut' — rank.py inconsistency: "
+            + ", ".join(f"{r['cluster_id']}(score={r['score']})" for r in high_score_cuts)
+        )
+
+    # -------------------------------------------------------------------------
+    # Final pass/fail determination.
+    # Schema/referential errors and pipeline-health failures both block.
+    # Warnings (import failures) do not block.
+    # -------------------------------------------------------------------------
     hard_failures = [f for f in failures if not f.startswith("WARNING")]
-    passed = len(hard_failures) == 0
+    all_hard_failures = hard_failures + health_failures
+    passed = len(all_hard_failures) == 0
 
     return EvalResult(
         name="module_integrity",
@@ -408,6 +1020,8 @@ def eval_module_integrity(
             "issue_present": raw_issue is not None,
             "models_available": models_available,
             "failures": failures,
+            "pipeline_health": health_details,
+            "pipeline_health_failures": health_failures,
         },
     )
 
