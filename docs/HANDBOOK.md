@@ -3,8 +3,45 @@
 A friendly, problem-first guide. Skim the section that matches what
 you're trying to do; everything is in plain language and copy-pasteable.
 
-If you're new, start at **§1 Quickstart**. Otherwise, jump to the section
-that matches your problem.
+If you're new, read the next two sections first — they're the whole
+picture in 60 seconds. Then jump to whatever you need.
+
+---
+
+## How AI Vector works
+
+A daily AI newsletter with a financial-services lens, **curated, not
+aggregated**. Each morning the pipeline reads ~60 sources, deduplicates the
+inevitable cross-posts and re-reports, scores each story against an
+editorial rubric, drafts the ones that earn a slot, and renders a single
+readable HTML issue. Every story carries a *direction note* — where this
+is heading. Arman reviews every draft and ships when he's happy. Nothing
+auto-publishes, by design.
+
+The split underneath is deliberate. **The LLM does the judgment work** —
+what matters, what to say, what to frame as the Pulse, where the
+financial-services angle earns a mention. **Code does everything else** —
+fetching, parsing, grouping, rendering, scheduling. We never spend LLM
+tokens or accept LLM non-determinism on work that plain code can do
+reliably.
+
+### Why these five stages
+
+Each stage solves a problem the others can't.
+
+| Stage | What would break without it |
+|---|---|
+| `fetch`     | No signal at all |
+| `cluster`   | Ten feeds produce ten copies of the same launch |
+| `rank`      | The issue is a chronological list, not an edit |
+| `summarise` | The reader gets a link dump, not a newsletter |
+| `render`    | The output is JSON, not something a human reads |
+
+Each stage writes a typed file (`items.jsonl` → `clusters.jsonl` →
+`ranked.jsonl` → `issue.json`) that the next stage reads. That handoff
+contract is what lets you re-run any subset cheaply (see §3) and roll
+back cleanly (see §8). Detailed mechanics — what each stage reads, writes,
+costs, and how long it takes — live in §2.
 
 ---
 
