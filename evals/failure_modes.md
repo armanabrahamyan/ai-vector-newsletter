@@ -447,20 +447,34 @@ the invariant directly on `issue.json` (no story has `signal=="act"`
 sitting in On the Radar).
 
 **Mitigation.**
-1. Rank prompt sharpened (v0.1 -> v0.2) with concrete `big_picture`
-   examples (architecture decisions, workflow shifts, vendor calls,
-   regulatory moves) so rank.py tags correctly at source.
-2. Cross-check in summarise.py augments `audience_tags` when signal
-   says Big Picture and rank disagrees -- safety net for the residual
-   miscall rate.
-3. If the cross-check log line fires often: revisit the rank prompt
-   examples and bump `RANK_PROMPT_VERSION` again.
+1. ~~Rank prompt sharpened (v0.1 -> v0.2)~~ **Reverted 2026-05-24 (#77).**
+   The v0.2 prompt sharpening attempt (concrete `big_picture` examples plus
+   the "workflow shifts should score >= 60" anchor) improved metrics on the
+   26-cluster labelled subset (Spearman 0.569 -> 0.654, tier disagreements
+   2 -> 0) but collapsed scores on the other 17 unlabelled clusters:
+   staging went from ~11 surviving stories to 2 (1 Pulse + 1 Big Picture,
+   zero Hands-On, zero On the Radar). Probable culprit: the LLM inverted
+   the ">= 60 anchor" into "< 60 for everything else". `RANK_PROMPT_VERSION`
+   is back at v0.1. The prompt-level fix for FM-12 remains open.
+2. Cross-check in summarise.py (`_reconcile_signal_with_audience_tags`,
+   Fix 2 of #75, **retained**) augments `audience_tags` when signal says
+   Big Picture and rank disagrees -- safety net for the residual miscall
+   rate. Note: on the original c_78dcc648119217a1 case this cross-check
+   did not fire because the body-grounded signal came back as "discuss"
+   not "act"; the cross-check covers the strict signal="act" arm only.
+3. Future prompt re-attempt must include full-corpus shape assertions
+   (sections populated, tier mix healthy on the full unlabelled corpus),
+   not just labelled-corpus Spearman / tier-disagreement metrics. See
+   task #77 postmortem and follow-up tasks #78 (eval on staging) and
+   #79 (publish gate refuses thin issues).
 
 **Severity.** Medium -- doesn't crash the issue, but a Big Picture
 story sitting in On the Radar materially degrades the senior-leader
 read of the publication.
 
-**Last occurrence.** 2026-05-24 (regression #75; fix lands same day).
+**Last occurrence.** 2026-05-24 (regression #75; prompt-level fix
+attempted and reverted same day in #77; cross-check mitigation in
+place; root cause at the prompt level still open).
 
 ---
 
