@@ -32,7 +32,8 @@ the team before acting. Don't assume; ask.
 | `retrieval-engineer` | `src/cluster.py`, embeddings, near-dedup |
 | `llm-engineer` | `src/rank.py`, `src/summarise.py`, prompts, rubric |
 | `editor` | Editorial voice, section labels, issue drafting |
-| `eval-engineer` | `evals/`, quality gates, regression detection |
+| `eval-engineer` | `evals/`, output-quality gates, drift detection |
+| `test-engineer` | `tests/`, unit-test quality bar, regression discipline (independent veto on test PRs) |
 | `release-engineer` | `src/render.py`, templates, CI, GitHub Pages |
 
 Use `AskUserQuestion` to surface tradeoffs to Arman when the team is split or
