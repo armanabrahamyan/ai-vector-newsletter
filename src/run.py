@@ -29,7 +29,7 @@ Round B (DESIGN.md "Archive: staging vs canonical"):
     reviewing ``docs/preview/<date>.html``).
   * Unrelease is the documented reversal path.
 
-Module owners (per docs/TEAM.md): orchestration shell is the Architect's;
+Module owners (per wiki/TEAM.md): orchestration shell is the Architect's;
 the individual stages are owned by their respective engineers.
 """
 

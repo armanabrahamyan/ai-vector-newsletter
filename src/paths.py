@@ -1,6 +1,6 @@
 """Canonical path helpers for AI Vector's archive.
 
-See docs/DESIGN.md "Archive: staging vs released" for the model.
+See wiki/DESIGN.md "Archive: staging vs released" for the model.
 - Staging path:   data/staging/<date>/
 - Released path:  data/released/<date>/
 - Published URLs index: data/published_urls.txt (released only -- written on release)

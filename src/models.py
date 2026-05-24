@@ -4,10 +4,10 @@ src/models.py -- AI Vector data contracts (pydantic v2).
 This module is the single source of truth for the **shape** of every artifact
 that crosses a pipeline seam in AI Vector. The long-form rationale (why each
 field exists, why each constraint is what it is, what readers may tolerate)
-lives in `docs/DESIGN.md`. This module is the executable counterpart.
+lives in `wiki/DESIGN.md`. This module is the executable counterpart.
 
 Architect (Tech Lead) owns this file. Any change to a class below is a
-contract change and requires Architect review per `docs/TEAM.md`.
+contract change and requires Architect review per `wiki/TEAM.md`.
 
 Archive states. `Issue.issue_number` is `None` while the issue lives in
 `data/staging/YYYY-MM-DD/` (work-in-progress, freely re-runnable) and is
@@ -15,7 +15,7 @@ assigned an integer at release time, when the issue is promoted to the
 canonical `data/YYYY-MM-DD/`. See DESIGN.md "Archive: staging vs canonical"
 for the full state model and the release transition.
 
-Pipeline flow (producers -> consumers; full picture in `docs/TEAM.md`):
+Pipeline flow (producers -> consumers; full picture in `wiki/TEAM.md`):
 
     Item            -> produced by src/fetch.py
                        consumed by src/cluster.py, evals, render (provenance)

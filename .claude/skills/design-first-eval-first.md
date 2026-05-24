@@ -1,6 +1,6 @@
 ---
 name: design-first-eval-first
-description: Pre-PR checklist enforcing PLAN.md §0 — design before code, evals before features, determinism in code and judgment in the LLM, subscribe don't scrape. Invoke before opening any PR that touches src/, config/, templates/, evals/, or docs/DESIGN.md.
+description: Pre-PR checklist enforcing PLAN.md §0 — design before code, evals before features, determinism in code and judgment in the LLM, subscribe don't scrape. Invoke before opening any PR that touches src/, config/, templates/, evals/, or wiki/DESIGN.md.
 ---
 
 # Design-first, eval-first — the working philosophy
@@ -14,7 +14,7 @@ write down explicitly why it's deferred (and link the follow-up).
 - [ ] If my change touches an `Item`, `Cluster`, `RankedStory`, `IssueSection`,
       `Issue`, or any `data/YYYY-MM-DD/*.{jsonl,json}` artifact: the pydantic
       model was updated **first**, in the same PR or an earlier one.
-- [ ] `docs/DESIGN.md` reflects the new shape (owner: Architect; if you're not
+- [ ] `wiki/DESIGN.md` reflects the new shape (owner: Architect; if you're not
       the Architect, you've pinged them or proposed the diff yourself).
 - [ ] Backward compatibility for the archive: either I can still read yesterday's
       JSONL, or I've added a `schema_version` bump + a migration note.

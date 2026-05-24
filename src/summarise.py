@@ -5,8 +5,8 @@ Reads ``data/staging/YYYY-MM-DD/ranked.jsonl``, takes top-N stories, writes
 prose summaries via the LLM, assembles the four sections + The Pulse, and
 writes ``data/staging/YYYY-MM-DD/issue.json``.
 
-Owner: LLM Engineer (per docs/TEAM.md, .claude/agents/llm-engineer.md).
-Contract: docs/DESIGN.md "Issue / IssueSection / SummaryBlock" + "Cross-time
+Owner: LLM Engineer (per wiki/TEAM.md, .claude/agents/llm-engineer.md).
+Contract: wiki/DESIGN.md "Issue / IssueSection / SummaryBlock" + "Cross-time
 dedup contract" (callbacks) + "Issue Number Registry" (numbering).
 
 Round B (DESIGN.md "Archive: staging vs canonical"):
