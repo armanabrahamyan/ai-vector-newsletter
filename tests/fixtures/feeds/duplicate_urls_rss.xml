@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Duplicate URL Test Feed</title>
+    <link>https://example.com/</link>
+    <description>Feed with two entries sharing the same URL</description>
+    <item>
+      <title>Model Release First Entry</title>
+      <link>https://example.com/same-url</link>
+      <description>First occurrence of the duplicate URL.</description>
+      <pubDate>Sun, 24 May 2026 09:00:00 +0000</pubDate>
+      <guid>guid-001</guid>
+    </item>
+    <item>
+      <title>Model Release Second Entry</title>
+      <link>https://example.com/same-url</link>
+      <description>Second occurrence of the duplicate URL — should be dropped.</description>
+      <pubDate>Sun, 24 May 2026 09:30:00 +0000</pubDate>
+      <guid>guid-002</guid>
+    </item>
+    <item>
+      <title>Unique Entry</title>
+      <link>https://example.com/unique-url</link>
+      <description>This one is unique.</description>
+      <pubDate>Sun, 24 May 2026 10:00:00 +0000</pubDate>
+      <guid>guid-003</guid>
+    </item>
+  </channel>
+</rss>

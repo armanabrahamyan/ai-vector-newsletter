@@ -56,3 +56,36 @@ aiv = "src.run:app"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+# ---------------------------------------------------------------------------
+# Pytest config -- one place so `pytest` from the repo root finds the suite
+# and downstream module tests (test_fetch / test_cluster / test_render)
+# pick up the same conventions.
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",                  # short summary for non-pass results (skips, xfails, errors)
+    "--strict-markers",     # unknown @pytest.mark.* tokens fail loudly
+    "--strict-config",      # typos in this section fail loudly too
+    "--showlocals",         # locals in tracebacks make pydantic ValidationErrors readable
+    "--tb=short",           # tracebacks stay scannable in CI logs
+]
+# Markers are declared so --strict-markers can do its job. Add new markers
+# here as we grow the suite; do NOT inline-declare in test files.
+markers = [
+    "slow: marks tests as slow (deselect with -m 'not slow')",
+    "network: tests that hit the real network (skipped in unit runs)",
+    "integration: end-to-end pipeline tests against fixtures",
+]
+# Filter out the noisy third-party deprecation warnings that aren't ours
+# to fix, but keep our own warnings loud.
+filterwarnings = [
+    "error",                                                    # treat warnings as errors by default
+    "ignore::DeprecationWarning:pydantic.*",                    # pydantic internal deprecations
+    "ignore::DeprecationWarning:huggingface_hub.*",
+    "ignore::DeprecationWarning:pkg_resources.*",
+]
+log_cli = false
+log_cli_level = "INFO"

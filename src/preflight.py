@@ -109,17 +109,11 @@ def check_llm_endpoint() -> CheckResult:
             detail="LLM_MODEL is unset",
             hint="set LLM_MODEL in .env",
         )
-    if provider in {"openai", "litellm", "ollama"}:
-        return CheckResult(
-            name, False,
-            detail=f"LLM_PROVIDER={provider!r} is not implemented in v0",
-            hint="set LLM_PROVIDER=anthropic or bedrock",
-        )
-    if provider not in {"anthropic", "bedrock"}:
+    if provider not in {"anthropic", "bedrock", "openai", "litellm", "ollama"}:
         return CheckResult(
             name, False,
             detail=f"unknown LLM_PROVIDER={provider!r}",
-            hint="set LLM_PROVIDER=anthropic or bedrock",
+            hint="set LLM_PROVIDER to one of: anthropic, bedrock, openai, litellm, ollama",
         )
 
     # Import here so a broken rank.py doesn't break --check. Also keeps
