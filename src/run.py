@@ -555,8 +555,21 @@ def _run_check() -> int:
     return 1
 
 
-def _run_release(run_date: _dt.date, dry_run: bool, back_release: bool) -> int:
-    """Run the release transition. Returns Unix exit code."""
+def _run_release(
+    run_date: _dt.date,
+    dry_run: bool,
+    back_release: bool,
+    *,
+    revise: bool = False,
+) -> int:
+    """Run the release transition. Returns Unix exit code.
+
+    ``revise=True`` opts into the same-date re-release path: instead of
+    erroring with AlreadyReleased, the existing canonical's
+    ``issue_number`` is preserved and ``revision`` is bumped (rendered
+    as ``#N.M``). See DESIGN.md "Issue Number Registry -> Same-date
+    re-release (revision bump)" for the full state model.
+    """
     _banner_release(run_date, back_release)
     if dry_run:
         _dry_run_release(run_date)
@@ -566,7 +579,7 @@ def _run_release(run_date: _dt.date, dry_run: bool, back_release: bool) -> int:
 
     try:
         before_published = _count_published_urls()
-        issue = render_mod.release_promote(run_date)
+        issue = render_mod.release_promote(run_date, revise=revise)
     except render_mod.AlreadyReleased as exc:
         _LOG.error("release: %s", exc)
         return 1
@@ -578,9 +591,9 @@ def _run_release(run_date: _dt.date, dry_run: bool, back_release: bool) -> int:
     grew_by = max(0, after_published - before_published)
     _LOG.info(_BANNER_RULE)
     _LOG.info(
-        " released as issue #%d | %s updated | %s grew by %d URLs | "
+        " released as issue #%s | %s updated | %s grew by %d URLs | "
         "archive: %s",
-        issue.issue_number,
+        issue.display_number,
         paths.DOCS_INDEX,
         paths.PUBLISHED_URLS_PATH,
         grew_by,
@@ -712,6 +725,13 @@ def run(
 def release(
     date: Optional[str] = typer.Option(None, metavar="YYYY-MM-DD", help=_DATE_HELP),
     dry_run: bool = typer.Option(False, "--dry-run", help=_DRY_HELP),
+    revise: bool = typer.Option(
+        False, "--revise",
+        help="Re-release an already-released date as a revision: keeps "
+             "issue_number, bumps revision (#N -> #N.1 -> #N.2). Required "
+             "to overwrite a released date; without it, an already-released "
+             "date errors with AlreadyReleased.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
 ) -> None:
     """Promote a staging draft to released and rebuild the index."""
@@ -719,7 +739,7 @@ def release(
     _load_env()
     run_date = _resolve_date(date)
     back_release = run_date != _dt.date.today()
-    sys.exit(_run_release(run_date, dry_run, back_release))
+    sys.exit(_run_release(run_date, dry_run, back_release, revise=revise))
 
 
 @app.command()

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Vector {% if issue.issue_number %}&middot; Issue No. {{ issue.issue_number }} {% else %}(preview) {% endif %}&middot; {{ issue.date.strftime('%d %B %Y') }}</title>
+  <title>AI Vector {% if issue.display_number %}&middot; Issue No. {{ issue.display_number }} {% else %}(preview) {% endif %}&middot; {{ issue.date.strftime('%d %B %Y') }}</title>
   <meta name="description" content="Today's AI, with a heading. A daily AI newsletter with a financial-services lens.">
   <meta name="theme-color" content="#0c0c0c">
   <link rel="stylesheet" href="../fonts/fonts.css">
@@ -293,8 +293,8 @@
       <div class="av-mast-meta">
         <div>{{ issue.date.strftime('%A, %d %B %Y') }}</div>
         <div>
-          {%- if issue.issue_number -%}
-            Issue No. {{ issue.issue_number }}
+          {%- if issue.display_number -%}
+            Issue No. {{ issue.display_number }}
           {%- else -%}
             Preview &middot; staging
           {%- endif -%}

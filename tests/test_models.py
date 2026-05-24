@@ -266,3 +266,61 @@ class TestRubricWeights:
         """RUBRIC_WEIGHTS is mirrored from config/rubric.yaml; if the sum
         drifts from 100, every RankedStory.score check goes wrong."""
         assert sum(RUBRIC_WEIGHTS.values()) == 100
+
+
+# ===========================================================================
+# Issue.display_number -- format "#N" or "#N.M" for the rendered identifier.
+# This is the public-facing identifier seen in the masthead + archive
+# listing; the integer registry (issue_number) is unchanged. Added v5
+# (2026-05-24, task #76).
+# ===========================================================================
+
+class TestIssueDisplayNumber:
+    def _issue(self, *, issue_number, revision=0) -> Issue:
+        from tests.conftest import FIXED_DATE, FIXED_NOW
+        return Issue(
+            issue_number=issue_number,
+            revision=revision,
+            date=FIXED_DATE,
+            pulse=IssueSection(
+                name="pulse",
+                stories=[SummaryBlock(
+                    story_id=VALID_CLUSTER_ID,
+                    headline="H",
+                    summary="A summary sentence.",
+                    source_urls=["https://example.com/"],
+                )],
+            ),
+            sections=[],
+            generated_at=FIXED_NOW,
+            prompt_versions={"rank": "v1", "summarise": "v1"},
+        )
+
+    def test_staging_issue_returns_none(self) -> None:
+        """issue_number=None (staging) -> display_number=None so templates
+        fall back to the 'Preview / staging' branch."""
+        issue = self._issue(issue_number=None, revision=0)
+        assert issue.display_number is None
+
+    def test_first_release_returns_integer_string(self) -> None:
+        """revision=0 (first release) -> 'N' with no decimal."""
+        assert self._issue(issue_number=2).display_number == "2"
+        assert self._issue(issue_number=42).display_number == "42"
+
+    def test_revision_bump_returns_dotted_form(self) -> None:
+        """revision>0 -> 'N.M'. The motivating case for task #76."""
+        assert self._issue(issue_number=2, revision=1).display_number == "2.1"
+        assert self._issue(issue_number=2, revision=2).display_number == "2.2"
+        assert self._issue(issue_number=42, revision=7).display_number == "42.7"
+
+    def test_revision_defaults_to_zero(self) -> None:
+        """Backwards-compat: old issue.json files without the `revision`
+        field load with revision=0 via the default."""
+        issue = self._issue(issue_number=1)  # revision omitted
+        assert issue.revision == 0
+        assert issue.display_number == "1"
+
+    def test_revision_must_be_non_negative(self) -> None:
+        """Field(ge=0) -- pydantic enforces, but pin the contract."""
+        with pytest.raises(ValidationError):
+            self._issue(issue_number=1, revision=-1)

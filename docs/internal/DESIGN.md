@@ -211,8 +211,9 @@ from pydantic import BaseModel, Field
 
 
 class Issue(BaseModel):
-    schema_version: int = 3                                                 # bump on shape change; v3 makes issue_number Optional (staging vs canonical)
+    schema_version: int = 5                                                 # bump on shape change; v5 adds `revision: int = 0` (same-date re-release)
     issue_number: Optional[Annotated[int, Field(ge=1)]] = None              # None in staging; assigned at release time (max canonical + 1). See Archive: staging vs canonical
+    revision: Annotated[int, Field(ge=0)] = 0                               # 0 on first release; bumped by `aiv release --revise` (same-date re-release). Renders as #N.M when > 0. See Issue Number Registry -> Same-date re-release (revision bump)
     date: date                                                              # the issue date (YYYY-MM-DD); matches the archive folder
     pulse: IssueSection                                                     # The Pulse — exactly 1 SummaryBlock
     sections: list[IssueSection]                                            # remaining sections in display order: big_picture, hands_on, on_the_radar
@@ -220,6 +221,11 @@ class Issue(BaseModel):
     prompt_versions: dict[str, Annotated[str, Field(pattern=r"^v\d+(\.\d+)*$")]]
                                                                             # which prompt revisions produced this issue; keys: "rank", "summarise", "pulse", optionally "callback"
     notes: Annotated[str, Field(max_length=2000)] = ""                      # optional engine-side notes (e.g. "slow day; On the Radar tail shortened"); not rendered
+
+    @property
+    def display_number(self) -> str | None:                                 # rendered identifier: "2" or "2.1"; None in staging
+        if self.issue_number is None: return None
+        return f"{self.issue_number}" if self.revision == 0 else f"{self.issue_number}.{self.revision}"
 ```
 
 **Notes on choices.** `pulse` is a separate field, not just the first
@@ -232,10 +238,15 @@ stable, human-friendly identifier ("issue #42") independent of date —
 useful for callbacks, archive UX, and reader-facing references. The number
 is **Optional** because every issue starts life in `data/staging/<date>/`
 with `issue_number = None` and only earns a number when `--release`
-promotes it to `data/<date>/`. The derivation rule, the staging/release
-transition, and edge cases are pinned in the [Issue Number
-Registry](#issue-number-registry) and [Archive: staging vs
-canonical](#archive-staging-vs-canonical).
+promotes it to `data/released/<date>/`. `revision` (added v5) is a
+sortable integer that lets a *same-date re-release* (e.g. a prompt-drift
+fix re-shipped against an already-released date) preserve the
+integer-base `issue_number` while bumping a secondary counter, so the
+public identifier moves from `#2` to `#2.1`, `#2.2`, etc. — signalling
+*update* rather than *new issue*. The derivation rule, the
+staging/release transition, the revision-bump path, and edge cases are
+pinned in the [Issue Number Registry](#issue-number-registry) and
+[Archive: staging vs canonical](#archive-staging-vs-canonical).
 
 ### Issue Number Registry
 
@@ -266,18 +277,50 @@ canonical](#archive-staging-vs-canonical) for the full transition.
    `data/<date>/issue.json` (the canonical location) as the LAST step of
    the release sequence -- see the release transition below.
 
-**Idempotency on re-release.** If `data/<date>/issue.json` already
-exists (the date has already been released), `--release` is a **no-op**:
-it logs a clear message ("`<date>` already released as issue #N -- to
-re-release, delete `data/<date>/issue.json` first") and exits cleanly
-without rewriting any canonical files and without re-appending URLs to
-`published_urls.txt`. This preserves the invariant "issue #N is a stable
-handle for one specific released issue."
+**Idempotency on re-release (default).** If `data/released/<date>/issue.json`
+already exists and the operator runs `aiv release --date <date>` *without*
+`--revise`, the call is a **no-op (error)**: it raises `AlreadyReleased`
+with a message pointing the operator at the two intended paths
+(`--revise` for a corrected re-release that bumps `revision`, or
+`aiv unrelease` for a clean slate). No canonical files are rewritten;
+no URLs are appended. This preserves the invariant "issue #N is a stable
+handle for one specific released issue" while still making accidental
+double-fires safe.
+
+**Same-date re-release (revision bump).** `aiv release --revise --date <date>`
+is the supported path for re-shipping a corrected issue against an
+already-released date (e.g. a prompt-drift fix lands, the staging draft
+is regenerated, and we want to publish the correction *without burning a
+new integer*). Behaviour:
+
+1. Read the existing `data/released/<date>/issue.json`. Extract its
+   `issue_number` (must be an integer >= 1; refuse otherwise).
+2. Read the current staging `data/staging/<date>/issue.json`.
+3. **Preserve** `issue_number` from the existing canonical.
+4. **Bump** `revision` by 1 (existing revision + 1; default 0 if absent
+   in pre-v5 archives).
+5. Run the rest of the standard release transition: copy peripherals,
+   write canonical `issue.json` LAST (overwrite -- single file per date;
+   git holds prior content), render HTML, union URLs into
+   `published_urls.txt`.
+
+The rendered public identifier is `#{issue_number}.{revision}`
+(e.g. `#2.1`, `#2.2`) when `revision > 0`, and `#{issue_number}` (e.g.
+`#2`) when `revision == 0`. The `Issue.display_number` property
+encapsulates the formatting; templates use it directly.
+
+**Storage of revisions.** One canonical `issue.json` per date.
+Revisions overwrite the file in place — they do *not* produce
+`issue.v1.json`, `issue.v2.json` siblings. Audit history lives in
+`git log` on `data/released/<date>/issue.json`, which is sufficient for
+the rare "what did `#2` say before we shipped `#2.1`?" question.
 
 **Idempotency on same-day staging re-runs.** Re-running the engine
 against the same date overwrites `data/staging/<date>/` files atomically.
 Because staging `issue_number` is always `None`, there is no number to
-preserve across re-runs -- the number does not exist yet.
+preserve across re-runs -- the number does not exist yet. Staging never
+carries a non-zero `revision` either; revision is assigned at release
+time, like `issue_number`.
 
 **Skip behaviour.** `issue_number` counts **released issues, not
 calendar days.** If a day's run is skipped (no `--release` was ever
@@ -300,12 +343,30 @@ numbered `1, 2, 3, 7, 8`, the next release's `next_number` is `9` (max
 evidence that issues 4–6 existed but their artifacts are gone. Do not
 renumber to close the gap: external references ("see issue #7") must
 keep pointing at the same content. If a missing artifact is later
-recovered, drop it back into its original `data/YYYY-MM-DD/` directory
-with its original `issue_number` intact.
+recovered, drop it back into its original `data/released/YYYY-MM-DD/`
+directory with its original `issue_number` (and `revision`) intact.
+
+Note: gap-recovery semantics only apply to *new dates* (the `max + 1`
+path). A same-date re-release that lands via `--revise` never burns a
+new integer and so never creates a gap; it bumps `revision` against the
+existing integer and the integer registry is unchanged. This is the
+behaviour task #76 introduced (2026-05-24): before v5, a same-date
+re-release after `unrelease` would consume the next integer and leave
+the prior one as a gap — which was wasteful and confused the audit
+trail. The `--revise` path replaces that pattern.
+
+**Unrelease and revision reset.** `aiv unrelease --date <date>` removes
+the entire date directory, so any revision history for that date is
+gone from the working tree (`git log` still has it). The next *first*
+release of that date (no canonical present) starts at `revision = 0`
+again — the revision counter does not survive a full unrelease. If the
+operator wants `#N.M` semantics they must use `--revise` against an
+existing released date, not unrelease-then-release.
 
 **What to do if archive history is missing entirely.** Treat as the
-empty-archive case: next release is `issue_number = 1`. The engine does
-not invent issues it has no evidence of having released.
+empty-archive case: next release is `issue_number = 1`, `revision = 0`.
+The engine does not invent issues it has no evidence of having
+released.
 
 **Validation.** Eval Engineer's module-integrity check verifies, across
 the **canonical** archive (`data/<date>/issue.json`, excluding
@@ -636,32 +697,50 @@ command, or a CI step re-fires).
 
 ### Recovery: re-releasing a date
 
-Re-release is a manual, deliberate operation. It is not a CLI flag; it
-is a sequence the Architect documents here so anyone who needs it can
-follow it without inventing a new path:
+Two supported paths, depending on intent:
 
-1. Delete `data/<date>/issue.json` (the commit marker).
-2. Optionally delete the peripheral canonical files
-   (`data/<date>/items.jsonl`, `clusters.jsonl`, `ranked.jsonl`,
-   `source_health.json`, `embeddings/`) if you also want them
-   re-copied. Leaving them in place is harmless -- step 4 of the
-   release transition will overwrite them atomically.
-3. Optionally re-run the engine (`python -m src.run`) if the staging
-   contents need to be regenerated.
-4. Run `python -m src.run --release [--date <date>]`. The release
-   sequence proceeds normally; the issue gets a new `issue_number`
-   (`max canonical + 1`), which **may differ from the deleted one** --
-   if any later dates have already been released, the deleted number
-   becomes a permanent gap in the sequence (which is fine, per [Issue
-   Number Registry](#issue-number-registry) gap rules; do not back-fill).
-5. Remove the now-stale entry from `data/published_urls.txt` only if
-   the re-release substantively changes the URL set -- otherwise the
-   union-on-append behaviour leaves the file consistent.
+**Path A — revision bump (`aiv release --revise`).** The expected path
+when you want to ship a correction against an already-released date
+*without* burning a new integer in the registry. The public
+identifier moves `#N` -> `#N.1` -> `#N.2`. Workflow:
 
-This is the only documented path to mutate canonical. There is no
-`--force-release` flag and there is no programmatic re-release; the
-manual delete is the gate, and `git log` on the deletion is the audit
-trail.
+1. Re-run the engine (`aiv run --date <date>` or the relevant subset
+   of stages) so `data/staging/<date>/` carries the corrected draft.
+2. Review the staging preview.
+3. Run `aiv release --revise --date <date>`. The transition runs as
+   usual, but `issue_number` is preserved from the existing canonical
+   and `revision` bumps by 1. The canonical `issue.json` is overwritten
+   in place; peripheral files are re-copied; HTML re-renders;
+   `published_urls.txt` updates via union (revisions usually re-use the
+   same URL set, so the file rarely grows).
+
+This is the standard path for task #76's motivating case: prompt drift
+landed on issue #2, we fix it, we want the corrected issue to be #2.1,
+not #3.
+
+**Path B — full unrelease + fresh release (`aiv unrelease` then
+`aiv release`).** The right path when you want the date to start over
+from scratch -- e.g. the issue was published in error and the entire
+archive entry should be reset. Workflow:
+
+1. Run `aiv unrelease --date <date>`. The entire `data/released/<date>/`
+   directory is removed; `data/published_urls.txt` is rebuilt from the
+   surviving canonical archive; the issue-number gap is preserved (the
+   integer becomes a permanent gap per [Issue Number
+   Registry](#issue-number-registry) gap rules).
+2. Re-run the engine if needed.
+3. Run `aiv release --date <date>`. The release sequence proceeds as a
+   *first release* of the date: a new `issue_number` is derived
+   (`max canonical + 1`, which may differ from the deleted one),
+   `revision = 0`. The revision counter does *not* survive a full
+   unrelease.
+
+Both paths are programmatic CLI surfaces; `git log` on
+`data/released/<date>/` is the audit trail for either.
+
+**Anti-path: manual file deletion.** Do not edit canonical files by
+hand. Use `--revise` or `unrelease`. The atomic-write rules and the
+URL-rebuild step depend on those flows running end-to-end.
 
 ### Implications for evaluation
 
@@ -1093,3 +1172,4 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-05-23 | `data/published_urls.txt` (new derived archive file) | — | n/a (not a versioned schema; plain text, one URL per line) | New file. Cumulative URL exclusion index. Written by `src/render.py` after ratify+ship; read by `src/cluster.py` and `src/rank.py`. See [Cross-issue article-level dedup](#cross-issue-article-level-dedup). | n/a — first introduction. Missing-file tolerance: readers treat a missing `data/published_urls.txt` as an empty set (first-ever run, or fresh checkout). |
 | 2026-05-23 | `Issue` | v2 | v3 | Made `issue_number` **Optional** (`int \| None`, default `None`). Introduces the [Archive: staging vs canonical](#archive-staging-vs-canonical) split: every engine run writes to `data/staging/<date>/` with `issue_number = None`; `python -m src.run --release` promotes staging to canonical (`data/<date>/`) and assigns the number at that moment (`max(canonical issue_numbers) + 1`). Numbering is now a release-time operation, not a summarise-time one. Cross-time dedup, callbacks, and `data/published_urls.txt` all read canonical only -- staging is invisible to history. | Existing archive: none in canonical yet at v0, so no on-disk migration required. v2 readers handling v3 records reject `null` `issue_number` (pydantic would refuse `None` for a required `int`); since no v2 issues exist in canonical and staging is a fresh path, no v2 reader will encounter a v3 staging record. v3 readers handling v2 records accept the integer transparently (Optional permits the integer case). The `Issue` validator no longer enforces `issue_number >= 1` as a required invariant; the `ge=1` constraint applies only when `issue_number is not None`. |
 | 2026-05-23 | Archive layout (paths, not schema) | flat `data/<date>/` | split `data/<date>/` (canonical) + `data/staging/<date>/` (working) | New parallel write path under `data/staging/`. Same five files + embeddings sidecar, same atomic-write rules, same shape. Default engine write target is now staging; canonical is written only by `--release`. See [Archive: staging vs canonical](#archive-staging-vs-canonical). | n/a — first introduction. Round B (a follow-up refactor PR) updates `src/fetch.py`, `src/cluster.py`, `src/rank.py`, `src/summarise.py`, `src/render.py`, `src/run.py` to write to staging by default and to expose `--release`. Until Round B lands, the on-disk layout still matches the pre-staging behaviour; this contract specifies the target state. |
+| 2026-05-24 | `Issue` | v4 | v5 | Added `revision: int = 0` (`ge=0`). Same-date re-release (opt-in via `aiv release --revise`) preserves `issue_number` and bumps `revision` instead of consuming a new integer in the registry. Display identifier is now `Issue.display_number` -> `"{issue_number}"` when `revision == 0`, else `"{issue_number}.{revision}"` (`#2`, `#2.1`, `#2.2`). The integer registry semantics are unchanged: uniqueness, monotonic-increase, and `paths.all_released_dates()` all still operate on the integer base; `revision` is a per-date secondary counter. Templates render `issue.display_number`; landing-page archive entries carry `display_number` alongside `issue_number`. See [Issue Number Registry -> Same-date re-release (revision bump)](#issue-number-registry). Motivating case: prompt drift fix on issue #2 (2026-05-24) re-shipped as #2.1 instead of burning #3. | Existing canonical archive (issues #1, #2 on disk) loads transparently: missing `revision` field defaults to 0 via pydantic; `display_number` returns `"1"`, `"2"`. v4 readers handling v5 records: pydantic `extra="forbid"` on `Issue` means a v4 reader of a v5 record would reject the unknown `revision` field. **Mitigation:** this repo upgrades all readers in the same PR (one binary, no external consumers). v5 readers handling v4 records: `revision` defaults to 0, display behaviour is identical to v4. No on-disk migration script is required. |

@@ -398,8 +398,8 @@
         <span class="bar"></span>
         <span>Latest issue &middot; Today</span>
       </div>
-      <div class="meta">Sun 24 May 2026 &middot; Issue No. 2</div>
-      <h3>For image-heavy PDFs, dedicated text extraction beats letting the model read the page</h3>
+      <div class="meta">Sun 24 May 2026 &middot; Issue No. 2.1</div>
+      <h3>Feeding PDFs directly to vision models costs more and answers worse</h3>
       <a class="read" href="released/2026-05-24.html">Read the issue&nbsp;&rarr;</a>
     </section>
 
@@ -419,7 +419,7 @@
         <div id="archive-list"></div>
       </section>
 
-      <script id="archive-data" type="application/json">[{"date": "2026-05-23", "headline": "A small open model pulls structured data from invoices and forms without sending files to the cloud", "href": "released/2026-05-23.html", "num": 1}]</script>
+      <script id="archive-data" type="application/json">[{"date": "2026-05-23", "headline": "A small open model pulls structured data from invoices and forms without sending files to the cloud", "href": "released/2026-05-23.html", "num": 1, "num_display": "1"}]</script>
 
       <script>
       (function () {
@@ -456,7 +456,7 @@
               g.items.map((it) =>
                 '<li><a href="' + esc(it.href) + '" data-headline="' + esc(it.headline.toLowerCase()) + '">' +
                   '<span class="date">' + esc(it.date) + '</span>' +
-                  '<span class="issue-num">No. ' + it.num + '</span>' +
+                  '<span class="issue-num">No. ' + (it.num_display || it.num) + '</span>' +
                   '<span class="headline">' + esc(it.headline) + '</span>' +
                   '<span class="arrow">→</span>' +
                 '</a></li>'
@@ -548,7 +548,7 @@
 
   <footer>
     <span>AI Vector &middot; Arman Abrahamyan</span>
-    <span>Page generated 2026-05-24 15:53 AEST</span>
+    <span>Page generated 2026-05-24 23:30 AEST</span>
   </footer>
 
 </main>

@@ -692,3 +692,125 @@ class TestUnrelease:
             _paths.issue_path(date_b, canonical=True).read_text(encoding="utf-8")
         )
         assert payload["issue_number"] == 2
+
+
+# ===========================================================================
+# TestReleaseRevise -- same-date re-release bumps `revision`, preserves
+# `issue_number`. Added v0.9 (task #76, 2026-05-24).
+# ===========================================================================
+
+class TestReleaseRevise:
+    def test_first_release_has_revision_zero(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """First release of a date -> revision=0, display_number='N'."""
+        _write_staging(FIXED_DATE, rich_issue)
+        final = release_promote(FIXED_DATE)
+        assert final.revision == 0
+        assert final.display_number == "1"
+
+    def test_revise_bumps_revision_not_issue_number(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """The core invariant: --revise on an already-released date
+        preserves issue_number and bumps revision by 1."""
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE)  # #1 rev 0
+        _write_staging(FIXED_DATE, rich_issue)
+        revised = release_promote(FIXED_DATE, revise=True)  # #1 rev 1
+        assert revised.issue_number == 1
+        assert revised.revision == 1
+        assert revised.display_number == "1.1"
+
+    def test_revise_multiple_times_accumulates(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """rev 0 -> 1 -> 2 -> 3. The integer registry never moves."""
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE)
+        for expected_rev in (1, 2, 3):
+            _write_staging(FIXED_DATE, rich_issue)
+            revised = release_promote(FIXED_DATE, revise=True)
+            assert revised.issue_number == 1
+            assert revised.revision == expected_rev
+
+    def test_revise_persists_to_canonical_issue_json(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """The canonical issue.json on disk carries the bumped revision."""
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE)
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE, revise=True)
+        payload = json.loads(
+            _paths.issue_path(FIXED_DATE, canonical=True).read_text(encoding="utf-8")
+        )
+        assert payload["issue_number"] == 1
+        assert payload["revision"] == 1
+
+    def test_revise_does_not_burn_a_new_integer_for_later_dates(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """A subsequent first-release of a later date follows the prior
+        integer -- the revision-bump does not consume an integer slot."""
+        date_a = FIXED_DATE - _dt.timedelta(days=1)
+        date_b = FIXED_DATE
+        # date_a: first release -> #1
+        _write_staging(date_a, rich_issue)
+        release_promote(date_a)
+        # date_a: revise -> #1.1 (no integer burn)
+        _write_staging(date_a, rich_issue)
+        release_promote(date_a, revise=True)
+        # date_b: first release -> still #2 (max canonical integer +1 == 2)
+        _write_staging(date_b, rich_issue)
+        final_b = release_promote(date_b)
+        assert final_b.issue_number == 2
+        assert final_b.revision == 0
+
+    def test_revise_on_first_release_raises_already_released(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """Default (revise=False) still raises AlreadyReleased on a
+        date that already has a canonical issue.json -- the safety net
+        for accidental double-fires is unchanged."""
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE)
+        _write_staging(FIXED_DATE, rich_issue)
+        with pytest.raises(AlreadyReleased):
+            release_promote(FIXED_DATE)  # no --revise
+
+    def test_revise_with_no_prior_release_falls_through_to_first_release(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """If --revise is passed but there's no canonical for the date,
+        treat it as a first release (no existing issue_number to
+        preserve). revision=0; integer assigned via max+1."""
+        _write_staging(FIXED_DATE, rich_issue)
+        final = release_promote(FIXED_DATE, revise=True)
+        assert final.issue_number == 1
+        assert final.revision == 0
+
+    def test_unrelease_then_release_resets_revision(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """Full unrelease wipes the date dir; the next first release
+        starts at revision=0 again (the counter does not survive)."""
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE)
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE, revise=True)  # rev 1
+        unrelease(FIXED_DATE)
+        _write_staging(FIXED_DATE, rich_issue)
+        fresh = release_promote(FIXED_DATE)  # first release again
+        assert fresh.revision == 0
+
+    def test_revise_renders_dotted_number_in_html(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """The released HTML masthead shows 'Issue No. N.M'."""
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE)
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE, revise=True)
+        html = _paths.released_html_path(FIXED_DATE).read_text(encoding="utf-8")
+        assert "Issue No. 1.1" in html

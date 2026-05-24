@@ -398,7 +398,7 @@
         <span class="bar"></span>
         <span>Latest issue &middot; {{ latest_kicker }}</span>
       </div>
-      <div class="meta">{{ latest.date.strftime('%a %d %B %Y') }} &middot; Issue No. {{ latest.issue_number }}</div>
+      <div class="meta">{{ latest.date.strftime('%a %d %B %Y') }} &middot; Issue No. {{ latest.display_number }}</div>
       <h3>{{ latest.pulse_headline }}</h3>
       <a class="read" href="released/{{ latest.date.isoformat() }}.html">Read the issue&nbsp;&rarr;</a>
     </section>
@@ -456,7 +456,7 @@
               g.items.map((it) =>
                 '<li><a href="' + esc(it.href) + '" data-headline="' + esc(it.headline.toLowerCase()) + '">' +
                   '<span class="date">' + esc(it.date) + '</span>' +
-                  '<span class="issue-num">No. ' + it.num + '</span>' +
+                  '<span class="issue-num">No. ' + (it.num_display || it.num) + '</span>' +
                   '<span class="headline">' + esc(it.headline) + '</span>' +
                   '<span class="arrow">→</span>' +
                 '</a></li>'

@@ -45,8 +45,10 @@ Pipeline flow (producers -> consumers; full picture in `docs/internal/TEAM.md`):
 
 Schema versioning. Every persisted model carries a `schema_version: int`
 field per the DESIGN.md schema changelog. Most models are v1 today; `Issue`
-is v3 (v2 added `issue_number`; v3 made `issue_number` Optional to support
-the staging vs canonical archive split -- see "Archive: staging vs
+is v5 (v2 added `issue_number`; v3 made `issue_number` Optional to support
+the staging vs canonical archive split; v4 dropped direction_note +
+finance_angle and renamed sections; v5 adds `revision: int = 0` for
+same-date re-releases that display as `#N.M` -- see "Archive: staging vs
 canonical" and "Issue Number Registry" in DESIGN.md). When you change a
 shape, bump the version on the affected model and append a row to the
 changelog in DESIGN.md in the same PR.
@@ -496,16 +498,20 @@ class Issue(BaseModel):
     Produced by `src/summarise.py`. Consumed by Editor, Arman (ratification),
     `src/render.py`, evals, and future-day `summarise.py` (for callbacks).
 
-    schema_version=4 per DESIGN.md changelog: v2 added `issue_number`; v3
+    schema_version=5 per DESIGN.md changelog: v2 added `issue_number`; v3
     made it Optional (None while in staging, assigned at release time); v4
     drops `direction_note` + `finance_angle` from SummaryBlock (now embedded
     in summary prose) and the `where_heading` section, and renames `builders`
-    -> `geeks`. See "Archive: staging vs canonical" and "Issue Number
-    Registry" in DESIGN.md for derivation, idempotency, gap behaviour, and
-    the release transition.
+    -> `geeks`. v5 adds `revision: int = 0` so a same-date re-release
+    (e.g. a prompt fix re-shipped against an already-released date) bumps
+    `revision` instead of burning a new integer issue number -- the
+    rendered identifier becomes `#N.M` (e.g. `#2.1`, `#2.2`) when
+    revision > 0. See "Archive: staging vs canonical" and "Issue Number
+    Registry" in DESIGN.md for derivation, idempotency, gap behaviour,
+    revision semantics, and the release transition.
     """
 
-    schema_version: int = 4
+    schema_version: int = 5
     issue_number: Annotated[int, Field(ge=1)] | None = None
     """
     Sequential, 1-indexed, monotonically increasing across RELEASED
@@ -513,10 +519,42 @@ class Issue(BaseModel):
     See DESIGN.md "Archive: staging vs canonical" -- staging issues live in
     `data/staging/YYYY-MM-DD/` with `issue_number = None`; on `--release`,
     `src/run.py` computes `max(canonical issue_numbers) + 1` (or 1 if none),
-    writes the assigned number into `data/YYYY-MM-DD/issue.json`, and
-    promotes the rest of the staging artifacts. Idempotent re-release on a
-    date that is already canonical is a no-op.
+    writes the assigned number into `data/released/YYYY-MM-DD/issue.json`,
+    and promotes the rest of the staging artifacts. A same-date
+    re-release (opt-in via `aiv release --revise`) keeps `issue_number`
+    constant and bumps `revision` instead -- see DESIGN.md "Issue Number
+    Registry -> Same-date re-release (revision bump)".
     """
+
+    revision: Annotated[int, Field(ge=0)] = 0
+    """
+    Same-date re-release counter. 0 on first release of a date; +1 each
+    time `aiv release --revise` re-promotes a staging draft over an
+    already-released date. Rendered as `#{issue_number}.{revision}` when
+    revision > 0 (e.g. `#2.1`), else just `#{issue_number}` (`#2`).
+
+    Backwards-compat: older issue.json files (schema_version <= 4) without
+    this field load with `revision = 0` via the field default, which
+    displays exactly as before. See DESIGN.md "Issue Number Registry ->
+    Same-date re-release (revision bump)" for the full state model.
+
+    Unrelease semantics: unreleasing a date removes the whole date dir,
+    so a subsequent first release of that date starts back at
+    `revision = 0`. The counter does not survive a full unrelease.
+    """
+
+    @property
+    def display_number(self) -> str | None:
+        """Human-facing identifier: `"2"` for first release, `"2.1"` for
+        the first revision, `"2.2"` for the second, etc. None while
+        staging (issue_number not yet assigned). The templates render
+        this; the field-level `issue_number` is the integer registry key
+        that all uniqueness + sort logic continues to use unchanged."""
+        if self.issue_number is None:
+            return None
+        if self.revision == 0:
+            return f"{self.issue_number}"
+        return f"{self.issue_number}.{self.revision}"
 
     date: date
     """Issue date (YYYY-MM-DD); matches the archive folder."""

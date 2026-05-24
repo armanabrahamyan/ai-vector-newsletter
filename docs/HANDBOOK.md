@@ -59,6 +59,7 @@ costs, and how long it takes — live in §2.
 |---|---|
 | See today's draft | `aiv run` then `open docs/staging/$(date +%F).html` |
 | Ship today's issue | `aiv release` |
+| Re-ship a corrected issue (#N.M) | `aiv release --revise --date YYYY-MM-DD` |
 | Roll back a bad issue | `aiv unrelease --date YYYY-MM-DD` |
 | Re-do a single stage | `aiv run --stage <stage>` |
 | Re-process an earlier day | `aiv run --date YYYY-MM-DD` |
@@ -262,6 +263,39 @@ on Saturday, releasing Friday's draft on Sunday gives Friday issue #6.
 
 ---
 
+## 7a. "I shipped issue #2 but a prompt fix just landed — re-ship it"
+
+You want the corrected issue to be **#2.1**, not #3. Use `--revise`:
+
+```bash
+# Re-run the affected stages so staging carries the corrected draft
+aiv run --stages summarise,render --date 2026-05-24
+
+# Review the staging preview
+open docs/staging/2026-05-24.html
+
+# Ship the revision (preserves issue_number, bumps revision)
+aiv release --revise --date 2026-05-24
+```
+
+What `--revise` does:
+- Reads the existing released `data/released/<date>/issue.json` to learn
+  its `issue_number` (e.g. 2).
+- Bumps `revision` by 1 (0 → 1, or 1 → 2, etc.).
+- Re-runs the standard release transition: overwrites canonical
+  `issue.json` in place, re-copies peripherals, re-renders HTML,
+  unions URLs into `published_urls.txt`.
+- The masthead reads "Issue No. 2.1"; the archive listing reads
+  "No. 2.1". The integer registry is **not** touched — no #3 is burned.
+
+Without `--revise`, `aiv release` on an already-released date errors
+(`AlreadyReleased`) so accidental double-fires are safe.
+
+There is only one `issue.json` per date on disk — revisions overwrite.
+The audit trail is `git log data/released/<date>/issue.json`.
+
+---
+
 ## 8. "I released something bad. How do I undo?"
 
 ```bash
@@ -274,10 +308,26 @@ aiv unrelease --date 2026-05-24             # actually do it
 Unrelease:
 - Deletes `data/released/<date>/` and `docs/released/<date>.html`
 - Rebuilds `data/published_urls.txt` from the remaining released issues
-- Preserves the issue-number gap (the deleted number doesn't get reused)
+- Preserves the issue-number gap (the deleted integer doesn't get reused)
 
 The staging draft survives. You can edit it, then `aiv release` again — but
-it gets a **new** issue number. The old one is gone forever, by design.
+it gets a **new** integer issue number (`max(existing) + 1`). The old
+integer is gone forever, by design.
+
+**When to use unrelease vs `aiv release --revise`:**
+
+- **`--revise`** (see §7a) is the right path for a *correction* to an
+  already-released date: keeps the integer, bumps revision (#N → #N.1).
+  No gap. Use this for prompt-drift fixes, copy edits, or any time you
+  want the public identifier to signal "update" rather than "new issue."
+- **Unrelease** is the right path when the issue was *published in
+  error* and the entire archive entry should be reset. The integer
+  becomes a permanent gap; the next release of that date starts at
+  `revision = 0` again.
+
+Revision counters do **not** survive a full unrelease — once you
+unrelease, the next first release of that date starts at `#N` not
+`#N.M`.
 
 ---
 
@@ -426,7 +476,13 @@ that date yet, or the date you passed doesn't match what's in
 `data/staging/`.
 
 **`aiv release` says "already released"** — that date has an `issue.json`
-in `data/released/`. Use `aiv unrelease --date <d>` first, then re-release.
+in `data/released/`. Two options:
+- `aiv release --revise --date <d>` if you want a corrected re-release
+  that bumps the revision (#N → #N.1). Preserves the integer; no gap.
+  See §7a.
+- `aiv unrelease --date <d>` then re-release if you want to scrap the
+  entry entirely. Burns the old integer as a permanent gap; next
+  release starts fresh at `revision = 0`. See §8.
 
 ---
 

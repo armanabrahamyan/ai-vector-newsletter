@@ -1,6 +1,7 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "issue_number": 2,
+  "revision": 1,
   "date": "2026-05-24",
   "pulse": {
     "schema_version": 2,
@@ -9,8 +10,8 @@
       {
         "schema_version": 1,
         "story_id": "c_557d8de6f20e0a3b",
-        "headline": "For image-heavy PDFs, dedicated text extraction beats letting the model read the page",
-        "summary": "A community benchmark across 30 long, image-heavy documents found that dedicated text-extraction pipelines hit roughly 59% accuracy while native vision reading landed fifth of six approaches at 52%, and cost more per query. Single-author Reddit post, so treat it as a directional signal. If you're choosing a document pipeline architecture this week, run your own sample before defaulting to the attach-and-ask pattern.",
+        "headline": "Feeding PDFs directly to vision models costs more and answers worse",
+        "summary": "The 'just attach the PDF' shortcut underperforms. A single-author benchmark across 171 questions on image-heavy documents found native vision models scored 52% accuracy at $0.26 per query, while extraction pipelines hit nearly 60% for less. Single Reddit thread, no peer review. Before building document question-answering on vision alone, run this test against your own corpus.",
         "source_urls": [
           "https://reddit.com/r/MachineLearning/comments/1tm0cqg/visioncapable_llms_vs_ocr_for_longdocument"
         ],
@@ -25,21 +26,9 @@
     {
       "schema_version": 2,
       "name": "big_picture",
-      "stories": [
-        {
-          "schema_version": 1,
-          "story_id": "c_ce540f73ee188ea2",
-          "headline": "UK regulators warn that frontier AI now outpaces skilled human attackers",
-          "summary": "The Financial Conduct Authority, Bank of England, and Treasury issued a joint statement saying frontier AI already exceeds what a skilled practitioner can do, faster and cheaper. Regulated firms must act now: map your third-party software supply chain and test your vulnerability-patching speed before your next operational resilience review.",
-          "source_urls": [
-            "https://www.fca.org.uk/news/statements/fca-boe-treasury-joint-statement-frontier-ai-models-cyber-resilience"
-          ],
-          "cross_time_ref": null,
-          "signal": "act"
-        }
-      ],
-      "intro_lead": "Regulators set the pace.",
-      "intro_body": "When official bodies declare that AI has already surpassed skilled human attackers, the compliance clock moves faster than most firms' roadmaps. Governance and supply-chain visibility are no longer aspirational."
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
     },
     {
       "schema_version": 2,
@@ -47,132 +36,43 @@
       "stories": [
         {
           "schema_version": 1,
-          "story_id": "c_7eb67898d3d843bd",
-          "headline": "Cohere's largest open model now runs locally on Apple Silicon",
-          "summary": "A community-built port lets Cohere's 218-billion-parameter mixture-of-experts model run on Apple Silicon via the MLX framework, with a pull request open for review. The model is Apache 2.0 licensed. Sourced from a single Reddit thread, so validate the implementation yourself before relying on it for anything production-bound.",
+          "story_id": "c_58c6a5766fc586a1",
+          "headline": "llama.cpp now runs Qwen3.5 with better precision on consumer hardware",
+          "summary": "llama.cpp build b9297 adds NVFP4 multi-token-prediction scale tensors and links Qwen3.5 multi-token-prediction tensors, improving quantised inference fidelity for those models locally. This is a plumbing update, not a capability leap. If you run Qwen3.5 on local hardware, pull the latest build before benchmarking; otherwise, nothing urgent here.",
           "source_urls": [
-            "https://reddit.com/r/LocalLLaMA/comments/1tlqxeh/command_a_218b_moe_running_on_apple_silicon_mlx"
+            "https://github.com/ggml-org/llama.cpp/releases/tag/b9297"
           ],
           "cross_time_ref": null,
           "signal": "try"
         },
         {
           "schema_version": 1,
-          "story_id": "c_7ec76012cc4eac10",
-          "headline": "Local AI inference on NVIDIA hardware just got faster and sharper in one update",
-          "summary": "llama.cpp build b9297 ships two upgrades together: NVFP4 quantisation (smaller, faster models on NVIDIA GPUs) and multi-token prediction (generating several tokens at once instead of one). Sourced from a single Reddit thread with no independent benchmarks yet. If you run open-weight models locally on NVIDIA hardware, pull this build and test against your current baseline before trusting the speed claims.",
+          "story_id": "c_4bc546dd18f722a0",
+          "headline": "Local inference on Intel hardware gains support for a newer model architecture",
+          "summary": "llama.cpp build b9289 extends its Intel SYCL backend to support gated delta networks with sequence lengths greater than one, enabling a broader class of recurrent-style models to run locally on Intel GPUs. Narrow but practical: if you run local inference on Intel silicon, pull this build before testing recurrent architectures.",
           "source_urls": [
-            "https://reddit.com/r/LocalLLaMA/comments/1tlohld/nvfp4_mtp_voil%C3%A0_on_llamacpp"
-          ],
-          "cross_time_ref": null,
-          "signal": "try"
-        },
-        {
-          "schema_version": 1,
-          "story_id": "c_755e105526b003bd",
-          "headline": "Ollama rebuilds its local inference engine for faster Apple Silicon performance",
-          "summary": "Ollama v0.30.0 drops its GGML abstraction layer to talk directly to llama.cpp, and adds Apple Silicon acceleration via MLX. Both changes affect memory use and speed for anyone running models locally. Still pre-release with known gaps; test against your current setup before upgrading a production workflow.",
-          "source_urls": [
-            "https://github.com/ollama/ollama/releases/tag/v0.30.0-rc23"
-          ],
-          "cross_time_ref": null,
-          "signal": "try"
-        },
-        {
-          "schema_version": 1,
-          "story_id": "c_cf0b99c06c42a9ba",
-          "headline": "Run a local AI agent without any extra software using a hidden server flag",
-          "summary": "An experimental flag in the llama.cpp server quietly ships eight built-in tools: read, write, edit, shell execution, file search, and more. That turns a single binary plus a model file into a working agent harness, no Python orchestration layer needed. Sourced from one Reddit post, so treat it as a starting point for your own testing before building on it.",
-          "source_urls": [
-            "https://reddit.com/r/LocalLLaMA/comments/1tluma3/llamacpp_server_have_builtin_native_tools_exec"
-          ],
-          "cross_time_ref": null,
-          "signal": "try"
-        },
-        {
-          "schema_version": 1,
-          "story_id": "c_6f9686fc752c4d97",
-          "headline": "Run a dozen-agent stock analysis framework entirely on your own machine",
-          "summary": "TradingAgents simulates a full analyst team debating a stock and issuing a trade recommendation. A community-built web interface now replaces the original command-line experience, and it runs against local models via Ollama. Single Reddit source, no independent benchmarks. If you're prototyping agentic finance workflows without sending data to a cloud provider, clone it this week.",
-          "source_urls": [
-            "https://reddit.com/r/LocalLLaMA/comments/1tm2ct0/i_built_a_local_gui_for_the_tradingagents"
+            "https://github.com/ggml-org/llama.cpp/releases/tag/b9289"
           ],
           "cross_time_ref": null,
           "signal": "try"
         }
       ],
-      "intro_lead": "Local stack, moving fast.",
-      "intro_body": "Today's releases cluster around the same bet: more capability, less infrastructure, on hardware you already own. Most are single-source; the pattern is real, the numbers aren't verified yet."
+      "intro_lead": "Plumbing before performance.",
+      "intro_body": "Today's updates are maintenance, not milestones. The pattern is narrow backend fixes that quietly expand which hardware can run which models locally, with no new capabilities attached."
     },
     {
       "schema_version": 2,
       "name": "on_the_radar",
-      "stories": [
-        {
-          "schema_version": 1,
-          "story_id": "c_78dcc648119217a1",
-          "headline": "Writing specs before code is now the discipline that keeps AI-generated output from drifting",
-          "summary": "Multiple independent sources converged on the same finding: AI tools boost individual output while quietly degrading system stability. One study tracked over 10,000 developers and found 98% more merged pull requests alongside 9% more bugs. The case is solid, though it rests on aggregated research, not a single controlled trial. If you're setting coding-agent guidelines this quarter, mandate a spec phase before generation.",
-          "source_urls": [
-            "https://alphasignalai.substack.com/p/spec-driven-development-is-the-new"
-          ],
-          "cross_time_ref": null,
-          "signal": "act"
-        },
-        {
-          "schema_version": 1,
-          "story_id": "c_9eb48e8810c18222",
-          "headline": "A Chrome extension runs a small language model locally with no GPU required",
-          "summary": "A hobbyist-built Chrome extension surfaces Gemini Nano, the model Chrome quietly downloaded earlier this month, without any developer tooling. It runs fully on-device at roughly 20 tokens per second on 16GB of RAM. Single-source Reddit post, speed figure is unverified. Try it before assuming you need a GPU for lightweight local inference.",
-          "source_urls": [
-            "https://reddit.com/r/LocalLLaMA/comments/1tlnqzj/run_chromes_tiny_gemma4_aka_gemini_nano_directly"
-          ],
-          "cross_time_ref": null,
-          "signal": "try"
-        },
-        {
-          "schema_version": 1,
-          "story_id": "c_ab88a058384becee",
-          "headline": "First-person training data beats story-style examples for teaching an AI a character's voice",
-          "summary": "A fine-tuning experiment pitting three data formats against each other found first-person statements generalised best; synthetic document-style data produced the strangest failure: the model knew a character trait but expressed it only 37% of the time. Thin sourcing (single Reddit post), but code and repo are public. If you're building role-specific fine-tunes, test this format split before committing to a data-generation pipeline.",
-          "source_urls": [
-            "https://reddit.com/r/MachineLearning/comments/1tlnvf0/i_finetuned_an_llm_to_be_c3po_to_test_which"
-          ],
-          "cross_time_ref": null,
-          "signal": "try"
-        },
-        {
-          "schema_version": 1,
-          "story_id": "c_047f4cc68b0d21d3",
-          "headline": "A sorting fix makes mixture-of-experts models noticeably faster on Intel hardware",
-          "summary": "llama.cpp build b9291 replaces a quadratic-time data-shuffling step in its Intel GPU path with a linear counting-sort, cutting overhead during the prompt-processing phase for mixture-of-experts models like Mixtral and DeepSeek. No published benchmark yet, so measure your own prefill times before treating it as a guaranteed win. Pull the update if you run these models on Intel GPUs.",
-          "source_urls": [
-            "https://github.com/ggml-org/llama.cpp/releases/tag/b9291"
-          ],
-          "cross_time_ref": null,
-          "signal": "try"
-        },
-        {
-          "schema_version": 1,
-          "story_id": "c_8ccc72ef20ded857",
-          "headline": "A small llama.cpp update quietly speeds up attention on Qualcomm hardware",
-          "summary": "The latest llama.cpp build applies a compiler-level repetition optimisation to the softmax step inside flash attention, specifically for Qualcomm's Hexagon processor. No benchmark figures are published yet, so the real-world gain is unknown. If you run local inference on Qualcomm silicon, pull the build and measure against your own workload before drawing conclusions.",
-          "source_urls": [
-            "https://github.com/ggml-org/llama.cpp/releases/tag/b9301"
-          ],
-          "cross_time_ref": null,
-          "signal": "try"
-        }
-      ],
-      "intro_lead": "For awareness only.",
-      "intro_body": "Today's cluster is heavy on thin sourcing and unverified benchmarks. The underlying theme is worth noting: small, unglamorous technical choices are quietly shaping how reliably AI systems perform."
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
     }
   ],
-  "generated_at": "2026-05-24T05:51:19.850948Z",
+  "generated_at": "2026-05-24T13:30:10.676386Z",
   "prompt_versions": {
-    "rank": "v0.1",
-    "summarise": "v0.8",
-    "pulse": "v0.7.1"
+    "rank": "v0.2",
+    "summarise": "v0.9",
+    "pulse": "v0.8"
   },
   "notes": ""
 }

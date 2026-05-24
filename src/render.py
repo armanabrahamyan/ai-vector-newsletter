@@ -12,16 +12,21 @@ Round B (DESIGN.md "Archive: staging vs canonical") -- three top-level surfaces:
     internally by ``release_promote`` after the canonical issue.json is
     in place.
 
-  * ``release_promote(date)``          -- the full 7-step release transition
-    per DESIGN.md: idempotency check, validate staging, copy peripheral
-    files, write canonical ``issue.json`` LAST (the commit marker), render
-    canonical HTML, append URLs to ``data/published_urls.txt``.
+  * ``release_promote(date, revise=False)`` -- the full 7-step release
+    transition per DESIGN.md: idempotency check, validate staging, copy
+    peripheral files, write canonical ``issue.json`` LAST (the commit
+    marker), render canonical HTML, append URLs to
+    ``data/published_urls.txt``. When ``revise=True`` and the date is
+    already released, instead of raising ``AlreadyReleased`` the call
+    promotes a new revision: ``issue_number`` is preserved (same
+    integer); ``revision`` is bumped by 1 (rendered as ``#N.M``).
 
   * ``unrelease(date)``                -- reverse a release: delete canonical
     files (issue.json FIRST), then rebuild ``data/published_urls.txt`` from
-    the surviving canonical archive. Leaves the issue-number gap intact
-    (no renumbering of subsequent issues; see DESIGN.md "Issue Number
-    Registry" -> "Gap recovery").
+    the surviving canonical archive. Removes the entire date dir, so the
+    revision counter implicitly resets on the next first release of that
+    date. Leaves the issue-number gap intact (no renumbering of subsequent
+    issues; see DESIGN.md "Issue Number Registry" -> "Gap recovery").
 
 Standalone:
     python -m src.render                              # preview today's staging
@@ -91,8 +96,9 @@ class AlreadyReleased(ReleaseError):
 
     def __init__(self, date: datetime.date) -> None:
         super().__init__(
-            f"already released: {date}. To re-release, run "
-            f"'python -m src.run --unrelease --date {date}' first."
+            f"already released: {date}. To ship a corrected revision, "
+            f"run 'aiv release --revise --date {date}'. To start over, "
+            f"run 'aiv unrelease --date {date}' first."
         )
         self.date = date
 
@@ -320,10 +326,27 @@ def _load_published_urls() -> set[str]:
 # ---------------------------------------------------------------------------
 
 
+def _format_display_number(issue_number: object, revision: object) -> str:
+    """Render `#N` or `#N.M` for a released issue. Mirrors
+    ``Issue.display_number`` for raw-payload callers (the landing-page
+    builder reads JSON directly to stay tolerant of legacy shapes).
+    `revision` defaults to 0 for archives written before schema v5."""
+    if not isinstance(issue_number, int):
+        return ""
+    rev = revision if isinstance(revision, int) else 0
+    if rev <= 0:
+        return f"{issue_number}"
+    return f"{issue_number}.{rev}"
+
+
 def _collect_index_entries() -> list[dict]:
     """Walk every canonical issue.json and pull the fields the landing page
-    needs: date, issue_number, pulse headline. Returns newest-first.
-    Tolerant of unreadable / partial files (skipped with a warning)."""
+    needs: date, issue_number, revision, display_number, pulse headline.
+    Returns newest-first, with same-date revisions (impossible by
+    construction today -- one canonical issue.json per date -- but the
+    sort key is defensive for future schema moves) ordered
+    revision-descending within a date. Tolerant of unreadable / partial
+    files (skipped with a warning)."""
     entries: list[dict] = []
     for d in paths.all_released_dates():
         issue_path = paths.issue_path(d, canonical=True)
@@ -339,12 +362,18 @@ def _collect_index_entries() -> list[dict]:
         headline = ""
         if pulse_stories and isinstance(pulse_stories[0], dict):
             headline = (pulse_stories[0].get("headline") or "").strip()
+        # `revision` is absent from pre-v5 archive issues; treat as 0.
+        revision = payload.get("revision", 0)
+        issue_number = payload.get("issue_number")
         entries.append({
             "date": d,
-            "issue_number": payload.get("issue_number"),
+            "issue_number": issue_number,
+            "revision": revision,
+            "display_number": _format_display_number(issue_number, revision),
             "pulse_headline": headline,
         })
-    entries.sort(key=lambda e: e["date"], reverse=True)
+    # Date-descending, then revision-descending within a date.
+    entries.sort(key=lambda e: (e["date"], e["revision"]), reverse=True)
     return entries
 
 
@@ -383,6 +412,7 @@ def _render_index_landing() -> Path:
         {
             "date": e["date"].isoformat(),
             "num": e["issue_number"],
+            "num_display": e["display_number"],
             "headline": e["pulse_headline"],
             "href": f"released/{e['date'].isoformat()}.html",
         }
@@ -445,7 +475,7 @@ def render(
     template = env.get_template(TEMPLATE_NAME)
     html = template.render(issue=issue, read_minutes=_read_minutes(issue))
     issue_label = (
-        f"#{issue.issue_number}" if issue.issue_number is not None
+        f"#{issue.display_number}" if issue.display_number is not None
         else "(staging -- not yet numbered)"
     )
 
@@ -475,41 +505,70 @@ def render(
 # release_promote -- the 7-step release transition per DESIGN.md.
 # ---------------------------------------------------------------------------
 
-def release_promote(date: datetime.date) -> Issue:
+def release_promote(date: datetime.date, *, revise: bool = False) -> Issue:
     """
-    Promote ``data/staging/<date>/`` to canonical ``data/<date>/`` and ship.
+    Promote ``data/staging/<date>/`` to canonical ``data/released/<date>/``
+    and ship.
 
     Implements the 7-step release transition (DESIGN.md "Archive: staging
     vs canonical -> The release transition") in this exact order:
 
-      1. Idempotency check -- if canonical issue.json already exists, raise
-         ``AlreadyReleased``. The orchestrator catches and reports.
+      1. Idempotency check -- if canonical issue.json already exists AND
+         ``revise=False``, raise ``AlreadyReleased``. If ``revise=True``
+         and a canonical issue.json exists, this is a *same-date
+         re-release*: preserve the original ``issue_number``, bump
+         ``revision`` by 1, and overwrite the canonical files.
       2. Validate staging exists -- otherwise ``NoStagingDraft``.
       3. Read + pydantic-validate the staging ``Issue``. Warn if
          ``issue_number`` was somehow already set in staging (overwrite).
-      4. Derive the next ``issue_number`` from
-         ``paths.all_released_dates()`` -> max + 1 (or 1 if no canonical
-         history). Log the derivation.
+      4. Derive ``issue_number`` + ``revision``:
+           * First release (no prior canonical for this date): scan
+             ``paths.all_released_dates()`` -> ``max(issue_number) + 1``
+             (or 1 if no canonical history). ``revision = 0``.
+           * Revision (``revise=True`` and canonical exists): read the
+             existing canonical issue.json, keep its ``issue_number``,
+             and bump ``revision`` by 1.
+         Log the derivation.
       5. Copy peripheral files atomically (items.jsonl, source_health.json,
          clusters.jsonl, ranked.jsonl, embeddings/centroids.npz) from
-         staging -> canonical.
+         staging -> canonical. On a revision, these overwrite in place.
       6. Write canonical ``issue.json`` LAST (atomic). This is the commit
-         marker: its presence == "released."
+         marker: its presence == "released." On a revision, the file is
+         replaced (single canonical issue.json per date -- git holds
+         prior content).
       7. Render canonical HTML to ``docs/index.html`` + ``docs/archive/...``,
-         then append URLs to ``data/published_urls.txt`` (idempotent union).
+         then append URLs to ``data/published_urls.txt`` (idempotent union;
+         revisions usually re-use the same URL set, so the file rarely
+         grows).
 
-    Returns the final ``Issue`` (with ``issue_number`` set) so the
-    orchestrator can log it.
+    Returns the final ``Issue`` (with ``issue_number`` and ``revision``
+    set) so the orchestrator can log it.
     """
-    # --- Step 1: idempotency check ----------------------------------------
+    # --- Step 1: idempotency check / revision detection ------------------
     canonical_issue = paths.issue_path(date, canonical=True)
+    existing_canonical: dict | None = None
     if canonical_issue.exists():
-        log.info(
-            "already released: %s exists -- to re-release, run "
-            "--unrelease --date %s first.",
-            canonical_issue, date,
-        )
-        raise AlreadyReleased(date)
+        if not revise:
+            log.info(
+                "already released: %s exists -- to ship a corrected "
+                "revision, run --revise; to start over, run "
+                "--unrelease --date %s first.",
+                canonical_issue, date,
+            )
+            raise AlreadyReleased(date)
+        # Revision path: read the existing canonical so we can preserve
+        # issue_number and bump revision.
+        try:
+            existing_canonical = json.loads(
+                canonical_issue.read_text(encoding="utf-8")
+            )
+        except Exception as exc:  # noqa: BLE001
+            log.error(
+                "release --revise: cannot read existing canonical %s "
+                "(%s); refusing to bump revision over an unreadable file.",
+                canonical_issue, exc,
+            )
+            raise
 
     # --- Step 2: validate staging exists ----------------------------------
     staging_issue = paths.issue_path(date, canonical=False)
@@ -527,31 +586,58 @@ def release_promote(date: datetime.date) -> Issue:
             date, staged.issue_number,
         )
 
-    # --- Step 4: derive issue_number --------------------------------------
-    canonical_dates = paths.all_released_dates()
-    existing_numbers: list[int] = []
-    for d in canonical_dates:
-        try:
-            payload = json.loads(
-                paths.issue_path(d, canonical=True).read_text(encoding="utf-8")
+    # --- Step 4: derive issue_number + revision --------------------------
+    if existing_canonical is not None:
+        # Revision: preserve issue_number, bump revision.
+        prior_number = existing_canonical.get("issue_number")
+        if not isinstance(prior_number, int) or prior_number < 1:
+            log.error(
+                "release --revise: existing canonical %s has invalid "
+                "issue_number=%r; refusing to revise.",
+                canonical_issue, prior_number,
             )
-            n = payload.get("issue_number")
-            if isinstance(n, int) and n >= 1:
-                existing_numbers.append(n)
-        except Exception:  # noqa: BLE001
-            log.warning(
-                "release: could not read canonical issue.json for %s while "
-                "deriving issue_number -- skipping",
-                d,
+            raise ValueError(
+                f"cannot revise {date}: existing canonical issue.json has "
+                f"invalid issue_number={prior_number!r}"
             )
-    next_number = (max(existing_numbers) + 1) if existing_numbers else 1
-    log.info(
-        "release: derived issue_number=%d (max canonical=%s, %d canonical "
-        "issues scanned)",
-        next_number,
-        max(existing_numbers) if existing_numbers else "(none)",
-        len(existing_numbers),
-    )
+        prior_revision = existing_canonical.get("revision", 0)
+        if not isinstance(prior_revision, int) or prior_revision < 0:
+            prior_revision = 0
+        next_number = prior_number
+        next_revision = prior_revision + 1
+        log.info(
+            "release --revise: same-date re-release for %s -- preserving "
+            "issue_number=%d, bumping revision %d -> %d (display: #%d.%d)",
+            date, next_number, prior_revision, next_revision,
+            next_number, next_revision,
+        )
+    else:
+        # First release of this date: derive a fresh integer issue_number.
+        canonical_dates = paths.all_released_dates()
+        existing_numbers: list[int] = []
+        for d in canonical_dates:
+            try:
+                payload = json.loads(
+                    paths.issue_path(d, canonical=True).read_text(encoding="utf-8")
+                )
+                n = payload.get("issue_number")
+                if isinstance(n, int) and n >= 1:
+                    existing_numbers.append(n)
+            except Exception:  # noqa: BLE001
+                log.warning(
+                    "release: could not read canonical issue.json for %s "
+                    "while deriving issue_number -- skipping",
+                    d,
+                )
+        next_number = (max(existing_numbers) + 1) if existing_numbers else 1
+        next_revision = 0
+        log.info(
+            "release: derived issue_number=%d (max canonical=%s, %d "
+            "canonical issues scanned)",
+            next_number,
+            max(existing_numbers) if existing_numbers else "(none)",
+            len(existing_numbers),
+        )
 
     # --- Step 5: copy peripheral files staging -> canonical --------------
     released_dir = paths.released_dir(date)
@@ -567,14 +653,17 @@ def release_promote(date: datetime.date) -> Issue:
     )
 
     # --- Step 6: write canonical issue.json LAST (the commit marker) -----
-    # Construct a fresh Issue with the assigned number. We use model_copy
-    # to keep the original validated shape intact.
-    final = staged.model_copy(update={"issue_number": next_number})
+    # Construct a fresh Issue with the assigned number + revision. We use
+    # model_copy to keep the original validated shape intact.
+    final = staged.model_copy(update={
+        "issue_number": next_number,
+        "revision": next_revision,
+    })
     _atomic_write_issue(canonical_issue, final)
     log.info(
-        "release: committed canonical %s (issue #%d) -- date %s is now "
+        "release: committed canonical %s (issue #%s) -- date %s is now "
         "released.",
-        canonical_issue, next_number, date,
+        canonical_issue, final.display_number, date,
     )
 
     # --- Step 7: render canonical + append URLs --------------------------
@@ -749,6 +838,13 @@ if __name__ == "__main__":
         help="Run the full release_promote() transition for the given date.",
     )
     parser.add_argument(
+        "--revise",
+        action="store_true",
+        default=False,
+        help="With --promote, allow re-releasing an already-released date: "
+             "preserves issue_number, bumps revision (#N -> #N.1 -> #N.2).",
+    )
+    parser.add_argument(
         "--date",
         default=None,
         metavar="YYYY-MM-DD",
@@ -767,8 +863,8 @@ if __name__ == "__main__":
             removed = unrelease(run_date)
             print(f"unreleased {run_date} ({removed} URLs removed)")
         elif args.promote:
-            issue = release_promote(run_date)
-            print(f"released {run_date} as issue #{issue.issue_number}")
+            issue = release_promote(run_date, revise=args.revise)
+            print(f"released {run_date} as issue #{issue.display_number}")
         else:
             out = render(run_date, mode=args.mode)
             print(out)
