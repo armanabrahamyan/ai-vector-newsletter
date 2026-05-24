@@ -41,7 +41,63 @@ or something goes sideways.
 
 ---
 
-## 2. "I tweaked X — what do I need to re-run?"
+## 2. How the pipeline works
+
+Five stages, run in order. Each reads its predecessor's file and writes
+its own — that's why you can re-run subsets cheaply.
+
+### `fetch` — pull from sources
+- **Reads:** `config/sources.yaml`
+- **Writes:** `data/staging/<date>/items.jsonl` + `source_health.json`
+- **What it does:** hits ~60 RSS/Atom/API feeds in parallel, normalises each entry into an `Item` record, exact-URL deduplicates.
+- **No LLM.** Cost ≈ 0. Time ≈ 15-30 s, dominated by the slowest source.
+- **When it goes wrong:** check `source_health.json` for `missed_reason`. Usually a feed redirect, a 4xx/5xx, or a parse error.
+
+### `cluster` — group near-duplicates
+- **Reads:** `items.jsonl` + the last 14 days of released centroids
+- **Writes:** `clusters.jsonl` + `embeddings/centroids.npz`
+- **What it does:** embeds each item with BAAI/bge-base-en-v1.5 locally, runs agglomerative clustering at a cosine threshold, links to prior-day clusters where similar.
+- **No LLM.** Cost ≈ 0. Time ≈ 20-60 s; first run downloads the ~440 MB model.
+- **When it goes wrong:** cluster count looks weird → threshold or model regression. Cross-time linking broken → check released centroids exist.
+
+### `rank` — score against the rubric
+- **Reads:** `clusters.jsonl`
+- **Writes:** `ranked.jsonl`
+- **What it does:** one LLM call per cluster — scores 0-100 against `config/rubric.yaml` (significance / hands_on_utility / big_picture_relevance / financial_services_impact / freshness_momentum), tags audiences, assigns a tier (`pulse` / `on_the_radar` / `cut`).
+- **Uses LLM.** Cost ≈ $0.05-0.10 with `claude-sonnet-4-6` (~50 clusters × small prompt). Time ≈ 60-90 s.
+- **When it goes wrong:** wrong stories surfacing → rubric weights or rank prompt drift. Re-run with `--verbose` to see per-cluster reasoning.
+
+### `summarise` — write headlines + bodies
+- **Reads:** `ranked.jsonl`
+- **Writes:** `issue.json`
+- **What it does:** for top-N stories, fetches the article body via `trafilatura`, then LLM-drafts: headline, body, direction note, signal pill. Writes section intros per section. Assembles into `Issue` model.
+- **Uses LLM.** Cost ≈ $0.10-0.15 (~12 stories × larger prompt + section intros). Time ≈ 60-180 s.
+- **When it goes wrong:** voice off → prompt drift in `src/summarise.py`. Empty bodies → trafilatura blocked on the source URL.
+
+### `render` — produce HTML
+- **Reads:** `issue.json`
+- **Writes:** `docs/staging/<date>.html`
+- **What it does:** Jinja2 template → static HTML. No LLM, no network.
+- **No LLM.** Cost = 0. Time < 1 s.
+- **When it goes wrong:** template syntax error or model-field mismatch after a contract change.
+
+### The pipeline as a whole
+
+```
+config/sources.yaml ──► fetch ──► items.jsonl ──► cluster ──► clusters.jsonl
+                                                                     │
+                                                                     ▼
+docs/staging/<date>.html ◄── render ◄── issue.json ◄── summarise ◄── ranked.jsonl
+                                                          ▲              ▲
+                                                          │              │
+                                                       rank ─────────────┘
+```
+
+Total: 2-5 minutes end-to-end. Most of it is `summarise`.
+
+---
+
+## 3. "I tweaked X — what do I need to re-run?"
 
 You don't need to re-run the full pipeline every time. Each stage reads
 its predecessor's file and writes its own. Touch the smallest surface.
@@ -69,23 +125,23 @@ Stages always run in pipeline order regardless of the order you pass them.
 
 ---
 
-## 3. "The draft looks wrong. How do I fix it?"
+## 4. "The draft looks wrong. How do I fix it?"
 
 Three levers, escalating from cheapest to most disruptive.
 
-**3a. Re-render only** — typos, wording in HTML, CSS:
+**4a. Re-render only** — typos, wording in HTML, CSS:
 ```bash
 # Edit data/staging/<date>/issue.json or templates/issue.html.j2 directly
 aiv run --stage render --date <date>
 ```
 
-**3b. Re-summarise** — voice off, missing direction note, wrong tone:
+**4b. Re-summarise** — voice off, missing direction note, wrong tone:
 ```bash
 # Edit the summarise prompt in src/summarise.py
 aiv run --stages summarise,render --date <date>
 ```
 
-**3c. Re-rank** — wrong story made the cut, weird audience tags:
+**4c. Re-rank** — wrong story made the cut, weird audience tags:
 ```bash
 # Tweak config/rubric.yaml or the rank prompt in src/rank.py
 aiv run --stages rank,summarise,render --date <date>
@@ -96,7 +152,7 @@ For pure copy-fixes (one word, one headline), editing
 
 ---
 
-## 4. "I want to try a different LLM"
+## 5. "I want to try a different LLM"
 
 Swap one line in `.env`. No code change.
 
@@ -136,7 +192,7 @@ Inline env override — runs once, your `.env` is untouched.
 
 ---
 
-## 5. "I want to tune the LLM behaviour"
+## 6. "I want to tune the LLM behaviour"
 
 ```ini
 LLM_TIMEOUT_SECONDS=60         # per-call timeout
@@ -149,7 +205,7 @@ churn between re-runs. Summarise temperature can move with taste.
 
 ---
 
-## 6. "I want to release yesterday, not today"
+## 7. "I want to release yesterday, not today"
 
 ```bash
 aiv release --date 2026-05-23
@@ -161,7 +217,7 @@ on Saturday, releasing Friday's draft on Sunday gives Friday issue #6.
 
 ---
 
-## 7. "I released something bad. How do I undo?"
+## 8. "I released something bad. How do I undo?"
 
 ```bash
 aiv unrelease --date 2026-05-24 --dry-run   # see what would happen
@@ -180,7 +236,7 @@ it gets a **new** issue number. The old one is gone forever, by design.
 
 ---
 
-## 8. "Something feels off. How do I peek under the hood?"
+## 9. "Something feels off. How do I peek under the hood?"
 
 Everything is JSON / JSONL in `data/staging/<date>/`:
 
@@ -211,7 +267,7 @@ half-written file mid-pipeline. Safe to inspect during a run.
 
 ---
 
-## 9. "A source went dead. What now?"
+## 10. "A source went dead. What now?"
 
 `source_health.json` will show it with `fired: false` and a `missed_reason`
 like `http_error`, `timeout`, or `parse_error`.
@@ -229,7 +285,7 @@ If it was load-bearing, log it as a task and find a replacement source.
 
 ---
 
-## 10. "I want to see what would happen before doing it"
+## 11. "I want to see what would happen before doing it"
 
 Add `--dry-run` to any command:
 
@@ -246,7 +302,7 @@ Always use `--dry-run` before:
 
 ---
 
-## 11. "It's running slow / wasting tokens. What can I skip?"
+## 12. "It's running slow / wasting tokens. What can I skip?"
 
 ```bash
 aiv run --skip-preflight       # skip embedding + LLM endpoint checks
@@ -262,7 +318,7 @@ For iteration: do one full run to get fresh data, then loop on
 
 ---
 
-## 12. "What's safe to edit by hand?"
+## 13. "What's safe to edit by hand?"
 
 | File | Edit by hand? | Notes |
 |---|---|---|
@@ -279,7 +335,7 @@ For iteration: do one full run to get fresh data, then loop on
 
 ---
 
-## 13. "Help — I'm worried I'll break something"
+## 14. "Help — I'm worried I'll break something"
 
 The cheapest, lowest-cost safety net is git itself:
 
@@ -297,7 +353,7 @@ always blow away `data/staging/<d>/` and re-run.
 
 ---
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 **`aiv: command not found`** — the venv isn't activated. Run
 `source .venv/bin/activate`. Your prompt should show `(ai-vector)`.
@@ -329,7 +385,7 @@ in `data/released/`. Use `aiv unrelease --date <d>` first, then re-release.
 
 ---
 
-## 15. When to bring in the team
+## 16. When to bring in the team
 
 For anything beyond daily operation, see `docs/internal/TEAM.md` for the
 agent roster. In short:
