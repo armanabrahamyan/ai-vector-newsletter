@@ -47,9 +47,12 @@ STAGE_ORDER: tuple[str, ...] = (
 # Stages that require the LLM env vars to be valid before they can run.
 LLM_STAGES: frozenset[str] = frozenset({"rank", "summarise"})
 
-# Providers we ship with for v0. Others (openai/litellm/ollama) raise
-# NotImplementedError inside rank.py; we surface a clean halt before then.
-SUPPORTED_PROVIDERS: frozenset[str] = frozenset({"anthropic", "bedrock"})
+# Providers we ship with. anthropic + bedrock have native clients;
+# openai/litellm/ollama share the OpenAI-compatible Chat Completions path
+# in rank.py (works with any OpenAI-API-compatible gateway).
+SUPPORTED_PROVIDERS: frozenset[str] = frozenset(
+    {"anthropic", "bedrock", "openai", "litellm", "ollama"}
+)
 
 _LOG = logging.getLogger("ai_vector.run")
 

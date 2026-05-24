@@ -774,9 +774,9 @@ def _llm_call(prompt: str, *, temperature: float, max_tokens: int) -> str:
         return _llm_call_bedrock(prompt, model=model, temperature=temperature,
                                  max_tokens=max_tokens, timeout=timeout)
     if provider in {"openai", "litellm", "ollama"}:
-        raise NotImplementedError(
-            f"set LLM_PROVIDER=anthropic or bedrock for v0; "
-            f"{provider} support coming via litellm later"
+        return _llm_call_openai_compatible(
+            prompt, model=model, temperature=temperature,
+            max_tokens=max_tokens, timeout=timeout,
         )
     raise NotImplementedError(
         f"unknown LLM_PROVIDER={provider!r}; expected one of "
@@ -891,6 +891,53 @@ def _llm_call_bedrock(
         if isinstance(block, dict) and isinstance(block.get("text"), str):
             chunks.append(block["text"])
     return "".join(chunks)
+
+
+def _llm_call_openai_compatible(
+    prompt: str, *, model: str, temperature: float, max_tokens: int, timeout: float
+) -> str:
+    """OpenAI Chat Completions call via httpx.
+
+    Works with any OpenAI-API-compatible endpoint: OpenAI itself, a LiteLLM
+    proxy, Ollama in OpenAI-compat mode, Together, Groq, vLLM, etc.
+
+    ``LLM_ENDPOINT`` is the base URL up through the API-version segment
+    (e.g. ``https://api.openai.com/v1`` or ``http://localhost:4000/v1``).
+    ``/chat/completions`` is appended here.
+    """
+    import httpx
+
+    base_url = (os.getenv("LLM_ENDPOINT") or "").strip().rstrip("/")
+    if not base_url:
+        raise RuntimeError(
+            "LLM_ENDPOINT is required for openai/litellm/ollama "
+            "(e.g. https://api.openai.com/v1 or http://localhost:4000/v1)"
+        )
+    api_key = os.getenv("LLM_API_KEY") or ""
+
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    body = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+
+    resp = httpx.post(
+        f"{base_url}/chat/completions",
+        headers=headers, json=body, timeout=timeout,
+    )
+    resp.raise_for_status()
+    payload = resp.json()
+    choices = payload.get("choices") or []
+    if not choices:
+        raise RuntimeError(
+            f"openai-compatible response had no choices: {payload!r}"
+        )
+    return (choices[0].get("message") or {}).get("content") or ""
 
 
 # ---------------------------------------------------------------------------
