@@ -1,33 +1,14 @@
 """
-src/run.py -- AI Vector local pipeline orchestrator.
+src/run.py -- AI Vector pipeline orchestrator.
 
-Three top-level modes (mutually exclusive):
+CLI entry point: ``aiv`` (installed via pyproject.toml).
+Backwards-compatible: ``python -m src.run`` still works.
 
-  * STAGING run (default) -- ``python -m src.run`` (with optional ``--date``,
-    ``--stage``, ``--stages``, ``--dry-run``, ``--verbose``). Runs
-    fetch -> cluster -> rank -> summarise -> render(preview) and writes
-    under ``data/staging/<date>/``. The default render mode is ``preview``;
-    nothing canonical is touched.
-
-  * RELEASE  -- ``python -m src.run --release [--date YYYY-MM-DD]``.
-    Promotes an existing staging draft to canonical via
-    ``render.release_promote``: derives ``issue_number``, copies peripheral
-    files, writes canonical ``issue.json`` LAST, renders
-    ``docs/index.html`` + archive, appends URLs to
-    ``data/published_urls.txt``. ``--date`` defaults to today; passing
-    yesterday's date back-releases a draft.
-
-  * UNRELEASE -- ``python -m src.run --unrelease --date YYYY-MM-DD``.
-    Reverses a release: deletes canonical files (issue.json FIRST),
-    rebuilds ``data/published_urls.txt`` from the surviving canonical
-    archive. Preserves the issue-number gap (DESIGN.md "Gap recovery").
-
-Round B (DESIGN.md "Archive: staging vs canonical"):
-  * The default run writes ONLY to staging. Cross-time dedup, callbacks,
-    eval, and ``published_urls.txt`` all read canonical-only.
-  * Release is a deliberate, separate command (Arman runs it after
-    reviewing ``docs/preview/<date>.html``).
-  * Unrelease is the documented reversal path.
+Subcommands:
+  aiv run       -- fetch -> cluster -> rank -> summarise -> render (staging)
+  aiv release   -- promote staging draft to canonical
+  aiv unrelease -- reverse a release
+  aiv check     -- pre-flight checks only
 
 Module owners (per docs/internal/TEAM.md): orchestration shell is the Architect's;
 the individual stages are owned by their respective engineers.
@@ -35,7 +16,6 @@ the individual stages are owned by their respective engineers.
 
 from __future__ import annotations
 
-import argparse
 import datetime as _dt
 import logging
 import os
@@ -43,7 +23,11 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Optional
+
+import typer
+
+from src import paths
 
 from src import paths
 
@@ -71,130 +55,8 @@ _LOG = logging.getLogger("ai_vector.run")
 
 
 # ---------------------------------------------------------------------------
-# Argument parsing.
+# Date + stage resolution helpers.
 # ---------------------------------------------------------------------------
-
-def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Build and parse the CLI.
-
-    Top-level modes (mutually exclusive): ``--release``, ``--unrelease``,
-    or default (run the staging pipeline). ``--stage`` and ``--stages`` are
-    valid only in the default mode.
-    """
-    parser = argparse.ArgumentParser(
-        prog="python -m src.run",
-        description=(
-            "AI Vector pipeline orchestrator. Default: run fetch -> cluster -> "
-            "rank -> summarise -> render(preview) for one date, writing to "
-            "data/staging/<date>/. Use --release to promote a staging draft "
-            "to canonical, or --unrelease to reverse a release."
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--date",
-        default=None,
-        metavar="YYYY-MM-DD",
-        help=(
-            "Issue date to process (default: today). For --unrelease, "
-            "--date is REQUIRED (no implicit 'today')."
-        ),
-    )
-
-    mode_group = parser.add_mutually_exclusive_group()
-    mode_group.add_argument(
-        "--release",
-        action="store_true",
-        default=False,
-        help=(
-            "Promote an existing staging draft to canonical. Derives "
-            "issue_number, ships docs/index.html + docs/archive/<date>.html, "
-            "appends URLs to data/published_urls.txt. --date defaults to "
-            "today; pass an earlier date to back-release."
-        ),
-    )
-    mode_group.add_argument(
-        "--unrelease",
-        action="store_true",
-        default=False,
-        help=(
-            "Reverse a release for --date (REQUIRED). Deletes canonical "
-            "files (issue.json first) and rebuilds data/published_urls.txt "
-            "from the surviving canonical archive. The issue-number gap is "
-            "preserved (DESIGN.md 'Gap recovery')."
-        ),
-    )
-
-    # Back-compat alias: --publish maps to --release with a deprecation
-    # warning. Aliased rather than removed so existing notes/aliases don't
-    # break in one go.
-    mode_group.add_argument(
-        "--publish",
-        action="store_true",
-        default=False,
-        help="DEPRECATED alias for --release (will be removed in a future PR).",
-    )
-    mode_group.add_argument(
-        "--check",
-        action="store_true",
-        default=False,
-        help=(
-            "Run pre-flight checks and exit (embedding model + LLM endpoint). "
-            "Auto-runs before the pipeline by default; use this flag to run "
-            "checks standalone."
-        ),
-    )
-
-    parser.add_argument(
-        "--skip-preflight",
-        action="store_true",
-        default=False,
-        help=(
-            "Skip the auto-preflight checks before staging pipeline stages. "
-            "Use when iterating quickly and you know your setup is good "
-            "(or when you want to run --stage fetch despite a broken LLM)."
-        ),
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        default=False,
-        help=(
-            "Print the plan and exit without executing. For --unrelease, "
-            "lists the files that would be deleted."
-        ),
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        default=False,
-        help="Set logging level to DEBUG (default: INFO).",
-    )
-
-    stage_group = parser.add_mutually_exclusive_group()
-    stage_group.add_argument(
-        "--stage",
-        default=None,
-        metavar="STAGE",
-        choices=STAGE_ORDER,
-        help=(
-            "Run only one stage of the staging pipeline. One of: "
-            f"{', '.join(STAGE_ORDER)}. Ignored in --release / --unrelease modes."
-        ),
-    )
-    stage_group.add_argument(
-        "--stages",
-        default=None,
-        metavar="A,B,...",
-        help=(
-            "Comma-separated subset of stages to run, e.g. "
-            "'fetch,cluster'. Executed in pipeline order regardless of the "
-            "order given here. Ignored in --release / --unrelease modes."
-        ),
-    )
-
-    return parser.parse_args(argv)
-
 
 def _resolve_date(arg_value: str | None) -> _dt.date:
     """Parse ``--date`` or default to today (LOCAL time).
@@ -215,7 +77,7 @@ def _resolve_date(arg_value: str | None) -> _dt.date:
         )
 
 
-def _resolve_stages(args: argparse.Namespace) -> list[str]:
+def _resolve_stages(stage: str | None, stages: str | None) -> list[str]:
     """Resolve the requested stage list for the STAGING pipeline mode.
 
     Precedence:
@@ -225,11 +87,11 @@ def _resolve_stages(args: argparse.Namespace) -> list[str]:
 
     Returns the list in pipeline execution order.
     """
-    if args.stage is not None:
-        return [args.stage]
+    if stage is not None:
+        return [stage]
 
-    if args.stages is not None:
-        requested = [s.strip() for s in args.stages.split(",") if s.strip()]
+    if stages is not None:
+        requested = [s.strip() for s in stages.split(",") if s.strip()]
         unknown = [s for s in requested if s not in STAGE_ORDER]
         if unknown:
             raise SystemExit(
@@ -475,7 +337,7 @@ _STAGE_ARTIFACTS: dict[str, str] = {
                   "data/staging/{date}/embeddings/centroids.npz"),
     "rank":      "data/staging/{date}/ranked.jsonl",
     "summarise": "data/staging/{date}/issue.json (issue_number=None)",
-    "render":    "docs/preview/{date}.html",
+    "render":    "docs/staging/{date}.html",
 }
 
 
@@ -777,7 +639,7 @@ def _print_staging_summary(
         if "render" in stages_succeeded:
             _LOG.info(" preview: %s", paths.staging_html_path(run_date))
         _LOG.info(
-            " status: OK -- run 'python -m src.run --release' to ship."
+            " status: OK -- run 'aiv release' to ship."
         )
     else:
         _LOG.info(" pipeline FAILED at stage: %s", failed_stage)
@@ -804,72 +666,86 @@ def _count_published_urls() -> int:
 
 
 # ---------------------------------------------------------------------------
-# Main entry point.
+# CLI (typer). Entry point: `aiv` (pyproject.toml [project.scripts]).
+# `python -m src.run` still works via the __main__ guard below.
 # ---------------------------------------------------------------------------
 
-def main(argv: list[str] | None = None) -> int:
-    """Programmatic entry point.
+app = typer.Typer(
+    name="aiv",
+    help="AI Vector pipeline orchestrator.",
+    no_args_is_help=True,
+)
 
-    Returns
-    -------
-    int
-        ``0`` -- success (or dry-run finished).
-        ``1`` -- a stage failed (staging) or the requested transition could
-                 not be completed (release / unrelease).
-        ``2`` -- argument error (raised by argparse via SystemExit).
-    """
-    args = _parse_args(argv)
-    _setup_logging(args.verbose)
+_DATE_HELP = "Issue date YYYY-MM-DD (default: today)."
+_DRY_HELP  = "Print the plan and exit without writing anything."
+_VERB_HELP = "Set logging level to DEBUG."
+
+
+@app.command()
+def run(
+    date: Optional[str] = typer.Option(None, metavar="YYYY-MM-DD", help=_DATE_HELP),
+    stage: Optional[str] = typer.Option(
+        None, help=f"Run one stage only. One of: {', '.join(STAGE_ORDER)}."
+    ),
+    stages: Optional[str] = typer.Option(
+        None, metavar="A,B,...",
+        help="Comma-separated subset of stages, e.g. 'fetch,cluster'.",
+    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help=_DRY_HELP),
+    skip_preflight: bool = typer.Option(
+        False, "--skip-preflight",
+        help="Skip embedding + LLM pre-flight checks.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Fetch, cluster, rank, summarise and render a staging draft."""
+    _setup_logging(verbose)
     _load_env()
+    run_date = _resolve_date(date)
+    stage_list = _resolve_stages(stage, stages)
+    sys.exit(_run_pipeline(run_date, stage_list, dry_run, skip_preflight=skip_preflight))
 
-    # --- Deprecation alias --------------------------------------------------
-    if args.publish:
-        _LOG.warning(
-            "--publish is DEPRECATED; use --release instead. Mapping to "
-            "--release for this run."
-        )
-        args.release = True
 
-    # --- Mode resolution ---------------------------------------------------
-    if args.check:
-        if args.date or args.stage or args.stages or args.dry_run:
-            _LOG.warning(
-                "--date / --stage / --stages / --dry-run are ignored in --check mode."
-            )
-        return _run_check()
+@app.command()
+def release(
+    date: Optional[str] = typer.Option(None, metavar="YYYY-MM-DD", help=_DATE_HELP),
+    dry_run: bool = typer.Option(False, "--dry-run", help=_DRY_HELP),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Promote a staging draft to released and rebuild the index."""
+    _setup_logging(verbose)
+    _load_env()
+    run_date = _resolve_date(date)
+    back_release = run_date != _dt.date.today()
+    sys.exit(_run_release(run_date, dry_run, back_release))
 
-    if args.unrelease:
-        # --unrelease requires an explicit --date (no implicit 'today').
-        if args.date is None:
-            raise SystemExit(
-                "--unrelease requires an explicit --date YYYY-MM-DD "
-                "(no implicit 'today' to avoid accidental reversals)."
-            )
-        run_date = _resolve_date(args.date)
-        if args.stage or args.stages:
-            _LOG.warning(
-                "--stage / --stages are ignored in --unrelease mode."
-            )
-        return _run_unrelease(run_date, args.dry_run)
 
-    if args.release:
-        run_date = _resolve_date(args.date)
-        back_release = run_date != _dt.date.today()
-        if args.stage or args.stages:
-            _LOG.warning(
-                "--stage / --stages are ignored in --release mode."
-            )
-        return _run_release(run_date, args.dry_run, back_release)
+@app.command()
+def unrelease(
+    date: str = typer.Option(..., metavar="YYYY-MM-DD", help="Date to unrelease (required)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help=_DRY_HELP),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Reverse a release. Rebuilds published_urls.txt; preserves issue-number gap."""
+    _setup_logging(verbose)
+    _load_env()
+    run_date = _resolve_date(date)
+    sys.exit(_run_unrelease(run_date, dry_run))
 
-    # Default: staging pipeline.
-    run_date = _resolve_date(args.date)
-    stages = _resolve_stages(args)
-    return _run_pipeline(run_date, stages, args.dry_run, skip_preflight=args.skip_preflight)
+
+@app.command()
+def check(
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Run pre-flight checks (embedding model + LLM endpoint) and exit."""
+    _setup_logging(verbose)
+    _load_env()
+    sys.exit(_run_check())
 
 
 # ---------------------------------------------------------------------------
-# __main__ guard.
+# __main__ guard — keeps `python -m src.run` working.
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()
