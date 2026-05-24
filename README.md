@@ -2,47 +2,61 @@
 
 *Today's AI, with a heading.*
 
-AI Vector is a daily, agent-assisted AI newsletter for data scientists and
-engineers in financial services (primary) and the senior leaders they
-report to (secondary), with a moderate financial-services lens applied on
-top of broader AI coverage. The publication is heavier on Agentic AI and
-Generative AI — what shifts how readers work today, what to anticipate
-tomorrow, what's practical to use right now. Traditional ML appears only
-when load-bearing. Every issue points: each story carries a direction
-("where this is heading") and, where it earns one, an explicit FS angle.
+AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
 
-**Author:** Arman
+Heavy on Agentic AI and Generative AI — what shifts how readers work today, what to anticipate tomorrow, what's practical to use right now. Traditional ML appears only when load-bearing. Every story points somewhere: each carries a direction note and, where it earns one, an explicit financial-services angle.
 
-**Status:** v0 — first cut
+**Author:** Arman Abrahamyan  
+**Live:** https://armanabrahamyan.github.io/ai-vector-newsletter/
 
-## Links
+---
 
-- [`PLAN.md`](./PLAN.md) — the full build plan and working philosophy
-- [`docs/TEAM.md`](./docs/TEAM.md) — team working agreements, roster, decision rights
-- [`docs/DESIGN.md`](./docs/DESIGN.md) — technical design and data contracts
+## The publication
 
-## Local setup
+Four sections per issue:
 
-```
+| Section | What it is |
+|---|---|
+| **The Pulse** | Story of the day — the one thing that matters |
+| **The Big Picture** | Strategic context for leaders |
+| **Hands-On** | Practitioners — what to build or try |
+| **On the Radar** | Short-form: worth watching, not yet acting on |
+
+Each story carries a **signal pill** and a short editorial intro — both written fresh each day, ratified by Arman before publish.
+
+---
+
+## Setup
+
+```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env       # then fill in LLM_PROVIDER, LLM_ENDPOINT, LLM_API_KEY, LLM_MODEL
-python -m src.run --check  # verify embedding model is cached + LLM endpoint reachable
-python -m src.run          # runs the engine — produces docs/preview/ and data/staging/YYYY-MM-DD/
+cp .env.example .env     # fill in LLM_PROVIDER, LLM_ENDPOINT, LLM_API_KEY, LLM_MODEL
+python -m src.run --check
 ```
 
-The pre-flight checks (embedding-model presence + LLM endpoint reachable)
-also auto-run before every default pipeline invocation. Use `--skip-preflight`
-to bypass when iterating.
+The LLM defaults to `claude-sonnet-4-6` via the Anthropic API. Embeddings run locally (BAAI/bge-base-en-v1.5, cached under `~/.cache/huggingface/`). See `.env.example` for the full config reference.
 
-### Daily flow
+---
 
+## Daily flow
+
+```bash
+python -m src.run                           # fetch → cluster → rank → summarise → render (staging)
+open docs/staging/<date>.html               # review the draft
+python -m src.run --release                 # promote to released, assign issue number, rebuild index
+python -m src.run --unrelease --date <date> # reverse a release if needed
 ```
-python -m src.run                              # produces a staging draft + docs/preview/<date>.html
-open docs/preview/<date>.html                  # review
-python -m src.run --release                    # promote to canonical + ship to docs/index.html
-python -m src.run --unrelease --date <date>    # reverse a release if needed
+
+### Granular stage control
+
+```bash
+python -m src.run --stage fetch             # one stage only
+python -m src.run --stages fetch,cluster    # subset
+python -m src.run --date 2026-05-23         # specific date (default: today)
+python -m src.run --dry-run                 # print what would happen, write nothing
+python -m src.run --skip-preflight          # skip LLM + embedding checks when iterating
+python -m src.run --verbose                 # debug logging
 ```
 
-Run on schedule via local cron (CI/CD comes later).
