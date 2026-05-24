@@ -30,8 +30,6 @@ import typer
 
 from src import paths
 
-from src import paths
-
 # ---------------------------------------------------------------------------
 # Stage registry (staging-pipeline only). Release / unrelease are separate
 # modes, not stages.
