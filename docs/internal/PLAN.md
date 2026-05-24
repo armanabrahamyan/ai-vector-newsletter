@@ -192,6 +192,7 @@ If egress is blocked → fetch may need to run from an approved network.
 - [ ] Archive: flat dated HTML now; index page later?
 - [ ] Distribution beyond Pages later (email digest)? Out of scope for v0.
 - [ ] Finance-AI sources: which specific feeds? (need your input)
+- [ ] Post-Phase A ratification: (a) implement `empty_feed_expected` MissedReason per architect design (needs eval-engineer co-review for `evals/` filter updates; arXiv weekend skipDays currently flagged as `empty_feed`); (b) trial-enable arXiv `cs.LG` with follow-up eval to test the "signal gap" gate from `config/sources.yaml`.
 
 ---
 

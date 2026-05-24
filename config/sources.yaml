@@ -218,6 +218,8 @@ sources:
       relevance of the arXiv feeds. Trust weight 1; heavy filtering required.
       Recommendation: start with cs.CL only; disable cs.AI and cs.LG in month 1 and re-enable
       only if HF Daily Papers misses meaningful signal. See docs/internal/SOURCES_RESEARCH.md §TODO #8.
+      Note: arXiv RSS declares <skipDays>Saturday/Sunday</skipDays> — weekend runs will see
+      items_in=0 with missed_reason=empty_feed. This is correct, not a fetch bug.
 
   - name: arXiv cs.AI
     url: http://export.arxiv.org/rss/cs.AI
@@ -230,6 +232,8 @@ sources:
       Confirmed live 2026-05-23 — valid RSS 2.0. Broad AI firehose. Disabled initially per
       recommendation: start with cs.CL only. Re-enable after Eval baseline shows signal gap
       that cs.CL + HF Daily Papers doesn't cover.
+      Note: arXiv RSS declares <skipDays>Saturday/Sunday</skipDays> — weekend empty feeds
+      are expected when re-enabled.
 
   - name: arXiv cs.LG
     url: http://export.arxiv.org/rss/cs.LG
@@ -242,6 +246,8 @@ sources:
       Confirmed live 2026-05-23 — valid RSS 2.0. ML firehose; broadest of the arXiv feeds.
       Disabled initially per same recommendation as cs.AI. Re-enable only after Eval data
       shows it adds signal not covered by other sources.
+      Note: arXiv RSS declares <skipDays>Saturday/Sunday</skipDays> — weekend empty feeds
+      are expected when re-enabled.
 
   # ---------------------------------------------------------------------------
   # NEWSLETTERS / ANALYSIS
