@@ -413,4 +413,30 @@ damages trust in the curation.
 
 ---
 
+---
+
+## Regression discipline
+
+Every bug that escapes to ratification gets three things added to this repo
+**before** the fix lands. The fix PR shows the eval going red to green.
+
+1. **A fixture case** in `evals/fixtures/<dataset>/` that reproduces the
+   bug's surface — the cluster shape, issue shape, or artifact state that
+   should have failed eval. Name the dataset `YYYY-MM-DD-<slug>` where the
+   date is the ratification date the bug escaped on.
+
+2. **An entry in this file** using the schema above: name, detection signal,
+   last occurrence (the date it escaped), mitigation, severity.
+
+3. **An eval assertion** that would have caught it — either extending an
+   existing check in `evals/run_evals.py` or adding a new one. The assertion
+   must reference the fixture case by name.
+
+This mirrors `tests/CONVENTIONS.md` rule 7 for the eval layer. The rule is
+not advisory. If a bug escapes and no fixture + entry + assertion follows,
+the Eval Engineer flags it in the next behavioural-integrity note.
+
+The point is not the paperwork. The point is that the next instance of the
+same class of failure gets caught before Arman sees it.
+
 *End of seeded failure modes. New entries added here after incidents and weekly reviews.*

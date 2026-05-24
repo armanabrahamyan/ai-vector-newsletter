@@ -15,7 +15,18 @@ __pycache__/
 
 # Eval reports — generated each time `python -m evals.run_evals` runs.
 # The harness + fixtures are tracked; outputs are not.
+# Exception: evals/reports/weekly/ is curated (behavioural-integrity notes) and IS tracked.
 evals/reports/
+!evals/reports/weekly/
+!evals/reports/weekly/*.md
+
+# LLM judge cache — rebuildable from artifacts + prompts; never commit.
+evals/judge/cache/*
+!evals/judge/cache/.gitkeep
+
+# Drift baselines — per-day snapshots rebuilt on each run; never commit.
+evals/drift/baselines/*
+!evals/drift/baselines/.gitkeep
 
 # Staging archive — transient working state for not-yet-released issues.
 # Canonical archives at data/YYYY-MM-DD/ ARE tracked (the record of what shipped).
