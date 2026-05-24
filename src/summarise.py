@@ -585,6 +585,16 @@ def summarise(date: _dt.date | None = None) -> Issue:
             "summarise: every top-N story failed summarisation -- aborting"
         )
 
+    # --- Audience-tag reconciliation (FM-12, regression #75) ------------
+    # The rank LLM sees titles + raw_summary; the per-story summarise LLM
+    # sees the article body. When the body-grounded `signal` says "act"
+    # (the Big Picture pill -- vendor / contract / architecture decision
+    # worth making this quarter), but rank.py undertagged the story as
+    # hands_on-only, trust the body-grounded signal and add big_picture.
+    # Lets workflow / governance / decision-process shifts surface in the
+    # right section even when rank.py missed the senior-leader angle.
+    _reconcile_signal_with_audience_tags(blocks)
+
     # --- Section assembly ------------------------------------------------
     # v0.8: pulse -> big_picture -> hands_on -> on_the_radar.
     # The Big Picture comes first per Arman's reading order.
@@ -1310,6 +1320,46 @@ def _pick_source_urls(items: list[Item], k: int) -> list[str]:
         if len(out) >= k:
             break
     return out
+
+
+# ---------------------------------------------------------------------------
+# Audience-tag reconciliation (FM-12, regression #75).
+# ---------------------------------------------------------------------------
+
+def _reconcile_signal_with_audience_tags(
+    blocks: list[tuple[RankedStory, SummaryBlock]],
+) -> None:
+    """Deterministic cross-check that runs AFTER the per-story summarise
+    LLM and BEFORE section routing.
+
+    Rule: if a story's body-grounded ``signal == "act"`` -- the editorial
+    verdict pill defined as "vendor / contract / architecture decision
+    worth making this quarter, typical for Big Picture stories" -- but
+    rank.py did not tag it ``big_picture``, add the tag.
+
+    Rationale. Two LLM stages can disagree. The rank call sees titles +
+    short raw_summary; the summarise call sees the article body. The
+    body-grounded signal is the more reliable senior-leader-relevance
+    cue. Trusting it here closes the gap where rank.py undertagged
+    workflow/governance/decision-process shifts as ``hands_on`` only.
+
+    Mutates ``story.audience_tags`` in place. Logs every augmentation so
+    operators can spot when the rule fires often (a signal that the rank
+    prompt itself needs another revision).
+    """
+    for story, block in blocks:
+        if block.signal != "act":
+            continue
+        tags = list(story.audience_tags)
+        if "big_picture" in tags:
+            continue
+        tags.append("big_picture")
+        story.audience_tags = tags  # type: ignore[assignment]
+        _LOG.info(
+            "signal=act forced big_picture tag for %s "
+            "(rank-side tags were %s; FM-12 cross-check)",
+            story.cluster_id, list(story.audience_tags),
+        )
 
 
 # ---------------------------------------------------------------------------

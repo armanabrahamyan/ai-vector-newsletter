@@ -413,6 +413,57 @@ damages trust in the curation.
 
 ---
 
+### FM-12: Signal / audience-tag mismatch evicts Big Picture stories
+
+**What it is.** The rank LLM (working from titles + raw_summary) under-
+tags workflow / governance / decision-process shifts as `hands_on` only,
+missing the senior-leader angle. The per-story summarise LLM (working
+from the article body) then assigns `signal: "act"` -- the editorial
+verdict pill explicitly defined as "Big Picture territory". The two
+labels contradict. `_pick_big_picture` in `src/summarise.py` routes
+strictly on `audience_tags`, so the story is evicted to On the Radar
+even though the body-grounded signal said Big Picture.
+
+The smoking gun: `c_78dcc648119217a1` ("Spec-driven development is the
+new way", 2026-05-24). `audience_tags=["hands_on", "general"]`,
+`big_picture_relevance=30` (anchor 25 = "tangential"), `signal="act"`.
+Routed to On the Radar; should have been Big Picture.
+
+**Detection signal.**
+- Any cluster where `signal == "act"` and `big_picture not in
+  audience_tags` in `ranked.jsonl` (rank-side undertag uncorrected).
+- The `signal=act forced big_picture tag for ...` log line firing more
+  than ~once per issue -- means the rank prompt is systematically missing
+  workflow/governance/decision-process stories and Fix 1 needs revision.
+- Tier disagreements in `aiv eval` accumulating on workflow/governance
+  stories (CTO-level architecture decisions placed in On the Radar).
+
+**Eval mechanism.** Regression fixture
+(`evals/fixtures/_regressions/c_78dcc648119217a1_signal_section_mismatch.md`)
+documents the cluster shape. The `_reconcile_signal_with_audience_tags`
+helper in `src/summarise.py` is the deterministic check; its log line
+is the operational detection signal. A future eval extension can assert
+the invariant directly on `issue.json` (no story has `signal=="act"`
+sitting in On the Radar).
+
+**Mitigation.**
+1. Rank prompt sharpened (v0.1 -> v0.2) with concrete `big_picture`
+   examples (architecture decisions, workflow shifts, vendor calls,
+   regulatory moves) so rank.py tags correctly at source.
+2. Cross-check in summarise.py augments `audience_tags` when signal
+   says Big Picture and rank disagrees -- safety net for the residual
+   miscall rate.
+3. If the cross-check log line fires often: revisit the rank prompt
+   examples and bump `RANK_PROMPT_VERSION` again.
+
+**Severity.** Medium -- doesn't crash the issue, but a Big Picture
+story sitting in On the Radar materially degrades the senior-leader
+read of the publication.
+
+**Last occurrence.** 2026-05-24 (regression #75; fix lands same day).
+
+---
+
 ---
 
 ## Regression discipline

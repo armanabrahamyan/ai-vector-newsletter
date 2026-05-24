@@ -70,12 +70,19 @@ from src.models import RUBRIC_WEIGHTS, Cluster, Item, RankedStory
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-RANK_PROMPT_VERSION = "v0.1"
+RANK_PROMPT_VERSION = "v0.2"
 r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``rank-v0.1-2026-05-23``. Bump (e.g. ``v0.2``) when the prompt
+Audit tag: ``rank-v0.2-2026-05-24``. Bump (e.g. ``v0.2``) when the prompt
 content changes -- so the eval harness can correlate score movement against
 prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
+
+v0.2 (2026-05-24, FM-12 / #75): sharpened `big_picture` audience-tag
+definition to cover workflow/governance/decision-process shifts (spec-driven
+coding, eval discipline, AI risk frameworks, vendor calls). Previously the
+implicit definition leaned toward "strategic frameworks for executives" and
+under-tagged stories like the spec-driven-dev cluster (c_78dcc648119217a1,
+2026-05-24) where CTOs and Heads of Engineering DO have to decide.
 """
 
 MAX_ITEMS_IN_CLUSTER_PROMPT = 3
@@ -564,8 +571,37 @@ INSTRUCTIONS
 Score the cluster against the rubric. Apply the EDITORIAL FOCUS pre-filter
 first -- Tier-3 stories MUST score significance <= 25. Audience tags are
 independent of score: pick the subset of {{hands_on, big_picture, finance, general}}
-that this story is actually for (at least one). `hands_on` = practitioner
-(DS / engineer) audience; `big_picture` = senior-leader audience.
+that this story is actually for (at least one).
+
+  - `hands_on` = practitioner (DS / engineer) audience: things to clone,
+    run, benchmark, or wire into a service this week.
+  - `big_picture` = senior-leader audience (Head of AI / CDO / CTO / Head
+    of Engineering / product leader). NOT just "strategic frameworks for
+    executives" -- include the concrete decisions these people OWN:
+      * Architecture decisions a CTO would make THIS QUARTER (spec-driven
+        coding policies, agent harness selection, eval discipline, model-
+        routing strategy, gateway adoption).
+      * Workflow / decision-process shifts that change how teams operate
+        (post-LLM review processes, prompt governance, AI risk frameworks,
+        spec-driven development as a team norm).
+      * Vendor / contract calls (LLM provider selection, gateway adoption,
+        data-residency architecture, build-vs-buy on agent platforms).
+      * Regulatory / governance decisions (compliance framework changes,
+        model-risk board updates, AI governance boards, regional regs).
+    If the story would prompt one of those people to call a meeting,
+    rewrite a policy, or change a vendor relationship, it is `big_picture`
+    -- even if it has no senior-leader framing in the source text. The
+    `big_picture_relevance` score should then sit at >= 60 (anchor 50 =
+    "minor shift"; 25 = "tangential" is too low for workflow/governance
+    shifts that teams actually have to adopt).
+  - `finance` = overlay when the FS lens earns its place (nameable angle,
+    not just "could apply to a bank").
+  - `general` = field-wide, no specific audience slot.
+
+A story can carry multiple tags. Workflow / governance shifts are
+COMMONLY both `hands_on` AND `big_picture` -- the practitioner adopts it,
+the leader decides whether the team adopts it. Don't default to single-
+tagging when both audiences genuinely move.
 
 Return ONLY a single JSON object (no markdown fences, no commentary):
 

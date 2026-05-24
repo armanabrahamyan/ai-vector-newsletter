@@ -18,8 +18,12 @@ import datetime as _dt
 
 import pytest
 
-from src.models import Item
-from src.summarise import _pick_source_urls, _url_dedup_key
+from src.models import Item, RankedStory, SummaryBlock
+from src.summarise import (
+    _pick_source_urls,
+    _reconcile_signal_with_audience_tags,
+    _url_dedup_key,
+)
 from tests.conftest import FIXED_EARLIER, FIXED_NOW
 
 
@@ -137,3 +141,101 @@ class TestPickSourceUrlsRedditDedup:
         ]
         urls = _pick_source_urls(items, k=3)
         assert len(urls) == 3
+
+
+# ===========================================================================
+# _reconcile_signal_with_audience_tags -- FM-12 / regression #75 safety net.
+#
+# When the per-story summarise LLM tags a story signal="act" -- the editorial
+# verdict pill defined as Big Picture territory ("vendor / contract /
+# architecture decision worth making this quarter") -- but the rank LLM
+# (lighter context: titles + raw_summary) missed the senior-leader angle
+# and tagged hands_on-only, the cross-check augments audience_tags so the
+# section router can place the story in Big Picture instead of evicting
+# it to On the Radar. Anchor cluster: c_78dcc648119217a1 (2026-05-24,
+# spec-driven development).
+# ===========================================================================
+
+def _ranked_story(
+    cluster_id: str,
+    audience_tags: list[str],
+) -> RankedStory:
+    # Weights (per config/rubric.yaml v0.2): 30/25/20/15/10.
+    # 60*.3 + 60*.25 + 60*.2 + 25*.15 + 60*.1 = 18+15+12+3.75+6 = 54.75 -> 55.
+    breakdown = {
+        "significance": 60,
+        "hands_on_utility": 60,
+        "big_picture_relevance": 60,
+        "financial_services_impact": 25,
+        "freshness_momentum": 60,
+    }
+    return RankedStory(
+        cluster_id=cluster_id,
+        score=55,
+        breakdown=breakdown,
+        audience_tags=audience_tags,  # type: ignore[arg-type]
+        rationale="test",
+        tier="on_the_radar",
+        prompt_version="v0.2",
+    )
+
+
+def _summary_block(cluster_id: str, signal: str | None) -> SummaryBlock:
+    return SummaryBlock(
+        story_id=cluster_id,
+        headline="A headline that exists",
+        summary="A body that exists for the seam test.",
+        source_urls=["https://example.com/x"],  # type: ignore[list-item]
+        signal=signal,  # type: ignore[arg-type]
+    )
+
+
+class TestReconcileSignalWithAudienceTags:
+    """The body-grounded signal corrects rank's lighter-context undertags."""
+
+    def test_signal_act_adds_big_picture_when_missing(self) -> None:
+        """The smoking gun: hands_on-only rank tags + signal=act => add
+        big_picture. Anchor for c_78dcc648119217a1-class miscalls."""
+        story = _ranked_story("c_aaaaaaaaaaaaaaaa", ["hands_on", "general"])
+        block = _summary_block("c_aaaaaaaaaaaaaaaa", "act")
+        _reconcile_signal_with_audience_tags([(story, block)])
+        assert "big_picture" in story.audience_tags
+        # Original tags preserved -- we ADD, we don't overwrite.
+        assert "hands_on" in story.audience_tags
+        assert "general" in story.audience_tags
+
+    def test_signal_act_is_noop_when_already_tagged_big_picture(self) -> None:
+        """Idempotent: if rank already tagged big_picture, no change."""
+        story = _ranked_story(
+            "c_bbbbbbbbbbbbbbbb", ["hands_on", "big_picture"],
+        )
+        block = _summary_block("c_bbbbbbbbbbbbbbbb", "act")
+        before = list(story.audience_tags)
+        _reconcile_signal_with_audience_tags([(story, block)])
+        assert list(story.audience_tags) == before
+
+    def test_non_act_signals_leave_tags_alone(self) -> None:
+        """Only signal=act fires the rule. try/read/watch/discuss never
+        force big_picture -- those pills don't carry the same editorial
+        weight (per the signal definitions in the summarise prompt)."""
+        for signal in ("try", "read", "watch", "discuss", None):
+            story = _ranked_story(
+                f"c_cccccccccccccc{abs(hash(str(signal))) % 100:02d}",
+                ["hands_on"],
+            )
+            block = _summary_block(story.cluster_id, signal)
+            _reconcile_signal_with_audience_tags([(story, block)])
+            assert "big_picture" not in story.audience_tags, (
+                f"signal={signal!r} should not force big_picture"
+            )
+
+    def test_multiple_blocks_independent(self) -> None:
+        """Each block is reconciled independently; one bad apple doesn't
+        bleed into another."""
+        s1 = _ranked_story("c_dddddddddddddd01", ["hands_on"])
+        s2 = _ranked_story("c_dddddddddddddd02", ["hands_on"])
+        b1 = _summary_block(s1.cluster_id, "act")
+        b2 = _summary_block(s2.cluster_id, "watch")
+        _reconcile_signal_with_audience_tags([(s1, b1), (s2, b2)])
+        assert "big_picture" in s1.audience_tags
+        assert "big_picture" not in s2.audience_tags
