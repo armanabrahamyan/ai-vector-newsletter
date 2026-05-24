@@ -1,0 +1,434 @@
+# evals/voice/rubric.yaml -- AI Vector voice + quality rubric (v0 first cut)
+#
+# Per Phase A of the eval plan (hey-there-is-plan-md-twinkly-reef.md).
+#
+# This rubric is what the LLM-judge prompts will reference in Phase C to
+# score each ratified issue against the publication's own standards. The
+# five issue-level voice dimensions are the heartbeat; the four per-story
+# quality criteria are what the judge applies to every block.
+#
+# Anchors mirror config/rubric.yaml's 0/25/50/75/100 calibration pattern.
+# Exemplars are pulled from the first two ratified issues (2026-05-23,
+# 2026-05-24) so the anchors are grounded in real prose the team produced,
+# not hypothetical text.
+#
+# Decision rights (docs/internal/TEAM.md): Editor drafts; Eval Engineer
+# owns rubric mechanics (weights, judge prompting); Arman ratifies any
+# anchor change that shifts what counts as in-voice.
+#
+# Source of truth for voice itself: src/summarise.py's _VOICE_BLOCK
+# (mirror of docs/EDITORIAL.md, when authored). When that block changes,
+# bump rubric_version and re-anchor the exemplars below from the next
+# ratified issue.
+
+schema_version: 1
+rubric_version: "v0.1-2026-05-24"
+corpus_basis:
+  ratified_issues: ["2026-05-23", "2026-05-24"]
+  caveat: >
+    Bootstrap rubric on a two-issue corpus. Anchors will sharpen as more
+    ratified issues land. Re-anchor at ~5 issues, again at ~14.
+
+# ---------------------------------------------------------------------------
+# Issue-level voice dimensions. Scored per ratified issue, 0-100. These are
+# the dimensions the Editor labels in evals/voice/YYYY-MM-DD.labels.yaml as
+# pass / borderline / fail; the LLM judge mirrors that scoring at scale.
+# ---------------------------------------------------------------------------
+
+voice_dimensions:
+
+  - name: warmth
+    weight: 15
+    description: >
+      Does the issue feel human-edited or aggregator-cold? Warmth is the
+      trust the reader feels when they can hear a person on the other end
+      of the prose. NOT chumminess, NOT performance. The signals: prose
+      that addresses the reader's decision directly ("if you're choosing
+      a document pipeline this week..."); confident hedging on weak
+      sourcing ("treat as directional"); the absence of press-release
+      cadence.
+    anchors:
+      "0": >
+        Aggregator-cold. Reads like a feed dump or model card paste.
+        Headlines are nouns; bodies list specs; no second-person framing
+        anywhere; trust flags absent or boilerplate.
+      "25": >
+        Mostly cold with one or two warmer touches. Trust flags present
+        but mechanical ("vendor-supplied benchmark, take with salt"). No
+        sense that a person chose this story over another.
+      "50": >
+        Mixed. Some stories address a decision; others read like
+        rewritten abstracts. Most trust flags are warranted and specific
+        but a few feel templated.
+      "75": >
+        Warm throughout. Every story names a decision the reader might be
+        making, hedging is specific to the source's actual weakness, and
+        the section intros frame rather than restate.
+        EXEMPLAR (2026-05-23, Hands-On intro): "Verify before you deploy.
+        Today's gains, faster inference, cheaper routing, sharper
+        tool-calling, look compelling on paper. Most rest on single-source
+        benchmarks, so treat them as directions to test, not decisions
+        to make."
+      "100": >
+        Warm without slipping into chummy. Every block trusts the reader
+        as a peer who can take a sharp judgement and act on it. No
+        performance, no winking, no "as we all know."
+
+  - name: signal_density
+    weight: 25
+    description: >
+      Every paragraph earns its line, or is there padding? Signal density
+      is the test that adjectives without consequence, hedge-stacking, and
+      summary scaffolds ("the pitch is", "it's worth noting that") are
+      absent. A body at 32 words can be denser than one at 58.
+    anchors:
+      "0": >
+        Heavy padding. Multiple paragraphs without a concrete number or
+        mechanism. "Major", "significant", "important" doing the work of
+        evidence.
+      "25": >
+        Padding visible in roughly half the stories. Specs stacked
+        without consequence; relevance lines hedged to the point of
+        uselessness.
+      "50": >
+        Mixed. Some bodies land sharp; others stack specs you'd cut on a
+        second read.
+      "75": >
+        Lean throughout. Each body carries its one number or mechanism;
+        adjectives earn their place.
+        EXEMPLAR (2026-05-23, c_04fad2b47962173f body): "One developer
+        wired a routing layer over a self-hosted mixture-of-experts model
+        so 95% of agentic coding steps never touch a premium API. On a
+        400-step Python refactor, that meant $7.60 to the open model and
+        $8 to Claude Opus, totalling $15.60 at 93% success."
+      "100": >
+        Every sentence is load-bearing. Cutting any word damages the
+        meaning. This is the rare standard.
+
+  - name: direction
+    weight: 25
+    description: >
+      Does each story say "where this is heading"? Direction is the
+      closing judgement-tied-to-decision in the body, woven into the
+      prose, never labelled. The reader leaves each story with one clear
+      next move OR one clear forward bet.
+    anchors:
+      "0": >
+        Bodies end on a summary of what shipped, with no judgement.
+        Reader leaves not knowing what to do or what to expect next.
+      "25": >
+        Most stories end on a generic close ("worth keeping an eye on",
+        "interesting for teams working in X"). No specific decision named.
+      "50": >
+        Roughly half the stories close on a specific decision; the rest
+        coast.
+      "75": >
+        Almost every story ends on either a named decision or a forward
+        bet. Closes vary in framing (imperative, conditional, bet) so
+        the issue doesn't drumbeat one template.
+        EXEMPLAR (2026-05-23, c_c997d4c916785564 close): "Thin sourcing
+        (one Reddit thread), but the question is concrete: ask your
+        vendor for a dated retraining schedule before renewing."
+      "100": >
+        Every story closes on direction. Closes are varied (imperative,
+        conditional, bet) and tied to the specific decision the story
+        informs, never a department or group.
+
+  - name: finance_lens_presence
+    weight: 15
+    description: >
+      Does the FS angle appear where it earns one, and stay out otherwise?
+      Per finance-lens skill: SUBJECT filter, not reader pitch. The lens
+      is moderate, not maximum. Most stories will not carry an FS angle.
+      That is correct. This dimension is judged on calibration, not
+      volume: false positives (forced FS framing) hurt as much as false
+      negatives (a story with a real FS angle written as if it had none).
+    anchors:
+      "0": >
+        Forced FS framing on stories with no real angle ("could apply to
+        a bank"), OR a story with a clear FS angle is written as if it
+        had none. Calibration is off in both directions.
+      "25": >
+        One or two false positives or false negatives across the issue.
+      "50": >
+        Mostly calibrated. The lens appears where it earns its place, but
+        framing reads as bolted-on in one place (named department instead
+        of named decision, generic regulatory hand-wave).
+      "75": >
+        Calibrated. FS angle appears with a nameable role, constraint, or
+        regulatory hook where it earns its place; absent elsewhere
+        without explanation needed.
+        EXEMPLAR (2026-05-24, c_ce540f73ee188ea2 body): "The Financial
+        Conduct Authority, Bank of England, and Treasury issued a joint
+        statement saying frontier AI already exceeds what a skilled
+        practitioner can do, faster and cheaper. Regulated firms must
+        act now: map your third-party software supply chain and test
+        your vulnerability-patching speed before your next operational
+        resilience review."
+      "100": >
+        Lens reads as the editor's eye, not a checklist. Where present,
+        names the agency, the constraint, and the decision; where absent,
+        the story is allowed to live in the field at large without
+        apology.
+
+  - name: callback_quality
+    weight: 10
+    description: >
+      When a story continues a chain we covered before, does the prose
+      tie back credibly? When there is no continuation, is the issue
+      free of forced "as we noted last week" tics?
+      NOTE: bootstrap caveat -- with only two issues released, no
+      cross-time chains exist yet. Score N/A on issues without
+      cross_time_ref fields populated.
+    anchors:
+      "0": >
+        Forced callback to a story we didn't actually cover, OR a real
+        continuation written without acknowledgement.
+      "25": >
+        Callback present but mechanical ("we wrote about this before").
+        Doesn't add direction.
+      "50": >
+        Callback ties back accurately but doesn't sharpen the new piece.
+      "75": >
+        Callback names the specific prior framing and shows what
+        changed. Adds direction. (No 2026-05-23/-24 exemplar yet; chain
+        will start at the earliest after issue #3.)
+      "100": >
+        Callback reads as part of an ongoing argument; the chain itself
+        is a feature of the publication, not a parenthetical.
+
+# ---------------------------------------------------------------------------
+# Per-story quality criteria. Scored per SummaryBlock (headline + body +
+# signal). These are the criteria the judge prompt walks story-by-story
+# in Phase C. Each story gets a pass / borderline / fail per criterion
+# and the issue-level score is the mix.
+# ---------------------------------------------------------------------------
+
+per_story_criteria:
+
+  - name: headline_quality
+    description: >
+      The headline test: a non-specialist who skims ONLY headlines knows
+      what happened AND why it matters. Apply three sub-tests, ALL of
+      which must hold for a clean pass.
+    sub_tests:
+      consequence_led:
+        check: >
+          Lead with the consequence or action, not the topic / name /
+          vendor. McKinsey tagline, not press-release header.
+        pass_exemplar: >
+          (2026-05-23) "A weekend routing layer cut a $160 AI coding
+          bill to $16" -- subject + verb + so-what in one clause; numbers
+          carry the news; no jargon.
+        pass_exemplar_2: >
+          (2026-05-24) "UK regulators warn that frontier AI now outpaces
+          skilled human attackers" -- consequence-led, plain English,
+          stakes obvious from the headline alone.
+        fail_exemplar: >
+          (2026-05-23 Pulse, borderline) "A small open model pulls
+          structured data from invoices and forms without sending files
+          to the cloud" -- consequence is there but buried behind a
+          three-clause feature list. A tagline would be: "A small open
+          model reads invoices without sending the files anywhere."
+      length:
+        check: "<= ~90 characters AND <= 12 words ideally"
+        anchor: >
+          Up to 13 words / ~95 chars is borderline; >14 words OR >100
+          chars is fail unless the spec ITSELF is the news.
+      no_forbidden_elements:
+        check: >
+          No version numbers, no acronyms (LM/VLM/MoE/ASR/OCR/RAG/etc.),
+          no em-dashes (-- or --), no model names UNLESS the model name
+          IS the news, no slang verbs ("drops", "ships hot").
+        pass_exemplar: >
+          (2026-05-23) "Every major AI model lab is now building its own
+          agent product" -- no names, no versions, the pattern IS the
+          news. ("Major" is the cuttable adjective; borderline on that
+          alone.)
+        fail_exemplar: >
+          Hypothetical: "NuExtract3: 4B VLM for structured extraction"
+          -- proper noun colon, version number, acronym, spec sheet.
+          The actual 2026-05-23 Pulse headline is a deliberate rewrite
+          AWAY from this pattern.
+
+  - name: summary_quality
+    description: >
+      The body test: shift -> shipped -> judgement-tied-to-decision, in
+      30-60 words HARD, with the three load-bearing elements that must
+      survive every edit.
+    sub_tests:
+      word_count:
+        check: "30-60 words, HARD limit per voice block."
+        anchor: >
+          61-62 is borderline ONLY when the alternative is dropping a
+          trust flag (per collision priority). 63+ is fail. Under 30 is
+          rare but fail (the story isn't earning its place).
+        fail_exemplar: >
+          (2026-05-23 Pulse, ~63 words) "NuExtract3 is a small
+          image-and-text model built for extracting structured information
+          from PDFs, invoices, tables, and screenshots, released under a
+          permissive open licence with weights on Hugging Face.
+          Single-source disclosure: the announcement comes from the
+          vendor themselves on Reddit. If data residency stops you using
+          a closed extraction API, test this against your own document
+          corpus before committing." -- the spec list ("PDFs, invoices,
+          tables, and screenshots") could collapse to "documents" and
+          come in under 60.
+      concrete_specific:
+        check: >
+          ONE concrete number OR mechanism that carries the news. Not
+          decoration; the news itself.
+        pass_exemplar: >
+          (2026-05-23, c_04fad2b47962173f) "$7.60 to the open model and
+          $8 to Claude Opus, totalling $15.60 at 93% success" -- the
+          numbers ARE the news, not decoration.
+        fail_exemplar: >
+          Hypothetical fail: "significantly faster on consumer hardware"
+          -- no number, no mechanism, no news.
+      trust_flag:
+        check: >
+          When the source warrants it (single Reddit post, vendor
+          benchmark, no code published, thin sourcing), the body says
+          so explicitly. NEVER sacrificed under collision priority.
+        pass_exemplar: >
+          (2026-05-23, c_4a9fa5a7bf386dee) "Single-source coverage with
+          no paper link, no code, and no benchmarks published yet" --
+          specific about what's missing, not a generic "take with salt".
+        fail_exemplar: >
+          Hypothetical: a Reddit-sourced benchmark written as fact with
+          no flag at all. (Not observed in 2026-05-23 or 2026-05-24;
+          this is the standard to defend.)
+      decision_tied_close:
+        check: >
+          Closing sentence ties to a SPECIFIC decision a reader might
+          be making, not a department / group / role. Framing varies
+          across the issue (imperative, conditional, forward bet) --
+          repeating one frame across all stories drops to borderline.
+        pass_exemplar: >
+          (2026-05-23, c_c997d4c916785564) "ask your vendor for a dated
+          retraining schedule before renewing" -- specific decision
+          (vendor renewal), specific instrument (dated schedule).
+        fail_exemplar_class: >
+          The "useful for teams managing X" scaffold. Department, not
+          decision. Borderline on a single instance, fail when repeated.
+
+  - name: signal_appropriateness
+    description: >
+      Does the pill (act / try / read / watch / discuss) match what the
+      body actually argues? The pill is the editorial verdict; mismatch
+      is louder than absence.
+    sub_tests:
+      pill_matches_body:
+        check: >
+          - "act": vendor / contract / architecture decision worth making
+            this quarter; the body names that decision.
+          - "try": drop into a sandbox this week; the body points at a
+            repo, technique, or technique you can clone or pip-install.
+          - "read": absorb framing; no clear action yet. Use sparingly.
+          - "watch": too thin / too early to act; default for On the Radar.
+          - "discuss": design concept worth raising at a review, not yet
+            shippable. Right for single-source frameworks without code.
+        pass_exemplar: >
+          (2026-05-23, c_4a9fa5a7bf386dee) Safe Bilevel Delegation tagged
+          "discuss" -- body explicitly says "Treat it as a design concept
+          worth raising in your next agentic architecture review, not
+          something to build on." Pill matches verb.
+        pass_exemplar_2: >
+          (2026-05-24, c_ce540f73ee188ea2) FCA/BoE/Treasury statement
+          tagged "act" -- body names the decision ("map your third-party
+          software supply chain", "test your vulnerability-patching
+          speed") and the deadline ("before your next operational
+          resilience review").
+        borderline_exemplar: >
+          (2026-05-23, c_13639cc37f23d132) "Every major AI model lab is
+          now building its own agent product" tagged "act". Body says
+          "audit the full stack" -- audit IS a hands-on activity, but
+          the closing verb is closer to "discuss at your next vendor
+          review" than "act this quarter". Borderline.
+
+  - name: section_intro_quality
+    description: >
+      Per non-pulse section (big_picture, hands_on, on_the_radar). The
+      Pulse carries no intro by design -- the Pulse IS the framing.
+    sub_tests:
+      lead_phrase:
+        check: >
+          2-5 words, full-stop at end. Posture-setting phrase, not a
+          headline restatement.
+        pass_exemplar: >
+          (2026-05-23, Big Picture) "Trust gaps are widening." -- 4
+          words, posture-setting, names the day's pattern in the bold
+          phrase.
+        pass_exemplar_2: >
+          (2026-05-24, Big Picture) "Regulators set the pace." -- 4
+          words, frames the section without restating the FCA headline.
+        fail_exemplar_class: >
+          "Today's top stories." -- 3 words, but vapid posture. Not
+          observed in current corpus.
+      body_pattern:
+        check: >
+          20-35 words, frames the day's PATTERN across the section's
+          stories without restating any headline verbatim. Names what
+          the editor wants the reader to NOTICE.
+        pass_exemplar: >
+          (2026-05-23, Hands-On) "Today's gains, faster inference,
+          cheaper routing, sharper tool-calling, look compelling on
+          paper. Most rest on single-source benchmarks, so treat them
+          as directions to test, not decisions to make." -- 30 words,
+          reads the pattern (single-source benchmarks), gives posture
+          (test, don't decide).
+        borderline_exemplar: >
+          (2026-05-23, On the Radar) "Both items rest on single Reddit
+          threads with no independent verification. The pattern here is
+          community-driven, practical signal that deserves a watch, not
+          yet a decision." -- 30 words, but "the pattern here is" is a
+          tic; "deserves a watch" lifts language from the section name
+          (on the radar -> watch). Borderline -- could land sharper.
+
+# ---------------------------------------------------------------------------
+# Judge instructions (Phase C reference). The LLM-judge prompt will:
+#   1. Load this rubric.
+#   2. Walk each voice_dimension at the issue level: pass / borderline /
+#      fail with rationale tied to a specific exemplar from the issue.
+#   3. Walk each per_story_criterion for each block: same shape.
+#   4. Emit aggregate scores per dimension (weighted) + per-story scores.
+#   5. NEVER auto-fail; the judge produces a draft for Editor + Arman
+#      review, same as the human labels in evals/voice/*.labels.yaml.
+# ---------------------------------------------------------------------------
+
+judge_instructions:
+  output_shape: >
+    Per issue, the judge returns: {voice_dimensions: {<name>: {label,
+    rationale}}}, {stories: [{story_id, headline_quality, summary_quality,
+    signal_appropriateness}]}, {sections: [{name, intro_quality}]}.
+  borderline_handling: >
+    Borderline is a real verdict, not a synonym for "I'm not sure".
+    Borderline means: meets some sub-tests, fails others; OR meets all
+    sub-tests but at the bottom of pass (e.g. 61 words, single tic
+    repeated). The judge MUST name which sub-test pushed it to
+    borderline.
+  never_auto_fail: >
+    The judge produces drafts. Final pass/fail goes to the Editor and
+    then to Arman. The judge can FLAG; it cannot DECIDE.
+
+# ---------------------------------------------------------------------------
+# Re-anchoring schedule. Voice rubrics drift; this one is bootstrap.
+# ---------------------------------------------------------------------------
+
+reanchoring_schedule:
+  - at_corpus_size: 5
+    action: >
+      Re-pick exemplars from the strongest single issue and the weakest
+      borderline. Replace any anchor whose exemplar no longer reads as
+      representative.
+  - at_corpus_size: 14
+    action: >
+      Full review with Eval Engineer + Arman. Consider adding any
+      dimensions that drift surfaced (e.g. "headline freshness" if the
+      same construction recurs across the corpus).
+  - on_drift_signal:
+    action: >
+      Eval Engineer's drift detection flags a dimension trending down
+      week-over-week -> Editor investigates with specific examples
+      (per editor.md "Drift") and may re-anchor that dimension's
+      exemplars to recalibrate.

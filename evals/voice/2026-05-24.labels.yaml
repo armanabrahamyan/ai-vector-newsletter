@@ -1,0 +1,504 @@
+# evals/voice/2026-05-24.labels.yaml -- Issue #2 voice + quality labels
+#
+# Editor's draft for Arman's ratification (Phase A bootstrap).
+# Pulled from /data/released/2026-05-24/issue.json.
+#
+# Verdict scale: pass | borderline | fail
+# Every borderline / fail carries a one-line rationale tied to a specific
+# headline, body sentence, or pattern in the issue.
+
+schema_version: 1
+date: 2026-05-24
+issue_number: 2
+labelled_by: editor
+labelled_against: "rubric v0.1-2026-05-24"
+
+# ---------------------------------------------------------------------------
+# Issue-level voice dimensions.
+# ---------------------------------------------------------------------------
+
+voice_dimensions:
+
+  warmth:
+    label: pass
+    rationale: >
+      Bodies address reader decisions directly throughout ("If you're
+      choosing a document pipeline architecture this week..."; "If
+      you're prototyping agentic finance workflows..."). Trust flags
+      specific and varied. The FCA/BoE/Treasury body in particular
+      reads as authored, not summarised.
+
+  signal_density:
+    label: pass
+    rationale: >
+      Every body carries its concrete number or mechanism. No "major"
+      / "significant" / "important" doing the work of evidence.
+      Section intros are tight. The c_7eb67898d3d843bd body could
+      shave a clause ("with a pull request open for review" adds
+      little) but the issue overall is lean.
+
+  direction:
+    label: pass
+    rationale: >
+      Every story closes on a specific decision or instrument.
+      Framing varies: imperative ("clone it this week", "mandate a
+      spec phase before generation"), conditional ("if you run
+      llama.cpp on NVIDIA, pull this build..."), forward bet implied
+      in the FCA piece. No single drumbeat across the issue.
+
+  finance_lens_presence:
+    label: pass
+    rationale: >
+      Exemplar calibration today. The FCA/BoE/Treasury Big Picture
+      story is a Tier-1 FS hit named precisely (agency, decision,
+      deadline -- "before your next operational resilience review").
+      The TradingAgents Hands-On piece weaves a soft FS note
+      ("prototyping agentic finance workflows") without forcing.
+      Other stories stay out of the lens, correctly.
+
+  callback_quality:
+    label: not_applicable
+    rationale: >
+      Issue #2. The 14-day lookback would scan back to Issue #1
+      (2026-05-23) for cross-time refs; none of today's clusters
+      carry one. First real callback opportunity is issue #3+.
+
+# ---------------------------------------------------------------------------
+# Per-story quality labels.
+# ---------------------------------------------------------------------------
+
+stories:
+
+  # --- PULSE ----------------------------------------------------------------
+
+  - story_id: c_557d8de6f20e0a3b
+    section: pulse
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        14 words, ~86 chars. Just inside the char cap, over the
+        12-word ideal. "Dedicated text extraction beats letting the
+        model read the page" is the consequence; the construction
+        is strong, just a touch long.
+    summary_quality:
+      word_count: fail
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        ~64 words; four over the 60 hard cap. "Across 30 long,
+        image-heavy documents... 59% vs 52%... fifth of six
+        approaches" is the mechanism and is in-voice. The clause
+        "and cost more per query" could collapse into the prior
+        clause; "this week" in the close adds little. Trims to
+        ~58 cleanly.
+    signal_appropriateness:
+      label: pass
+      rationale: >
+        "act" matches "If you're choosing a document pipeline
+        architecture this week, run your own sample". The decision
+        is named with a deadline.
+    overall: borderline
+    editor_note: >
+      Pulse story is well-chosen -- document-pipeline architecture
+      IS the kind of weekly decision The Pulse exists for. Body is
+      over the hard cap by four words; this is the same pattern as
+      yesterday's Pulse. Worth flagging to LLM Engineer: Pulse
+      bodies are running long. Two issues in two days suggests the
+      prompt is treating the 60-cap as soft.
+
+  # --- BIG PICTURE ----------------------------------------------------------
+
+  - story_id: c_ce540f73ee188ea2
+    section: big_picture
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        11 words, ~71 chars. "UK regulators warn that frontier AI
+        now outpaces skilled human attackers" -- subject, verb,
+        consequence in one clause. The stakes are obvious from the
+        headline alone. Exemplar-grade.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        52 words. Mechanism: the joint statement itself and what
+        it asserts ("frontier AI already exceeds what a skilled
+        practitioner can do, faster and cheaper"). Trust posture
+        is implicit-strong (named agencies). Close ties to two
+        specific decisions ("map your third-party software supply
+        chain and test your vulnerability-patching speed") with a
+        named deadline (operational resilience review). Strong
+        finance-lens calibration -- agency named, decision named,
+        regulatory hook named.
+    signal_appropriateness:
+      label: pass
+      rationale: >
+        "act" is exactly right. The body names decisions with a
+        deadline.
+    overall: pass
+    editor_note: >
+      Strongest story in the issue and the strongest finance-lens
+      hit across both issues so far. Worth holding as a reference
+      example in EDITORIAL.md when that doc lands.
+
+  # --- HANDS-ON -------------------------------------------------------------
+
+  - story_id: c_7eb67898d3d843bd
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        10 words, ~58 chars. "Cohere's largest open model now runs
+        locally on Apple Silicon" -- subject + verb + consequence.
+        Parameter size lives in body, correctly.
+    summary_quality:
+      word_count: borderline
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        50 words. Mechanism specific (218-billion-parameter MoE,
+        MLX framework, Apache 2.0). "With a pull request open for
+        review" adds little; could shave. Trust flag and close
+        both in-voice. Borderline only on the shavable clause.
+    signal_appropriateness:
+      label: pass
+    overall: pass
+
+  - story_id: c_7ec76012cc4eac10
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        14 words, ~80 chars. "Faster and sharper in one update" is
+        two consequences stacked; either lands alone. Could compress
+        to "Local AI inference on NVIDIA hardware just got a speed
+        and accuracy bump" or pick one ("...just got faster in one
+        update").
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        56 words. Two mechanisms named with consequence inline
+        ("NVFP4 quantisation: smaller, faster... multi-token
+        prediction: generating several tokens at once"). Flag
+        specific. Close ties to local-NVIDIA-baseline decision.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+
+  - story_id: c_755e105526b003bd
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        11 words, ~73 chars. "Ollama rebuilds its local inference
+        engine for faster Apple Silicon performance" -- verb-led
+        ("rebuilds"), names the consequence.
+    summary_quality:
+      word_count: borderline
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        47 words. Mechanism: "drops its GGML abstraction layer to
+        talk directly to llama.cpp, and adds Apple Silicon
+        acceleration via MLX". Trust posture: "Still pre-release
+        with known gaps". The close ("test against your current
+        setup before upgrading a production workflow") could be
+        sharper -- runs close to the "before you [decision]"
+        template-tic the voice block warns about. Pass on
+        substance; borderline only on close-framing freshness.
+    signal_appropriateness:
+      label: pass
+    overall: pass
+
+  - story_id: c_cf0b99c06c42a9ba
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        14 words, ~83 chars. "Run a local AI agent without any
+        extra software using a hidden server flag" -- consequence
+        is clear, just over 12 words. Could compress: "Run a local
+        AI agent with no extra software, via a hidden server flag."
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        56 words. Mechanism named ("eight built-in tools: read,
+        write, edit, shell execution, file search..."). Trust flag
+        specific ("Sourced from one Reddit post"). Close ties to
+        sandbox-testing decision.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+
+  - story_id: c_6f9686fc752c4d97
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        11 words, ~73 chars. "Run a dozen-agent stock analysis
+        framework entirely on your own machine" -- verb-led,
+        consequence clear. "Dozen-agent" gives scale without a
+        spec.
+    summary_quality:
+      word_count: borderline
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        49 words. Mechanism named (multi-agent debate, web GUI,
+        Ollama backend). Trust flag specific. Close ties cleanly
+        to finance-prototyping decision with a soft FS lens
+        ("agentic finance workflows without sending data to a
+        cloud provider") -- correctly calibrated, not forced.
+    signal_appropriateness:
+      label: pass
+    overall: pass
+
+  # --- ON THE RADAR --------------------------------------------------------
+
+  - story_id: c_78dcc648119217a1
+    section: on_the_radar
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        14 words, ~90 chars. At the char cap, over the word ideal.
+        "Writing specs before code is now the discipline that
+        keeps AI-generated output from drifting" -- the
+        consequence is clear but the construction is bookish. A
+        tighter version: "Spec-first coding is the discipline that
+        keeps AI output from drifting." Borderline on length only.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        61 words; just over the hard cap by one. Mechanism
+        specific ("10,000 developers... 98% more merged pull
+        requests alongside 9% more bugs"). Trust posture careful
+        ("solid, though it rests on aggregated research, not a
+        single controlled trial"). Close names a quarterly
+        guideline decision. Worth its single-word overrun for
+        the trust framing per collision priority.
+    signal_appropriateness:
+      label: borderline
+      rationale: >
+        Tagged "act". The body close ("mandate a spec phase before
+        generation") is action-grade, but this is in On the Radar
+        where the default pill is "watch". The story arguably
+        belongs in Big Picture given the senior-leader posture of
+        "if you're setting coding-agent guidelines this quarter".
+        Pill matches the body; section placement may not match
+        the pill. Flag for LLM Engineer / ranking.
+    overall: borderline
+    editor_note: >
+      Section-placement question more than a voice question. An
+      "act"-tagged story sitting in On the Radar is a tell that
+      the editorial routing thinks it's thin while the writer
+      thinks it's actionable. Worth a conversation.
+
+  - story_id: c_9eb48e8810c18222
+    section: on_the_radar
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        13 words, ~76 chars. "A Chrome extension runs a small
+        language model locally with no GPU required" -- verb-led,
+        consequence ("no GPU required") clear in headline.
+        Borderline on word count only.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        49 words. Mechanism named ("20 tokens per second on 16GB
+        of RAM"). Flag specific. Close varies the template ("Try
+        it before assuming you need a GPU..." -- a useful frame
+        shift away from the "before you [decision]" tic).
+    signal_appropriateness:
+      label: pass
+    overall: pass
+
+  - story_id: c_ab88a058384becee
+    section: on_the_radar
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        13 words, ~89 chars. At the char cap. "First-person
+        training data beats story-style examples for teaching an
+        AI a character's voice" -- consequence clear ("beats");
+        construction is just long.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        53 words. Mechanism specific ("37% expression rate" is
+        the news number). Trust flag specific. Close ties to
+        fine-tune-pipeline decision.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+
+  - story_id: c_047f4cc68b0d21d3
+    section: on_the_radar
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        12 words, ~78 chars. "A sorting fix makes mixture-of-
+        experts models noticeably faster on Intel hardware" --
+        within both caps; specs replaced with consequence.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        55 words. Mechanism precise ("replaces a quadratic-time
+        data-shuffling step in its Intel GPU path with a linear
+        counting-sort"). Trust posture honest ("No published
+        benchmark yet"). Close ties to Intel-GPU-MoE decision.
+        Solid On the Radar piece.
+    signal_appropriateness:
+      label: pass
+      rationale: >
+        Tagged "try"; the body's close is "Pull the update if you
+        run these models on Intel GPUs" -- direct hands-on
+        instruction. Matches.
+    overall: pass
+
+  - story_id: c_8ccc72ef20ded857
+    section: on_the_radar
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: borderline
+      rationale: >
+        11 words, ~71 chars. "A small llama.cpp update quietly
+        speeds up attention on Qualcomm hardware" -- in-voice.
+        "llama.cpp" in the headline is borderline per the
+        no-model-names rule, but llama.cpp IS the news here (the
+        update is to that runtime specifically); judgement call,
+        leaning pass with a borderline note.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        52 words. Mechanism named ("compiler-level repetition
+        optimisation to the softmax step inside flash attention,
+        specifically for Qualcomm's Hexagon processor"). Trust
+        posture honest. Close ties to Qualcomm-silicon decision.
+    signal_appropriateness:
+      label: pass
+    overall: pass
+
+# ---------------------------------------------------------------------------
+# Section intros.
+# ---------------------------------------------------------------------------
+
+section_intros:
+
+  big_picture:
+    lead_phrase: pass
+    body_pattern: pass
+    rationale: >
+      Lead: "Regulators set the pace." (4 words, posture-setting.)
+      Body: 31 words, frames the pattern ("the compliance clock
+      moves faster than most firms' roadmaps") without restating
+      the FCA headline. Strong. Especially good given the section
+      carries only one story today -- the intro doesn't strain to
+      sound like a synthesis.
+
+  hands_on:
+    lead_phrase: pass
+    body_pattern: pass
+    rationale: >
+      Lead: "Local stack, moving fast." (4 words, names the
+      cluster.) Body: 33 words, reads the day's pattern ("more
+      capability, less infrastructure, on hardware you already
+      own") plus the honest disclaimer ("Most are single-source;
+      the pattern is real, the numbers aren't verified yet").
+      Strong.
+
+  on_the_radar:
+    lead_phrase: pass
+    body_pattern: pass
+    rationale: >
+      Lead: "For awareness only." (3 words, posture-setting --
+      same lead as 2026-05-23, which is borderline drift to watch.
+      One repeat is fine; if it appears again in issue #3 it's
+      becoming a template.) Body: 30 words, names the day's theme
+      ("thin sourcing and unverified benchmarks") and lifts a
+      pattern statement ("small, unglamorous technical choices are
+      quietly shaping how reliably AI systems perform") that adds
+      framing the headlines don't. Strong.
+
+# ---------------------------------------------------------------------------
+# Editor's overall note for Arman.
+# ---------------------------------------------------------------------------
+
+overall_note: |
+  Issue #2 lands stronger than Issue #1 on most axes:
+    - Signal density: pass (was borderline yesterday).
+    - Finance lens: pass with exemplar (the FCA/BoE/Treasury
+      piece is the strongest FS-lens hit across both issues).
+    - Section intros: all three pass cleanly.
+
+  Same systematic concern as yesterday: HEADLINE LENGTH. 7 of 11
+  headlines exceed the 12-word ideal; 2 also exceed the ~90 char
+  cap. Two days in two issues is now a pattern worth surfacing
+  to LLM Engineer for the next summarise prompt pass.
+
+  Same concern on the PULSE BODY: ~64 words today vs ~63
+  yesterday. Both over the 60 hard cap. The prompt may be
+  treating the cap as soft for the Pulse specifically; the cap
+  IS hard. Flag.
+
+  ONE FLAG WORTH ARMAN'S EYE: c_78dcc648119217a1 ("Writing specs
+  before code...") is tagged "act" and sits in On the Radar. An
+  "act"-pill in the awareness-only section is a tell that
+  routing and editorial verdict disagree. The story arguably
+  belongs in Big Picture given the senior-leader posture of the
+  close. Not a voice fail; a section-placement question.
+  Worth raising at the next weekly review with LLM Engineer.
+
+  Nothing in this issue is a cut. The FCA story is the standout.
+  Recommend Arman ratify; pass the headline-length pattern and
+  the section-placement question to LLM Engineer.

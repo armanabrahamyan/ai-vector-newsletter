@@ -583,3 +583,112 @@ cross_time_ref field already captures.
    your decision. That's all I need.
 4. Tell the Eval Engineer (me) when done. I commit the ratified file and
    unblock Phase B.
+
+---
+
+## Voice + Quality (Editor's draft)
+
+**Author:** Editor
+**Date drafted:** 2026-05-24
+**Corpus basis:** Issues #1 (2026-05-23) and #2 (2026-05-24).
+**Files for ratification:**
+- `evals/voice/rubric.yaml` -- voice rubric (NEW). 5 issue-level voice
+  dimensions + 4 per-story quality criteria, anchored 0/25/50/75/100
+  with exemplars drawn from Issues #1-#2.
+- `evals/voice/2026-05-23.labels.yaml` -- Issue #1 labels: every
+  dimension, every story.
+- `evals/voice/2026-05-24.labels.yaml` -- Issue #2 labels: same shape.
+
+### Counts (pass / borderline / fail)
+
+**Issue-level voice dimensions (10 verdicts across 2 issues; callback
+N/A both days, no chain yet):**
+- pass: 6 (warmth x2, signal_density x1, direction x2, finance_lens x1)
+- borderline: 2 (signal_density 2026-05-23, finance_lens 2026-05-23)
+- fail: 0
+- n/a: 2 (callback both issues)
+
+**Per-story verdicts (overall, 21 stories across both issues):**
+- pass: 11
+- borderline: 10
+- fail: 0
+
+**Section intros (6 verdicts across 2 issues):**
+- pass: 5
+- borderline: 1 (on_the_radar body 2026-05-23 -- "the pattern here is"
+  tic + lifts language from section name)
+
+**Per-criterion failures (sub-level):**
+- headline length: 1 fail (2026-05-23 Pulse, 17 words / ~100 chars),
+  plus ~10 borderlines on word-count or char-cap. This is the
+  systematic finding.
+- summary word count: 1 fail (2026-05-24 Pulse, ~64 words vs 60 cap)
+- everything else: borderline or pass.
+
+### 3-5 highest-priority items for Arman's eye first
+
+1. **Pulse bodies running long, two issues in a row.** 2026-05-23
+   Pulse body is ~63 words; 2026-05-24 Pulse body is ~64 words. The
+   60-word cap is HARD per the voice block. Two-in-two suggests the
+   summarise prompt is treating the cap as soft for Pulse specifically.
+   Flag to LLM Engineer.
+
+2. **Headline length is the systematic miss across both issues.** 13 of
+   21 headlines exceed the 12-word ideal or the ~90 char cap (or
+   both). Most are borderline, not fail, but the volume is the story.
+   Worth a targeted prompt nudge on headline compression for the next
+   summarise rev.
+
+3. **The 2026-05-23 Pulse headline is borderline twice over.** 17 words,
+   ~100 chars, three-clause feature list ("PDFs, invoices, tables,
+   screenshots" -> "documents"). The Pulse is the section we watch
+   hardest; this one wants a sharper hand. Proposed tighter tagline
+   in the labels file.
+
+4. **Section-placement question on c_78dcc648119217a1 (Issue #2).**
+   "Writing specs before code..." is tagged "act" but sits in On the
+   Radar. An "act"-pill in the awareness-only section is a tell that
+   editorial routing and editorial verdict disagree. Body has
+   senior-leader posture ("if you're setting coding-agent guidelines
+   this quarter"); arguably belongs in Big Picture. Not a voice fail;
+   a section-placement question for the weekly review.
+
+5. **Finance lens missed an organic angle on 2026-05-23.**
+   c_c997d4c916785564 (deepfake / liveness detection vendor piece)
+   sits directly on KYC and customer-onboarding workflows. Framing
+   stayed generic-vendor. Not a fail (forced FS framing is worse),
+   but a missed sharpening. Worth noting; finance-lens skill exists
+   for exactly this kind of case.
+
+### rubric.yaml structure (for ratification context)
+
+- **schema_version: 1, rubric_version: v0.1-2026-05-24** with explicit
+  bootstrap caveat (2-issue corpus; re-anchor at 5 issues, again
+  at 14).
+- **voice_dimensions:** 5 dimensions, each weighted, each anchored at
+  0/25/50/75/100 with exemplars pulled from Issues #1-#2 prose.
+  Dimensions: warmth (15), signal_density (25), direction (25),
+  finance_lens_presence (15), callback_quality (10).
+- **per_story_criteria:** 4 criteria with sub-tests and pass /
+  borderline / fail exemplars from the corpus. Criteria:
+  headline_quality, summary_quality, signal_appropriateness,
+  section_intro_quality.
+- **judge_instructions:** the contract for the Phase-C LLM-judge
+  prompt -- output shape, borderline handling, never-auto-fail rule.
+- **reanchoring_schedule:** corpus-size milestones (5, 14) plus an
+  on-drift-signal trigger tied to Eval Engineer's detector.
+
+The rubric mirrors `config/rubric.yaml`'s 0/25/50/75/100 anchor
+pattern and decision-rights model. Eval Engineer owns weight tuning
+and judge mechanics; Editor owns anchor prose; Arman ratifies any
+anchor change.
+
+### Posture
+
+Both issues land in-voice on the meaningful axes. Nothing here is a
+cut; everything is a sharpening. Recommend ratify the rubric + both
+label files as the corpus baseline; flag the headline-length and
+Pulse-body patterns to LLM Engineer for the next summarise prompt
+pass.
+
+---

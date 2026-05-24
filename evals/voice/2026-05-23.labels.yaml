@@ -1,0 +1,449 @@
+# evals/voice/2026-05-23.labels.yaml -- Issue #1 voice + quality labels
+#
+# Editor's draft for Arman's ratification (Phase A bootstrap).
+# Pulled from /data/released/2026-05-23/issue.json.
+#
+# Verdict scale: pass | borderline | fail
+# Every borderline / fail carries a one-line rationale tied to a specific
+# headline, body sentence, or pattern in the issue.
+#
+# Editor's posture: this is a draft. Arman ratifies; the labels feed the
+# Eval Engineer's voice harness (per evals/voice/rubric.yaml).
+
+schema_version: 1
+date: 2026-05-23
+issue_number: 1
+labelled_by: editor
+labelled_against: "rubric v0.1-2026-05-24"
+
+# ---------------------------------------------------------------------------
+# Issue-level voice dimensions.
+# ---------------------------------------------------------------------------
+
+voice_dimensions:
+
+  warmth:
+    label: pass
+    rationale: >
+      Most stories address a specific reader decision ("ask your vendor
+      for a dated retraining schedule before renewing", "test a specialist
+      before defaulting to a small generalist"). Trust flags are specific,
+      not boilerplate. The Hands-On intro reads as edited prose, not
+      aggregator copy.
+
+  signal_density:
+    label: borderline
+    rationale: >
+      Strong for most bodies (the $160-to-$16 routing piece is exemplar
+      lean). Drops on the Pulse summary, which stacks a four-item
+      spec list ("PDFs, invoices, tables, and screenshots") that
+      collapses to "documents" without losing news. Big Picture
+      c_13639cc37f23d132 also opens with "The pattern is now undeniable"
+      -- a hedge-padding scaffold that adds nothing.
+
+  direction:
+    label: pass
+    rationale: >
+      Every story closes on a specific decision or instrument. Framing
+      varies: imperative ("ask your vendor..."), conditional ("if data
+      residency stops you..."), instructional ("audit the full stack").
+      No drumbeat single template across the issue.
+
+  finance_lens_presence:
+    label: borderline
+    rationale: >
+      Light-touch and not forced, which is correct calibration. BUT no
+      Tier-1 FS story landed today and the issue does not acknowledge
+      that. The deepfake / identity-verification piece (c_c997d4c916785564)
+      has a natural KYC/onboarding angle that could have been named
+      without forcing it; instead the close is generic-vendor framing.
+
+  callback_quality:
+    label: not_applicable
+    rationale: >
+      Issue #1; no prior issues to chain. Will reassess at issue #3+
+      when cross_time_ref fields start populating.
+
+# ---------------------------------------------------------------------------
+# Per-story quality labels. Each story carries four sub-labels +
+# overall rationale.
+# ---------------------------------------------------------------------------
+
+stories:
+
+  # --- PULSE ----------------------------------------------------------------
+
+  - story_id: c_56849ea45c325178
+    section: pulse
+    headline_quality:
+      consequence_led: borderline
+      length: fail
+      no_forbidden_elements: pass
+      rationale: >
+        Headline is 17 words, ~100 chars: above both the 12-word and
+        ~90-char caps. Consequence is present ("without sending files to
+        the cloud") but buried behind a three-clause feature list. A
+        tighter tagline: "A small open model reads invoices without
+        sending the files anywhere."
+    summary_quality:
+      word_count: borderline
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        ~63 words; over the 60 hard cap by three. Spec list ("PDFs,
+        invoices, tables, and screenshots") is the obvious cut --
+        collapses to "documents" without losing news. Trust flag and
+        decision close both strong.
+    signal_appropriateness:
+      label: pass
+      rationale: >
+        "try" matches the body's "test this against your own document
+        corpus before committing".
+    overall: borderline
+    editor_note: >
+      The Pulse is the section we watch hardest. This one carries the
+      right STORY -- open model for document extraction is a real
+      practitioner decision -- but the headline and body both want a
+      sharper hand. Worth flagging to LLM Engineer for the next prompt
+      pass: Pulse should clear caps cleanly, every time.
+
+  # --- BIG PICTURE ----------------------------------------------------------
+
+  - story_id: c_4a9fa5a7bf386dee
+    section: big_picture
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        12 words, ~68 chars. "Turns AI-to-AI handoffs into a number you
+        can audit" is verb-led, plain English, no jargon. Strong.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        55 words. "Scores each moment an agent passes control... on a
+        zero-to-one scale" carries the mechanism; "no paper link, no
+        code, and no benchmarks published yet" is the specific trust
+        flag; close is "raise in your next agentic architecture
+        review, not something to build on" -- specific decision,
+        specific instrument.
+    signal_appropriateness:
+      label: pass
+      rationale: >
+        "discuss" exactly matches "raise in your next agentic
+        architecture review".
+    overall: pass
+
+  - story_id: c_c997d4c916785564
+    section: big_picture
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        11 words, ~78 chars. The headline IS the news ("can't say how
+        fast they update"); no jargon, no version numbers.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        58 words. "Trained on static images and basic replay attacks"
+        is the concrete mechanism. Trust flag specific ("Thin sourcing,
+        one Reddit thread"). Close ties to vendor-renewal decision.
+    signal_appropriateness:
+      label: pass
+      rationale: >
+        "act" matches the vendor-management decision the body names.
+    overall: pass
+    editor_note: >
+      This is the story where a finance lens could have earned its
+      place (KYC / customer onboarding sit directly on liveness
+      detection). The framing is generic-vendor when a named
+      regulated context was available. Not a fail; a missed sharpening.
+
+  - story_id: c_13639cc37f23d132
+    section: big_picture
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: borderline
+      rationale: >
+        12 words, ~64 chars. "Major" is the cuttable adjective -- voice
+        block names it directly as "almost always cuttable". "Every AI
+        model lab is now building..." lands the same.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        ~57 words. "OpenAI, Anthropic, DeepSeek, AI21" is the
+        concrete mechanism (the pattern of who, not vague "labs").
+        Trust flag named ("Synthesis from Latent Space, no new
+        data"). Close ties to vendor-evaluation decision.
+    signal_appropriateness:
+      label: borderline
+      rationale: >
+        Tagged "act"; body close is "audit the full stack". Audit IS
+        a hands-on activity, but "audit" reads closer to "discuss at
+        your next vendor review" than "act this quarter". The pill
+        could be either; "act" is the louder claim.
+    overall: borderline
+    editor_note: >
+      Body opens with "The pattern is now undeniable" -- a
+      hedge-padding scaffold the voice block flags. Cuts cleanly to
+      "OpenAI, Anthropic, DeepSeek, and AI21 are all moving from
+      selling raw models to shipping full agent products..." Drops
+      to pass on the next prompt rev.
+
+  # --- HANDS-ON -------------------------------------------------------------
+
+  - story_id: c_04fad2b47962173f
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        12 words, ~58 chars. "$160 to $16" carries the news in the
+        headline itself. Exemplar-grade tagline.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        58 words. "$7.60 + $8 = $15.60 at 93% success" is the
+        mechanism; "Single-source Reddit report" is the specific
+        flag; "replicate before trusting the numbers at scale" is
+        the decision-tied close.
+    signal_appropriateness:
+      label: pass
+      rationale: "'try' matches the replicate-before-trusting close."
+    overall: pass
+
+  - story_id: c_66d8cbbdd7440a46
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        15 words, ~78 chars. Over the 12-word ideal. Could compress
+        to "A new trick runs large open models five times faster on a
+        consumer GPU" (14) or further.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        55 words. "Around five times baseline... on a single RTX
+        3090" is the mechanism; "Benchmarks come from a single
+        Reddit post" is the flag.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+    editor_note: >
+      Borderline on headline length only. Body is in-voice. "DFlash"
+      and "Gemma 4 31B / Qwen 3.6 27B" sit in the body per the
+      voice rule (model names in body, not title). Right call.
+
+  - story_id: c_281ac65379335626
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        15 words, ~84 chars. Over 12 words. The construction "generates
+        whole blocks at once and can revise its own output" is two
+        consequences stacked; could pick the sharper one ("NVIDIA's
+        new text model can revise its own output as it writes").
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        58 words. "Generates tokens in parallel blocks and
+        iteratively revises them" is the mechanism; trade-off named
+        ("trade compute for speed at runtime"); vendor-benchmark
+        flag named ("speed benchmarks come from NVIDIA's own
+        report"). Strong.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+    editor_note: >
+      Body uses "NVIDIA's Nemotron-Labs Diffusion" -- model name in
+      body is correct per voice block. Borderline on headline length
+      only; could land sharper at 11-12 words.
+
+  - story_id: c_8750df63d65640fc
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: borderline
+      no_forbidden_elements: pass
+      rationale: >
+        14 words, ~83 chars. Over 12 words. "Tool-calling speed and
+        accuracy" is two attributes stacked; could pick the sharper
+        one ("A tiny specialist model out-calls a 23x larger generalist
+        on a CPU").
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        58 words. "72% vs 56% tool-match accuracy, 4.4x faster on a
+        4-core CPU" is the mechanism. Decision-close tied to
+        sizing-for-edge.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+
+  - story_id: c_20a06e5b2a467c72
+    section: hands_on
+    headline_quality:
+      consequence_led: pass
+      length: fail
+      no_forbidden_elements: pass
+      rationale: >
+        13 words, ~92 chars. Both over (~90 char cap + 12-word
+        ideal). "X, not Y" construction is reached for here; voice
+        block warns "Before using it, TRY A PLAIN VERB-LED claim
+        first". A verb-led version: "A community benchmark tests
+        coding agents on real private codebases."
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        49 words. "65-70 private GitHub repositories built to resist
+        benchmarking tricks" is the mechanism. Flag is specific
+        ("trust score: low"). Close ties to vendor-shortlist
+        decision.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+
+  # --- ON THE RADAR --------------------------------------------------------
+
+  - story_id: c_04609e6134a495f6
+    section: on_the_radar
+    headline_quality:
+      consequence_led: pass
+      length: fail
+      no_forbidden_elements: pass
+      rationale: >
+        15 words, ~117 chars. Substantially over both caps.
+        "Community fine-tune gives the best open speech-to-text
+        model the speaker labels it was missing" is two claims
+        stacked. Pick one: "A community fine-tune adds speaker
+        labels to the best open transcription model."
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        54 words. "Accurate to within a tenth of a second" is the
+        mechanism. Flag specific. Decision close tied to pipeline
+        choice.
+    signal_appropriateness:
+      label: pass
+    overall: borderline
+
+  - story_id: c_68bb73b0d846a762
+    section: on_the_radar
+    headline_quality:
+      consequence_led: pass
+      length: pass
+      no_forbidden_elements: pass
+      rationale: >
+        12 words, ~78 chars. "Practical benchmark repo for running
+        large models on AMD" is verb-anchored and plain.
+    summary_quality:
+      word_count: pass
+      concrete_specific: pass
+      trust_flag: pass
+      decision_tied_close: pass
+      rationale: >
+        54 words. "Exact launch settings, context lengths that
+        actually fit, real throughput" is the mechanism (what
+        synthetic leaderboards skip). Flag specific. Close tied to
+        hardware-evaluation decision.
+    signal_appropriateness:
+      label: pass
+      rationale: >
+        "watch" is the default for On the Radar; matches the early
+        / awareness posture of this piece.
+    overall: pass
+
+# ---------------------------------------------------------------------------
+# Section intros (non-pulse).
+# ---------------------------------------------------------------------------
+
+section_intros:
+
+  big_picture:
+    lead_phrase: pass
+    body_pattern: pass
+    rationale: >
+      Lead: "Trust gaps are widening." (4 words, posture-setting,
+      names the day's pattern.) Body: 28 words, frames the cross-
+      story pattern ("infrastructure moving faster than anyone's
+      ability to verify") without restating any headline. Strong.
+
+  hands_on:
+    lead_phrase: pass
+    body_pattern: pass
+    rationale: >
+      Lead: "Verify before you deploy." (4 words, sharp imperative
+      posture.) Body: 30 words, reads the day's pattern
+      (single-source benchmarks across the section), names the
+      posture (test, don't decide). Exemplar-grade.
+
+  on_the_radar:
+    lead_phrase: pass
+    body_pattern: borderline
+    rationale: >
+      Lead: "For awareness only." (3 words, posture-setting.) Body
+      uses "the pattern here is" -- a tic the voice block flags as
+      cuttable -- and "deserves a watch, not yet a decision" lifts
+      language from the section name. Reads in-voice but could
+      land sharper.
+
+# ---------------------------------------------------------------------------
+# Editor's overall note for Arman.
+# ---------------------------------------------------------------------------
+
+overall_note: |
+  Issue #1 lands in-voice on the meaningful axes -- direction is
+  visible everywhere, trust flags are specific not boilerplate, and
+  section intros frame rather than restate. The systematic finding
+  is HEADLINE LENGTH: 6 of 10 headlines exceed either the ~90 char
+  cap, the 12 word ideal, or both. This is a pattern, not a
+  one-off; worth flagging to LLM Engineer for the next summarise
+  prompt pass.
+
+  Pulse is borderline -- right story, but the headline and body
+  both want a sharper hand (~63 words vs 60 hard cap; 17-word
+  headline). Pulse is the section we watch hardest; it should
+  clear caps cleanly, every time.
+
+  Finance lens: light-touch is correct calibration today. The
+  deepfake / liveness story had a natural KYC angle that could
+  have been named; otherwise the lens stays out, which is right.
+
+  Nothing here is a cut. Everything is a sharpening. Recommend
+  Arman ratify with the headline-length pattern flagged to LLM
+  Engineer.
