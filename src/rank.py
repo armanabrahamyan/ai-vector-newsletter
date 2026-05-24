@@ -10,8 +10,8 @@ Round B (DESIGN.md "Archive: staging vs canonical"):
   * Reads `data/published_urls.txt` (canonical-only) for the post-rank
     URL guard. A URL Arman drafted but never released stays eligible.
 
-Owner: LLM Engineer (per wiki/TEAM.md, .claude/agents/llm-engineer.md).
-Contract: wiki/DESIGN.md "RankedStory" + "ranked.jsonl" + "Cross-issue
+Owner: LLM Engineer (per docs/internal/TEAM.md, .claude/agents/llm-engineer.md).
+Contract: docs/internal/DESIGN.md "RankedStory" + "ranked.jsonl" + "Cross-issue
 article-level dedup" (post-rank guard).
 
 Key responsibilities
@@ -75,7 +75,7 @@ r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
 Audit tag: ``rank-v0.1-2026-05-23``. Bump (e.g. ``v0.2``) when the prompt
 content changes -- so the eval harness can correlate score movement against
-prompt revisions (risk-register item #6 in wiki/TEAM.md).
+prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 """
 
 MAX_ITEMS_IN_CLUSTER_PROMPT = 3

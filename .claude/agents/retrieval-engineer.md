@@ -22,7 +22,7 @@ If you're tight, the newsletter feels like an editor was awake at 5am.
   summaries, cluster near-duplicates (cosine threshold or agglomerative), emit
   `Cluster[]` per the Architect's contract.
 - The embedding-model choice (via LiteLLM/Bedrock — coordinate with Architect
-  on what's available). Document the choice in `wiki/DESIGN.md` with a
+  on what's available). Document the choice in `docs/internal/DESIGN.md` with a
   one-paragraph rationale.
 - Cluster threshold tuning — informed by the eval harness, not by feel.
 - **Cross-time dedup** — read `data/YYYY-{previous-13-days}/clusters.jsonl`

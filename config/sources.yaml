@@ -22,9 +22,9 @@
 #   These are structured XML feeds maintained by community GitHub projects running on hourly
 #   GitHub Actions. They are treated as RSS feeds (not live scraping) by the pipeline.
 #   Dependency risk: if maintainers pause, feeds go stale silently. Monitor monthly.
-#   See wiki/SOURCES_RESEARCH.md for full dependency discussion and Arman's TODO items.
+#   See docs/internal/SOURCES_RESEARCH.md for full dependency discussion and Arman's TODO items.
 #
-# Master source list and research rationale: wiki/SOURCES_RESEARCH.md
+# Master source list and research rationale: docs/internal/SOURCES_RESEARCH.md
 # That document is the single source of truth. Update it first when adding/removing sources.
 
 sources:
@@ -45,7 +45,7 @@ sources:
       return 404, no feed link in page HTML). Using third-party feed from taobojlen/anthropic-rss-feed
       (GitHub Actions hourly scraper). Confirmed live 2026-05-23: 15 items, most recent item
       "Project Glasswing" May 22, 2026. Build date May 23. Dependency risk: if repo pauses,
-      feed goes stale. Re-probe monthly. See wiki/SOURCES_RESEARCH.md §Dead Feeds for details.
+      feed goes stale. Re-probe monthly. See docs/internal/SOURCES_RESEARCH.md §Dead Feeds for details.
       Alternative: Olshansk/rss-feeds feed_anthropic_news.xml also valid (270 items, May 2026).
       TODO (Arman): approve dependency on community feed vs. AI Vector maintaining own scraper.
 
@@ -132,7 +132,7 @@ sources:
       community project (hourly GitHub Actions scraper). Confirmed live 2026-05-23; most recent
       item: "Remote agents in Vibe. Powered by Mistral Medium 3.5" April 29, 2026.
       High-value for open-weight model releases (Mistral 3, Codestral, etc.).
-      Same dependency risk as Anthropic — see wiki/SOURCES_RESEARCH.md.
+      Same dependency risk as Anthropic — see docs/internal/SOURCES_RESEARCH.md.
 
   - name: Cohere Blog
     url: https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_cohere.xml
@@ -188,7 +188,7 @@ sources:
       Primary blog actively publishing (LlamaIndex Newsletter 2026-04-21 confirmed).
       Real gap: no machine-readable feed for current content.
       TODO: request feed in Olshansk/rss-feeds project OR flag to Architect for scraper approval.
-      See wiki/SOURCES_RESEARCH.md for details.
+      See docs/internal/SOURCES_RESEARCH.md for details.
 
   # ---------------------------------------------------------------------------
   # PAPERS (CURATED)
@@ -217,7 +217,7 @@ sources:
       Confirmed live 2026-05-23 — valid RSS 2.0. CL firehose; highest per-paper LLM/language
       relevance of the arXiv feeds. Trust weight 1; heavy filtering required.
       Recommendation: start with cs.CL only; disable cs.AI and cs.LG in month 1 and re-enable
-      only if HF Daily Papers misses meaningful signal. See wiki/SOURCES_RESEARCH.md §TODO #8.
+      only if HF Daily Papers misses meaningful signal. See docs/internal/SOURCES_RESEARCH.md §TODO #8.
 
   - name: arXiv cs.AI
     url: http://export.arxiv.org/rss/cs.AI
@@ -269,7 +269,7 @@ sources:
       No official The Batch RSS feed (confirmed 2026-05-23). Using Olshansk/rss-feeds community
       project (hourly). Confirmed live 2026-05-23; most recent item: May 22, 2026 (weekly issue).
       Andrew Ng's weekly; Tier-1-mixed, practitioner-friendly. Trust weight 3.
-      Same dependency risk as Anthropic/Mistral feeds — see wiki/SOURCES_RESEARCH.md.
+      Same dependency risk as Anthropic/Mistral feeds — see docs/internal/SOURCES_RESEARCH.md.
 
   - name: Ahead of AI (Sebastian Raschka)
     url: https://magazine.sebastianraschka.com/feed

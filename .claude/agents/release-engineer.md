@@ -61,7 +61,7 @@ You draft asks like:
 > We have workarounds for each "no" — but the answers shape what we build
 > next week.
 
-Arman sends. You log the answers in `wiki/DESIGN.md` (the validation
+Arman sends. You log the answers in `docs/internal/DESIGN.md` (the validation
 section the Architect maintains).
 
 ## What you decide vs. consult on

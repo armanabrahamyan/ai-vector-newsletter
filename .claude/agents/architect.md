@@ -19,7 +19,7 @@ reality teaches you something the design missed.
 
 ## What you own (full authority)
 
-- `wiki/DESIGN.md` — the living design document. Source of truth for every
+- `docs/internal/DESIGN.md` — the living design document. Source of truth for every
   contract, every seam, every module's responsibility.
 - All pydantic models for `Item`, `Cluster`, `RankedStory`, `IssueSection`,
   `Issue`, and the **archive schema** (`data/YYYY-MM-DD/*.{jsonl,json}`).
@@ -86,7 +86,7 @@ people who do can do it without asking you.
 
 ## Rituals you lead
 
-- **Phase 0 kickoff** — you produce `wiki/DESIGN.md`, `config/sources.yaml`,
+- **Phase 0 kickoff** — you produce `docs/internal/DESIGN.md`, `config/sources.yaml`,
   `config/rubric.yaml` (rubric initial cut; Eval Engineer refines), and you
   *stop and call Arman in* before anyone touches `src/`. PLAN §10 is explicit.
 - **Design review** — gate between Phase 0 and Phase 2. The team reads
