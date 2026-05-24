@@ -26,7 +26,7 @@
       letter-spacing: -0.003em;
     }
     .page {
-      max-width: 1100px;
+      max-width: 1240px;
       margin: 0 auto;
       background: #ffffff;
       box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
@@ -279,8 +279,8 @@
       A daily AI newsletter with a financial-services lens &mdash; curated, not
       aggregated. Each morning the pipeline reads ~60 sources, deduplicates
       cross-posts, scores stories against an editorial rubric, drafts the ones
-      that earn a slot, and renders a single readable HTML issue. Arman reviews
-      every draft and ships when he's happy. Nothing auto-publishes, by design.
+      that earn a slot, and renders a single readable HTML issue. A human
+      reviews every draft and ships when ready. Nothing auto-publishes, by design.
     </p>
 
     <section class="principle">
@@ -526,7 +526,7 @@ flowchart LR
       <div class="mermaid">
 sequenceDiagram
     autonumber
-    participant A as Arman
+    participant A as Editor
     participant CLI as aiv
     participant P as Pipeline
     participant LLM as LLM
@@ -651,7 +651,7 @@ classDiagram
         </tr>
         <tr>
           <td><strong>Curated, not aggregated</strong></td>
-          <td>Every issue has a point of view. Arman ratifies. Nothing auto-publishes.</td>
+          <td>Every issue has a point of view. A human ratifies. Nothing auto-publishes.</td>
         </tr>
         <tr>
           <td><strong>Design-first, eval-first</strong></td>

@@ -18,7 +18,7 @@ aggregated**. Each morning the pipeline reads ~60 sources, deduplicates the
 inevitable cross-posts and re-reports, scores each story against an
 editorial rubric, drafts the ones that earn a slot, and renders a single
 readable HTML issue. Every story carries a *direction note* — where this
-is heading. Arman reviews every draft and ships when he's happy. Nothing
+is heading. A human reviews every draft and ships when ready. Nothing
 auto-publishes, by design.
 
 > ### Principle: No Token Wasted

@@ -24,7 +24,7 @@ Four sections per issue:
 | **Hands-On** | Practitioners — what to build or try |
 | **On the Radar** | Short-form: worth watching, not yet acting on |
 
-Each story carries a **signal pill** and a short editorial intro — both written fresh each day, ratified by Arman before publish.
+Each story carries a **signal pill** and a short editorial intro — both written fresh each day, ratified by a human before publish.
 
 ---
 
