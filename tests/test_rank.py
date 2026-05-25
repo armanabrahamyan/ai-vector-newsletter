@@ -27,15 +27,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.models import Cluster
+from src.models import Cluster, Item
 from src.rank import (
     _CONTINUATION_SIGNIFICANCE_CAP,
+    _FRESHNESS_INFERRED_CAP,
     _ParsedScore,
     _apply_continuation_penalty,
+    _apply_freshness_inferred_penalty,
     _llm_call_openai_compatible,
     _weighted_score,
 )
-from tests.conftest import FIXED_EARLIER
+from tests.conftest import FIXED_EARLIER, FIXED_NOW
 
 
 def _ok_response(content: str = "ranked output") -> MagicMock:
@@ -379,3 +381,146 @@ class TestContinuationPenalty:
         )
         _apply_continuation_penalty(parsed, cluster)
         assert parsed.breakdown["significance"] == _CONTINUATION_SIGNIFICANCE_CAP
+
+
+# ===========================================================================
+# Freshness-inferred penalty (#86) -- post-LLM deterministic downweighting.
+#
+# When fetch.py (task #71) detects a feed where every item shares
+# `published_at == fetched_at` (the FCA News pattern -- no per-item
+# pubdates), it tags each item with `extras["freshness_inferred"] = "true"`.
+# rank.py's freshness-inferred penalty caps breakdown["freshness_momentum"]
+# at 30 (between rubric anchors 25 = "we don't know" and 50 = "fresh angle")
+# when EVERY resolved item in the cluster carries the flag. Mixed clusters
+# get a pass: at least one trusted pubdate is enough to trust the signal.
+# ===========================================================================
+
+def _parsed_fm(freshness_momentum: int) -> _ParsedScore:
+    """Like ``_parsed`` but parameterised on freshness_momentum -- the
+    dimension this penalty actually targets."""
+    return _ParsedScore(
+        breakdown={
+            "significance": 60,
+            "hands_on_utility": 50,
+            "big_picture_relevance": 40,
+            "financial_services_impact": 30,
+            "freshness_momentum": freshness_momentum,
+        },
+        audience_tags=["hands_on"],
+        rationale="test",
+    )
+
+
+def _fresh_cluster(cluster_id: str, item_ids: list[str]) -> Cluster:
+    return Cluster(
+        cluster_id=cluster_id,
+        item_ids=item_ids,
+        canonical_title="t",
+        sources=["src_a"],
+        earliest_published=FIXED_EARLIER,
+        size=len(item_ids),
+        cross_time_ref=None,
+    )
+
+
+def _item(item_id: str, *, freshness_inferred: bool) -> Item:
+    extras: dict[str, str] = {}
+    if freshness_inferred:
+        extras["freshness_inferred"] = "true"
+    return Item(
+        id=item_id,
+        source="example_blog",
+        source_type="rss",
+        url=f"https://example.com/{item_id}",
+        title="t",
+        published_at=FIXED_EARLIER,
+        raw_summary="raw",
+        fetched_at=FIXED_NOW,
+        extras=extras,
+    )
+
+
+class TestFreshnessInferredPenalty:
+    """The deterministic post-LLM freshness-inferred penalty -- mirrors
+    ``TestContinuationPenalty``. The FCA News feed is the anchor case;
+    Monday onwards the penalty will fire whenever the FCA fetch lands."""
+
+    def test_no_change_when_no_items_flagged(self) -> None:
+        """All items have a real per-item pubdate (extras empty). The rule
+        must not fire -- this is the common path."""
+        parsed = _parsed_fm(freshness_momentum=80)
+        cluster = _fresh_cluster("c_" + "a" * 14, ["i1", "i2", "i3"])
+        items_by_id = {
+            "i1": _item("i1", freshness_inferred=False),
+            "i2": _item("i2", freshness_inferred=False),
+            "i3": _item("i3", freshness_inferred=False),
+        }
+        before = dict(parsed.breakdown)
+        score_before = _weighted_score(parsed.breakdown)
+        _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+        assert parsed.breakdown == before
+        assert _weighted_score(parsed.breakdown) == score_before
+
+    def test_no_change_when_only_some_items_flagged(self) -> None:
+        """Mixed cluster -- 2 of 3 items have the flag, the third has a real
+        pubdate. That one trusted signal is enough; don't penalise."""
+        parsed = _parsed_fm(freshness_momentum=80)
+        cluster = _fresh_cluster("c_" + "b" * 14, ["i1", "i2", "i3"])
+        items_by_id = {
+            "i1": _item("i1", freshness_inferred=True),
+            "i2": _item("i2", freshness_inferred=True),
+            "i3": _item("i3", freshness_inferred=False),
+        }
+        before = dict(parsed.breakdown)
+        _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+        assert parsed.breakdown == before
+
+    def test_caps_when_all_items_flagged(self) -> None:
+        """The smoking-gun case: every resolved item carries the flag and the
+        LLM scored freshness_momentum well above the cap. Drop to 30."""
+        parsed = _parsed_fm(freshness_momentum=80)
+        cluster = _fresh_cluster("c_" + "c" * 14, ["i1", "i2"])
+        items_by_id = {
+            "i1": _item("i1", freshness_inferred=True),
+            "i2": _item("i2", freshness_inferred=True),
+        }
+        _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+        assert parsed.breakdown["freshness_momentum"] == _FRESHNESS_INFERRED_CAP
+        assert _FRESHNESS_INFERRED_CAP == 30
+
+    def test_noop_at_exact_cap(self) -> None:
+        """Boundary: freshness_momentum already at the cap -- no mutation."""
+        parsed = _parsed_fm(freshness_momentum=_FRESHNESS_INFERRED_CAP)
+        cluster = _fresh_cluster("c_" + "d" * 14, ["i1"])
+        items_by_id = {"i1": _item("i1", freshness_inferred=True)}
+        before = dict(parsed.breakdown)
+        _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+        assert parsed.breakdown == before
+
+    def test_noop_below_cap(self) -> None:
+        """The LLM already scored conservatively at 20 -- the rule must not
+        bump it UP to 30. The cap is a ceiling, not a floor."""
+        parsed = _parsed_fm(freshness_momentum=20)
+        cluster = _fresh_cluster("c_" + "e" * 14, ["i1"])
+        items_by_id = {"i1": _item("i1", freshness_inferred=True)}
+        _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+        assert parsed.breakdown["freshness_momentum"] == 20
+
+    def test_score_recomputes_correctly_after_cap(self) -> None:
+        """The pydantic invariant `score == weighted_sum(breakdown)` must
+        still hold after the penalty mutates breakdown. Anchor on the same
+        helper RankedStory uses."""
+        parsed = _parsed_fm(freshness_momentum=80)
+        cluster = _fresh_cluster("c_" + "f" * 14, ["i1"])
+        items_by_id = {"i1": _item("i1", freshness_inferred=True)}
+        # Before: 0.3*60 + 0.25*50 + 0.20*40 + 0.15*30 + 0.10*80
+        #       = 18 + 12.5 + 8 + 4.5 + 8 = 51.0 -> 51
+        score_before = _weighted_score(parsed.breakdown)
+        assert score_before == 51
+
+        _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+        # After cap: ... + 0.10*30 = 18 + 12.5 + 8 + 4.5 + 3 = 46.0 -> 46
+        score_after = _weighted_score(parsed.breakdown)
+        assert score_after == 46
+        # Breakdown sums must match the recomputed score exactly.
+        assert _weighted_score(parsed.breakdown) == score_after

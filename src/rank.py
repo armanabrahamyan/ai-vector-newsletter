@@ -516,6 +516,14 @@ def _rank_one(
     # Logged when fired so operators see the rule's effect.
     _apply_continuation_penalty(parsed, cluster)
 
+    # Task #86: deterministic post-LLM freshness-inferred penalty. If EVERY
+    # item in the cluster carries `extras["freshness_inferred"] == "true"`
+    # (fetch.py couldn't trust the feed's pubdates -- FCA News pattern),
+    # cap `breakdown["freshness_momentum"]` at 30. Composes cleanly with
+    # the continuation penalty above: that one caps significance, this one
+    # caps freshness_momentum, both recompute score via `_weighted_score`.
+    _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+
     # Recompute score from breakdown x weights -- ignore any LLM-returned
     # `score` field. Pydantic enforces the same invariant; recomputing here
     # absorbs LLM arithmetic noise (and the continuation penalty above)
@@ -758,6 +766,14 @@ rubric anchor 50 = "single signal-filter dimension hit". See
 ``_apply_continuation_penalty``."""
 
 
+_FRESHNESS_INFERRED_CAP = 30
+"""Freshness-momentum ceiling for clusters whose every member item carries
+``extras["freshness_inferred"] == "true"`` (set by ``src/fetch.py`` when a
+feed lacks per-item pubdates -- the FCA News pattern). Anchored between
+rubric anchor 25 ("we don't actually know when this dropped") and 50 ("the
+story has a fresh angle"). See ``_apply_freshness_inferred_penalty``."""
+
+
 def _apply_continuation_penalty(parsed: "_ParsedScore", cluster: Cluster) -> None:
     """Task #81: cap ``breakdown["significance"]`` at 50 for any cluster that
     is a CONTINUATION (``cluster.cross_time_ref is not None``).
@@ -793,6 +809,55 @@ def _apply_continuation_penalty(parsed: "_ParsedScore", cluster: Cluster) -> Non
         "score %d->%d (cross_time_ref=%s; #81)",
         cluster.cluster_id, before, _CONTINUATION_SIGNIFICANCE_CAP,
         score_before, score_after, cluster.cross_time_ref,
+    )
+
+
+def _apply_freshness_inferred_penalty(
+    parsed: "_ParsedScore",
+    cluster: Cluster,
+    items_by_id: dict[str, Item],
+) -> None:
+    """Task #86: cap ``breakdown["freshness_momentum"]`` at 30 when EVERY
+    item in the cluster carries ``extras["freshness_inferred"] == "true"``.
+
+    Rationale. Some feeds (anchor case: the FCA News RSS) publish entries
+    without per-item ``pubDate`` elements; ``src/fetch.py`` (task #71)
+    detects the pattern (all items share ``published_at == fetched_at``)
+    and tags each with ``extras["freshness_inferred"] = "true"``. For those
+    items we don't actually know when the story dropped -- it may be hours
+    old, it may be a month old. Allowing the LLM to score them as if they
+    were fresh silently inflates ``freshness_momentum`` and skews ranking.
+    The cap of 30 sits between the rubric anchors at 25 ("we don't know")
+    and 50 ("the story has a fresh angle"): inferred-freshness items
+    shouldn't compete for the freshness-momentum ceiling, but we don't
+    want to floor them either -- a real new FCA enforcement could still
+    matter on its own merits via the other dimensions.
+
+    Mixed-cluster guard. We only fire when EVERY resolved item carries the
+    flag. A cluster with at least one item that has a real per-item pubdate
+    (typically because other sources covered the same story) gives us a
+    trustworthy freshness signal -- leave it untouched.
+
+    Deterministic, NOT a prompt change. Mirrors ``_apply_continuation_penalty``:
+    mutate ``parsed.breakdown`` in place; the caller recomputes ``score``
+    via ``_weighted_score``. Logs when the rule fires.
+    """
+    resolved = [items_by_id[i] for i in cluster.item_ids if i in items_by_id]
+    if not resolved:
+        return
+    if not all(it.extras.get("freshness_inferred") == "true" for it in resolved):
+        return
+    before = parsed.breakdown.get("freshness_momentum", 0)
+    if before <= _FRESHNESS_INFERRED_CAP:
+        return
+    score_before = _weighted_score(parsed.breakdown)
+    parsed.breakdown["freshness_momentum"] = _FRESHNESS_INFERRED_CAP
+    score_after = _weighted_score(parsed.breakdown)
+    _LOG.info(
+        "freshness-inferred penalty applied to %s: freshness_momentum "
+        "%d->%d, score %d->%d (#86)",
+        cluster.cluster_id, before, _FRESHNESS_INFERRED_CAP,
+        score_before, score_after,
     )
 
 
