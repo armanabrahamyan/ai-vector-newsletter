@@ -6,7 +6,7 @@
 
 *Today's AI, with a heading.*
 
-AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human released.
 
 Heavy on Agentic AI and Generative AI — what shifts how readers work today, what to anticipate tomorrow, what's practical to use right now. Traditional ML appears only when load-bearing. Every story points somewhere: each carries a direction note and, where it earns one, an explicit financial-services angle.
 
