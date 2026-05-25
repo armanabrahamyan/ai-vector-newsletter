@@ -132,7 +132,11 @@ def _load_labels() -> dict:
     }
 
 
-def _resolve_dataset_dir(dataset: Optional[str], against: str) -> Optional[Path]:
+def _resolve_dataset_dir(
+    dataset: Optional[str],
+    against: str,
+    staging: bool = False,
+) -> Optional[Path]:
     """
     Resolve the directory for a given dataset name and source ("real" | "fixtures").
     Returns None if the dataset cannot be located.
@@ -140,11 +144,12 @@ def _resolve_dataset_dir(dataset: Optional[str], against: str) -> Optional[Path]
     For ``against="real"`` the archive layout is::
 
         data/released/<YYYY-MM-DD>/   ← primary (published/ratified issues)
-        data/<YYYY-MM-DD>/            ← staging fallback (pre-publication)
+        data/staging/<YYYY-MM-DD>/    ← staging (pre-publication, when staging=True)
 
-    The released subtree is checked first so evals always run against the
-    canonical ratified output. The staging fallback lets the harness work on
-    a day's data before it has been released (useful for pre-release checks).
+    When ``staging=True``, ``data/staging/<YYYY-MM-DD>/`` is used directly;
+    the released subtree is not consulted.  When ``staging=False`` (the
+    default), the released subtree is checked first so evals always run
+    against the canonical ratified output.
     """
     if against == "fixtures":
         if dataset is None:
@@ -153,6 +158,8 @@ def _resolve_dataset_dir(dataset: Optional[str], against: str) -> Optional[Path]
     elif against == "real":
         if dataset is None:
             return None
+        if staging:
+            return DATA_DIR / "staging" / dataset
         # Check released/ first (canonical), then raw staging dir
         released = DATA_DIR / "released" / dataset
         if released.exists():
@@ -1192,71 +1199,102 @@ def eval_voice_adherence(
 #
 # This eval is READY and runs on any archive day or fixture dataset.
 # It does not require labels.
+#
+# The Phase B pipeline-health assertions are extracted into the importable
+# ``check_integrity()`` function so that ``release_promote`` can call them
+# as a publish gate (task #79).
 # ---------------------------------------------------------------------------
 
-def eval_module_integrity(
-    dataset_dir: Optional[Path],
-) -> EvalResult:
+
+def check_integrity(
+    issue_date: date,
+    *,
+    staging: bool,
+) -> tuple[list[str], bool]:
+    """Run integrity assertions against the date's archive (staging or released).
+
+    Importable entry point for use by ``release_promote`` and other callers
+    that need to gate on pipeline health without going through the full eval
+    harness.
+
+    Resolves the dataset directory as:
+      - ``staging=True``  -> ``data/staging/<YYYY-MM-DD>/``
+      - ``staging=False`` -> ``data/released/<YYYY-MM-DD>/`` (canonical)
+
+    Runs ALL Phase B assertions:
+      1. Schema + referential integrity (items, clusters, ranked, issue.json).
+      2. Source fire rate >= 0.80 (from source_health.json).
+      3. pulse.stories | length >= 1.
+      4. sum(hands_on section stories) >= 3.
+      5. No cluster with score >= 35 tiered as "cut" in ranked.jsonl.
+
+    Returns:
+        ``(failures, all_passed)`` where ``failures`` is a list of
+        human-readable assertion-failure strings; empty when
+        ``all_passed=True``.
+
+    Usage::
+
+        from evals.run_evals import check_integrity
+        import datetime
+        failures, ok = check_integrity(datetime.date(2026, 5, 25), staging=True)
     """
-    READY. Schema-validates all artifacts in dataset_dir and cross-checks
-    referential integrity. Fails on any schema violation or broken reference.
-    """
-    if dataset_dir is None or not dataset_dir.exists():
-        return EvalResult(
-            name="module_integrity",
-            passed=True,
-            metric=None,
-            status="skipped",
-            details={"message": f"Dataset directory not found: {dataset_dir}"},
-        )
+    date_str = issue_date.isoformat()
+    if staging:
+        dataset_dir = DATA_DIR / "staging" / date_str
+    else:
+        dataset_dir = DATA_DIR / "released" / date_str
 
     failures: list[str] = []
-    artifact_count = 0
 
-    # --- Try to import pydantic models ---
+    if not dataset_dir.exists():
+        failures.append(
+            f"Dataset directory not found: {dataset_dir}"
+        )
+        return failures, False
+
+    # ------------------------------------------------------------------
+    # (A) JSON parse
+    # ------------------------------------------------------------------
+    raw_items: list[dict] = []
+    raw_clusters: list[dict] = []
+    raw_ranked: list[dict] = []
+    raw_issue: Optional[dict] = None
+
+    items_fp = dataset_dir / "items.jsonl"
+    clusters_fp = dataset_dir / "clusters.jsonl"
+    ranked_fp = dataset_dir / "ranked.jsonl"
+    issue_fp = dataset_dir / "issue.json"
+
+    for path, container, label in [
+        (items_fp, raw_items, "items.jsonl"),
+        (clusters_fp, raw_clusters, "clusters.jsonl"),
+        (ranked_fp, raw_ranked, "ranked.jsonl"),
+    ]:
+        try:
+            container.extend(_load_jsonl(path))
+        except ValueError as exc:
+            failures.append(f"JSON parse error in {label}: {exc}")
+
+    try:
+        raw_issue = _load_json(issue_fp)
+    except json.JSONDecodeError as exc:
+        failures.append(f"JSON parse error in issue.json: {exc}")
+
+    # ------------------------------------------------------------------
+    # (B) Pydantic shape validation
+    # ------------------------------------------------------------------
     try:
         sys.path.insert(0, str(REPO_ROOT))
-        from src.models import Item, Cluster, RankedStory, Issue  # noqa: F401
+        from src.models import Cluster, Issue, Item, RankedStory  # noqa: F401
         models_available = True
     except ImportError:
         models_available = False
-        # Can still check JSON parse + referential integrity without pydantic
         failures.append(
             "WARNING: src/models.py not importable — pydantic shape checks skipped; "
             "running JSON-parse + referential checks only."
         )
 
-    # --- Load artifacts ---
-    raw_items = []
-    raw_clusters = []
-    raw_ranked = []
-    raw_issue = None
-
-    items_path = dataset_dir / "items.jsonl"
-    clusters_path = dataset_dir / "clusters.jsonl"
-    ranked_path = dataset_dir / "ranked.jsonl"
-    issue_path = dataset_dir / "issue.json"
-
-    for path, container, label in [
-        (items_path, raw_items, "items.jsonl"),
-        (clusters_path, raw_clusters, "clusters.jsonl"),
-        (ranked_path, raw_ranked, "ranked.jsonl"),
-    ]:
-        try:
-            data = _load_jsonl(path)
-            container.extend(data)
-            artifact_count += 1 if path.exists() else 0
-        except ValueError as exc:
-            failures.append(f"JSON parse error in {label}: {exc}")
-
-    try:
-        raw_issue = _load_json(issue_path)
-        if raw_issue is not None:
-            artifact_count += 1
-    except json.JSONDecodeError as exc:
-        failures.append(f"JSON parse error in issue.json: {exc}")
-
-    # --- Pydantic shape validation ---
     if models_available:
         from pydantic import ValidationError
 
@@ -1287,12 +1325,13 @@ def eval_module_integrity(
             except (ValidationError, TypeError) as exc:
                 failures.append(f"Issue schema error: {exc}")
 
-    # --- Referential integrity ---
+    # ------------------------------------------------------------------
+    # (C) Referential integrity
+    # ------------------------------------------------------------------
     item_ids = {r.get("id") for r in raw_items if r.get("id")}
     cluster_ids = {r.get("cluster_id") for r in raw_clusters if r.get("cluster_id")}
     ranked_cluster_ids = {r.get("cluster_id") for r in raw_ranked if r.get("cluster_id")}
 
-    # Every item_id in clusters must exist in items
     for record in raw_clusters:
         for iid in record.get("item_ids", []):
             if iid not in item_ids:
@@ -1301,18 +1340,16 @@ def eval_module_integrity(
                     f"references item_id={iid} not in items.jsonl"
                 )
 
-    # Every cluster_id in ranked must exist in clusters
     for missing in ranked_cluster_ids - cluster_ids:
         failures.append(
             f"Referential error: ranked.jsonl references cluster_id={missing} "
             f"not in clusters.jsonl"
         )
 
-    # Every story_id in issue must exist in ranked
     if raw_issue:
         issue_story_ids: set[str] = set()
-        pulse = raw_issue.get("pulse", {})
-        for block in pulse.get("stories", []):
+        pulse_blk = raw_issue.get("pulse", {})
+        for block in (pulse_blk.get("stories", []) if isinstance(pulse_blk, dict) else []):
             issue_story_ids.add(block.get("story_id", ""))
         for section in raw_issue.get("sections", []):
             for block in section.get("stories", []):
@@ -1324,18 +1361,265 @@ def eval_module_integrity(
                     f"Referential error: issue.json story_id={sid} not in ranked.jsonl"
                 )
 
-    # --- Issue number uniqueness (cross-archive, when running against real) ---
-    # Skipped here (single-dataset run). Full cross-archive check is a separate
-    # function run_evals can invoke separately.
+    # ------------------------------------------------------------------
+    # (D) Phase B pipeline-health assertions
+    # ------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------
-    # Phase B pipeline-health assertions (LOUD failures, kept separate so a
-    # health miss doesn't mask a schema or referential error above).
-    # -------------------------------------------------------------------------
-    health_failures: list[str] = []
+    # (D1) Source fire rate: sources_fired / sources_enabled >= 0.8
+    source_health_raw = _load_json(dataset_dir / "source_health.json")
+    if source_health_raw is not None:
+        sources = source_health_raw.get("sources", [])
+        sources_enabled = len(sources)
+        sources_fired = sum(1 for s in sources if s.get("fired") is True)
+        fire_rate = (sources_fired / sources_enabled) if sources_enabled > 0 else 0.0
+        SOURCE_FIRE_THRESHOLD = 0.80
+        if fire_rate < SOURCE_FIRE_THRESHOLD:
+            failures.append(
+                f"PIPELINE HEALTH: source fire rate {fire_rate:.4f} < {SOURCE_FIRE_THRESHOLD} "
+                f"({sources_fired}/{sources_enabled} sources fired)"
+            )
+
+    # (D2) Tier mix in issue.json: >= 1 pulse story, >= 3 hands_on stories
+    if raw_issue is not None:
+        pulse_block = raw_issue.get("pulse", {})
+        pulse_stories = pulse_block.get("stories", []) if isinstance(pulse_block, dict) else []
+        pulse_count = len(pulse_stories)
+
+        hands_on_count = 0
+        for section in raw_issue.get("sections", []):
+            if section.get("name") == "hands_on":
+                hands_on_count = len(section.get("stories", []))
+                break
+
+        if pulse_count < 1:
+            failures.append(
+                "PIPELINE HEALTH: issue.json has 0 pulse stories (minimum 1 required)"
+            )
+        if hands_on_count < 3:
+            failures.append(
+                f"PIPELINE HEALTH: issue.json has {hands_on_count} hands_on "
+                f"{'story' if hands_on_count == 1 else 'stories'} "
+                f"(minimum 3 required)"
+            )
+
+    # (D3) No cluster with score >= 35 tiered 'cut' in ranked.jsonl
+    CUT_SCORE_CEILING = 35
+    high_score_cuts: list[dict] = []
+    for record in raw_ranked:
+        score = record.get("score")
+        tier = record.get("tier")
+        cid = record.get("cluster_id", "<unknown>")
+        if tier == "cut" and score is not None and score >= CUT_SCORE_CEILING:
+            high_score_cuts.append({"cluster_id": cid, "score": score})
+
+    if high_score_cuts:
+        failures.append(
+            f"PIPELINE HEALTH: {len(high_score_cuts)} cluster(s) with score >= "
+            f"{CUT_SCORE_CEILING} were tiered 'cut' — rank.py inconsistency: "
+            + ", ".join(f"{r['cluster_id']}(score={r['score']})" for r in high_score_cuts)
+        )
+
+    # Warnings don't count as hard failures for the pass/fail gate
+    hard_failures = [f for f in failures if not f.startswith("WARNING")]
+    all_passed = len(hard_failures) == 0
+    return failures, all_passed
+
+
+def eval_module_integrity(
+    dataset_dir: Optional[Path],
+) -> EvalResult:
+    """
+    READY. Schema-validates all artifacts in dataset_dir and cross-checks
+    referential integrity. Fails on any schema violation or broken reference.
+
+    This is a thin wrapper around ``check_integrity()`` which holds the
+    actual assertion logic and is directly importable by ``release_promote``
+    (task #79).
+    """
+    if dataset_dir is None or not dataset_dir.exists():
+        return EvalResult(
+            name="module_integrity",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Dataset directory not found: {dataset_dir}"},
+        )
+
+    # Determine date and staging flag from path.  The convention is:
+    #   data/released/<date>/  -> staging=False
+    #   data/staging/<date>/   -> staging=True
+    #   evals/fixtures/...     -> neither; fall back to the date-less path
+    # When called from run_evals() the dataset_dir is already resolved by
+    # _resolve_dataset_dir(); we infer staging from the path components so
+    # eval_module_integrity() doesn't need its own staging param (the
+    # callers pass the pre-resolved Path).
+    path_parts = dataset_dir.parts
+    is_staging_path = "staging" in path_parts
+
+    # Try to derive a date from the directory name; fall back to today.
+    try:
+        import datetime as _dt_mod
+        dir_date = _dt_mod.date.fromisoformat(dataset_dir.name)
+    except ValueError:
+        # Fixture dataset names are not ISO dates; run check_integrity's
+        # logic directly via the legacy inline path below.
+        dir_date = None
+
+    if dir_date is not None:
+        # Fast path: delegate entirely to check_integrity().
+        failures, all_passed = check_integrity(dir_date, staging=is_staging_path)
+
+        # Count artifacts for the metric field (best-effort; no error on
+        # missing files since check_integrity already caught those).
+        artifact_count = sum(
+            1 for name in ("items.jsonl", "clusters.jsonl", "ranked.jsonl", "issue.json")
+            if (dataset_dir / name).exists()
+        )
+
+        # Separate schema/referential from health failures for the details
+        # dict (preserves the existing report shape).
+        health_failures = [f for f in failures if f.startswith("PIPELINE HEALTH")]
+        schema_failures = [f for f in failures if not f.startswith("PIPELINE HEALTH")]
+
+        def _count_jsonl_lines(p: Path) -> int:
+            if not p.exists():
+                return 0
+            with p.open("r", encoding="utf-8") as _fh:
+                return sum(1 for line in _fh if line.strip())
+
+        raw_items_count = _count_jsonl_lines(dataset_dir / "items.jsonl")
+        raw_clusters_count = _count_jsonl_lines(dataset_dir / "clusters.jsonl")
+        raw_ranked_count = _count_jsonl_lines(dataset_dir / "ranked.jsonl")
+
+        return EvalResult(
+            name="module_integrity",
+            passed=all_passed,
+            metric=float(artifact_count),
+            status="pass" if all_passed else "fail",
+            details={
+                "artifact_count": artifact_count,
+                "items_count": raw_items_count,
+                "clusters_count": raw_clusters_count,
+                "ranked_count": raw_ranked_count,
+                "issue_present": (dataset_dir / "issue.json").exists(),
+                "staging": is_staging_path,
+                "failures": schema_failures,
+                "pipeline_health_failures": health_failures,
+                "all_failures": failures,
+            },
+        )
+
+    # Fallback: fixture datasets (non-ISO dir names) — run the legacy
+    # inline logic so fixture tests continue to work without a real date.
+    failures_inline: list[str] = []
+    artifact_count = 0
+
+    try:
+        sys.path.insert(0, str(REPO_ROOT))
+        from src.models import Item, Cluster, RankedStory, Issue  # noqa: F401
+        models_available = True
+    except ImportError:
+        models_available = False
+        failures_inline.append(
+            "WARNING: src/models.py not importable — pydantic shape checks skipped; "
+            "running JSON-parse + referential checks only."
+        )
+
+    raw_items: list[dict] = []
+    raw_clusters: list[dict] = []
+    raw_ranked: list[dict] = []
+    raw_issue: Optional[dict] = None
+
+    items_path = dataset_dir / "items.jsonl"
+    clusters_path = dataset_dir / "clusters.jsonl"
+    ranked_path = dataset_dir / "ranked.jsonl"
+    issue_path = dataset_dir / "issue.json"
+
+    for path, container, label in [
+        (items_path, raw_items, "items.jsonl"),
+        (clusters_path, raw_clusters, "clusters.jsonl"),
+        (ranked_path, raw_ranked, "ranked.jsonl"),
+    ]:
+        try:
+            data = _load_jsonl(path)
+            container.extend(data)
+            artifact_count += 1 if path.exists() else 0
+        except ValueError as exc:
+            failures_inline.append(f"JSON parse error in {label}: {exc}")
+
+    try:
+        raw_issue = _load_json(issue_path)
+        if raw_issue is not None:
+            artifact_count += 1
+    except json.JSONDecodeError as exc:
+        failures_inline.append(f"JSON parse error in issue.json: {exc}")
+
+    if models_available:
+        from pydantic import ValidationError
+
+        for record in raw_items:
+            try:
+                Item(**record)
+            except (ValidationError, TypeError) as exc:
+                item_id = record.get("id", "<unknown>")
+                failures_inline.append(f"Item schema error (id={item_id}): {exc}")
+
+        for record in raw_clusters:
+            try:
+                Cluster(**record)
+            except (ValidationError, TypeError) as exc:
+                cid = record.get("cluster_id", "<unknown>")
+                failures_inline.append(f"Cluster schema error (cluster_id={cid}): {exc}")
+
+        for record in raw_ranked:
+            try:
+                RankedStory(**record)
+            except (ValidationError, TypeError) as exc:
+                cid = record.get("cluster_id", "<unknown>")
+                failures_inline.append(f"RankedStory schema error (cluster_id={cid}): {exc}")
+
+        if raw_issue is not None:
+            try:
+                Issue(**raw_issue)
+            except (ValidationError, TypeError) as exc:
+                failures_inline.append(f"Issue schema error: {exc}")
+
+    item_ids = {r.get("id") for r in raw_items if r.get("id")}
+    cluster_ids = {r.get("cluster_id") for r in raw_clusters if r.get("cluster_id")}
+    ranked_cluster_ids = {r.get("cluster_id") for r in raw_ranked if r.get("cluster_id")}
+
+    for record in raw_clusters:
+        for iid in record.get("item_ids", []):
+            if iid not in item_ids:
+                failures_inline.append(
+                    f"Referential error: cluster {record.get('cluster_id')} "
+                    f"references item_id={iid} not in items.jsonl"
+                )
+
+    for missing in ranked_cluster_ids - cluster_ids:
+        failures_inline.append(
+            f"Referential error: ranked.jsonl references cluster_id={missing} "
+            f"not in clusters.jsonl"
+        )
+
+    if raw_issue:
+        issue_story_ids_inline: set[str] = set()
+        pulse = raw_issue.get("pulse", {})
+        for block in pulse.get("stories", []):
+            issue_story_ids_inline.add(block.get("story_id", ""))
+        for section in raw_issue.get("sections", []):
+            for block in section.get("stories", []):
+                issue_story_ids_inline.add(block.get("story_id", ""))
+        issue_story_ids_inline.discard("")
+        for sid in issue_story_ids_inline:
+            if sid not in ranked_cluster_ids:
+                failures_inline.append(
+                    f"Referential error: issue.json story_id={sid} not in ranked.jsonl"
+                )
+
+    health_failures_inline: list[str] = []
     health_details: dict[str, Any] = {}
 
-    # (1) Source-fire rate: sources_fired / sources_enabled >= 0.8
     source_health_path = dataset_dir / "source_health.json"
     source_health_raw = _load_json(source_health_path)
     if source_health_raw is not None:
@@ -1348,7 +1632,7 @@ def eval_module_integrity(
         health_details["sources_enabled"] = sources_enabled
         health_details["sources_fired"] = sources_fired
         if fire_rate < SOURCE_FIRE_THRESHOLD:
-            health_failures.append(
+            health_failures_inline.append(
                 f"PIPELINE HEALTH: source fire rate {fire_rate:.4f} < {SOURCE_FIRE_THRESHOLD} "
                 f"({sources_fired}/{sources_enabled} sources fired)"
             )
@@ -1359,13 +1643,7 @@ def eval_module_integrity(
             health_details["unfired_sources"] = unfired
     else:
         health_details["source_health_missing"] = True
-        # Missing source_health.json is a health concern but not a hard fail;
-        # it may not exist for fixture datasets.
 
-    # (2) Tier mix in issue.json: >= 1 pulse story, >= 3 hands_on stories.
-    #     This checks issue.json (what shipped), not ranked.jsonl (which has cuts).
-    #     "pulse" is represented as the top-level pulse.stories list; "hands_on"
-    #     is the section named "hands_on".
     if raw_issue is not None:
         pulse_block = raw_issue.get("pulse", {})
         pulse_stories = pulse_block.get("stories", []) if isinstance(pulse_block, dict) else []
@@ -1381,20 +1659,17 @@ def eval_module_integrity(
         health_details["issue_hands_on_count"] = hands_on_count
 
         if pulse_count < 1:
-            health_failures.append(
+            health_failures_inline.append(
                 "PIPELINE HEALTH: issue.json has 0 pulse stories (minimum 1 required)"
             )
         if hands_on_count < 3:
-            health_failures.append(
+            health_failures_inline.append(
                 f"PIPELINE HEALTH: issue.json has {hands_on_count} hands_on stories "
                 f"(minimum 3 required)"
             )
     else:
         health_details["issue_tier_mix_skipped"] = "issue.json not present"
 
-    # (3) No cluster with score >= 35 was tiered 'cut' in ranked.jsonl.
-    #     A cut threshold of < 35 is rank.py's contract; anything >= 35 that
-    #     ends up as cut is a rank.py inconsistency.
     CUT_SCORE_CEILING = 35
     high_score_cuts: list[dict] = []
     for record in raw_ranked:
@@ -1406,20 +1681,15 @@ def eval_module_integrity(
 
     health_details["high_score_cuts"] = high_score_cuts
     if high_score_cuts:
-        health_failures.append(
+        health_failures_inline.append(
             f"PIPELINE HEALTH: {len(high_score_cuts)} cluster(s) with score >= {CUT_SCORE_CEILING} "
             f"were tiered 'cut' — rank.py inconsistency: "
             + ", ".join(f"{r['cluster_id']}(score={r['score']})" for r in high_score_cuts)
         )
 
-    # -------------------------------------------------------------------------
-    # Final pass/fail determination.
-    # Schema/referential errors and pipeline-health failures both block.
-    # Warnings (import failures) do not block.
-    # -------------------------------------------------------------------------
-    hard_failures = [f for f in failures if not f.startswith("WARNING")]
-    all_hard_failures = hard_failures + health_failures
-    passed = len(all_hard_failures) == 0
+    hard_failures_inline = [f for f in failures_inline if not f.startswith("WARNING")]
+    all_hard_failures_inline = hard_failures_inline + health_failures_inline
+    passed = len(all_hard_failures_inline) == 0
 
     return EvalResult(
         name="module_integrity",
@@ -1433,9 +1703,9 @@ def eval_module_integrity(
             "ranked_count": len(raw_ranked),
             "issue_present": raw_issue is not None,
             "models_available": models_available,
-            "failures": failures,
+            "failures": failures_inline,
             "pipeline_health": health_details,
-            "pipeline_health_failures": health_failures,
+            "pipeline_health_failures": health_failures_inline,
         },
     )
 
@@ -1731,6 +2001,7 @@ def run_evals(
     judge_only: bool = False,
     no_judge: bool = False,
     strict: bool = False,
+    staging: bool = False,
 ) -> tuple[dict, int]:
     """Run the eval suite and return ``(report, exit_code)``.
 
@@ -1749,6 +2020,13 @@ def run_evals(
         strict: When True, *warnings* in the report (any non-pass status
             including stubs) bump the exit code to 1 alongside hard fails.
             Defaults to False so a green-stub run still exits 0.
+        staging: When True and ``against="real"``, resolve the dataset
+            directory to ``data/staging/<date>/`` instead of
+            ``data/released/<date>/``.  Dedup precision/recall and Spearman
+            are skipped with a ``"skipped: no labels for unreleased date"``
+            status because ``evals/labels.yaml`` only covers released dates.
+            Integrity and LLM-judge evals run normally.  Drift detection
+            reads the released-only baseline (staging never affects history).
 
     Returns:
         ``(report_dict, exit_code)``. Exit code is 0 on all-pass, 1 on any
@@ -1780,11 +2058,15 @@ def run_evals(
     else:
         active = _JUDGE_EVALS | _REFERENCE_EVALS
 
+    # When running against staging, label-dependent evals are skipped
+    # because labels.yaml only covers released dates.
+    _LABEL_DEPENDENT_EVALS = {"dedup_quality", "ranking_quality"}
+
     labels = _load_labels()
     all_results: list[EvalResult] = []
 
     for dataset_name in datasets:
-        dataset_dir = _resolve_dataset_dir(dataset_name, against)
+        dataset_dir = _resolve_dataset_dir(dataset_name, against, staging=staging)
 
         # Map of name -> thunk. We dispatch only those in ``active`` so the
         # judge / no-judge gates trim cost (and, for judge_only, skip
@@ -1800,6 +2082,23 @@ def run_evals(
         for name, fn in dispatch.items():
             if name not in active:
                 continue
+
+            # Staging mode: skip label-dependent evals with an explicit status.
+            if staging and against == "real" and name in _LABEL_DEPENDENT_EVALS:
+                all_results.append(EvalResult(
+                    name=name,
+                    passed=True,
+                    metric=None,
+                    status="skipped",
+                    details={
+                        "message": (
+                            "skipped: no labels for unreleased date "
+                            f"(staging=True, dataset={dataset_name!r})"
+                        )
+                    },
+                ))
+                continue
+
             try:
                 result = fn()
             except Exception as exc:  # noqa: BLE001

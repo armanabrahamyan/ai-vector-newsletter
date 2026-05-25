@@ -784,6 +784,12 @@ _EVAL_VS_HELP = (
     "Diff today's report against a previous report JSON "
     "(e.g. evals/reports/2026-05-23/091530.json)."
 )
+_EVAL_STAGING_HELP = (
+    "Run integrity and judge evals against the staging archive "
+    "(data/staging/<date>/) instead of the released archive. "
+    "Dedup precision/recall and Spearman are skipped — labels.yaml only "
+    "covers released dates. Mutually exclusive with --fixture."
+)
 
 
 def _run_eval(
@@ -793,6 +799,7 @@ def _run_eval(
     fixture: str | None,
     vs_path: str | None,
     strict: bool,
+    staging: bool = False,
 ) -> int:
     """Drive the eval harness for the typer `aiv eval` command.
 
@@ -808,6 +815,14 @@ def _run_eval(
         )
         return 1
 
+    if staging and fixture is not None:
+        _LOG.error(
+            "--staging and --fixture are mutually exclusive; "
+            "--staging reads data/staging/<date>/, "
+            "--fixture reads evals/fixtures/<name>/."
+        )
+        return 1
+
     # Lazy import so `aiv --help` stays cheap and the eval harness only
     # loads when actually invoked. ``evals/`` is not an installed package
     # (pyproject scopes packages to ``src*``), so we bootstrap the repo
@@ -819,11 +834,8 @@ def _run_eval(
     from evals import run_evals as _eh
 
     # Fixture mode wins when `--fixture` is set; otherwise we run against
-    # released archive data. `--date` selects the day; absent date means
-    # "today" (the plan also mentions trailing 14d but the dispatch reads
-    # the day-scoped artifacts, so today's date is what we pass through
-    # to run_evals -- the trailing window is a Phase D drift concern that
-    # consumes the released archive directly).
+    # real archive data (released by default; staging when --staging is set).
+    # `--date` selects the day; absent date means "today".
     if fixture is not None:
         against = "fixtures"
         dataset: str | None = fixture
@@ -837,11 +849,17 @@ def _run_eval(
         print(f" fixture : {fixture}")
     else:
         print(f" date    : {dataset}")
+        if staging:
+            print(" source  : staging (data/staging/<date>/)")
+        else:
+            print(" source  : released (data/released/<date>/)")
     flag_bits: list[str] = []
     if judge_only:
         flag_bits.append("judge-only")
     if no_judge:
         flag_bits.append("no-judge")
+    if staging:
+        flag_bits.append("staging")
     if strict:
         flag_bits.append("strict")
     if flag_bits:
@@ -856,6 +874,7 @@ def _run_eval(
             judge_only=judge_only,
             no_judge=no_judge,
             strict=strict,
+            staging=staging,
         )
     except ValueError as exc:
         _LOG.error("eval: %s", exc)
@@ -906,6 +925,9 @@ def eval_cmd(
         False, "--strict",
         help="Exit 1 on any warning (stub / skipped), not just hard fails.",
     ),
+    staging: bool = typer.Option(
+        False, "--staging", help=_EVAL_STAGING_HELP,
+    ),
     verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
 ) -> None:
     """Run the eval harness against the released archive or a fixture.
@@ -916,6 +938,8 @@ def eval_cmd(
       aiv eval --judge-only                 # LLM judge only
       aiv eval --no-judge                   # fast + free, skip judge
       aiv eval --fixture _synthetic         # plumbing test
+      aiv eval --staging --no-judge         # integrity check on today's staging
+      aiv eval --date 2026-05-25 --staging --no-judge  # staging gate for specific date
       aiv eval --vs evals/reports/2026-05-23/091530.json
       aiv eval --strict                     # warnings also exit 1
     """
@@ -924,7 +948,7 @@ def eval_cmd(
     # `--date` is optional and only meaningful in real (non-fixture) mode.
     # `_resolve_date` raises on malformed input.
     run_date = _resolve_date(date) if date is not None else None
-    sys.exit(_run_eval(run_date, judge_only, no_judge, fixture, vs, strict))
+    sys.exit(_run_eval(run_date, judge_only, no_judge, fixture, vs, strict, staging=staging))
 
 
 # ---------------------------------------------------------------------------
