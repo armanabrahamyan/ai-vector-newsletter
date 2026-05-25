@@ -318,7 +318,7 @@ class RankedStory(BaseModel):
     Downstream readers preserve that order.
     """
 
-    schema_version: int = 1
+    schema_version: int = 2
     cluster_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """FK to Cluster.cluster_id."""
 
@@ -350,6 +350,23 @@ class RankedStory(BaseModel):
     Version of the rank prompt that produced this row (e.g. "v1.2").
     Mandatory so the eval harness can correlate score movement against
     prompt revisions (risk-register item #6).
+    """
+
+    novelty: Literal["none", "minor", "major"] | None = None
+    """
+    Task #89: LLM-returned novelty assessment when the cluster has prior
+    coverage. ``"none"`` => effective duplicate of a previously-published
+    story; ``"minor"`` => incremental update; ``"major"`` => substantive
+    new info. ``None`` when the cluster is fresh (no ``prior_coverage_ref``)
+    OR when the LLM did not return a usable value -- the deterministic
+    cap in ``rank._apply_prior_coverage_penalty`` defaults to the existing
+    50 cap in that case.
+
+    Schema v2 (2026-05-25): added so the eval harness can see which
+    novelty branch fired per cluster. Backwards-compat: older ranked.jsonl
+    rows (schema_version=1) parse cleanly with ``novelty=None`` via the
+    default. The field is non-mandatory by design -- a missing value is
+    semantically meaningful ("the prompt didn't ask, or the LLM didn't say").
     """
 
     model_config = ConfigDict(extra="forbid")

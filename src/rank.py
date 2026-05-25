@@ -70,10 +70,10 @@ from src.models import RUBRIC_WEIGHTS, Cluster, Item, RankedStory
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-RANK_PROMPT_VERSION = "v0.3"
+RANK_PROMPT_VERSION = "v0.4"
 r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``rank-v0.3-2026-05-25``. Bump (e.g. ``v0.4``) when the prompt
+Audit tag: ``rank-v0.4-2026-05-25``. Bump (e.g. ``v0.4``) when the prompt
 content changes -- so the eval harness can correlate score movement against
 prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 """
@@ -104,6 +104,23 @@ prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 # temporal progression. Bumping the prompt-version string here so the
 # audit trail records the wording change at the rank-output level even
 # though scoring behaviour is byte-identical.
+#
+# v0.4 (2026-05-25, task #89): NOVELTY DETECTION. Prior-coverage clusters
+# previously got a flat significance cap of 50 regardless of whether the
+# recurrence carried new info. Anchor case: c_fe59351a8d336457 (NuExtract3
+# Reddit thread linking to HuggingFace -- pure duplicate of Issue #1
+# Pulse) cleared the bar with sig=50 + hands_on_utility=100, landing at
+# score=55 in Hands-On as an effective duplicate. The fix is in two parts:
+# (a) PROMPT: when a cluster carries prior_coverage_ref, look up the prior
+# headline + summary excerpt from data/released/*/issue.json (last 14 days)
+# and inject a PRIOR COVERAGE block, asking the LLM to set a "novelty"
+# field: "none" / "minor" / "major". Tightly scoped: one new block, no
+# rewrite of existing prompt body (lesson from #75/#77).
+# (b) DETERMINISTIC CAP: novelty="none" caps significance at 25 (cuts the
+# story via _assign_initial_tier's sig<=25 rule), "minor" at 40, "major"
+# keeps the existing 50 cap. Missing/invalid novelty defaults to 50 (don't
+# punish when uncertain). The novelty value is persisted on RankedStory
+# so the eval harness can see which calls fired.
 
 MAX_ITEMS_IN_CLUSTER_PROMPT = 3
 """How many member items to inline in the per-cluster prompt body."""
@@ -243,6 +260,7 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
                 items_by_id=items_by_id,
                 rubric_block=rubric_block,
                 trust_weights=trust_weights,
+                today=run_date,
             )
         except Exception:  # noqa: BLE001 -- never crash the issue
             _LOG.exception(
@@ -343,6 +361,90 @@ def _load_published_urls(path: Path) -> set[str]:
         return set()
     with path.open("r", encoding="utf-8") as fh:
         return {line.strip() for line in fh if line.strip()}
+
+
+_PRIOR_COVERAGE_LOOKBACK_DAYS = 14
+"""How far back to walk the released archive for `_lookup_prior_coverage`.
+Matches the cluster.py prior-coverage chain window so we never look up a
+ref that the cluster stage couldn't have produced."""
+
+_PRIOR_COVERAGE_EXCERPT_CHARS = 200
+"""Length of the prior summary excerpt injected into the rank prompt. The
+LLM needs the gist, not the whole story; 200 chars is roughly the first
+sentence or two -- enough to disambiguate "same product, different thread"
+from "substantive update"."""
+
+
+def _lookup_prior_coverage(
+    prior_cluster_id: str,
+    *,
+    today: _dt.date | None = None,
+) -> tuple[str, str] | None:
+    """Find a previously-released SummaryBlock matching ``prior_cluster_id``.
+
+    Walks ``data/released/*/issue.json`` over the last
+    ``_PRIOR_COVERAGE_LOOKBACK_DAYS`` days (oldest first -- the first match
+    is the chain root, the most useful baseline). For each issue, scans
+    ``pulse.stories`` and ``sections[*].stories`` for a SummaryBlock whose
+    ``story_id`` equals ``prior_cluster_id``.
+
+    Returns ``(headline, summary_excerpt)`` on the first hit, where
+    ``summary_excerpt`` is the first ``_PRIOR_COVERAGE_EXCERPT_CHARS`` of
+    the prior summary (suffixed with ``"..."`` on truncation). Returns
+    ``None`` when no match is found within the window -- the caller then
+    skips the PRIOR COVERAGE prompt injection (the deterministic cap still
+    fires; we just don't ask the LLM for novelty).
+
+    Tolerates missing files, malformed JSON, and unexpected shapes -- this
+    is a best-effort enrichment, not a contract. A bad release should not
+    crash ranking.
+
+    Task #89.
+    """
+    today = today or _dt.date.today()
+    cutoff = today - _dt.timedelta(days=_PRIOR_COVERAGE_LOOKBACK_DAYS)
+    released = [d for d in paths.all_released_dates() if d >= cutoff]
+    # Oldest-first so the chain root wins when the same story_id appears
+    # on multiple released days (it shouldn't, by design, but be defensive).
+    for d in sorted(released):
+        path = paths.issue_path(d, canonical=True)
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        for story in _iter_issue_stories(payload):
+            if story.get("story_id") != prior_cluster_id:
+                continue
+            headline = story.get("headline")
+            summary = story.get("summary")
+            if not isinstance(headline, str) or not isinstance(summary, str):
+                continue
+            excerpt = summary.strip()
+            if len(excerpt) > _PRIOR_COVERAGE_EXCERPT_CHARS:
+                excerpt = excerpt[:_PRIOR_COVERAGE_EXCERPT_CHARS].rstrip() + "..."
+            return headline.strip(), excerpt
+    return None
+
+
+def _iter_issue_stories(payload: dict[str, Any]) -> Iterable[dict[str, Any]]:
+    """Yield every SummaryBlock dict in an issue.json payload, across the
+    pulse section and the remaining sections. Defensive against missing /
+    malformed keys -- skips anything that isn't a dict."""
+    pulse = payload.get("pulse")
+    if isinstance(pulse, dict):
+        for s in pulse.get("stories") or []:
+            if isinstance(s, dict):
+                yield s
+    sections = payload.get("sections") or []
+    if isinstance(sections, list):
+        for section in sections:
+            if not isinstance(section, dict):
+                continue
+            for s in section.get("stories") or []:
+                if isinstance(s, dict):
+                    yield s
 
 
 def _load_trust_weights(sources_yaml: Path) -> dict[str, int]:
@@ -495,6 +597,12 @@ class _ParsedScore:
     breakdown: dict[str, int]
     audience_tags: list[str]
     rationale: str
+    novelty: str | None = None
+    """Task #89: LLM-returned novelty assessment relative to prior coverage.
+    One of {"none", "minor", "major"} when the cluster carries
+    ``prior_coverage_ref`` and the LLM produced a valid value; ``None``
+    when the cluster is fresh OR when the LLM omitted / returned an
+    invalid value. Drives ``_apply_prior_coverage_penalty``'s cap selection."""
 
 
 def _rank_one(
@@ -502,11 +610,15 @@ def _rank_one(
     items_by_id: dict[str, Item],
     rubric_block: str,
     trust_weights: dict[str, int],
+    *,
+    today: _dt.date | None = None,
 ) -> RankedStory | None:
     """Score one cluster with the LLM. Returns ``None`` on parse/validation
     failure after retries -- the caller logs and skips. Never raises on
     LLM/parse errors so a single bad cluster doesn't poison the issue."""
-    prompt = _build_rank_prompt(cluster, items_by_id, rubric_block, trust_weights)
+    prompt = _build_rank_prompt(
+        cluster, items_by_id, rubric_block, trust_weights, today=today,
+    )
     temperature = float(os.getenv("LLM_TEMPERATURE_RANK", "0.2"))
 
     parsed = _call_and_parse_rank(prompt, temperature, cluster.cluster_id)
@@ -555,6 +667,7 @@ def _rank_one(
             rationale=parsed.rationale,
             tier=tier,
             prompt_version=RANK_PROMPT_VERSION,
+            novelty=parsed.novelty,  # type: ignore[arg-type]
         )
     except Exception:  # noqa: BLE001
         _LOG.exception(
@@ -566,14 +679,62 @@ def _rank_one(
     return story
 
 
+def _build_prior_coverage_block(
+    cluster: Cluster, *, today: _dt.date | None = None
+) -> str:
+    """Render the PRIOR COVERAGE prompt block for a cluster, or empty string.
+
+    Returns ``""`` when:
+      * the cluster has no ``prior_coverage_ref`` (fresh story), OR
+      * the lookup found no matching released SummaryBlock within the
+        14-day window (released archive doesn't have what we need to ground
+        the LLM's novelty judgment -- skip the injection and rely on the
+        deterministic cap alone).
+
+    Task #89. The block is surgical: one new section, no rewrite of the
+    existing prompt body. Lesson from #75/#77 -- keep prompt changes
+    additive and the LLM-facing wording explicit ("MUST include a `novelty`
+    field"). The schema fragment is added at the call site so the prompt
+    JSON shape mirrors what we inject here.
+    """
+    if cluster.prior_coverage_ref is None:
+        return ""
+    found = _lookup_prior_coverage(cluster.prior_coverage_ref, today=today)
+    if found is None:
+        return ""
+    prior_headline, prior_excerpt = found
+    return f"""
+PRIOR COVERAGE -- this cluster topically matches a previously-published story:
+
+  Headline: {prior_headline}
+  Summary excerpt: {prior_excerpt}
+
+Given this prior coverage, your JSON response MUST include a "novelty" field:
+  - "none"  = no material new information vs the prior coverage (same product,
+              different Reddit thread, same paper announcement)
+  - "minor" = small updates only (v2 patch release, performance number, minor
+              correction)
+  - "major" = substantive new information (new findings, fundamental update,
+              change in conclusions)
+"""
+
+
 def _build_rank_prompt(
     cluster: Cluster,
     items_by_id: dict[str, Item],
     rubric_block: str,
     trust_weights: dict[str, int],
+    *,
+    today: _dt.date | None = None,
 ) -> str:
     """Assemble the per-cluster ranking prompt. Editorial-focus + rubric
-    are inlined (the prompt is self-contained for offline audit)."""
+    are inlined (the prompt is self-contained for offline audit).
+
+    When ``cluster.prior_coverage_ref`` is set, attempts to inject a PRIOR
+    COVERAGE block (task #89) with the prior story's headline + summary
+    excerpt so the LLM can return a ``novelty`` field discriminating true
+    continuation from effective duplicate.
+    """
     items = _select_items_for_prompt(cluster, items_by_id, trust_weights)
     items_block_lines: list[str] = []
     for it in items:
@@ -587,6 +748,17 @@ def _build_rank_prompt(
             f"- [{it.source}, trust={it.trust_weight}] {title}\n  {summary}"
         )
     items_block = "\n".join(items_block_lines) or "  (no item summaries available)"
+
+    prior_coverage_block = _build_prior_coverage_block(cluster, today=today)
+    # When we injected a PRIOR COVERAGE block, ask for the novelty field in
+    # the JSON schema; otherwise leave the schema unchanged so fresh stories
+    # don't get an extra knob to tweak. The schema fragment is appended after
+    # `rationale`, separated by the necessary comma.
+    novelty_schema_hint = (
+        ',\n  "novelty": "<one of: \\"none\\", \\"minor\\", \\"major\\">"'
+        if prior_coverage_block
+        else ""
+    )
 
     return f"""\
 You are scoring a single AI-news cluster for AI Vector -- a daily,
@@ -606,7 +778,7 @@ has_prior_coverage: {"yes (prior_coverage_ref=" + cluster.prior_coverage_ref + "
 
 ITEMS (top {MAX_ITEMS_IN_CLUSTER_PROMPT} by source trust):
 {items_block}
-
+{prior_coverage_block}
 INSTRUCTIONS
 Score the cluster against the rubric. Apply the EDITORIAL FOCUS pre-filter
 first -- Tier-3 stories MUST score significance <= 25. Audience tags are
@@ -627,7 +799,7 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
     "freshness_momentum": <int 0-100>
   }},
   "audience_tags": [<one or more of: "hands_on", "big_picture", "finance", "general">],
-  "rationale": "<one sentence, <= 240 chars, specific not generic>"
+  "rationale": "<one sentence, <= 240 chars, specific not generic>"{novelty_schema_hint}
 }}
 """
 
@@ -718,10 +890,22 @@ def _parse_rank_json(raw: str) -> _ParsedScore | None:
         rationale = payload.get("rationale", "")
         if not isinstance(rationale, str) or not rationale.strip():
             return None
+        # Task #89: optional novelty field (only present when the prompt
+        # injected the PRIOR COVERAGE block). Accept only the three valid
+        # tokens; anything else (including missing) becomes None and lets
+        # the cap helper apply its default-to-major behaviour.
+        novelty_raw = payload.get("novelty")
+        if isinstance(novelty_raw, str) and novelty_raw.strip().lower() in {
+            "none", "minor", "major",
+        }:
+            novelty = novelty_raw.strip().lower()
+        else:
+            novelty = None
         return _ParsedScore(
             breakdown=breakdown_int,
             audience_tags=list(tags),
             rationale=rationale.strip(),
+            novelty=novelty,
         )
     except (KeyError, TypeError):
         return None
@@ -769,9 +953,32 @@ def _weighted_score(breakdown: dict[str, int]) -> int:
 
 
 _PRIOR_COVERAGE_SIGNIFICANCE_CAP = 50
-"""Significance ceiling for stories with ``cluster.prior_coverage_ref`` set --
-rubric anchor 50 = "single signal-filter dimension hit". See
-``_apply_prior_coverage_penalty``."""
+"""Default significance ceiling for stories with ``cluster.prior_coverage_ref``
+set -- rubric anchor 50 = "single signal-filter dimension hit". Used when the
+LLM did NOT return a usable ``novelty`` field (don't punish on uncertainty).
+See ``_apply_prior_coverage_penalty``."""
+
+
+_PRIOR_COVERAGE_NOVELTY_CAPS: dict[str, int] = {
+    "none":  25,   # effective duplicate -- cuts via _assign_initial_tier sig<=25
+    "minor": 40,   # incremental update -- still below typical Pulse threshold
+    "major": 50,   # substantive new info -- existing #81 cap
+}
+"""Task #89: novelty-aware significance caps for prior-coverage clusters.
+
+Anchor: the rubric's significance anchors map "we've seen this" (25) ->
+"meaningful single-signal recurrence" (40) -> "new dimension on a known
+story" (50). The caps mirror that ladder.
+
+The 25 cap on novelty=="none" intentionally trips ``_assign_initial_tier``'s
+``sig <= 25`` rule, so an effective duplicate is tiered as "cut" without
+needing a separate cut-list. This is the smoking-gun fix for the 2026-05-25
+NuExtract3 staging case (cluster c_fe59351a8d336457): a Reddit thread
+linking to the same HuggingFace page we covered in Issue #1 Pulse landed in
+Hands-On at score 55 because the flat cap-at-50 still let
+hands_on_utility=100 carry the weighted total above the cut floor.
+Capping significance at 25 instead drops the weighted score to ~40 AND
+flips the tier to "cut" via the significance gate -- belt + braces."""
 
 
 _FRESHNESS_INFERRED_CAP = 30
@@ -783,40 +990,50 @@ story has a fresh angle"). See ``_apply_freshness_inferred_penalty``."""
 
 
 def _apply_prior_coverage_penalty(parsed: "_ParsedScore", cluster: Cluster) -> None:
-    """Task #81: cap ``breakdown["significance"]`` at 50 for any cluster that
-    has PRIOR COVERAGE (``cluster.prior_coverage_ref is not None``).
+    """Cap ``breakdown["significance"]`` for any cluster that has PRIOR
+    COVERAGE (``cluster.prior_coverage_ref is not None``), with the cap
+    chosen by the LLM-returned ``novelty`` value (task #89).
 
-    Rationale. A cluster with prior coverage is a topical recurrence of
-    something we covered on a previous day -- llama.cpp ships a feature on
-    day N; someone writes a how-to on day N+1; the how-to lands in the
-    same chain. By construction, the significance has been mostly
-    recognised already. Letting the LLM score the recurrence at 65+ on
-    significance crowds genuinely-new stories out of Pulse / Big Picture
-    slots and produces issues like 2026-05-25 where a how-to follow-up
-    became Pulse despite the original announcement having already shipped.
+    Caps (see ``_PRIOR_COVERAGE_NOVELTY_CAPS``):
+      * ``novelty == "none"``  -> 25  (effective duplicate; will be cut)
+      * ``novelty == "minor"`` -> 40  (incremental update)
+      * ``novelty == "major"`` -> 50  (substantive new info; #81 behaviour)
+      * missing / invalid      -> 50  (don't punish on uncertainty)
 
-    Deterministic, NOT a prompt change. The v0.2 prompt-sharpening
-    experiment (#75) caused a cliff (#77); this is the safer surgical
-    alternative. Mutates ``parsed.breakdown`` in place. Score is recomputed
-    by the caller via ``_weighted_score``.
+    Task #81 origin -- a cluster with prior coverage is a topical recurrence
+    of something we covered on a previous day. Letting the LLM score the
+    recurrence at 65+ on significance crowded genuinely-new stories out
+    (cf. the 2026-05-25 llama.cpp how-to-as-Pulse incident). #81 shipped a
+    flat cap at 50; #89 splits it by novelty because flat-50 still allowed
+    effective duplicates with high ``hands_on_utility`` to clear the
+    weighted-score cut bar (the 2026-05-25 NuExtract3 Reddit-thread case).
 
-    No-op when the cluster is fresh (``prior_coverage_ref is None``) or the
-    LLM-returned significance was already at or below the cap. Logs when
-    the rule fires so operators can see its effect.
+    Deterministic, NOT a prompt change to the rubric body. The PRIOR
+    COVERAGE block (added in v0.4) prompts the LLM for the novelty token;
+    this function applies the cap. Mutates ``parsed.breakdown`` in place;
+    score is recomputed by the caller via ``_weighted_score``.
+
+    No-op when the cluster is fresh OR when the chosen cap is already at
+    or above the LLM-returned significance. Logs the novelty + cap when
+    the rule fires so operators can see which branch hit.
     """
     if cluster.prior_coverage_ref is None:
         return
+    cap = _PRIOR_COVERAGE_NOVELTY_CAPS.get(
+        parsed.novelty or "",
+        _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
+    )
     before = parsed.breakdown.get("significance", 0)
-    if before <= _PRIOR_COVERAGE_SIGNIFICANCE_CAP:
+    if before <= cap:
         return
     score_before = _weighted_score(parsed.breakdown)
-    parsed.breakdown["significance"] = _PRIOR_COVERAGE_SIGNIFICANCE_CAP
+    parsed.breakdown["significance"] = cap
     score_after = _weighted_score(parsed.breakdown)
     _LOG.info(
-        "prior-coverage penalty applied to %s: significance %d->%d, "
-        "score %d->%d (prior_coverage_ref=%s; #81)",
-        cluster.cluster_id, before, _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
-        score_before, score_after, cluster.prior_coverage_ref,
+        "prior-coverage penalty applied to %s: novelty=%s, significance "
+        "%d->%d, score %d->%d (prior_coverage_ref=%s; #81/#89)",
+        cluster.cluster_id, parsed.novelty or "<missing>",
+        before, cap, score_before, score_after, cluster.prior_coverage_ref,
     )
 
 

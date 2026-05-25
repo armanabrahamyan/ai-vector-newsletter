@@ -30,11 +30,13 @@ import pytest
 from src.models import Cluster, Item
 from src.rank import (
     _FRESHNESS_INFERRED_CAP,
+    _PRIOR_COVERAGE_NOVELTY_CAPS,
     _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
     _ParsedScore,
     _apply_freshness_inferred_penalty,
     _apply_prior_coverage_penalty,
     _llm_call_openai_compatible,
+    _lookup_prior_coverage,
     _weighted_score,
 )
 from tests.conftest import FIXED_EARLIER, FIXED_NOW
@@ -525,3 +527,212 @@ class TestFreshnessInferredPenalty:
         assert score_after == 46
         # Breakdown sums must match the recomputed score exactly.
         assert _weighted_score(parsed.breakdown) == score_after
+
+
+# ===========================================================================
+# Novelty detection (#89) -- novelty-aware prior-coverage cap selection.
+#
+# Mirrors TestPriorCoveragePenalty but parameterised on the LLM-returned
+# `novelty` value. The deterministic cap now branches:
+#   * novelty == "none"  -> 25  (effective duplicate; tier flips to "cut")
+#   * novelty == "minor" -> 40
+#   * novelty == "major" -> 50  (existing #81 behaviour)
+#   * missing / invalid  -> 50  (don't punish on uncertainty)
+#
+# Anchor case: c_fe59351a8d336457 on 2026-05-25 -- NuExtract3 Reddit thread
+# linking to HuggingFace, pure duplicate of Issue #1 Pulse. Pre-#89: passed
+# at significance=50 + hands_on_utility=100, scoring 55 in Hands-On.
+# Post-#89: novelty="none" -> significance=25 -> score=~40 -> tier="cut".
+# ===========================================================================
+
+def _parsed_with_novelty(
+    significance: int, novelty: str | None
+) -> _ParsedScore:
+    """Like ``_parsed`` but parameterised on novelty -- the new variable
+    this branch of the rule actually keys off."""
+    return _ParsedScore(
+        breakdown={
+            "significance": significance,
+            "hands_on_utility": 100,  # the failure-mode lever from the anchor case
+            "big_picture_relevance": 25,
+            "financial_services_impact": 50,
+            "freshness_momentum": 25,
+        },
+        audience_tags=["hands_on"],
+        rationale="test",
+        novelty=novelty,
+    )
+
+
+class TestNoveltyDetection:
+    """Novelty-aware cap selection in ``_apply_prior_coverage_penalty``.
+
+    Sister suite to ``TestPriorCoveragePenalty`` -- same shape, but the cap
+    is now chosen by the LLM-returned ``novelty`` field instead of the
+    fixed 50 from #81.
+    """
+
+    def test_no_prior_coverage_no_novelty_no_cap(self) -> None:
+        """Fresh stories must not be touched, even if the LLM somehow
+        produced a novelty value -- without ``prior_coverage_ref``, the
+        rule is a no-op regardless. Most stories take this path."""
+        parsed = _parsed_with_novelty(significance=80, novelty=None)
+        cluster = _cluster("c_" + "a" * 14, prior_coverage_ref=None)
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == 80
+
+    def test_novelty_none_caps_significance_at_25(self) -> None:
+        """The smoking-gun fix -- novelty="none" (effective duplicate)
+        must collapse significance to 25, low enough that
+        ``_assign_initial_tier`` flips the story to "cut" via the
+        ``sig <= 25`` gate."""
+        parsed = _parsed_with_novelty(significance=80, novelty="none")
+        cluster = _cluster(
+            "c_" + "b" * 14, prior_coverage_ref="c_" + "f" * 14,
+        )
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == 25
+        assert _PRIOR_COVERAGE_NOVELTY_CAPS["none"] == 25
+
+    def test_novelty_minor_caps_at_40(self) -> None:
+        """Incremental update -- intermediate cap between effective
+        duplicate (25) and substantive (50)."""
+        parsed = _parsed_with_novelty(significance=80, novelty="minor")
+        cluster = _cluster(
+            "c_" + "c" * 14, prior_coverage_ref="c_" + "f" * 14,
+        )
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == 40
+        assert _PRIOR_COVERAGE_NOVELTY_CAPS["minor"] == 40
+
+    def test_novelty_major_caps_at_50(self) -> None:
+        """Substantive new info -- preserves the existing #81 behaviour
+        (cap at 50). The novelty branch doesn't make the LLM nicer; it
+        just doesn't make it harsher."""
+        parsed = _parsed_with_novelty(significance=80, novelty="major")
+        cluster = _cluster(
+            "c_" + "d" * 14, prior_coverage_ref="c_" + "f" * 14,
+        )
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == 50
+        assert _PRIOR_COVERAGE_NOVELTY_CAPS["major"] == 50
+        assert _PRIOR_COVERAGE_NOVELTY_CAPS["major"] == _PRIOR_COVERAGE_SIGNIFICANCE_CAP
+
+    def test_invalid_novelty_defaults_to_major_cap(self) -> None:
+        """LLM returned an unexpected string -- fall back to the existing
+        50 cap. Don't punish the cluster for an LLM glitch."""
+        parsed = _parsed_with_novelty(significance=80, novelty="weird value")
+        cluster = _cluster(
+            "c_" + "e" * 14, prior_coverage_ref="c_" + "f" * 14,
+        )
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _PRIOR_COVERAGE_SIGNIFICANCE_CAP
+        assert parsed.breakdown["significance"] == 50
+
+    def test_missing_novelty_defaults_to_major_cap(self) -> None:
+        """LLM omitted the field entirely (None on the parsed shape) --
+        same default-to-50 behaviour as the invalid-value case."""
+        parsed = _parsed_with_novelty(significance=80, novelty=None)
+        cluster = _cluster(
+            "c_" + "0" * 14, prior_coverage_ref="c_" + "f" * 14,
+        )
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _PRIOR_COVERAGE_SIGNIFICANCE_CAP
+
+    def test_score_recomputes_after_cap(self) -> None:
+        """The pydantic invariant ``score == weighted_sum(breakdown)`` must
+        still hold after the novelty-driven cap mutates breakdown. Anchor
+        on the 2026-05-25 NuExtract3 numbers: pre-#89 the story scored 55
+        in Hands-On; post-#89 with novelty="none" it should drop to ~40
+        AND tier "cut" via sig=25."""
+        parsed = _parsed_with_novelty(significance=50, novelty="none")
+        cluster = _cluster(
+            "c_" + "1" * 14, prior_coverage_ref="c_" + "f" * 14,
+        )
+        # Anchor before: 0.30*50 + 0.25*100 + 0.20*25 + 0.15*50 + 0.10*25
+        #              = 15 + 25 + 5 + 7.5 + 2.5 = 55.0 -> 55
+        score_before = _weighted_score(parsed.breakdown)
+        assert score_before == 55
+
+        _apply_prior_coverage_penalty(parsed, cluster)
+        # After cap: 0.30*25 + 0.25*100 + 0.20*25 + 0.15*50 + 0.10*25
+        #          = 7.5 + 25 + 5 + 7.5 + 2.5 = 47.5 -> 48 (banker's rounding)
+        score_after = _weighted_score(parsed.breakdown)
+        # Either banker's rounding (round-half-to-even -> 48) or
+        # half-up (-> 48); pin to the Python 3 `round` behaviour.
+        assert score_after == 48
+        # AND tier will be "cut" downstream via sig=25 floor.
+
+    def test_lookup_prior_coverage_finds_match(self, tmp_path, monkeypatch) -> None:
+        """`_lookup_prior_coverage` walks released issues and returns the
+        prior headline + truncated summary excerpt on a story_id hit."""
+        from src import paths as _paths
+        # Build a minimal released archive: data/released/2026-05-23/issue.json
+        date_dir = tmp_path / "released" / "2026-05-23"
+        date_dir.mkdir(parents=True)
+        prior_summary = (
+            "NuExtract3 is a small image-and-text model built for extracting "
+            "structured information from PDFs, invoices, tables, and "
+            "screenshots, released under a permissive open licence with "
+            "weights on Hugging Face -- runs locally, no cloud round-trip."
+        )
+        issue = {
+            "pulse": {
+                "name": "pulse",
+                "stories": [
+                    {
+                        "story_id": "c_56849ea45c325178",
+                        "headline": "A small open model pulls structured data from invoices",
+                        "summary": prior_summary,
+                        "source_urls": ["https://example.com/a"],
+                    }
+                ],
+            },
+            "sections": [],
+        }
+        (date_dir / "issue.json").write_text(__import__("json").dumps(issue))
+        # Re-point both archive roots at our tmp tree.
+        monkeypatch.setattr(_paths, "RELEASED_ROOT", tmp_path / "released")
+        monkeypatch.setattr(_paths, "DATA_ROOT", tmp_path)
+
+        out = _lookup_prior_coverage(
+            "c_56849ea45c325178", today=_dt.date(2026, 5, 25),
+        )
+        assert out is not None
+        headline, excerpt = out
+        assert "small open model" in headline
+        assert excerpt.startswith("NuExtract3 is a small image-and-text model")
+        # Excerpt was capped + suffixed (the source is 250+ chars).
+        assert excerpt.endswith("...")
+        assert len(excerpt) <= 210  # 200-char cap + a few chars for "..."
+
+    def test_lookup_prior_coverage_returns_none_when_not_found(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        """No matching story_id in the released window => None (caller
+        falls back to no PRIOR COVERAGE block; only the default cap fires)."""
+        from src import paths as _paths
+        date_dir = tmp_path / "released" / "2026-05-23"
+        date_dir.mkdir(parents=True)
+        issue = {
+            "pulse": {
+                "name": "pulse",
+                "stories": [
+                    {
+                        "story_id": "c_someotherstory",
+                        "headline": "h",
+                        "summary": "s",
+                        "source_urls": ["https://example.com/a"],
+                    }
+                ],
+            },
+            "sections": [],
+        }
+        (date_dir / "issue.json").write_text(__import__("json").dumps(issue))
+        monkeypatch.setattr(_paths, "RELEASED_ROOT", tmp_path / "released")
+        monkeypatch.setattr(_paths, "DATA_ROOT", tmp_path)
+
+        out = _lookup_prior_coverage(
+            "c_56849ea45c325178", today=_dt.date(2026, 5, 25),
+        )
+        assert out is None
