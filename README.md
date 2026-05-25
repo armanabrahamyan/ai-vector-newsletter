@@ -1,12 +1,14 @@
 # AI Vector Newsletter
 
+[![Live](https://img.shields.io/badge/live-e6452f)](https://armanabrahamyan.github.io/ai-vector-newsletter/)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 *Today's AI, with a heading.*
 
 AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
 
 Heavy on Agentic AI and Generative AI — what shifts how readers work today, what to anticipate tomorrow, what's practical to use right now. Traditional ML appears only when load-bearing. Every story points somewhere: each carries a direction note and, where it earns one, an explicit financial-services angle.
-
-> **No Token Wasted.** The LLM does the judgment work — what matters, what to say. Code does everything else — fetching, parsing, grouping, rendering. We never spend LLM tokens or accept LLM non-determinism on work that plain code can do reliably.
 
 > **Built to fork.** The architecture is domain-agnostic. Swap `config/sources.yaml`, retune `config/rubric.yaml`, edit the voice in the summarise prompt, and you have *your* daily newsletter — for AI in healthcare, fintech security, climate tech, internal eng updates, anything. The pipeline (fetch → cluster → rank → summarise → render), the staging/released archive model, the templates, and the agent team are all reusable as-is.
 
@@ -64,4 +66,11 @@ aiv run --skip-preflight         # skip LLM + embedding checks when iterating
 aiv run --verbose                # debug logging
 aiv --help                       # full command reference
 ```
+
+There's more — see the **[Operator's Handbook](docs/HANDBOOK.md)** for re-run scenarios, debugging, what's safe to edit by hand, eval gating, and the publish-gate behaviour.
+
+---
+
+**Code** under the [MIT License](LICENSE) — fork it, build your own newsletter, no permission needed.
+**Issue content** (the published newsletter text, headlines, summaries) is © Arman Abrahamyan — all rights reserved.
 
