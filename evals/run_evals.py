@@ -1712,36 +1712,446 @@ def eval_module_integrity(
 
 # ---------------------------------------------------------------------------
 # Eval 5 — Drift detection
-# STATUS: STUB
+# STATUS: READY (degraded mode until 7-issue baseline is available)
 #
-# Will compare today's issue against the rolling 14-day median on:
-#   - Number of stories
-#   - Distribution of audience_tags
-#   - Average summary length
-#   - Voice adherence score (from Eval 3)
-#   - Finance-lens presence rate (fraction of stories with finance_angle set)
+# Compares today's issue feature vector against the rolling 14-day baseline
+# of released issues. Raises drift flags (never blocks) on:
+#   - |z| > 2 on any scalar metric (story_count, avg_summary_length,
+#     finance_tag_rate)
+#   - Jensen-Shannon divergence > 0.20 on distribution metrics
+#     (signal_pill_distribution, audience_tag_distribution)
 #
-# Z-score outliers raise a drift flag. The flag is not a veto; it's a
-# "please look" — some drift is real (quiet news day). Forces a conversation
-# at the weekly drift review.
+# Minimum 7 released issues in the 14-day window are required to compute
+# z-scores meaningfully; fewer returns PASS with status "insufficient_baseline".
 #
-# Implementation path (Phase 2):
-#   - Load evals/reports/*.json to build rolling baseline.
-#   - Compute per-metric z-score for today's values.
-#   - PASS: no metric > 2.5 std from 14-day mean.
-#   - FLAG (not block): any metric between 1.5 and 2.5 std.
+# Snapshots are written to evals/drift/baselines/<date>.json after each run.
 # ---------------------------------------------------------------------------
+
+# Minimum number of baseline issues before z-scores are computed.
+_DRIFT_MIN_BASELINE = 7
+
+# Rolling window (days) for the baseline.
+_DRIFT_WINDOW_DAYS = 14
+
+# Z-score threshold for scalar drift flag.
+_DRIFT_Z_THRESHOLD = 2.0
+
+# Z-score denominator floor (prevents division-by-near-zero on stable metrics).
+_DRIFT_STDEV_FLOOR = 0.5
+
+# Jensen-Shannon divergence threshold for distribution drift flag.
+_DRIFT_JS_THRESHOLD = 0.20
+
+# Known signal pill values (spec-mandated).
+_SIGNAL_PILLS = ("act", "try", "read", "watch", "discuss", None)
+
+# Known audience tag values (spec-mandated).
+_AUDIENCE_TAGS = ("hands_on", "big_picture", "finance", "general")
+
+DRIFT_BASELINES_DIR = EVALS_DIR / "drift" / "baselines"
+
+
+def _extract_feature_vector(
+    issue_data: dict,
+    ranked_by_id: dict[str, dict],
+) -> dict[str, Any]:
+    """Extract a scalar + distribution feature vector from a released issue.
+
+    Args:
+        issue_data: Parsed issue.json content.
+        ranked_by_id: Dict mapping cluster_id -> ranked.jsonl record for
+            the same issue date (used for audience_tags and finance detection).
+
+    Returns a dict with keys:
+        story_count, avg_summary_length, finance_tag_rate,
+        signal_pill_distribution (dict of signal -> fraction),
+        audience_tag_distribution (dict of tag -> fraction).
+    """
+    # Collect all stories (pulse + sections)
+    stories: list[dict] = []
+    pulse_block = issue_data.get("pulse", {})
+    if isinstance(pulse_block, dict):
+        stories.extend(pulse_block.get("stories", []))
+    for section in issue_data.get("sections", []):
+        stories.extend(section.get("stories", []))
+
+    story_count = len(stories)
+
+    # avg_summary_length — mean character count of SummaryBlock.summary
+    summaries = [s.get("summary", "") for s in stories]
+    avg_summary_length = (
+        sum(len(s) for s in summaries) / len(summaries)
+        if summaries else 0.0
+    )
+
+    # finance_tag_rate — fraction of stories whose RankedStory has "finance"
+    # in audience_tags; matched by story_id == cluster_id.
+    finance_count = 0
+    for story in stories:
+        sid = story.get("story_id", "")
+        ranked_record = ranked_by_id.get(sid)
+        if ranked_record and "finance" in ranked_record.get("audience_tags", []):
+            finance_count += 1
+    finance_tag_rate = (finance_count / story_count) if story_count > 0 else 0.0
+
+    # signal_pill_distribution — fraction per signal value (including null)
+    signal_counts: dict[Any, int] = {pill: 0 for pill in _SIGNAL_PILLS}
+    for story in stories:
+        sig = story.get("signal")  # may be absent → None
+        # normalise: if value not in known pills, treat as None
+        if sig not in signal_counts:
+            sig = None
+        signal_counts[sig] += 1
+    signal_pill_distribution = {
+        (str(k) if k is not None else "null"): (v / story_count)
+        for k, v in signal_counts.items()
+    }
+
+    # audience_tag_distribution — fraction of stories that carry each tag.
+    # A story may carry multiple tags; each tag counted independently
+    # (fractions can exceed 1.0 when stories carry multiple tags).
+    tag_counts: dict[str, int] = {tag: 0 for tag in _AUDIENCE_TAGS}
+    for story in stories:
+        sid = story.get("story_id", "")
+        ranked_record = ranked_by_id.get(sid)
+        if ranked_record:
+            for tag in ranked_record.get("audience_tags", []):
+                if tag in tag_counts:
+                    tag_counts[tag] += 1
+    audience_tag_distribution = {
+        tag: (count / story_count)
+        for tag, count in tag_counts.items()
+    }
+
+    return {
+        "story_count": story_count,
+        "avg_summary_length": avg_summary_length,
+        "finance_tag_rate": finance_tag_rate,
+        "signal_pill_distribution": signal_pill_distribution,
+        "audience_tag_distribution": audience_tag_distribution,
+    }
+
+
+def _js_divergence(p: dict[str, float], q: dict[str, float]) -> float:
+    """Jensen-Shannon divergence between two categorical distributions.
+
+    Both p and q must share the same key set; values are treated as
+    unnormalised (re-normalised internally so that missing keys = 0 mass).
+    Returns a value in [0, 1] (JS is bounded by ln2 ~ 0.693; we use
+    log base 2 so the bound is 1.0).
+
+    Returns 0.0 if both distributions are uniform zero (degenerate input).
+    """
+    keys = set(p) | set(q)
+    p_vals = [p.get(k, 0.0) for k in keys]
+    q_vals = [q.get(k, 0.0) for k in keys]
+
+    p_sum = sum(p_vals)
+    q_sum = sum(q_vals)
+
+    # Degenerate: if either is all-zero, return 0 (undefined divergence;
+    # this can happen when story_count is 0).
+    if p_sum == 0 or q_sum == 0:
+        return 0.0
+
+    p_norm = [x / p_sum for x in p_vals]
+    q_norm = [x / q_sum for x in q_vals]
+    m = [(pp + qq) / 2 for pp, qq in zip(p_norm, q_norm)]
+
+    def _kl(a: list[float], b: list[float]) -> float:
+        total = 0.0
+        for ai, bi in zip(a, b):
+            if ai > 0 and bi > 0:
+                total += ai * math.log2(ai / bi)
+        return total
+
+    return (_kl(p_norm, m) + _kl(q_norm, m)) / 2.0
+
+
+def _load_ranked_by_id(date_dir: Path) -> dict[str, dict]:
+    """Load ranked.jsonl from a released date directory as {cluster_id: record}."""
+    ranked_path = date_dir / "ranked.jsonl"
+    records = _load_jsonl(ranked_path)
+    return {r["cluster_id"]: r for r in records if r.get("cluster_id")}
+
+
+def _write_drift_snapshot(
+    candidate_date: str,
+    feature_vector: dict[str, Any],
+    baseline_size: int,
+    z_scores: dict[str, float],
+    js_divergences: dict[str, float],
+    flags: list[str],
+) -> None:
+    """Write a drift snapshot to evals/drift/baselines/<date>.json atomically."""
+    DRIFT_BASELINES_DIR.mkdir(parents=True, exist_ok=True)
+    snapshot = {
+        "date": candidate_date,
+        "feature_vector": feature_vector,
+        "baseline_size": baseline_size,
+        "z_scores": z_scores,
+        "js_divergences": js_divergences,
+        "flags": flags,
+    }
+    target = DRIFT_BASELINES_DIR / f"{candidate_date}.json"
+    tmp = target.with_suffix(".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        json.dump(snapshot, fh, indent=2)
+    tmp.rename(target)
+
+
+def check_drift(
+    candidate_date: date,
+    *,
+    released_root: Optional[Path] = None,
+) -> EvalResult:
+    """Run drift detection for *candidate_date* against the rolling baseline.
+
+    This is the importable entry point (analogous to ``check_integrity``).
+    ``eval_drift_detection`` is a thin wrapper that delegates here.
+
+    Args:
+        candidate_date: The date of the issue to evaluate.
+        released_root: Override for the released archive root (used in tests
+            to point at a tmp directory). Defaults to DATA_DIR / "released".
+
+    Returns:
+        An EvalResult with passed=True always (drift is informational).
+        status is one of:
+          "insufficient_baseline" — fewer than 7 issues in the 14-day window.
+          "pass"                  — z-scores and JS divergences computed;
+                                   flags (if any) surfaced in details.
+    """
+    released_root = released_root or (DATA_DIR / "released")
+
+    # ------------------------------------------------------------------
+    # 1. Enumerate released issues within the 14-day window.
+    # ------------------------------------------------------------------
+    # Use paths.all_released_dates() if released_root matches DATA_DIR,
+    # else enumerate manually (test override path).
+    window_start = candidate_date - __import__("datetime").timedelta(days=_DRIFT_WINDOW_DAYS)
+
+    all_released: list[date] = []
+    if released_root.exists():
+        for child in sorted(released_root.iterdir()):
+            if not child.is_dir():
+                continue
+            try:
+                d = date.fromisoformat(child.name)
+            except ValueError:
+                continue
+            if (child / "issue.json").exists():
+                all_released.append(d)
+
+    # Split: candidate (today) vs baseline (trailing issues before today,
+    # within the 14-day window).
+    baseline_dates = [
+        d for d in all_released
+        if window_start <= d < candidate_date
+    ]
+
+    # Count total issues in window including the candidate (for the
+    # "insufficient_baseline" message).
+    window_issues = [d for d in all_released if window_start <= d <= candidate_date]
+    window_count = len(window_issues)
+
+    if len(baseline_dates) < _DRIFT_MIN_BASELINE:
+        # Degraded mode — not enough history.
+        return EvalResult(
+            name="drift_detection",
+            passed=True,
+            metric=None,
+            status="insufficient_baseline",
+            details={
+                "message": (
+                    f"need at least {_DRIFT_MIN_BASELINE} released issues in the "
+                    f"{_DRIFT_WINDOW_DAYS}-day window; have {window_count}"
+                ),
+                "window_count": window_count,
+                "baseline_min": _DRIFT_MIN_BASELINE,
+                "window_days": _DRIFT_WINDOW_DAYS,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # 2. Load candidate feature vector.
+    # ------------------------------------------------------------------
+    candidate_dir = released_root / candidate_date.isoformat()
+    candidate_issue = _load_json(candidate_dir / "issue.json")
+    if candidate_issue is None:
+        return EvalResult(
+            name="drift_detection",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Candidate issue.json not found: {candidate_dir}"},
+        )
+
+    candidate_ranked = _load_ranked_by_id(candidate_dir)
+    candidate_fv = _extract_feature_vector(candidate_issue, candidate_ranked)
+
+    # ------------------------------------------------------------------
+    # 3. Load baseline feature vectors and compute baseline statistics.
+    # ------------------------------------------------------------------
+    baseline_fvs: list[dict[str, Any]] = []
+    for bd in baseline_dates:
+        bd_dir = released_root / bd.isoformat()
+        bd_issue = _load_json(bd_dir / "issue.json")
+        if bd_issue is None:
+            continue
+        bd_ranked = _load_ranked_by_id(bd_dir)
+        baseline_fvs.append(_extract_feature_vector(bd_issue, bd_ranked))
+
+    if len(baseline_fvs) < _DRIFT_MIN_BASELINE:
+        return EvalResult(
+            name="drift_detection",
+            passed=True,
+            metric=None,
+            status="insufficient_baseline",
+            details={
+                "message": (
+                    f"need at least {_DRIFT_MIN_BASELINE} released issues in the "
+                    f"{_DRIFT_WINDOW_DAYS}-day window; have {window_count}"
+                ),
+                "window_count": window_count,
+                "baseline_min": _DRIFT_MIN_BASELINE,
+                "window_days": _DRIFT_WINDOW_DAYS,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # 4. Compute z-scores for scalar metrics.
+    # ------------------------------------------------------------------
+    _SCALAR_METRICS = ("story_count", "avg_summary_length", "finance_tag_rate")
+    z_scores: dict[str, float] = {}
+
+    for metric in _SCALAR_METRICS:
+        values = [fv[metric] for fv in baseline_fvs]
+        n = len(values)
+        mean = sum(values) / n
+        variance = sum((v - mean) ** 2 for v in values) / n
+        stdev = math.sqrt(variance)
+        effective_stdev = max(stdev, _DRIFT_STDEV_FLOOR)
+        today_val = candidate_fv[metric]
+        z = (today_val - mean) / effective_stdev
+        z_scores[metric] = round(z, 4)
+
+    # ------------------------------------------------------------------
+    # 5. Compute Jensen-Shannon divergences for distribution metrics.
+    # ------------------------------------------------------------------
+    _DIST_METRICS = ("signal_pill_distribution", "audience_tag_distribution")
+    js_divergences: dict[str, float] = {}
+
+    for dist_metric in _DIST_METRICS:
+        # Baseline mean distribution: average each key's fraction across baseline.
+        all_keys: set[str] = set()
+        for fv in baseline_fvs:
+            all_keys.update(fv[dist_metric].keys())
+        all_keys.update(candidate_fv[dist_metric].keys())
+
+        mean_dist: dict[str, float] = {}
+        for k in all_keys:
+            mean_dist[k] = sum(fv[dist_metric].get(k, 0.0) for fv in baseline_fvs) / len(baseline_fvs)
+
+        js = _js_divergence(candidate_fv[dist_metric], mean_dist)
+        js_divergences[dist_metric] = round(js, 4)
+
+    # ------------------------------------------------------------------
+    # 6. Build flags (informational only — never blocks).
+    # ------------------------------------------------------------------
+    flags: list[str] = []
+    for metric, z in z_scores.items():
+        if abs(z) > _DRIFT_Z_THRESHOLD:
+            flags.append(
+                f"drift_high:{metric} z={z:+.2f} "
+                f"(threshold |z|>{_DRIFT_Z_THRESHOLD})"
+            )
+    for dist_metric, js in js_divergences.items():
+        if js > _DRIFT_JS_THRESHOLD:
+            flags.append(
+                f"distribution_shift:{dist_metric} JS={js:.3f} "
+                f"(threshold>{_DRIFT_JS_THRESHOLD})"
+            )
+
+    # ------------------------------------------------------------------
+    # 7. Write snapshot.
+    # ------------------------------------------------------------------
+    try:
+        _write_drift_snapshot(
+            candidate_date=candidate_date.isoformat(),
+            feature_vector=candidate_fv,
+            baseline_size=len(baseline_fvs),
+            z_scores=z_scores,
+            js_divergences=js_divergences,
+            flags=flags,
+        )
+    except OSError:
+        # Snapshot write failure is non-fatal — log in details.
+        flags.append("snapshot_write_failed")
+
+    return EvalResult(
+        name="drift_detection",
+        passed=True,  # drift is never a blocker
+        metric=None,
+        status="pass",
+        details={
+            "candidate_date": candidate_date.isoformat(),
+            "baseline_size": len(baseline_fvs),
+            "baseline_dates": [d.isoformat() for d in baseline_dates],
+            "candidate_feature_vector": candidate_fv,
+            "z_scores": z_scores,
+            "js_divergences": js_divergences,
+            "flags": flags,
+            "flag_count": len(flags),
+            "thresholds": {
+                "z_score": _DRIFT_Z_THRESHOLD,
+                "stdev_floor": _DRIFT_STDEV_FLOOR,
+                "js_divergence": _DRIFT_JS_THRESHOLD,
+                "min_baseline": _DRIFT_MIN_BASELINE,
+                "window_days": _DRIFT_WINDOW_DAYS,
+            },
+        },
+    )
+
 
 def eval_drift_detection(
     dataset_dir: Optional[Path],
     labels: dict,
 ) -> EvalResult:
+    """Drift detection: compares today's issue against the rolling 14-day baseline.
+
+    Reads the released archive only. Degraded mode (PASS, status
+    "insufficient_baseline") when fewer than 7 released issues exist in the
+    14-day window. Drift flags are informational — never blocks CI.
     """
-    STUB. Detects score, tier-mix, voice, and summary-length drift vs.
-    the rolling 14-day baseline. Returns not_yet_implemented until
-    a corpus of ratified issues exists.
-    """
-    return _stub_result("drift_detection")
+    if dataset_dir is None:
+        return EvalResult(
+            name="drift_detection",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": "No dataset directory provided."},
+        )
+
+    # Derive the candidate date from the directory name (must be YYYY-MM-DD).
+    try:
+        import datetime as _dt_mod
+        candidate_date = _dt_mod.date.fromisoformat(dataset_dir.name)
+    except ValueError:
+        return EvalResult(
+            name="drift_detection",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={
+                "message": (
+                    f"Cannot derive a date from dataset directory name "
+                    f"{dataset_dir.name!r}; drift detection requires YYYY-MM-DD."
+                )
+            },
+        )
+
+    return check_drift(candidate_date)
 
 
 # ---------------------------------------------------------------------------
@@ -1848,6 +2258,7 @@ def _print_pretty(report: dict) -> None:
             "not_yet_implemented": "[STUB]",
             "manual": "[MANUAL]",
             "skipped": "[SKIP]",
+            "insufficient_baseline": "[DEGRADED]",
         }.get(r["status"], "[?]")
         metric_str = f" metric={r['metric']:.3f}" if r["metric"] is not None else ""
         print(f"  {icon} {r['name']}{metric_str}")
@@ -2125,7 +2536,7 @@ def run_evals(
     # manual) trips a non-zero exit. By design this is loud -- the user
     # opted in.
     if strict and exit_code == 0:
-        warning_states = {"not_yet_implemented", "skipped"}
+        warning_states = {"not_yet_implemented", "skipped", "insufficient_baseline"}
         if any(r["status"] in warning_states for r in report["results"]):
             exit_code = 1
 
