@@ -127,6 +127,7 @@ _scratch/          Throwaway working notes — gitignored
 
 ## Conventions
 
+- **Never `git commit` or `git push` without explicit per-request approval** (rule set 2026-05-25). Leave changes in the working tree; surface a tight "ready to commit" summary; wait for Arman's go-ahead. Brief delegated agents the same way — they should NOT commit or push.
 - **Commit messages use Conventional Commits:** `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `style:`, `test:`, `ci:`. No free-form prefixes, no trailing summaries.
 - No `Co-Authored-By: Claude` lines in commit messages.
 - `.env` is never committed. Use `.env.example` as the template.
