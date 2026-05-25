@@ -364,17 +364,18 @@ class TestReconcileSignalWithAudienceTags:
 
 
 # ===========================================================================
-# _pick_pulse -- continuation bias (task #82).
+# _pick_pulse -- prior-coverage bias (task #82).
 #
-# A continuation (SummaryBlock.cross_time_ref is not null) is a follow-up
-# to a story we covered on a previous day. The Pulse is meant to be the
-# day's freshest editorial anchor; leading with a continuation tells the
-# reader "we have nothing new today." The selection rule must prefer any
-# FRESH story over any continuation, regardless of score.
+# A prior-coverage story (SummaryBlock.prior_coverage_ref is not null) is a
+# topical recurrence of something we covered on a previous day. The Pulse
+# is meant to be the day's freshest editorial anchor; leading with a
+# recurrence tells the reader "we have nothing new today." The selection
+# rule must prefer any FRESH story over any prior-coverage story,
+# regardless of score.
 #
 # Anchor: 2026-05-25 -- c_2e53967d020fb800 (llama.cpp how-to follow-up,
-# score 44, cross_time_ref set) was selected as Pulse over the fresh
-# Hugging Face benchmark tracker (score 39, cross_time_ref None).
+# score 44, prior_coverage_ref set) was selected as Pulse over the fresh
+# Hugging Face benchmark tracker (score 39, prior_coverage_ref None).
 # ===========================================================================
 
 def _ranked(cluster_id: str, score: int, *,
@@ -410,53 +411,53 @@ def _ranked(cluster_id: str, score: int, *,
     )
 
 
-def _block(cluster_id: str, *, cross_time_ref: str | None) -> SummaryBlock:
+def _block(cluster_id: str, *, prior_coverage_ref: str | None) -> SummaryBlock:
     return SummaryBlock(
         story_id=cluster_id,
         headline="A headline that exists for the seam test",
         summary="A body that exists for the seam test of pulse selection.",
         source_urls=["https://example.com/x"],  # type: ignore[list-item]
-        cross_time_ref=cross_time_ref,
+        prior_coverage_ref=prior_coverage_ref,
     )
 
 
-class TestPulseSelectionContinuationBias:
-    """The Pulse selection rule (v0.3, #82): prefer non-continuation stories
-    regardless of score; only fall back to a continuation when there are
-    no fresh stories left."""
+class TestPulseSelectionPriorCoverageBias:
+    """The Pulse selection rule (v0.3, #82): prefer fresh (no prior
+    coverage) stories regardless of score; only fall back to a
+    prior-coverage story when there are no fresh stories left."""
 
-    def test_fresh_low_score_beats_continuation_high_score(self) -> None:
-        """The smoking gun. Continuation scored higher; fresh story must
-        still win. Anchor: c_2e53967d020fb800 (score 44, continuation)
-        vs. c_78dabe7884f76ef8 (score 39, fresh) on 2026-05-25."""
+    def test_fresh_low_score_beats_prior_coverage_high_score(self) -> None:
+        """The smoking gun. Prior-coverage story scored higher; fresh story
+        must still win. Anchor: c_2e53967d020fb800 (score 44, prior
+        coverage) vs. c_78dabe7884f76ef8 (score 39, fresh) on 2026-05-25."""
         # NB: blocks arrive in score-desc order (caller maintains that).
-        cont = (
+        recur = (
             _ranked("c_eeeeeeeeeeee0001", score=53, significance=80, freshness=40),
-            _block("c_eeeeeeeeeeee0001", cross_time_ref="c_ffffffffffff0001"),
+            _block("c_eeeeeeeeeeee0001", prior_coverage_ref="c_ffffffffffff0001"),
         )
         fresh = (
             _ranked("c_eeeeeeeeeeee0002", score=46, significance=60, freshness=40),
-            _block("c_eeeeeeeeeeee0002", cross_time_ref=None),
+            _block("c_eeeeeeeeeeee0002", prior_coverage_ref=None),
         )
-        pulse_id = _pick_pulse([cont, fresh])
+        pulse_id = _pick_pulse([recur, fresh])
         assert pulse_id == "c_eeeeeeeeeeee0002"
 
-    def test_continuation_used_when_no_fresh_survivors(self) -> None:
-        """Degraded mode: every surviving story is a continuation. Pulse
+    def test_prior_coverage_used_when_no_fresh_survivors(self) -> None:
+        """Degraded mode: every surviving story has prior coverage. Pulse
         must still get filled (Issue.pulse mandates exactly 1 block); we
         ship with a warning log rather than crash."""
         c1 = (
             _ranked("c_eeeeeeeeeeee0010", score=53, significance=80),
-            _block("c_eeeeeeeeeeee0010", cross_time_ref="c_ffffffffffff0001"),
+            _block("c_eeeeeeeeeeee0010", prior_coverage_ref="c_ffffffffffff0001"),
         )
         c2 = (
             _ranked("c_eeeeeeeeeeee0011", score=46, significance=60),
-            _block("c_eeeeeeeeeeee0011", cross_time_ref="c_ffffffffffff0002"),
+            _block("c_eeeeeeeeeeee0011", prior_coverage_ref="c_ffffffffffff0002"),
         )
         pulse_id = _pick_pulse([c1, c2])
-        # Best of the continuations -- highest score in the pool, both >= 2
-        # signal dimensions (significance 80 + hands_on 60 + freshness 60 hits
-        # 2 axes for c1; we pick c1 because it's first in score-desc order).
+        # Best of the prior-coverage pool -- highest score, both >= 2 signal
+        # dimensions (significance 80 + hands_on 60 + freshness 60 hits 2
+        # axes for c1; we pick c1 because it's first in score-desc order).
         assert pulse_id == "c_eeeeeeeeeeee0010"
 
     def test_fresh_pool_pulse_class_quality_bar_applies(self) -> None:
@@ -467,17 +468,17 @@ class TestPulseSelectionContinuationBias:
         a = (
             _ranked("c_eeeeeeeeeeee0020", score=51, significance=85,
                     hands_on=40, freshness=40),
-            _block("c_eeeeeeeeeeee0020", cross_time_ref=None),
+            _block("c_eeeeeeeeeeee0020", prior_coverage_ref=None),
         )
         # Story B: fresh, lower score, hits 3 signal dims (>= 70 on all).
         b = (
             _ranked("c_eeeeeeeeeeee0021", score=50, significance=70,
                     hands_on=70, freshness=70),
-            _block("c_eeeeeeeeeeee0021", cross_time_ref=None),
+            _block("c_eeeeeeeeeeee0021", prior_coverage_ref=None),
         )
         pulse_id = _pick_pulse([a, b])
         # B wins on the Pulse-class quality bar; both are fresh so the
-        # continuation rule doesn't help A here.
+        # prior-coverage rule doesn't help A here.
         assert pulse_id == "c_eeeeeeeeeeee0021"
 
     def test_returns_none_on_empty_input(self) -> None:
@@ -492,12 +493,12 @@ class TestPulseSelectionContinuationBias:
         a = (
             _ranked("c_eeeeeeeeeeee0030", score=60, significance=80,
                     hands_on=75, freshness=75),
-            _block("c_eeeeeeeeeeee0030", cross_time_ref=None),
+            _block("c_eeeeeeeeeeee0030", prior_coverage_ref=None),
         )
         b = (
             _ranked("c_eeeeeeeeeeee0031", score=55, significance=70,
                     hands_on=70, freshness=70),
-            _block("c_eeeeeeeeeeee0031", cross_time_ref=None),
+            _block("c_eeeeeeeeeeee0031", prior_coverage_ref=None),
         )
         pulse_id = _pick_pulse([a, b])
         assert pulse_id == "c_eeeeeeeeeeee0030"

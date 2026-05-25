@@ -70,10 +70,10 @@ from src.models import RUBRIC_WEIGHTS, Cluster, Item, RankedStory
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-RANK_PROMPT_VERSION = "v0.1"
+RANK_PROMPT_VERSION = "v0.3"
 r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``rank-v0.1-2026-05-23``. Bump (e.g. ``v0.2``) when the prompt
+Audit tag: ``rank-v0.3-2026-05-25``. Bump (e.g. ``v0.4``) when the prompt
 content changes -- so the eval harness can correlate score movement against
 prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 """
@@ -90,12 +90,20 @@ prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 # labelled-corpus quality) are a precondition.
 #
 # Task #81 (2026-05-25): continuation penalty added as DETERMINISTIC
-# post-LLM logic (see _apply_continuation_penalty), not a prompt change.
-# RANK_PROMPT_VERSION intentionally stays at v0.1 -- the prompt text is
-# unchanged. The penalty caps `breakdown["significance"]` at 50 for any
-# cluster with `cross_time_ref` set, then score is recomputed via the
-# normal weighted-sum path. Lesson from #75/#77: prefer deterministic
-# post-processing over prompt edits where the rule is a hard constraint.
+# post-LLM logic (see _apply_prior_coverage_penalty), not a prompt change.
+# The penalty caps `breakdown["significance"]` at 50 for any cluster with
+# `prior_coverage_ref` set, then score is recomputed via the normal
+# weighted-sum path. Lesson from #75/#77: prefer deterministic post-
+# processing over prompt edits where the rule is a hard constraint.
+#
+# v0.3 (2026-05-25, task #88): prompt text is unchanged from v0.1; the
+# audit-tagged log message wording was renamed from "continuation penalty"
+# to "prior-coverage penalty" to match the schema rename
+# (Cluster.cross_time_ref -> Cluster.prior_coverage_ref). The rename
+# makes the semantic honest: the field flags topical RECURRENCE, not
+# temporal progression. Bumping the prompt-version string here so the
+# audit trail records the wording change at the rank-output level even
+# though scoring behaviour is byte-identical.
 
 MAX_ITEMS_IN_CLUSTER_PROMPT = 3
 """How many member items to inline in the per-cluster prompt body."""
@@ -505,16 +513,16 @@ def _rank_one(
     if parsed is None:
         return None
 
-    # Task #81: deterministic post-LLM continuation penalty. If the cluster
-    # carries a cross_time_ref (it's a follow-up to a story we covered on
-    # a previous day), cap breakdown["significance"] at 50 (rubric anchor
-    # 50 = "single signal-filter dimension hit"). A continuation is rarely
-    # the day's freshest signal; allowing it to score 65+ on significance
-    # crowds genuinely-new stories out of Pulse / Big Picture slots. The
-    # penalty is applied to BREAKDOWN; score is recomputed below so the
-    # pydantic invariant `score == weighted_sum(breakdown)` still holds.
-    # Logged when fired so operators see the rule's effect.
-    _apply_continuation_penalty(parsed, cluster)
+    # Task #81: deterministic post-LLM prior-coverage penalty. If the
+    # cluster carries a prior_coverage_ref (we've covered this topic on a
+    # previous day), cap breakdown["significance"] at 50 (rubric anchor
+    # 50 = "single signal-filter dimension hit"). A recurring topic is
+    # rarely the day's freshest signal; allowing it to score 65+ on
+    # significance crowds genuinely-new stories out of Pulse / Big Picture
+    # slots. The penalty is applied to BREAKDOWN; score is recomputed
+    # below so the pydantic invariant `score == weighted_sum(breakdown)`
+    # still holds. Logged when fired so operators see the rule's effect.
+    _apply_prior_coverage_penalty(parsed, cluster)
 
     # Task #86: deterministic post-LLM freshness-inferred penalty. If EVERY
     # item in the cluster carries `extras["freshness_inferred"] == "true"`
@@ -594,7 +602,7 @@ cluster_id: {cluster.cluster_id}
 sources: {list(cluster.sources)}
 earliest_published: {cluster.earliest_published.isoformat()}
 size: {cluster.size}
-is_continuation: {"yes (cross_time_ref=" + cluster.cross_time_ref + ")" if cluster.cross_time_ref else "no"}
+has_prior_coverage: {"yes (prior_coverage_ref=" + cluster.prior_coverage_ref + ")" if cluster.prior_coverage_ref else "no"}
 
 ITEMS (top {MAX_ITEMS_IN_CLUSTER_PROMPT} by source trust):
 {items_block}
@@ -760,10 +768,10 @@ def _weighted_score(breakdown: dict[str, int]) -> int:
     return max(0, min(100, round(raw)))
 
 
-_CONTINUATION_SIGNIFICANCE_CAP = 50
-"""Significance ceiling for stories with ``cluster.cross_time_ref`` set --
+_PRIOR_COVERAGE_SIGNIFICANCE_CAP = 50
+"""Significance ceiling for stories with ``cluster.prior_coverage_ref`` set --
 rubric anchor 50 = "single signal-filter dimension hit". See
-``_apply_continuation_penalty``."""
+``_apply_prior_coverage_penalty``."""
 
 
 _FRESHNESS_INFERRED_CAP = 30
@@ -774,41 +782,41 @@ rubric anchor 25 ("we don't actually know when this dropped") and 50 ("the
 story has a fresh angle"). See ``_apply_freshness_inferred_penalty``."""
 
 
-def _apply_continuation_penalty(parsed: "_ParsedScore", cluster: Cluster) -> None:
+def _apply_prior_coverage_penalty(parsed: "_ParsedScore", cluster: Cluster) -> None:
     """Task #81: cap ``breakdown["significance"]`` at 50 for any cluster that
-    is a CONTINUATION (``cluster.cross_time_ref is not None``).
+    has PRIOR COVERAGE (``cluster.prior_coverage_ref is not None``).
 
-    Rationale. A continuation is a follow-up to a story we covered on a
-    previous day -- llama.cpp ships a feature on day N; someone writes a
-    how-to on day N+1; the how-to is the same chain. By construction, the
-    significance has been mostly recognised already. Letting the LLM score
-    the follow-up at 65+ on significance crowds genuinely-new stories out
-    of Pulse / Big Picture slots and produces issues like 2026-05-25 where
-    a how-to follow-up became Pulse despite the original announcement
-    having already shipped.
+    Rationale. A cluster with prior coverage is a topical recurrence of
+    something we covered on a previous day -- llama.cpp ships a feature on
+    day N; someone writes a how-to on day N+1; the how-to lands in the
+    same chain. By construction, the significance has been mostly
+    recognised already. Letting the LLM score the recurrence at 65+ on
+    significance crowds genuinely-new stories out of Pulse / Big Picture
+    slots and produces issues like 2026-05-25 where a how-to follow-up
+    became Pulse despite the original announcement having already shipped.
 
     Deterministic, NOT a prompt change. The v0.2 prompt-sharpening
     experiment (#75) caused a cliff (#77); this is the safer surgical
     alternative. Mutates ``parsed.breakdown`` in place. Score is recomputed
     by the caller via ``_weighted_score``.
 
-    No-op when the cluster is fresh (``cross_time_ref is None``) or the
+    No-op when the cluster is fresh (``prior_coverage_ref is None``) or the
     LLM-returned significance was already at or below the cap. Logs when
     the rule fires so operators can see its effect.
     """
-    if cluster.cross_time_ref is None:
+    if cluster.prior_coverage_ref is None:
         return
     before = parsed.breakdown.get("significance", 0)
-    if before <= _CONTINUATION_SIGNIFICANCE_CAP:
+    if before <= _PRIOR_COVERAGE_SIGNIFICANCE_CAP:
         return
     score_before = _weighted_score(parsed.breakdown)
-    parsed.breakdown["significance"] = _CONTINUATION_SIGNIFICANCE_CAP
+    parsed.breakdown["significance"] = _PRIOR_COVERAGE_SIGNIFICANCE_CAP
     score_after = _weighted_score(parsed.breakdown)
     _LOG.info(
-        "continuation penalty applied to %s: significance %d->%d, "
-        "score %d->%d (cross_time_ref=%s; #81)",
-        cluster.cluster_id, before, _CONTINUATION_SIGNIFICANCE_CAP,
-        score_before, score_after, cluster.cross_time_ref,
+        "prior-coverage penalty applied to %s: significance %d->%d, "
+        "score %d->%d (prior_coverage_ref=%s; #81)",
+        cluster.cluster_id, before, _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
+        score_before, score_after, cluster.prior_coverage_ref,
     )
 
 
@@ -838,7 +846,7 @@ def _apply_freshness_inferred_penalty(
     (typically because other sources covered the same story) gives us a
     trustworthy freshness signal -- leave it untouched.
 
-    Deterministic, NOT a prompt change. Mirrors ``_apply_continuation_penalty``:
+    Deterministic, NOT a prompt change. Mirrors ``_apply_prior_coverage_penalty``:
     mutate ``parsed.breakdown`` in place; the caller recomputes ``score``
     via ``_weighted_score``. Logs when the rule fires.
     """

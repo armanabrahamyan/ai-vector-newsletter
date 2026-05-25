@@ -86,19 +86,19 @@ cross-time dedup against the last 14 days of `clusters.jsonl` (see
 from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Optional
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
 class Cluster(BaseModel):
-    schema_version: int = 1                                                 # bump on shape change
+    schema_version: int = 2                                                 # bump on shape change; v2 renames cross_time_ref -> prior_coverage_ref (alias retained)
     cluster_id: Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]         # "c_" + 12+ hex chars; stable per day
     item_ids: Annotated[list[str], Field(min_length=1)]                     # Item.id values that belong to this cluster
     canonical_title: Annotated[str, Field(min_length=1, max_length=512)]    # best-title pick from members (deterministic rule, not LLM)
     sources: Annotated[list[str], Field(min_length=1)]                      # distinct Item.source values; order = first-seen
     earliest_published: datetime                                            # min(Item.published_at) across members; UTC
     size: Annotated[int, Field(ge=1)]                                       # len(item_ids); duplicated for fast read without parsing the list
-    cross_time_ref: Optional[Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]] = None
-                                                                            # earliest cluster_id in the continuation chain (set when this is a continuation of a prior-day cluster); None = new today
+    prior_coverage_ref: Optional[Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$", alias="cross_time_ref", validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref"))]] = None
+                                                                            # earliest cluster_id in the chain (set when this cluster has prior coverage); None = new today. v1 alias "cross_time_ref" retained for archive parse.
     embedding_dim: Optional[int] = None                                     # length of the centroid vector if stored; None if vectors are external
     centroid_ref: Optional[str] = None                                      # filename inside data/YYYY-MM-DD/embeddings/ if vectors are stored separately; None if not stored
 ```
@@ -112,9 +112,14 @@ the last 14 days of those sidecars. (This is a recommendation; if the
 embedding-model choice forces inline storage, Retrieval may revisit — see
 decision log.)
 
-`cross_time_ref` is the single field the LLM Engineer keys callbacks off:
-when set, today's cluster is part of an ongoing story chain, and
-`summarise.py` should consider a "last week we flagged X" framing.
+`prior_coverage_ref` is the single field the LLM Engineer keys callbacks
+off: when set, today's cluster is the latest in a chain whose root we
+have already covered, and `summarise.py` should consider a "last week we
+flagged X" framing. (Schema v1 named this `cross_time_ref`; the rename
+to `prior_coverage_ref` in v2 keeps the same semantics while making the
+name honest -- it flags topical RECURRENCE, not temporal progression.
+Pydantic validation alias `cross_time_ref` keeps released v1 archive
+files parseable.)
 
 ### `RankedStory` — a scored cluster ready to write
 
@@ -162,7 +167,7 @@ blocks ready for the Jinja2 template.
 ```python
 from __future__ import annotations
 from typing import Annotated, Literal, Optional
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import AliasChoices, BaseModel, Field, HttpUrl
 
 SectionName = Literal[
     "pulse",            # The Pulse — 1 story, the most important today
@@ -173,15 +178,15 @@ SectionName = Literal[
 
 
 class SummaryBlock(BaseModel):
-    schema_version: int = 1                                                 # bump on shape change
+    schema_version: int = 2                                                 # bump on shape change; v2 renames cross_time_ref -> prior_coverage_ref (alias retained)
     story_id: Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]           # = Cluster.cluster_id (the canonical handle for a story)
     headline: Annotated[str, Field(min_length=1, max_length=200)]           # editorial headline (LLM-written, may differ from canonical_title)
     summary: Annotated[str, Field(min_length=1, max_length=1200)]           # the story body — link out, never reproduce full article
     direction_note: Annotated[str, Field(max_length=400)] = ""              # "where this points" — required for pulse/where_heading; "" allowed elsewhere
     finance_angle: Optional[Annotated[str, Field(max_length=400)]] = None   # FS lens, when the story earns one (see finance-lens skill)
     source_urls: Annotated[list[HttpUrl], Field(min_length=1)]              # links to original sources; render attributes attribution
-    cross_time_ref: Optional[Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]] = None
-                                                                            # mirrored from Cluster.cross_time_ref so renderers don't need to re-join
+    prior_coverage_ref: Optional[Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$", alias="cross_time_ref", validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref"))]] = None
+                                                                            # mirrored from Cluster.prior_coverage_ref so renderers don't need to re-join. v1 alias "cross_time_ref" retained for archive parse.
 
 
 class IssueSection(BaseModel):
@@ -444,11 +449,14 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   similar) holds centroid vectors keyed by `cluster_id`. Retrieval chooses
   the format; `Cluster.centroid_ref` records the filename.
 - **Atomicity:** `.tmp` + fsync + rename for both the JSONL and the sidecar.
-- **Cross-time dedup:** when `cross_time_ref` is set on a record,
-  downstream readers know this cluster is a **continuation** of a chain
+- **Cross-time dedup:** when `prior_coverage_ref` is set on a record,
+  downstream readers know this cluster has **prior coverage** in a chain
   whose earliest member is the referenced `cluster_id`. LLM Engineer reads
   the last 14 days of `clusters.jsonl` (+ corresponding `issue.json`
   appearances) to generate callbacks ("last week we flagged X").
+  (Schema v1 named this `cross_time_ref`; the v2 rename clarifies that
+  the field flags topical recurrence, not progression. Pydantic alias
+  keeps released v1 archive files parseable.)
 - **Read contract:** consumers iterate; if a record fails to parse,
   Retrieval Engineer's writer is buggy and Eval Engineer surfaces it — a
   reader does not silently skip.
@@ -817,7 +825,7 @@ internal helpers are private to the module.
 The Retrieval Engineer's responsibility — and the LLM Engineer's read
 contract on top of it — for not re-reporting the same story across days.
 
-### Setting `Cluster.cross_time_ref`
+### Setting `Cluster.prior_coverage_ref`
 
 1. After producing today's clusters, `cluster.py` loads the centroid
    sidecars for the last 14 days of `clusters.jsonl`.
@@ -826,14 +834,14 @@ contract on top of it — for not re-reporting the same story across days.
 3. If the highest match is **above the configured threshold** (default
    target ~0.85; Retrieval Engineer tunes against Eval fixtures) **and**
    the matched cluster is still "active" (matched within the last ~7 days
-   or has a chain that is), the today-cluster is considered a
-   **continuation**.
-4. `cross_time_ref` is set to the `cluster_id` of the **earliest** cluster
-   in the continuation chain — not the immediately previous day, but the
+   or has a chain that is), the today-cluster is judged to have **prior
+   coverage**.
+4. `prior_coverage_ref` is set to the `cluster_id` of the **earliest**
+   cluster in the chain — not the immediately previous day, but the
    root. This makes chains stable to read: "this story = chain rooted at
    `c_abc…`".
-5. If no match clears the threshold, `cross_time_ref` remains `None` — the
-   story is **new today**.
+5. If no match clears the threshold, `prior_coverage_ref` remains `None`
+   — the story is **new today**.
 
 Threshold and active-window numbers are Retrieval Engineer's call (consult
 Eval); recorded in `docs/DESIGN.md` once tuned.
@@ -841,17 +849,17 @@ Eval); recorded in `docs/DESIGN.md` once tuned.
 ### Read contract for LLM Engineer (callbacks)
 
 When `summarise.py` writes a `SummaryBlock` for a cluster whose
-`cross_time_ref` is set, it:
+`prior_coverage_ref` is set, it:
 
-1. Loads the chain — read the last 14 days of `clusters.jsonl`, follow the
-   chain back via `cross_time_ref`.
+1. Loads the chain — read the last 14 days of `clusters.jsonl`, follow
+   the chain back via `prior_coverage_ref`.
 2. Loads which past `issue.json` files featured any member of the chain
    (the cluster_id appears as a `SummaryBlock.story_id`).
 3. Considers a **callback framing** in the summary — *"Last Tuesday we
    flagged the Cohere distillation story; today's update is…"* — if the
    chain has prior published coverage.
-4. Mirrors `cross_time_ref` onto the `SummaryBlock` for renderers (so the
-   template can decorate continuation stories without re-joining).
+4. Mirrors `prior_coverage_ref` onto the `SummaryBlock` for renderers (so
+   the template can decorate prior-coverage stories without re-joining).
 
 Editor flags missed-callback opportunities in voice labels; Eval Engineer
 includes "callback coverage on continuation chains" in its drift metrics
@@ -861,13 +869,13 @@ over time.
 
 ## Cross-issue article-level dedup
 
-`Cluster.cross_time_ref` handles **story-level** continuations (the same
-story develops over days; the LLM Engineer uses the ref to write
-callbacks). It does **not** prevent a specific URL from re-appearing —
-two clusters on different days may contain overlapping items, and a
+`Cluster.prior_coverage_ref` handles **story-level** recurrence (the same
+story surfaces again on a later day; the LLM Engineer uses the ref to
+write callbacks). It does **not** prevent a specific URL from re-appearing
+— two clusters on different days may contain overlapping items, and a
 slow-burn story may surface the same write-up again later.
 
-This section adds a stricter, URL-level guarantee on top of `cross_time_ref`:
+This section adds a stricter, URL-level guarantee on top of `prior_coverage_ref`:
 
 > **Contract — released-URL exclusion.** Once a specific article URL has
 > appeared in a *released (canonical)* `issue.json`, it must not appear
@@ -923,13 +931,13 @@ in the pipeline.
 
 ### Rationale — *once released, never re-release*
 
-The contract is strict on purpose. The continuation case (same story
-develops over days) is **already** handled by `Cluster.cross_time_ref`:
+The contract is strict on purpose. The recurrence case (same story
+develops over days) is **already** handled by `Cluster.prior_coverage_ref`:
 when a story develops, the **new article covering it is a new URL** that
 has not been released, so it surfaces normally. The LLM Engineer uses
-`cross_time_ref` to write a callback ("Last week we flagged X; today's
-update is…") that references the prior issue. The reader gets the
-update without us recycling the exact same link.
+`prior_coverage_ref` to write a callback ("Last week we flagged X;
+today's update is…") that references the prior issue. The reader gets
+the update without us recycling the exact same link.
 
 If a URL has already been released, by definition we have already paid
 the editorial bandwidth on it. Re-running it adds nothing for the reader
@@ -961,18 +969,18 @@ re-runs only the append against an already-canonical issue would
 converge cleanly -- though that path is not exposed as a CLI flag in
 v0.
 
-### Interaction with `Cluster.cross_time_ref`
+### Interaction with `Cluster.prior_coverage_ref`
 
 These two mechanisms are complementary, not redundant:
 
 | Concern | Mechanism | Window | Granularity | Source of truth |
 |---|---|---|---|---|
-| Same **story** appearing twice as if new | `Cluster.cross_time_ref` + LLM callbacks | Last 14 days (active chain) | Cluster (story) | Canonical `data/<date>/clusters.jsonl` + `issue.json` |
+| Same **story** appearing twice as if new | `Cluster.prior_coverage_ref` + LLM callbacks | Last 14 days (active chain) | Cluster (story) | Canonical `data/<date>/clusters.jsonl` + `issue.json` |
 | Same **article URL** appearing twice | `data/published_urls.txt` | Forever | Item (URL) | Canonical (staging is invisible) |
 
 A story that runs Monday and gets a substantive follow-up Friday will:
-the Friday cluster sets `cross_time_ref` to Monday's cluster id; the
-Friday `SummaryBlock` contains the *new* Friday article's URL (not
+the Friday cluster sets `prior_coverage_ref` to Monday's cluster id;
+the Friday `SummaryBlock` contains the *new* Friday article's URL (not
 Monday's); the LLM writes a callback referencing Monday's issue
 number. Both mechanisms fire and the reader gets the right experience.
 
@@ -1141,7 +1149,7 @@ If either scenario applies, the fix is an ops/packaging change, not a model chan
   - Load `BAAI/bge-base-en-v1.5` once per process, not once per call.
   - Embed `f"{item.title}. {item.raw_summary or ''}".strip()` in batches (batch size 64 is a good default; tune against memory).
   - Same-day agglomerative clustering with cosine threshold ~0.82 (tune against `evals/fixtures/`).
-  - Cross-time dedup: load centroid `.npz` sidecars for the last 14 days, compute cosine similarity against today's cluster centroids, set `cross_time_ref` when similarity exceeds ~0.85.
+  - Cross-time dedup: load centroid `.npz` sidecars for the last 14 days, compute cosine similarity against today's cluster centroids, set `prior_coverage_ref` when similarity exceeds ~0.85.
 - Write centroid sidecars to `data/YYYY-MM-DD/embeddings/centroids.npz`.
 - Tune both thresholds against `evals/labels.yaml` — the Eval Engineer's harness gates this work.
 - Document final tuned thresholds in the table above once stable.
@@ -1186,4 +1194,5 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-05-23 | `data/published_urls.txt` (new derived archive file) | — | n/a (not a versioned schema; plain text, one URL per line) | New file. Cumulative URL exclusion index. Written by `src/render.py` after ratify+ship; read by `src/cluster.py` and `src/rank.py`. See [Cross-issue article-level dedup](#cross-issue-article-level-dedup). | n/a — first introduction. Missing-file tolerance: readers treat a missing `data/published_urls.txt` as an empty set (first-ever run, or fresh checkout). |
 | 2026-05-23 | `Issue` | v2 | v3 | Made `issue_number` **Optional** (`int \| None`, default `None`). Introduces the [Archive: staging vs canonical](#archive-staging-vs-canonical) split: every engine run writes to `data/staging/<date>/` with `issue_number = None`; `python -m src.run --release` promotes staging to canonical (`data/<date>/`) and assigns the number at that moment (`max(canonical issue_numbers) + 1`). Numbering is now a release-time operation, not a summarise-time one. Cross-time dedup, callbacks, and `data/published_urls.txt` all read canonical only -- staging is invisible to history. | Existing archive: none in canonical yet at v0, so no on-disk migration required. v2 readers handling v3 records reject `null` `issue_number` (pydantic would refuse `None` for a required `int`); since no v2 issues exist in canonical and staging is a fresh path, no v2 reader will encounter a v3 staging record. v3 readers handling v2 records accept the integer transparently (Optional permits the integer case). The `Issue` validator no longer enforces `issue_number >= 1` as a required invariant; the `ge=1` constraint applies only when `issue_number is not None`. |
 | 2026-05-23 | Archive layout (paths, not schema) | flat `data/<date>/` | split `data/<date>/` (canonical) + `data/staging/<date>/` (working) | New parallel write path under `data/staging/`. Same five files + embeddings sidecar, same atomic-write rules, same shape. Default engine write target is now staging; canonical is written only by `--release`. See [Archive: staging vs canonical](#archive-staging-vs-canonical). | n/a — first introduction. Round B (a follow-up refactor PR) updates `src/fetch.py`, `src/cluster.py`, `src/rank.py`, `src/summarise.py`, `src/render.py`, `src/run.py` to write to staging by default and to expose `--release`. Until Round B lands, the on-disk layout still matches the pre-staging behaviour; this contract specifies the target state. |
+| 2026-05-25 | `Cluster`, `SummaryBlock` | v1 | v2 | Renamed `cross_time_ref` -> `prior_coverage_ref` on both models (task #88). The old name implied temporal progression ("continuation"); what we actually detect is topical RECURRENCE. The rename keeps the semantic honest -- the field just says "this cluster has been covered before" without implying the new article carries new information. Pydantic `validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref")` retained so already-released archive files (e.g. `data/released/2026-05-24/issue.json`) continue to parse without rewriting any on-disk bytes. Also: `_apply_continuation_penalty` -> `_apply_prior_coverage_penalty`, `_CONTINUATION_SIGNIFICANCE_CAP` -> `_PRIOR_COVERAGE_SIGNIFICANCE_CAP`, log message wording "continuation penalty applied" -> "prior-coverage penalty applied", and `RANK_PROMPT_VERSION` v0.1 -> v0.3 (prompt content unchanged; bump records the audit-tagged log wording change at the rank-output level). | No on-disk migration. The pydantic alias means every existing v1 archive file (`data/released/<date>/issue.json` and `clusters.jsonl`) loads via `Issue.model_validate_json` / `Cluster.model_validate_json` exactly as before -- the field shows up on the in-memory object as `prior_coverage_ref` regardless of which name the JSON used. New writes use the new name (because `extra="forbid"` and pydantic serialises by the field-declaration name by default), so future archives will only contain `prior_coverage_ref`; mixed-vintage corpora remain parseable. Tested by `tests/test_models.py::TestCluster::test_prior_coverage_ref_alias_accepts_old_field_name` and by parsing `data/released/2026-05-24/issue.json` end-to-end. |
 | 2026-05-24 | `Issue` | v4 | v5 | Added `revision: int = 0` (`ge=0`). Same-date re-release (opt-in via `aiv release --revise`) preserves `issue_number` and bumps `revision` instead of consuming a new integer in the registry. Display identifier is now `Issue.display_number` -> `"{issue_number}"` when `revision == 0`, else `"{issue_number}.{revision}"` (`#2`, `#2.1`, `#2.2`). The integer registry semantics are unchanged: uniqueness, monotonic-increase, and `paths.all_released_dates()` all still operate on the integer base; `revision` is a per-date secondary counter. Templates render `issue.display_number`; landing-page archive entries carry `display_number` alongside `issue_number`. See [Issue Number Registry -> Same-date re-release (revision bump)](#issue-number-registry). Motivating case: prompt drift fix on issue #2 (2026-05-24) re-shipped as #2.1 instead of burning #3. | Existing canonical archive (issues #1, #2 on disk) loads transparently: missing `revision` field defaults to 0 via pydantic; `display_number` returns `"1"`, `"2"`. v4 readers handling v5 records: pydantic `extra="forbid"` on `Issue` means a v4 reader of a v5 record would reject the unknown `revision` field. **Mitigation:** this repo upgrades all readers in the same PR (one binary, no external consumers). v5 readers handling v4 records: `revision` defaults to 0, display behaviour is identical to v4. No on-disk migration script is required. |

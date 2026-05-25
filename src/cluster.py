@@ -55,7 +55,7 @@ from src.models import Cluster, Item
 EMBEDDING_MODEL_NAME = "BAAI/bge-base-en-v1.5"  # local HF model, ~440 MB fp32
 EMBEDDING_DIM = 768                              # output dimension of bge-base-en-v1.5
 WITHIN_DAY_COSINE_THRESHOLD = 0.78              # two items share a cluster when cosine >= this
-CROSS_TIME_COSINE_THRESHOLD = 0.82              # higher bar: cross-day similarity to set cross_time_ref
+CROSS_TIME_COSINE_THRESHOLD = 0.82              # higher bar: cross-day similarity to set prior_coverage_ref
 CROSS_TIME_LOOKBACK_DAYS = 14                   # days of history to consult for cross-time dedup
 MAX_CHAIN_DEPTH = 30                             # cycle-guard: max hops when resolving chain root
 BATCH_SIZE = 32                                  # sentence-transformers encode batch size
@@ -467,7 +467,7 @@ def _build_cluster(
         size=len(item_ids),
         embedding_dim=EMBEDDING_DIM,
         centroid_ref=None,
-        cross_time_ref=None,
+        prior_coverage_ref=None,
     )
 
 
@@ -603,29 +603,29 @@ def _resolve_chain_root(
     cluster_id: str,
     prior_clusters: dict[str, Cluster],
 ) -> str:
-    """Follow cross_time_ref links to find the earliest cluster in the chain.
+    """Follow prior_coverage_ref links to find the earliest cluster in the chain.
 
     Walks up to MAX_CHAIN_DEPTH hops.  If a cycle is detected, logs a warning
     and returns the cluster_id directly (no root resolution possible).
 
-    DESIGN.md §Setting Cluster.cross_time_ref step 4:
-        "cross_time_ref is set to the cluster_id of the *earliest* cluster in
-         the continuation chain — not the immediately previous day, but the root."
+    DESIGN.md §Setting Cluster.prior_coverage_ref step 4:
+        "prior_coverage_ref is set to the cluster_id of the *earliest* cluster
+         in the chain -- not the immediately previous day, but the root."
     """
     visited: set[str] = set()
     current = cluster_id
     for _ in range(MAX_CHAIN_DEPTH):
         if current in visited:
             logger.warning(
-                "Cycle detected in cross_time_ref chain; using cluster_id directly",
+                "Cycle detected in prior_coverage_ref chain; using cluster_id directly",
                 extra={"component": "cluster", "cluster_id": cluster_id, "cycle_at": current},
             )
             return cluster_id
         visited.add(current)
         node = prior_clusters.get(current)
-        if node is None or node.cross_time_ref is None:
+        if node is None or node.prior_coverage_ref is None:
             return current
-        current = node.cross_time_ref
+        current = node.prior_coverage_ref
     # Exhausted MAX_CHAIN_DEPTH without hitting None — return current.
     logger.warning(
         "MAX_CHAIN_DEPTH exceeded resolving chain root; using current node",
@@ -640,7 +640,7 @@ def _link_cross_time(
     prior_centroids: dict[str, np.ndarray],
     prior_clusters: dict[str, Cluster],
 ) -> int:
-    """Set Cluster.cross_time_ref for clusters that continue a prior story.
+    """Set Cluster.prior_coverage_ref for clusters that match a prior story.
 
     Mutates clusters in place.  Returns count of clusters linked.
 
@@ -649,7 +649,7 @@ def _link_cross_time(
        computation (dot product of L2-normalised vecs).
     2. For each today-cluster: compute dot against all prior centroids,
        take the argmax.  If max >= CROSS_TIME_COSINE_THRESHOLD, resolve the
-       chain root and set cross_time_ref.
+       chain root and set prior_coverage_ref.
     """
     if not prior_centroids:
         return 0
@@ -669,9 +669,10 @@ def _link_cross_time(
         if best_sim >= CROSS_TIME_COSINE_THRESHOLD:
             matched_id = prior_ids[best_idx]
             root_id = _resolve_chain_root(matched_id, prior_clusters)
-            # Direct attribute mutation is fine: cross_time_ref is a declared
-            # field on Cluster.  extra="forbid" only blocks undeclared fields.
-            cluster.cross_time_ref = root_id
+            # Direct attribute mutation is fine: prior_coverage_ref is a
+            # declared field on Cluster. extra="forbid" only blocks undeclared
+            # fields.
+            cluster.prior_coverage_ref = root_id
             linked += 1
     return linked
 

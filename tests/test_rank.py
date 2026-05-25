@@ -13,11 +13,11 @@ The Anthropic + Bedrock branches use vendor SDKs whose contracts are
 better covered by the vendor's own test suite + the integration eval; we
 deliberately don't pin them here.
 
-Additionally pins the deterministic post-LLM continuation penalty (#81)
-in ``TestContinuationPenalty`` -- the rule that caps
+Additionally pins the deterministic post-LLM prior-coverage penalty (#81)
+in ``TestPriorCoveragePenalty`` -- the rule that caps
 ``breakdown["significance"]`` at 50 for any cluster carrying a
-``cross_time_ref`` so a follow-up to yesterday's story can't crowd fresh
-items out of high-scoring slots.
+``prior_coverage_ref`` so a topical recurrence of yesterday's story can't
+crowd fresh items out of high-scoring slots.
 """
 from __future__ import annotations
 
@@ -29,11 +29,11 @@ import pytest
 
 from src.models import Cluster, Item
 from src.rank import (
-    _CONTINUATION_SIGNIFICANCE_CAP,
     _FRESHNESS_INFERRED_CAP,
+    _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
     _ParsedScore,
-    _apply_continuation_penalty,
     _apply_freshness_inferred_penalty,
+    _apply_prior_coverage_penalty,
     _llm_call_openai_compatible,
     _weighted_score,
 )
@@ -252,13 +252,14 @@ class TestResponseParsing:
 
 
 # ===========================================================================
-# Continuation penalty (#81) -- post-LLM deterministic downweighting.
+# Prior-coverage penalty (#81) -- post-LLM deterministic downweighting.
 #
-# A continuation (Cluster.cross_time_ref is not None) is a follow-up to a
-# story we covered on a previous day. Allowing the LLM to score it 65+ on
-# significance crowds genuinely-new stories out of high slots. The penalty
-# caps breakdown["significance"] at 50 (rubric anchor 50 = "single signal-
-# filter dimension hit"); the caller recomputes score via _weighted_score.
+# A cluster with prior coverage (Cluster.prior_coverage_ref is not None) is
+# a topical recurrence of something we covered on a previous day. Allowing
+# the LLM to score it 65+ on significance crowds genuinely-new stories out
+# of high slots. The penalty caps breakdown["significance"] at 50 (rubric
+# anchor 50 = "single signal-filter dimension hit"); the caller recomputes
+# score via _weighted_score.
 #
 # Anchor case: c_2e53967d020fb800 on 2026-05-25 -- llama.cpp how-to
 # follow-up scored 44 with significance=65, became Pulse by default.
@@ -279,7 +280,7 @@ def _parsed(significance: int) -> _ParsedScore:
     )
 
 
-def _cluster(cluster_id: str, *, cross_time_ref: str | None) -> Cluster:
+def _cluster(cluster_id: str, *, prior_coverage_ref: str | None) -> Cluster:
     return Cluster(
         cluster_id=cluster_id,
         item_ids=["i1"],
@@ -287,32 +288,32 @@ def _cluster(cluster_id: str, *, cross_time_ref: str | None) -> Cluster:
         sources=["src_a"],
         earliest_published=FIXED_EARLIER,
         size=1,
-        cross_time_ref=cross_time_ref,
+        prior_coverage_ref=prior_coverage_ref,
     )
 
 
-class TestContinuationPenalty:
-    """The deterministic post-LLM continuation penalty -- the safer alternative
+class TestPriorCoveragePenalty:
+    """The deterministic post-LLM prior-coverage penalty -- the safer alternative
     to a prompt change for this rule (see #75/#77 cliff)."""
 
-    def test_no_change_when_cross_time_ref_is_none(self) -> None:
+    def test_no_change_when_prior_coverage_ref_is_none(self) -> None:
         """Fresh stories must not be touched. Most stories are fresh; this is
         the common path -- a bug here would be a global regression."""
         parsed = _parsed(significance=80)
-        cluster = _cluster("c_" + "1" * 14, cross_time_ref=None)
-        _apply_continuation_penalty(parsed, cluster)
+        cluster = _cluster("c_" + "1" * 14, prior_coverage_ref=None)
+        _apply_prior_coverage_penalty(parsed, cluster)
         assert parsed.breakdown["significance"] == 80
 
-    def test_caps_significance_when_continuation(self) -> None:
-        """The smoking-gun anchor: continuation with significance=65 must
-        drop to the cap. Mirrors c_2e53967d020fb800 / 2026-05-25."""
+    def test_caps_significance_when_prior_coverage(self) -> None:
+        """The smoking-gun anchor: prior-coverage story with significance=65
+        must drop to the cap. Mirrors c_2e53967d020fb800 / 2026-05-25."""
         parsed = _parsed(significance=65)
         cluster = _cluster(
-            "c_" + "2" * 14, cross_time_ref="c_" + "f" * 14,
+            "c_" + "2" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
-        _apply_continuation_penalty(parsed, cluster)
-        assert parsed.breakdown["significance"] == _CONTINUATION_SIGNIFICANCE_CAP
-        assert _CONTINUATION_SIGNIFICANCE_CAP == 50
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _PRIOR_COVERAGE_SIGNIFICANCE_CAP
+        assert _PRIOR_COVERAGE_SIGNIFICANCE_CAP == 50
 
     def test_score_recomputes_correctly_after_cap(self) -> None:
         """The pydantic invariant `score == weighted_sum(breakdown)` must
@@ -320,13 +321,13 @@ class TestContinuationPenalty:
         the same _weighted_score helper RankedStory uses."""
         parsed = _parsed(significance=65)
         cluster = _cluster(
-            "c_" + "3" * 14, cross_time_ref="c_" + "f" * 14,
+            "c_" + "3" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
         # Anchor expected: 0.3*65 + 0.25*75 + 0 + 0.15*15 + 0.10*40 = 44.5 -> 44
         score_before = _weighted_score(parsed.breakdown)
         assert score_before == 44
 
-        _apply_continuation_penalty(parsed, cluster)
+        _apply_prior_coverage_penalty(parsed, cluster)
         # After cap: 0.3*50 + 0.25*75 + 0 + 0.15*15 + 0.10*40 = 40.0 -> 40
         score_after = _weighted_score(parsed.breakdown)
         assert score_after == 40
@@ -338,10 +339,10 @@ class TestContinuationPenalty:
         story is NEW, not about its other merits."""
         parsed = _parsed(significance=70)
         cluster = _cluster(
-            "c_" + "4" * 14, cross_time_ref="c_" + "f" * 14,
+            "c_" + "4" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
         before = dict(parsed.breakdown)
-        _apply_continuation_penalty(parsed, cluster)
+        _apply_prior_coverage_penalty(parsed, cluster)
         for key in (
             "hands_on_utility",
             "big_picture_relevance",
@@ -349,7 +350,7 @@ class TestContinuationPenalty:
             "freshness_momentum",
         ):
             assert parsed.breakdown[key] == before[key], (
-                f"{key} should not be affected by the continuation penalty"
+                f"{key} should not be affected by the prior-coverage penalty"
             )
 
     def test_noop_when_significance_already_below_cap(self) -> None:
@@ -358,29 +359,29 @@ class TestContinuationPenalty:
         need to act)."""
         parsed = _parsed(significance=40)
         cluster = _cluster(
-            "c_" + "5" * 14, cross_time_ref="c_" + "f" * 14,
+            "c_" + "5" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
-        _apply_continuation_penalty(parsed, cluster)
+        _apply_prior_coverage_penalty(parsed, cluster)
         assert parsed.breakdown["significance"] == 40
 
     def test_noop_at_exact_cap(self) -> None:
         """Boundary: significance == cap. No mutation, no log churn."""
-        parsed = _parsed(significance=_CONTINUATION_SIGNIFICANCE_CAP)
+        parsed = _parsed(significance=_PRIOR_COVERAGE_SIGNIFICANCE_CAP)
         cluster = _cluster(
-            "c_" + "6" * 14, cross_time_ref="c_" + "f" * 14,
+            "c_" + "6" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
-        _apply_continuation_penalty(parsed, cluster)
-        assert parsed.breakdown["significance"] == _CONTINUATION_SIGNIFICANCE_CAP
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _PRIOR_COVERAGE_SIGNIFICANCE_CAP
 
-    def test_caps_high_significance_continuation(self) -> None:
-        """A continuation the LLM rated near the top of significance still
-        gets pinned to the cap, not to "5 below where it was"."""
+    def test_caps_high_significance_prior_coverage(self) -> None:
+        """A prior-coverage story the LLM rated near the top of significance
+        still gets pinned to the cap, not to "5 below where it was"."""
         parsed = _parsed(significance=95)
         cluster = _cluster(
-            "c_" + "7" * 14, cross_time_ref="c_" + "f" * 14,
+            "c_" + "7" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
-        _apply_continuation_penalty(parsed, cluster)
-        assert parsed.breakdown["significance"] == _CONTINUATION_SIGNIFICANCE_CAP
+        _apply_prior_coverage_penalty(parsed, cluster)
+        assert parsed.breakdown["significance"] == _PRIOR_COVERAGE_SIGNIFICANCE_CAP
 
 
 # ===========================================================================
@@ -419,7 +420,7 @@ def _fresh_cluster(cluster_id: str, item_ids: list[str]) -> Cluster:
         sources=["src_a"],
         earliest_published=FIXED_EARLIER,
         size=len(item_ids),
-        cross_time_ref=None,
+        prior_coverage_ref=None,
     )
 
 

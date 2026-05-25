@@ -21,7 +21,7 @@ Key responsibilities
 --------------------
 1. Load top-N ranked stories. Resolve each to its ``Cluster`` and member
    ``Item`` set for source URLs and summary excerpts.
-2. For continuation stories (``cluster.cross_time_ref`` is set), load the
+2. For prior-coverage stories (``cluster.prior_coverage_ref`` is set), load the
    last 14 days of CANONICAL ``issue.json`` and pull up to 3 prior
    appearances of the chain -- the LLM uses these to write credible
    callbacks ("Last week we flagged X; today's update is...").
@@ -103,10 +103,10 @@ v0.8 vocabulary unchanged (big_picture / hands_on / on_the_radar)."""
 
 PULSE_PROMPT_VERSION = "v0.9"
 """Audit tag: ``pulse-v0.9-2026-05-25``. v0.9 (#82): the Pulse SELECTION
-RULE now biases against continuations -- a fresh (cross_time_ref is None)
-story beats any continuation regardless of score. This is a behavioural
-change in ``_pick_pulse``, not a prompt change. v0.8 mirrored summarise
-v0.9's length-cap hardening."""
+RULE now biases against prior coverage -- a fresh (prior_coverage_ref is
+None) story beats any prior-coverage story regardless of score. This is a
+behavioural change in ``_pick_pulse``, not a prompt change. v0.8 mirrored
+summarise v0.9's length-cap hardening."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -555,13 +555,13 @@ def summarise(date: _dt.date | None = None) -> Issue:
     clusters_by_id = _load_clusters_index(clusters_in)
     items_by_id = _load_items_index(items_in)
 
-    # Build callback context for any cluster with a cross_time_ref.
+    # Build callback context for any cluster with a prior_coverage_ref.
     # Round B: callback lookback reads CANONICAL only -- drafts Arman
     # discarded must not seed callbacks.
     callbacks_by_root = _load_callback_context(
         run_date,
-        roots={c.cross_time_ref for c in clusters_by_id.values()
-               if c.cross_time_ref},
+        roots={c.prior_coverage_ref for c in clusters_by_id.values()
+               if c.prior_coverage_ref},
     )
 
     # --- Per-story summarisation -----------------------------------------
@@ -576,8 +576,8 @@ def summarise(date: _dt.date | None = None) -> Issue:
             continue
         items = _items_for_cluster(cluster, items_by_id)
         callbacks = []
-        if cluster.cross_time_ref:
-            callbacks = callbacks_by_root.get(cluster.cross_time_ref, [])
+        if cluster.prior_coverage_ref:
+            callbacks = callbacks_by_root.get(cluster.prior_coverage_ref, [])
         try:
             block = _summarise_one(
                 story=story, cluster=cluster, items=items, callbacks=callbacks
@@ -771,9 +771,11 @@ def _load_callback_context(
             )
             continue
         issue_number = int(payload.get("issue_number") or 0)
-        # Pulse block + every section's stories carry cross_time_ref.
+        # Pulse block + every section's stories carry prior_coverage_ref
+        # (older archives may serialise the field under its v1 name
+        # ``cross_time_ref`` -- accept both for backwards compatibility).
         for block in _iter_blocks(payload):
-            ref = block.get("cross_time_ref")
+            ref = block.get("prior_coverage_ref") or block.get("cross_time_ref")
             if not ref or ref not in out:
                 continue
             if len(out[ref]) >= MAX_CALLBACK_REFERENCES:
@@ -862,7 +864,7 @@ def _summarise_one(
             headline=draft.headline,
             summary=draft.summary,
             source_urls=source_urls,  # type: ignore[arg-type]
-            cross_time_ref=cluster.cross_time_ref,
+            prior_coverage_ref=cluster.prior_coverage_ref,
             signal=draft.signal,  # type: ignore[arg-type]
         )
     except Exception:  # noqa: BLE001
@@ -1025,7 +1027,7 @@ CLUSTER
   canonical_title: {cluster.canonical_title}
   sources: {list(cluster.sources)}
   earliest_published: {cluster.earliest_published.isoformat()}
-  is_continuation: {"yes (chain root=" + cluster.cross_time_ref + ")" if cluster.cross_time_ref else "no"}
+  has_prior_coverage: {"yes (chain root=" + cluster.prior_coverage_ref + ")" if cluster.prior_coverage_ref else "no"}
 
 ITEMS:
 {items_block}
@@ -1509,19 +1511,20 @@ def _signal_dimensions_hit(story: RankedStory) -> int:
 def _pick_pulse(
     blocks: list[tuple[RankedStory, SummaryBlock]],
 ) -> str | None:
-    """The Pulse selection rule (v0.3 -- task #82: bias against continuations).
+    """The Pulse selection rule (v0.3 -- task #82: bias against prior coverage).
 
     Selection order:
 
-      1. **Prefer non-continuation for Pulse.** A continuation (the
-         SummaryBlock carries a non-null ``cross_time_ref``) is a follow-up
-         to a story we covered on a previous day. The Pulse is meant to be
-         the day's freshest editorial anchor; leading with a continuation
-         tells the reader "we have nothing new today". So: among surviving
-         blocks, any FRESH (cross_time_ref is None) story beats any
-         continuation regardless of score.
+      1. **Prefer fresh (no prior coverage) for Pulse.** A story with prior
+         coverage (the SummaryBlock carries a non-null
+         ``prior_coverage_ref``) is a topical recurrence of something we
+         covered on a previous day. The Pulse is meant to be the day's
+         freshest editorial anchor; leading with a recurrence tells the
+         reader "we have nothing new today". So: among surviving blocks,
+         any FRESH (prior_coverage_ref is None) story beats any
+         prior-coverage story regardless of score.
 
-      2. Within the chosen pool (FRESH if any exist; else continuations),
+      2. Within the chosen pool (FRESH if any exist; else prior-coverage),
          prefer stories that hit >= 2 signal-filter dimensions
          (significance, hands_on_utility, freshness_momentum >= 70). This
          is the Pulse-class quality bar inherited from v0.2.
@@ -1529,36 +1532,36 @@ def _pick_pulse(
       3. Within the chosen pool, prefer the highest score (blocks arrive in
          score-desc order; the sort below preserves that as the tiebreaker).
 
-    Degraded mode. If ALL surviving stories are continuations, we still
+    Degraded mode. If ALL surviving stories have prior coverage, we still
     have to fill ``Issue.pulse`` (the model requires exactly 1 story). We
-    pick the best continuation and log a WARNING -- the operator sees the
-    issue is light on fresh signal. ``Issue.pulse=None`` is not allowed by
-    the schema, so we ship with the smell loud rather than crash.
+    pick the best prior-coverage story and log a WARNING -- the operator
+    sees the issue is light on fresh signal. ``Issue.pulse=None`` is not
+    allowed by the schema, so we ship with the smell loud rather than crash.
 
     Returns None only if ``blocks`` is empty (caller aborts).
     """
     if not blocks:
         return None
 
-    # Partition by continuation status. cross_time_ref lives on the
+    # Partition by prior-coverage status. prior_coverage_ref lives on the
     # SummaryBlock (mirrored from Cluster at construction time in
     # _summarise_one). This is the deterministic seam -- no LLM, no prompt.
-    fresh = [(s, b) for s, b in blocks if b.cross_time_ref is None]
-    continuations = [(s, b) for s, b in blocks if b.cross_time_ref is not None]
+    fresh = [(s, b) for s, b in blocks if b.prior_coverage_ref is None]
+    recurring = [(s, b) for s, b in blocks if b.prior_coverage_ref is not None]
 
     pool: list[tuple[RankedStory, SummaryBlock]]
     if fresh:
         pool = fresh
     else:
-        # Degraded mode: every surviving story is a follow-up. Still must
-        # pick one (Issue.pulse requires exactly 1 block).
+        # Degraded mode: every surviving story has prior coverage. Still
+        # must pick one (Issue.pulse requires exactly 1 block).
         _LOG.warning(
             "summarise: NO FRESH SIGNAL FOR PULSE -- every surviving story "
-            "is a continuation (carries cross_time_ref). Using best "
-            "continuation as Pulse and shipping the smell. Consider whether "
-            "today's issue should ship at all."
+            "has prior coverage (carries prior_coverage_ref). Using best "
+            "prior-coverage story as Pulse and shipping the smell. "
+            "Consider whether today's issue should ship at all."
         )
-        pool = continuations
+        pool = recurring
 
     # Within the pool: Pulse-class quality bar first, then score order.
     pulse_class = [sb for sb in pool if _signal_dimensions_hit(sb[0]) >= 2]
@@ -1576,16 +1579,16 @@ def _pick_pulse(
                 "signal dimensions); using top-significance fresh fallback"
             )
 
-    # Operator visibility: log when we demoted a higher-scored continuation
-    # for a lower-scored fresh story. This is the rule firing.
-    if fresh and continuations:
-        top_continuation = continuations[0][0]  # blocks were score-desc
-        if top_continuation.score > chosen[0].score:
+    # Operator visibility: log when we demoted a higher-scored prior-coverage
+    # story for a lower-scored fresh story. This is the rule firing.
+    if fresh and recurring:
+        top_recurring = recurring[0][0]  # blocks were score-desc
+        if top_recurring.score > chosen[0].score:
             _LOG.info(
-                "summarise: Pulse non-continuation bias fired -- demoted "
-                "continuation %s (score=%d) in favour of fresh story %s "
-                "(score=%d). #82.",
-                top_continuation.cluster_id, top_continuation.score,
+                "summarise: Pulse fresh-over-prior-coverage bias fired -- "
+                "demoted prior-coverage story %s (score=%d) in favour of "
+                "fresh story %s (score=%d). #82.",
+                top_recurring.cluster_id, top_recurring.score,
                 chosen[0].cluster_id, chosen[0].score,
             )
 

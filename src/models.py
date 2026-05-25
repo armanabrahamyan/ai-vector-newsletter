@@ -64,6 +64,7 @@ from datetime import date, datetime
 from typing import Annotated, Literal
 
 from pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
@@ -227,7 +228,7 @@ class Item(BaseModel):
 class Cluster(BaseModel):
     """
     A set of Items judged to be the same story (within-day, plus cross-time
-    continuation linkage via `cross_time_ref`).
+    linkage via `prior_coverage_ref`).
 
     Produced by `src/cluster.py`. Consumed by `src/rank.py`,
     `src/summarise.py`, and evals.
@@ -238,7 +239,7 @@ class Cluster(BaseModel):
     itself out of the JSONL line.
     """
 
-    schema_version: int = 1
+    schema_version: int = 2
     cluster_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """"c_" + 12+ hex chars. Stable per day."""
 
@@ -257,11 +258,25 @@ class Cluster(BaseModel):
     size: Annotated[int, Field(ge=1)]
     """`len(item_ids)` -- duplicated for fast reads without parsing the list."""
 
-    cross_time_ref: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)] | None = None
+    prior_coverage_ref: Annotated[
+        str | None,
+        Field(
+            default=None,
+            pattern=_CLUSTER_ID_PATTERN,
+            alias="cross_time_ref",
+            validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref"),
+        ),
+    ] = None
     """
-    Earliest `cluster_id` in the continuation chain when this cluster is a
-    continuation of a prior-day cluster; `None` if new today. See DESIGN.md
-    "Cross-time dedup contract".
+    Earliest `cluster_id` in the chain when this cluster has prior coverage
+    (a prior-day cluster covered the same topic); `None` if new today.
+    See DESIGN.md "Cross-time dedup contract".
+
+    Schema v2 rename (task #88): formerly `cross_time_ref`. The old name
+    conflated true continuations (new info worth showing) with effective
+    duplicates (same story, repeated surface); the new name just says
+    "this cluster has been covered before" without implying progression.
+    Pydantic alias `cross_time_ref` keeps released archive files parseable.
     """
 
     embedding_dim: int | None = None
@@ -273,7 +288,7 @@ class Cluster(BaseModel):
     separately; `None` if not stored.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     @model_validator(mode="after")
     def _size_matches_item_ids(self) -> "Cluster":
@@ -405,7 +420,7 @@ class SummaryBlock(BaseModel):
     handle for a story across cluster/rank/summarise/render.
     """
 
-    schema_version: int = 1
+    schema_version: int = 2
     story_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """= Cluster.cluster_id; the canonical handle for a story."""
 
@@ -424,17 +439,28 @@ class SummaryBlock(BaseModel):
     source_urls: Annotated[list[HttpUrl], Field(min_length=1)]
     """Links to original sources; render attributes attribution."""
 
-    cross_time_ref: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)] | None = None
+    prior_coverage_ref: Annotated[
+        str | None,
+        Field(
+            default=None,
+            pattern=_CLUSTER_ID_PATTERN,
+            alias="cross_time_ref",
+            validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref"),
+        ),
+    ] = None
     """
-    Mirrored from `Cluster.cross_time_ref` so renderers do not need to
-    re-join. Continuation chain root, when set.
+    Mirrored from `Cluster.prior_coverage_ref` so renderers do not need to
+    re-join. Chain root, when set.
+
+    Schema v2 rename (task #88): formerly `cross_time_ref`. Pydantic alias
+    `cross_time_ref` keeps released archive issue.json files parseable.
     """
 
     signal: Signal | None = None
     """Editorial verdict pill (Phase B). LLM-tagged in summarise.py.
     Optional so pre-Phase-B archive issues still parse."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
 # ---------------------------------------------------------------------------

@@ -368,7 +368,7 @@ class TestEarliestPublished:
 # ===========================================================================
 
 class TestCrossTimeDedup:
-    """Cross-time dedup sets cross_time_ref to the prior cluster_id when
+    """Cross-time dedup sets prior_coverage_ref to the prior cluster_id when
     today's centroid matches a released centroid above CROSS_TIME_COSINE_THRESHOLD."""
 
     def _plant_prior_centroid(
@@ -398,7 +398,7 @@ class TestCrossTimeDedup:
         with clusters_path.open("w", encoding="utf-8") as fh:
             fh.write(cluster.model_dump_json() + "\n")
 
-    def test_cross_time_ref_set_when_similar(
+    def test_prior_coverage_ref_set_when_similar(
         self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
     ) -> None:
         # Build a prior cluster with a known centroid.
@@ -414,7 +414,7 @@ class TestCrossTimeDedup:
             sources=["blog_a"],
             earliest_published=_T0,
             size=1,
-            cross_time_ref=None,
+            prior_coverage_ref=None,
         )
         self._plant_prior_centroid(tmp_data_root, prior_date, prior_cid, prior_centroid)
         self._plant_prior_cluster(tmp_data_root, prior_date, prior_cluster_obj)
@@ -440,9 +440,9 @@ class TestCrossTimeDedup:
         clusters = cluster_mod.cluster_day(run_date=fixed_date)
 
         assert len(clusters) == 1
-        assert clusters[0].cross_time_ref == prior_cid
+        assert clusters[0].prior_coverage_ref == prior_cid
 
-    def test_cross_time_ref_none_for_new_story(
+    def test_prior_coverage_ref_none_for_new_story(
         self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
     ) -> None:
         # Prior centroid points in one direction; today's item points in orthogonal.
@@ -476,7 +476,7 @@ class TestCrossTimeDedup:
         clusters = cluster_mod.cluster_day(run_date=fixed_date)
 
         assert len(clusters) == 1
-        assert clusters[0].cross_time_ref is None
+        assert clusters[0].prior_coverage_ref is None
 
     def test_missing_prior_day_does_not_crash(
         self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
@@ -497,12 +497,12 @@ class TestCrossTimeDedup:
         clusters = cluster_mod.cluster_day(run_date=fixed_date)
 
         assert len(clusters) == 1
-        assert clusters[0].cross_time_ref is None
+        assert clusters[0].prior_coverage_ref is None
 
-    def test_cross_time_ref_resolves_to_chain_root(
+    def test_prior_coverage_ref_resolves_to_chain_root(
         self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
     ) -> None:
-        """When prior cluster itself has a cross_time_ref, today's ref points to root."""
+        """When prior cluster itself has a prior_coverage_ref, today's ref points to root."""
         root_date = fixed_date - datetime.timedelta(days=3)
         mid_date = fixed_date - datetime.timedelta(days=1)
 
@@ -510,7 +510,7 @@ class TestCrossTimeDedup:
         mid_cid = _expected_cluster_id(["mid-item"])
         shared_vec = _unit([1.0] + [0.0] * (DIM - 1))
 
-        # Root cluster: no cross_time_ref.
+        # Root cluster: no prior_coverage_ref.
         root_cluster_obj = Cluster(
             cluster_id=root_cid,
             item_ids=["root-item"],
@@ -519,7 +519,7 @@ class TestCrossTimeDedup:
             earliest_published=_T1,
             size=1,
         )
-        # Mid cluster: cross_time_ref -> root.
+        # Mid cluster: prior_coverage_ref -> root.
         mid_cluster_obj = Cluster(
             cluster_id=mid_cid,
             item_ids=["mid-item"],
@@ -527,7 +527,7 @@ class TestCrossTimeDedup:
             sources=["blog_b"],
             earliest_published=_T0,
             size=1,
-            cross_time_ref=root_cid,
+            prior_coverage_ref=root_cid,
         )
 
         # Plant both days of released history.
@@ -562,7 +562,7 @@ class TestCrossTimeDedup:
 
         assert len(clusters) == 1
         # Should resolve to the chain root, not mid.
-        assert clusters[0].cross_time_ref == root_cid
+        assert clusters[0].prior_coverage_ref == root_cid
 
 
 # ===========================================================================

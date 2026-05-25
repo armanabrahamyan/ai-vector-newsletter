@@ -224,7 +224,7 @@ def _run_cluster(run_date: _dt.date) -> str:
     from src import cluster as cluster_mod
 
     clusters = cluster_mod.cluster(date=run_date)
-    cross_linked = sum(1 for c in clusters if c.cross_time_ref is not None)
+    cross_linked = sum(1 for c in clusters if c.prior_coverage_ref is not None)
     return f"{len(clusters)} clusters ({cross_linked} cross-time linked)"
 
 

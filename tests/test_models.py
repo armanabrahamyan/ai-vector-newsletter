@@ -47,6 +47,38 @@ class TestCluster:
                 size=5,  # mismatch
             )
 
+    def test_prior_coverage_ref_alias_accepts_old_field_name(self) -> None:
+        """Task #88 migration safety net. The v1 schema serialised the
+        field as ``cross_time_ref``; the v2 rename to ``prior_coverage_ref``
+        kept that old name as a pydantic validation alias so already-
+        released archive files (e.g. ``data/released/2026-05-24/issue.json``)
+        continue to parse.
+
+        Without this alias, every old issue.json on disk would break the
+        Issue parse path -- which is what the migration is designed to
+        avoid. Pinning the contract here so a future "cleanup" of the
+        alias surfaces as a test failure first, not as a broken archive.
+        """
+        import json
+
+        # Serialised payload built with the OLD field name, as it appears
+        # in the released archive.
+        raw = json.dumps({
+            "schema_version": 1,
+            "cluster_id": VALID_CLUSTER_ID,
+            "item_ids": ["i1"],
+            "canonical_title": "t",
+            "sources": ["s"],
+            "earliest_published": FIXED_NOW.isoformat(),
+            "size": 1,
+            "cross_time_ref": "c_ffffffffffff",
+        })
+
+        cluster = Cluster.model_validate_json(raw)
+
+        # The NEW field name is populated from the alias.
+        assert cluster.prior_coverage_ref == "c_ffffffffffff"
+
 
 # ===========================================================================
 # RankedStory -- breakdown + weighted score invariants are ours.
