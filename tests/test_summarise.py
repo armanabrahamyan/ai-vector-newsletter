@@ -145,6 +145,127 @@ class TestPickSourceUrlsRedditDedup:
 
 
 # ===========================================================================
+# _pick_source_urls -- canonical-ID collapse (task #84).
+#
+# Background. Retrieval Engineer's tasks #80 + #83 added canonical-ID-aware
+# clustering: rule A force-groups items sharing the same canonical ID
+# (arxiv abs, GitHub release tag, DOI), rule B forbids items with distinct
+# canonical IDs from merging via embeddings. Rule A means a cluster can
+# legitimately end up with multiple source URLs that all point at the
+# same paper from different feeds -- e.g. arxiv X cross-posted to HF
+# Daily Papers AND linked in a Reddit thread. Both items have canonical
+# ID "arxiv:<abs>". Without the second-pass collapse below, the rendered
+# HTML shows two arxiv.org links side-by-side -- visually noisy and
+# editorially misleading (looks like two sources, is really one).
+#
+# This block pins the second-pass behaviour: same canonical ID -> one URL
+# (highest-trust wins), different canonical IDs -> both preserved, free-
+# text URLs -> untouched, pure free-text cluster -> unchanged.
+# ===========================================================================
+
+class TestPickSourceUrlsCanonicalIdCollapse:
+    def test_two_items_same_arxiv_id_collapse_to_one_url(self) -> None:
+        """The headline case for #84: an arxiv paper cross-posted to HF
+        Daily Papers AND linked in a Reddit thread. Both items resolve to
+        ``arxiv:2605.12345``; source_urls must end with ONE entry."""
+        items = [
+            # Reddit thread that points at the arxiv paper (canonical URL
+            # variant: the Reddit item's PRIMARY URL is the arxiv abs link
+            # itself -- that's how RSS feeds that pull arxiv summaries
+            # surface). In production the canonical extraction is body-aware
+            # too, but at the _pick_source_urls seam we only see URLs.
+            _item(
+                "https://arxiv.org/abs/2605.12345",
+                source="reddit_ml", trust=2,
+            ),
+            _item(
+                "https://arxiv.org/abs/2605.12345v2",
+                source="hf_daily_papers", trust=5,
+            ),
+        ]
+        urls = _pick_source_urls(items, k=3)
+        assert len(urls) == 1
+        # Higher-trust source wins (hf_daily_papers, trust=5). The v2
+        # suffix is fine -- the canonical ID strips the version so both
+        # items match the same arxiv bucket.
+        assert urls[0] == "https://arxiv.org/abs/2605.12345v2"
+
+    def test_two_items_different_arxiv_ids_both_preserved(self) -> None:
+        """Cluster rule B forbids embedding-merging of items with distinct
+        canonical IDs; rule A's body-bridge case is the only way two
+        DIFFERENT arxiv IDs end up in the same cluster (one item links
+        the other in its body). When that happens, source_urls must keep
+        BOTH -- they reference different papers."""
+        items = [
+            _item("https://arxiv.org/abs/2605.11111", source="arxiv", trust=5),
+            _item("https://arxiv.org/abs/2605.22222", source="arxiv", trust=5),
+        ]
+        urls = _pick_source_urls(items, k=3)
+        assert len(urls) == 2
+        assert set(urls) == {
+            "https://arxiv.org/abs/2605.11111",
+            "https://arxiv.org/abs/2605.22222",
+        }
+
+    def test_arxiv_url_plus_free_text_blog_url_both_preserved(self) -> None:
+        """A cluster mixing an arxiv item with a free-text blog post: the
+        blog has canonical_id == None, so it is never collapsed against
+        the arxiv URL. Both URLs survive."""
+        items = [
+            _item("https://arxiv.org/abs/2605.12345", source="arxiv", trust=5),
+            _item("https://blog.example.com/our-take", source="example_blog", trust=4),
+        ]
+        urls = _pick_source_urls(items, k=3)
+        assert len(urls) == 2
+        assert "https://arxiv.org/abs/2605.12345" in urls
+        assert "https://blog.example.com/our-take" in urls
+
+    def test_pure_free_text_cluster_unchanged(self) -> None:
+        """A cluster with zero canonical-ID URLs: the second pass is a
+        no-op. All distinct URLs survive (subject to existing Reddit-slug
+        and exact-URL dedup, which neither apply here)."""
+        items = [
+            _item("https://blog.example.com/post-one", source="blog_a", trust=5),
+            _item("https://news.example.org/article", source="news_b", trust=4),
+            _item("https://substack.example.net/issue", source="sub_c", trust=3),
+        ]
+        urls = _pick_source_urls(items, k=3)
+        assert len(urls) == 3
+        assert set(urls) == {
+            "https://blog.example.com/post-one",
+            "https://news.example.org/article",
+            "https://substack.example.net/issue",
+        }
+
+    def test_github_release_cross_posts_collapse(self) -> None:
+        """Same canonical-ID logic, GitHub release flavour: a release
+        announcement linked from two different feeds collapses to one
+        URL. Pins that the canonical-ID lookup isn't arxiv-only.
+
+        URLs are chosen to differ as strings (trailing slash variant) so
+        pass 1's exact-URL dedup is a no-op and pass 2 (canonical-ID)
+        actually fires."""
+        items = [
+            _item(
+                "https://github.com/ggerganov/llama.cpp/releases/tag/b9297",
+                source="github_releases", trust=5,
+            ),
+            _item(
+                "https://github.com/ggerganov/llama.cpp/releases/tag/b9297/",
+                source="hn", trust=3,
+            ),
+        ]
+        urls = _pick_source_urls(items, k=3)
+        # Higher-trust github_releases wins; the trailing-slash HN variant
+        # is dropped by the canonical-ID pass (both resolve to
+        # github_release:ggerganov/llama.cpp:b9297).
+        assert len(urls) == 1
+        assert urls == [
+            "https://github.com/ggerganov/llama.cpp/releases/tag/b9297"
+        ]
+
+
+# ===========================================================================
 # _reconcile_signal_with_audience_tags -- FM-12 / regression #75 safety net.
 #
 # When the per-story summarise LLM tags a story signal="act" -- the editorial

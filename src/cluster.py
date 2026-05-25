@@ -21,6 +21,15 @@ Public entry point (per DESIGN.md module boundary table):
 
 Standalone debug entry point (per spec):
     python -m src.cluster
+
+Canonical-ID-aware clustering (tasks #80 + #83):
+  Items with a stable canonical identifier (arxiv abs ID, GitHub release tag,
+  DOI) are clustered by that identifier BEFORE embedding-based clustering runs.
+  Two rules fire before the embedding pass:
+    Rule A — same canonical ID: force-grouped into one cluster.
+    Rule B — different canonical IDs: forbidden from merging via embeddings.
+  Items without a canonical ID fall through to the existing embedding path.
+  See _canonical_id() and _apply_canonical_id_rules() for implementation.
 """
 
 from __future__ import annotations
@@ -29,7 +38,9 @@ import datetime
 import hashlib
 import logging
 import os
+import re
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import yaml
@@ -176,6 +187,175 @@ def _embed(items: list[Item]) -> np.ndarray:
     return embeddings.astype(np.float32)
 
 
+# ---------------------------------------------------------------------------
+# Canonical-ID helpers (tasks #80 + #83)
+# ---------------------------------------------------------------------------
+
+# Compiled once at module load for performance.
+_RE_ARXIV_URL = re.compile(
+    r"arxiv\.org/abs/([0-9]{4}\.[0-9]{4,5})(?:v\d+)?",
+    re.IGNORECASE,
+)
+_RE_GITHUB_RELEASE_URL = re.compile(
+    r"github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/releases/tag/([^)\s\"'>\]]+)",
+    re.IGNORECASE,
+)
+_RE_DOI_URL = re.compile(
+    r"(?:dx\.)?doi\.org/(.+?)(?:[\s\"'>\]\)]|$)",
+    re.IGNORECASE,
+)
+
+
+def _extract_canonical_id_from_url(url_str: str) -> Optional[str]:
+    """Return a canonical identity string from a single URL string, or None.
+
+    Patterns handled:
+      arxiv.org/abs/<ID>             -> "arxiv:<ID>"  (version suffix stripped)
+      github.com/<o>/<r>/releases/tag/<tag> -> "github_release:<o>/<r>:<tag>"
+      doi.org/<doi> / dx.doi.org/<doi>     -> "doi:<doi>"
+
+    Returns None when the URL matches none of the above patterns.
+    """
+    m = _RE_ARXIV_URL.search(url_str)
+    if m:
+        return f"arxiv:{m.group(1)}"
+
+    m = _RE_GITHUB_RELEASE_URL.search(url_str)
+    if m:
+        repo = m.group(1).rstrip("/")
+        tag = m.group(2).rstrip("/")
+        return f"github_release:{repo}:{tag}"
+
+    m = _RE_DOI_URL.search(url_str)
+    if m:
+        doi = m.group(1).rstrip("/.,;")
+        return f"doi:{doi}"
+
+    return None
+
+
+def _canonical_id(item: Item) -> Optional[str]:
+    """Return a stable canonical identity string for an item, or None.
+
+    Step 1: check the item's primary URL against known canonical patterns.
+    Step 2: if no match (free-text item — blog, news, Reddit), scan
+            item.raw_summary for the FIRST occurrence of a canonical URL.
+            If exactly one canonical URL is found, return its ID.
+            If zero or two+ distinct canonical IDs appear, return None
+            (ambiguous or self-referential; fall through to embedding).
+
+    This two-step approach is what bridges Reddit posts that link to a GitHub
+    release entry: the Reddit post's primary URL is reddit.com/... (no ID),
+    but its raw_summary contains the release URL.
+    """
+    primary_url = str(item.url)
+    cid = _extract_canonical_id_from_url(primary_url)
+    if cid is not None:
+        return cid
+
+    # Primary URL has no canonical ID — scan the body for secondary signals.
+    body = item.raw_summary or ""
+    if not body:
+        return None
+
+    # Find all canonical IDs mentioned in the body.
+    found: list[str] = []
+
+    for m in _RE_ARXIV_URL.finditer(body):
+        cid_body = f"arxiv:{m.group(1)}"
+        if cid_body not in found:
+            found.append(cid_body)
+
+    for m in _RE_GITHUB_RELEASE_URL.finditer(body):
+        repo = m.group(1).rstrip("/")
+        tag = m.group(2).rstrip("/")
+        cid_body = f"github_release:{repo}:{tag}"
+        if cid_body not in found:
+            found.append(cid_body)
+
+    for m in _RE_DOI_URL.finditer(body):
+        doi = m.group(1).rstrip("/.,;")
+        cid_body = f"doi:{doi}"
+        if cid_body not in found:
+            found.append(cid_body)
+
+    if len(found) == 1:
+        return found[0]
+
+    # Zero or multiple distinct canonical IDs in body — ambiguous; fall through.
+    return None
+
+
+def _apply_canonical_id_rules(
+    items: list[Item],
+    embeddings: np.ndarray,
+    trust_weights: dict[str, int],
+) -> tuple[list[Cluster], list[Item], np.ndarray]:
+    """Apply rule A (force-group) and rule B (forbid-merge) before embeddings.
+
+    Rule A — same canonical ID: items sharing an identical canonical ID are
+    force-grouped into one Cluster immediately, bypassing cosine clustering.
+    This fixes e.g. a Reddit post + an official GitHub release entry for b9297.
+
+    Rule B — different canonical IDs: items with *distinct* canonical IDs are
+    individually extracted as singleton Clusters so they cannot be merged by
+    the embedding step. This prevents distinct arxiv papers from collapsing
+    on thematic similarity.
+
+    Items with no canonical ID (None) are passed through unchanged to the
+    embedding-based clustering step.
+
+    Returns:
+        canonical_clusters:  Cluster list produced by rules A + B.
+        free_items:          Items with no canonical ID; go to embedding pass.
+        free_embeddings:     Corresponding embedding rows for free_items.
+    """
+    # Assign a canonical ID to each item.
+    cids: list[Optional[str]] = [_canonical_id(item) for item in items]
+
+    # Bucket items by canonical ID.
+    # None -> free-text items (embedding pass).
+    # string -> canonical-id-bucketed items.
+    bucket: dict[str, list[int]] = {}  # cid -> list of item indices
+    free_indices: list[int] = []
+
+    for idx, cid in enumerate(cids):
+        if cid is None:
+            free_indices.append(idx)
+        else:
+            bucket.setdefault(cid, []).append(idx)
+
+    canonical_clusters: list[Cluster] = []
+
+    # Rule A: items sharing the same canonical ID -> one forced cluster.
+    # Rule B: each distinct canonical ID -> its own singleton (or multi-item
+    #         group from rule A), forbidden from merging with other buckets.
+    for cid, indices in bucket.items():
+        cluster_items = [items[i] for i in indices]
+        canonical_clusters.append(_build_cluster(cluster_items, trust_weights))
+        logger.debug(
+            "Canonical-ID cluster: cid=%s items=%d",
+            cid,
+            len(cluster_items),
+            extra={"component": "cluster"},
+        )
+
+    # Collect free items and their embeddings.
+    free_items = [items[i] for i in free_indices]
+    free_embeddings = (
+        embeddings[free_indices] if free_indices else np.empty((0, embeddings.shape[1]), dtype=np.float32)
+    )
+
+    logger.info(
+        "Canonical-ID rules: %d canonical clusters | %d free items -> embedding pass",
+        len(canonical_clusters),
+        len(free_items),
+        extra={"component": "cluster"},
+    )
+
+    return canonical_clusters, free_items, free_embeddings
+
+
 def _cluster_within_day(
     items: list[Item],
     embeddings: np.ndarray,
@@ -183,49 +363,64 @@ def _cluster_within_day(
 ) -> list[Cluster]:
     """Agglomerative clustering with cosine distance threshold.
 
-    sklearn.cluster.AgglomerativeClustering with:
-      - metric="cosine"         (1 - cosine_similarity as the pairwise distance)
-      - linkage="average"       (average linkage = UPGMA; more stable than single/complete
-                                 for finding natural story clusters)
-      - distance_threshold = 1 - WITHIN_DAY_COSINE_THRESHOLD
-      - n_clusters=None         (threshold-based, not fixed-count)
+    Two-phase approach:
+      Phase 1 — canonical-ID rules (tasks #80 + #83):
+        - Rule A: items sharing the same canonical ID (arxiv abs, GitHub release
+          tag, DOI) are force-grouped, bypassing embedding similarity.
+        - Rule B: items with distinct canonical IDs are separated as individual
+          clusters and excluded from the embedding pass — different arxiv IDs
+          are by definition different papers and must not merge on thematic
+          similarity.
+        Items with no canonical ID are collected for Phase 2.
+      Phase 2 — embedding-based agglomerative clustering (unchanged):
+        sklearn.cluster.AgglomerativeClustering with:
+          - metric="cosine"
+          - linkage="average"
+          - distance_threshold = 1 - WITHIN_DAY_COSINE_THRESHOLD
 
     DESIGN.md note: distance = 1 - cosine_similarity for L2-normalised vectors.
     With normalize_embeddings=True from sentence-transformers, ||v||=1, so
     dot(v_i, v_j) = cos(v_i, v_j) and distance = 1 - dot = ||v_i - v_j||^2 / 2.
     sklearn's cosine metric computes 1 - cos directly, which is correct here.
-
-    Each sklearn label maps to a list of items; we build Cluster objects from those.
     """
     if not items:
         return []
 
-    if len(items) == 1:
-        # sklearn requires >= 2 samples; handle singleton directly.
-        return [_build_cluster([items[0]], trust_weights)]
-
-    from sklearn.cluster import AgglomerativeClustering
-
-    distance_threshold = 1.0 - WITHIN_DAY_COSINE_THRESHOLD
-    model = AgglomerativeClustering(
-        n_clusters=None,
-        distance_threshold=distance_threshold,
-        metric="cosine",
-        linkage="average",
+    # Phase 1: canonical-ID rules (fire before any cosine comparison).
+    canonical_clusters, free_items, free_embeddings = _apply_canonical_id_rules(
+        items, embeddings, trust_weights
     )
-    labels: np.ndarray = model.fit_predict(embeddings)
 
-    # Group items by cluster label.
-    label_to_items: dict[int, list[tuple[int, Item]]] = {}
-    for idx, label in enumerate(labels.tolist()):
-        label_to_items.setdefault(label, []).append((idx, items[idx]))
+    # Phase 2: embedding-based clustering for free-text items only.
+    embedding_clusters: list[Cluster] = []
 
-    clusters: list[Cluster] = []
-    for label_items in label_to_items.values():
-        cluster_items = [pair[1] for pair in label_items]
-        clusters.append(_build_cluster(cluster_items, trust_weights))
+    if not free_items:
+        pass  # Nothing left for the embedding pass.
+    elif len(free_items) == 1:
+        # sklearn requires >= 2 samples; handle singleton directly.
+        embedding_clusters = [_build_cluster([free_items[0]], trust_weights)]
+    else:
+        from sklearn.cluster import AgglomerativeClustering
 
-    return clusters
+        distance_threshold = 1.0 - WITHIN_DAY_COSINE_THRESHOLD
+        model = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=distance_threshold,
+            metric="cosine",
+            linkage="average",
+        )
+        labels: np.ndarray = model.fit_predict(free_embeddings)
+
+        # Group items by cluster label.
+        label_to_items: dict[int, list[tuple[int, Item]]] = {}
+        for idx, label in enumerate(labels.tolist()):
+            label_to_items.setdefault(label, []).append((idx, free_items[idx]))
+
+        for label_items in label_to_items.values():
+            cluster_items = [pair[1] for pair in label_items]
+            embedding_clusters.append(_build_cluster(cluster_items, trust_weights))
+
+    return canonical_clusters + embedding_clusters
 
 
 def _build_cluster(

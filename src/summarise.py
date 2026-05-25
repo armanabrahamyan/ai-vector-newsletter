@@ -64,6 +64,15 @@ from src.rank import (
     _extract_json_object,
     _llm_call,
 )
+# Reuse the URL-only canonical-ID helper landed by Retrieval Engineer in
+# tasks #80 + #83. The helper takes a single URL string and returns a
+# stable identity (arxiv abs ID, GitHub release tag, DOI) or None.
+# Importing rather than duplicating keeps the regex patterns single-source
+# -- when a new canonical pattern is added (e.g. HuggingFace model IDs),
+# both modules benefit immediately. If this import ever feels awkward
+# (cluster.py is heavy: numpy, sentence-transformers), extract both
+# helpers to a shared src/canonical_id.py module.
+from src.cluster import _extract_canonical_id_from_url
 from src import paths
 from src.models import (
     Cluster,
@@ -1304,21 +1313,63 @@ def _url_dedup_key(url: str) -> str:
 def _pick_source_urls(items: list[Item], k: int) -> list[str]:
     """Top-k unique URLs from cluster members, sorted by trust_weight
     (then by recency as a tiebreaker). Deterministic given the inputs.
-    Reddit cross-posts (same slug, different subreddits) dedup to one URL
-    -- the higher-trust subreddit wins by sort order."""
+
+    Two-pass dedup, in this order:
+
+    1. **Reddit cross-post slug** (existing). Two subreddit URLs to the
+       same article slug collapse to one URL; the higher-trust subreddit
+       wins by sort order.
+
+    2. **Canonical-ID collapse** (task #84). Items can legitimately end
+       up in one cluster while pointing at the same stable artefact via
+       different feed URLs (e.g. an arxiv paper cross-posted to HF Daily
+       Papers AND linked in a Reddit thread; rule A in
+       ``cluster._apply_canonical_id_rules`` force-groups them). After
+       Reddit-slug dedup, group remaining URLs by canonical ID
+       (arxiv:<abs>, github_release:<repo>:<tag>, doi:<id>) and keep ONE
+       per group. The higher-trust source wins (first-seen breaks ties);
+       this mirrors precedence above and stays deterministic.
+
+       URLs with ``canonical_id == None`` (free-text blogs, news, plain
+       Reddit threads without canonical links) pass through unchanged --
+       only stable-ID URLs are collapsed.
+
+    The narrowed scope here exists because cluster.py rule B (different
+    canonical IDs forbidden from merging) eliminates the over-collapse
+    failure mode that would have required deeper changes. What remains
+    is the cosmetic redundancy of two URLs that resolve to the same
+    paper showing up side-by-side in the rendered HTML.
+    """
     sorted_items = sorted(
         items,
         key=lambda it: (it.trust_weight, it.published_at),
         reverse=True,
     )
+
+    # --- Pass 1: existing Reddit-slug + exact-URL dedup ----------------
     seen: set[str] = set()
-    out: list[str] = []
+    pass1: list[str] = []
     for it in sorted_items:
         url = str(it.url)
         key = _url_dedup_key(url)
         if key in seen:
             continue
         seen.add(key)
+        pass1.append(url)
+
+    # --- Pass 2: canonical-ID collapse (#84) ---------------------------
+    # For each URL, derive its canonical ID. URLs with None canonical ID
+    # are untouched. URLs sharing a canonical ID collapse to the first
+    # one seen in pass1 (which is already trust-sorted, so the highest-
+    # trust source wins).
+    seen_canonical: set[str] = set()
+    out: list[str] = []
+    for url in pass1:
+        cid = _extract_canonical_id_from_url(url)
+        if cid is not None:
+            if cid in seen_canonical:
+                continue
+            seen_canonical.add(cid)
         out.append(url)
         if len(out) >= k:
             break

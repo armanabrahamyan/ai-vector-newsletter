@@ -801,3 +801,369 @@ class TestClusterDayEdgeCases:
         assert len(lines) == 1
         restored = Cluster.model_validate_json(lines[0])
         assert restored.item_ids == ["i1"]
+
+
+# ===========================================================================
+# TestCanonicalIdHelper
+# ===========================================================================
+
+class TestCanonicalIdHelper:
+    """Unit tests for _canonical_id() and _extract_canonical_id_from_url()."""
+
+    def test_arxiv_url_primary(self) -> None:
+        item = Item(
+            id="ax1",
+            source="arxiv_cl",
+            source_type="rss",
+            url="https://arxiv.org/abs/2605.23904",
+            title="Some paper",
+            published_at=_T0,
+            raw_summary="abstract text",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "arxiv:2605.23904"
+
+    def test_arxiv_url_version_suffix_stripped(self) -> None:
+        """2605.23904v2 must normalise to arxiv:2605.23904."""
+        item = Item(
+            id="ax2",
+            source="arxiv_cl",
+            source_type="rss",
+            url="https://arxiv.org/abs/2605.23904v2",
+            title="Some paper v2",
+            published_at=_T0,
+            raw_summary="abstract text",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "arxiv:2605.23904"
+
+    def test_github_release_url_primary(self) -> None:
+        item = Item(
+            id="gh1",
+            source="llama.cpp releases",
+            source_type="atom",
+            url="https://github.com/ggml-org/llama.cpp/releases/tag/b9297",
+            title="b9297",
+            published_at=_T0,
+            raw_summary="release notes",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "github_release:ggml-org/llama.cpp:b9297"
+
+    def test_doi_url_primary(self) -> None:
+        item = Item(
+            id="doi1",
+            source="some_journal",
+            source_type="rss",
+            url="https://doi.org/10.1234/example.5678",
+            title="A journal paper",
+            published_at=_T0,
+            raw_summary="abstract",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "doi:10.1234/example.5678"
+
+    def test_free_text_item_returns_none(self) -> None:
+        item = Item(
+            id="blog1",
+            source="techcrunch",
+            source_type="rss",
+            url="https://techcrunch.com/2026/05/24/some-story",
+            title="Some blog post",
+            published_at=_T0,
+            raw_summary="Some content without canonical URLs.",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) is None
+
+    def test_reddit_body_with_single_github_release_url(self) -> None:
+        """Reddit post primary URL has no canonical ID; body contains one GitHub
+        release URL -> that release's ID is returned."""
+        item = Item(
+            id="reddit1",
+            source="r/LocalLLaMA (Reddit)",
+            source_type="api",
+            url="https://reddit.com/r/LocalLLaMA/comments/abc123/nvfp4_on_llamacpp",
+            title="NVFP4 + MTP on llama.cpp",
+            published_at=_T0,
+            raw_summary=(
+                "As in title - NVFP4 + MTP at once on llama.cpp "
+                "[https://github.com/ggml-org/llama.cpp/releases/tag/b9297]"
+                "(https://github.com/ggml-org/llama.cpp/releases/tag/b9297)"
+            ),
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "github_release:ggml-org/llama.cpp:b9297"
+
+    def test_reddit_body_with_single_arxiv_url(self) -> None:
+        """Reddit post body contains one arxiv URL -> that arxiv ID is returned."""
+        item = Item(
+            id="reddit2",
+            source="r/MachineLearning (Reddit)",
+            source_type="api",
+            url="https://reddit.com/r/MachineLearning/comments/xyz789/cool_paper",
+            title="Cool paper discussion",
+            published_at=_T0,
+            raw_summary="Just read https://arxiv.org/abs/2605.23904 — very interesting work.",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "arxiv:2605.23904"
+
+    def test_body_multiple_distinct_canonical_ids_returns_none(self) -> None:
+        """Body contains two different canonical IDs -> ambiguous -> None."""
+        item = Item(
+            id="blog2",
+            source="some_blog",
+            source_type="rss",
+            url="https://example.com/roundup",
+            title="Weekly roundup",
+            published_at=_T0,
+            raw_summary=(
+                "See https://arxiv.org/abs/2605.23904 and also "
+                "https://arxiv.org/abs/2605.23657 for related work."
+            ),
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) is None
+
+    def test_body_empty_returns_none(self) -> None:
+        item = Item(
+            id="empty1",
+            source="src_a",
+            source_type="rss",
+            url="https://example.com/no-summary",
+            title="Something",
+            published_at=_T0,
+            raw_summary="",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) is None
+
+    def test_arxiv_version_normalisation_same_id(self) -> None:
+        """2605.23904 and 2605.23904v2 must extract to the same canonical ID."""
+        assert cluster_mod._extract_canonical_id_from_url(
+            "https://arxiv.org/abs/2605.23904"
+        ) == cluster_mod._extract_canonical_id_from_url(
+            "https://arxiv.org/abs/2605.23904v2"
+        ) == "arxiv:2605.23904"
+
+
+# ===========================================================================
+# TestCanonicalIdClustering  (integration with cluster_day)
+# ===========================================================================
+
+class TestCanonicalIdClustering:
+    """Integration tests for canonical-ID-aware clustering rules A and B."""
+
+    def test_rule_a_same_arxiv_id_force_grouped(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+    ) -> None:
+        """Two items with the same arxiv URL must land in one cluster (rule A),
+        regardless of embedding similarity."""
+        items = [
+            Item(
+                id="paper-a",
+                source="arxiv_cl",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.23904",
+                title="SkillOpt: Executive Strategy for Self-Evolving Agent Skills",
+                published_at=_T0,
+                raw_summary="abstract one",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="paper-b",
+                source="arxiv_cs",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.23904",
+                title="SkillOpt paper (duplicate source)",
+                published_at=_T0,
+                raw_summary="abstract two",
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # Deliberately orthogonal embeddings — cosine would keep them separate,
+        # but rule A must override.
+        v1 = _unit([1.0] + [0.0] * (DIM - 1))
+        v2 = _unit([0.0, 1.0] + [0.0] * (DIM - 2))
+        embeddings = np.stack([v1, v2])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1, (
+            "Same arxiv abs ID must force-merge into one cluster (rule A)"
+        )
+        assert set(clusters[0].item_ids) == {"paper-a", "paper-b"}
+
+    def test_rule_b_distinct_arxiv_ids_forbidden_from_merging(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+    ) -> None:
+        """Two items with DIFFERENT arxiv URLs must stay in separate clusters (rule B),
+        even if embeddings would cluster them together."""
+        items = [
+            Item(
+                id="paper-x",
+                source="arxiv_cl",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.23904",
+                title="SkillOpt: agent skill paper",
+                published_at=_T0,
+                raw_summary="agent skill abstract",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="paper-y",
+                source="arxiv_cl",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.23657",
+                title="OpenSkillEval: auditing agent skill ecosystem",
+                published_at=_T0,
+                raw_summary="agent skill evaluation abstract",
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # Near-identical embeddings — cosine would merge them, but rule B forbids it.
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near = _unit([1.0, 0.001] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2, (
+            "Distinct arxiv abs IDs must stay in separate clusters (rule B)"
+        )
+        cluster_item_ids = {frozenset(c.item_ids) for c in clusters}
+        assert frozenset({"paper-x"}) in cluster_item_ids
+        assert frozenset({"paper-y"}) in cluster_item_ids
+
+    def test_rule_a_reddit_body_links_to_github_release(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+    ) -> None:
+        """Reddit post whose body contains a GitHub release URL must cluster with
+        the official release entry pointing at the same tag (rule A via body extraction)."""
+        items = [
+            Item(
+                id="reddit-b9297",
+                source="r/LocalLLaMA (Reddit)",
+                source_type="api",
+                url="https://reddit.com/r/LocalLLaMA/comments/1tlohld/nvfp4_mtp_voila_on_llamacpp",
+                title="NVFP4 + MTP on llama.cpp",
+                published_at=_T0,
+                raw_summary=(
+                    "As in title - NVFP4 + MTP at once on llama.cpp "
+                    "https://github.com/ggml-org/llama.cpp/releases/tag/b9297"
+                ),
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="release-b9297",
+                source="llama.cpp releases",
+                source_type="atom",
+                url="https://github.com/ggml-org/llama.cpp/releases/tag/b9297",
+                title="b9297",
+                published_at=_T0,
+                raw_summary="model: add NVFP4 MTP scale tensors",
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # Deliberately orthogonal embeddings — titles are dissimilar; cosine alone
+        # would NOT cluster these. Rule A must force-merge via the shared canonical ID.
+        v1 = _unit([1.0] + [0.0] * (DIM - 1))
+        v2 = _unit([0.0, 1.0] + [0.0] * (DIM - 2))
+        embeddings = np.stack([v1, v2])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1, (
+            "Reddit post linking to b9297 and the official b9297 release entry "
+            "must be force-merged (rule A via body extraction)"
+        )
+        assert set(clusters[0].item_ids) == {"reddit-b9297", "release-b9297"}
+
+    def test_free_text_items_use_embedding_clustering_unchanged(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+    ) -> None:
+        """Items with no canonical ID must fall through to embedding-based clustering;
+        near-identical embeddings merge, orthogonal embeddings stay separate."""
+        items = [
+            Item(
+                id="blog-a",
+                source="techcrunch",
+                source_type="rss",
+                url="https://techcrunch.com/2026/05/24/openai-gpt5",
+                title="OpenAI releases GPT-5",
+                published_at=_T0,
+                raw_summary="GPT-5 launch announcement",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="blog-b",
+                source="theverge",
+                source_type="rss",
+                url="https://theverge.com/2026/5/24/openai-gpt5-launch",
+                title="GPT-5 is here",
+                published_at=_T0,
+                raw_summary="OpenAI announced GPT-5 today",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="blog-c",
+                source="wired",
+                source_type="rss",
+                url="https://wired.com/story/anthropic-claude-update",
+                title="Anthropic updates Claude",
+                published_at=_T0,
+                raw_summary="Anthropic releases Claude update",
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # blog-a and blog-b near-identical; blog-c orthogonal.
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near = _unit([1.0, 0.01] + [0.0] * (DIM - 2))
+        far = _unit([0.0, 1.0] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near, far])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2
+        sizes = sorted(c.size for c in clusters)
+        assert sizes == [1, 2]
+        # The 2-item cluster must be blog-a + blog-b.
+        two_item_cluster = next(c for c in clusters if c.size == 2)
+        assert set(two_item_cluster.item_ids) == {"blog-a", "blog-b"}
