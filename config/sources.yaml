@@ -414,6 +414,153 @@ sources:
       technical-general audience. Tier-1-mixed — sometimes Tier-3 sentiment/opinion.
       Trust weight 2; Eval to watch tier mix.
 
+  # ---- Added 2026-05-25 practitioner expansion round ----
+
+  - name: Hamel Husain
+    url: https://hamel.dev/index.xml
+    type: rss
+    category: newsletter
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 4 items, most recent "The Revenge of the
+      Data Scientist" March 26, 2026. Applied ML/LLM eval practitioner; deep on error
+      analysis, metrics design, evaluation systems for LLM apps. Low cadence (~monthly)
+      but high signal density per post. Trust weight 2 — new addition; Eval to calibrate.
+
+  - name: Normal Technology (Narayanan/Kapoor)
+    url: https://www.normaltech.ai/feed
+    type: rss
+    category: newsletter
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 3 items, most recent "Did Google's AI
+      agents really build an operating system for $916?" May 22, 2026. Formerly published
+      as "AI Snake Oil"; aisnakeoil.com/feed now 301-redirects here. Princeton researchers
+      (Narayanan + Kapoor); critical/grounded perspective on inflated AI capability claims,
+      evaluation rigour, accountability. Counterweight to vendor-PR-heavy feeds. Trust
+      weight 2 — Eval to watch tier mix and items_kept ratio.
+
+  - name: Vicki Boykis
+    url: https://vickiboykis.com/index.xml
+    type: rss
+    category: newsletter
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 3 items, most recent "Tagging my blog
+      posts with BERTopic and LLMs" May 18, 2026. Production ML, embeddings, retrieval,
+      data engineering. Practitioner-level. Note: /feed.xml returns 404; canonical is
+      /index.xml. Low cadence but signal-dense. Trust weight 2 — new addition.
+
+  # ---- Added 2026-05-25 source council brainstorm ----
+
+  - name: Bounded Regret (Jacob Steinhardt)
+    url: https://bounded-regret.ghost.io/rss/
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 2 items, most recent
+      "Building Technology to Drive AI Governance" Feb 18, 2026. Jacob
+      Steinhardt (Berkeley) on careful forecasting, emergent capabilities,
+      AI evaluation. Low cadence but reference-material when it ships.
+      Added 2026-05-25 (source council, Weng lens).
+
+  - name: Bruce Schneier
+    url: https://www.schneier.com/feed/atom/
+    type: atom
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-25 — valid Atom 1.0, 10 items, most recent
+      May 22, 2026. Adversarial mindset on AI: prompt injection, supply
+      chain, attack trees. Tier-1 when on AI; Tier-3 on non-AI security
+      (Friday Squid Blogging et al). Heavy editorial filter required.
+      Added 2026-05-25 (source council, Taleb lens).
+
+  - name: Krebs on Security
+    url: https://krebsonsecurity.com/feed/
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 10 items, most recent
+      May 22, 2026. Cybersecurity reporting with AI-enabled fraud as a
+      recurring sub-theme. Direct relevance for FS readers when AI-fraud
+      lands in banks. Heavy non-AI volume — Eval to watch items_kept ratio.
+      Added 2026-05-25 (source council, Taleb + Rubinstein adjacent).
+
+  - name: Andrew Gelman — Statistical Modeling
+    url: https://statmodeling.stat.columbia.edu/feed/
+    type: rss
+    category: newsletter
+    trust_weight: 2
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 15 items, most recent
+      May 24, 2026. Daily statistical critique; routinely eviscerates ML
+      eval papers for p-hacking and replication failures. Tier-2 when on
+      ML; most posts non-AI (political analysis, social science). Heavy
+      filter required. Added 2026-05-25 (source council, Taleb lens).
+      Trust weight 2 — high volume, watch items_kept.
+
+  - name: Cosma Shalizi — Three-Toed Sloth
+    url: http://bactra.org/weblog/index.rss
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 10 items, most recent
+      March 20, 2026 ("Generative AI as Information Retrieval and
+      Synthesis"). Statistician at CMU with rare ML critique posts.
+      Low cadence, high signal. Tier-2 when on AI/ML; many posts are
+      statistics or non-tech. Added 2026-05-25 (source council, Taleb lens).
+
+  - name: Gary Marcus — Marcus on AI
+    url: https://garymarcus.substack.com/feed
+    type: rss
+    category: newsletter
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 10 items, most recent
+      May 22, 2026. The loudest AI bear in the room. Tier-1-mixed — strong
+      when critiquing specific capability claims; Tier-3 risk on
+      generalised takes. Counterweight to vendor-PR-heavy feeds.
+      Trust weight 2 — Eval to watch tier mix. Substack: most content free
+      in public RSS; some posts paywalled to subscribers but those don't
+      appear in the public feed. Added 2026-05-25 (source council, Taleb lens).
+
+  - name: Artificial Fintelligence (Finbarr Timbers)
+    url: https://www.artfintel.com/feed
+    type: rss
+    category: newsletter
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 4 items, most recent
+      "The Bitter Lesson" June 26, 2025. Back-of-envelope FLOPs/memory
+      math on new model releases. Substack publication reaching researchers
+      at OpenAI, DeepMind, Google. Low cadence and a stale gap (~11mo) —
+      add as watch. Substack public RSS = free content only.
+      Added 2026-05-25 (source council, Karpathy lens).
+
   # ---------------------------------------------------------------------------
   # RESEARCH BLOGS
   # ---------------------------------------------------------------------------
@@ -443,6 +590,70 @@ sources:
       Hacking via Reasoning Interpolation" April 15, 2026. Open-weight AI safety research;
       reward hacking, alignment, pretraining filters. Load-bearing Tier-2 — directly relevant
       to production model concerns. Trust weight 3. Low cadence (4–6 posts/year).
+
+  # ---- Added 2026-05-25 source council brainstorm ----
+
+  - name: Neel Nanda
+    url: https://www.neelnanda.io/blog?format=rss
+    type: rss
+    category: research
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 6 items, most recent
+      "MATS Applications Open" Aug 19, 2025. Mechanistic interpretability
+      tutorials and original probes from former DeepMind interp team lead.
+      Squarespace feed. Low cadence; high per-post signal.
+      Added 2026-05-25 (source council, Karpathy + Weng cross-mention).
+
+  - name: AI Alignment Forum
+    url: https://www.alignmentforum.org/feed.xml
+    type: rss
+    category: research
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 3 items, most recent
+      "The Case for Evaluating Model Behaviors" May 20, 2026. Curated
+      long-form alignment research. Higher rigour than LessWrong; lower
+      volume. Tier-3 risk on speculative forum posts; Eval to watch.
+      Added 2026-05-25 (source council, Weng lens).
+
+  - name: Redwood Research
+    url: https://blog.redwoodresearch.org/feed
+    type: rss
+    category: research
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 6 items, most recent
+      "Incriminating misaligned AI models via distillation" May 18, 2026.
+      AI control protocols — assume misalignment, deploy safely. Directly
+      relevant to FS deployment posture for agentic systems. Substack
+      backend (blog.redwoodresearch.org). Trust weight 3 — established
+      alignment lab. Added 2026-05-25 (source council, Weng + Russell
+      cross-mention).
+
+  - name: Transformer Circuits Thread (Anthropic interp)
+    url: https://transformer-circuits.pub/feed.xml
+    type: rss
+    category: research
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      URL known-good per multiple references; WebFetch returned 403 from
+      research environment 2026-05-25 (likely IP-level anti-scrape, same
+      pattern as Ars Technica / The Verge in this file). Anthropic
+      interpretability team — circuit decomposition, feature work, SAE
+      follow-ups. Reference standard in mechanistic interpretability.
+      Trust weight 4 — known quality.
+      Added 2026-05-25 (source council, Karpathy + Weng cross-mention).
+      Re-probe from pipeline Actions runner; if blocked there too, flag
+      to Architect.
 
   # ---------------------------------------------------------------------------
   # NEWS / COMMUNITY
@@ -535,6 +746,39 @@ sources:
       Reddit JSON API. Skews toward papers and research discussion. Load-bearing Tier-2:
       surfaces paper releases early. Trust weight 2. Same ToS note as r/LocalLLaMA.
 
+  # ---- Added 2026-05-25 source council brainstorm ----
+
+  - name: AI Incident Database
+    url: https://incidentdatabase.ai/rss.xml
+    type: rss
+    category: news
+    trust_weight: 2
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 100 items, most recent
+      May 14, 2026. Catalog of deployed AI failures from news sources
+      worldwide. Antifragile primary source — what actually broke, not
+      what shipped on a demo. Maintained by Partnership on AI /
+      Responsible AI Collaborative. 100-item firehose — Eval to watch
+      noise:signal carefully; some items are loose AI-tag matches.
+      Added 2026-05-25 (source council, Taleb lens).
+
+  - name: Sequoia Capital — Perspectives
+    url: https://www.sequoiacap.com/feed/
+    type: rss
+    category: news
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 8 items, most recent
+      "All Systems Nominal" May 21, 2026. Pat Grady / Sonya Huang on the
+      agent economy + portfolio dispatches. Tier-1 on essays
+      ("Generative AI's Act Two/Three"); Tier-3 risk on portfolio
+      spotlights. Trust weight 2 — Eval to watch portfolio-promo ratio.
+      Added 2026-05-25 (source council, Andreessen lens).
+
   # ---------------------------------------------------------------------------
   # TOOLING / INFRASTRUCTURE
   # ---------------------------------------------------------------------------
@@ -550,6 +794,38 @@ sources:
       Confirmed live 2026-05-23 — valid RSS 2.0. Model releases, MCP integrations, agent
       infrastructure changes ("Agent skills for Replicate" April 21, 2026; "MCP server
       auto-discovery" Feb 10, 2026). Direct signal on agent infrastructure. Trust weight 3.
+
+  # ---- Added 2026-05-25 source council brainstorm ----
+
+  - name: FlashAttention releases (Tri Dao)
+    url: https://github.com/Dao-AILab/flash-attention/releases.atom
+    type: atom
+    category: tooling
+    trust_weight: 4
+    enabled: true
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-05-25 — valid Atom 1.0, 10 release entries,
+      most recent "fa4-v4.0.0.beta14" May 20, 2026. Kernel-level attention
+      releases; new quantisation formats and fa4 betas land here first.
+      Direct signal on inference-frontier optimisation. Trust weight 4 —
+      reference inference kernel. Added 2026-05-25 (source council,
+      Karpathy lens).
+
+  - name: Vercel Changelog
+    url: https://vercel.com/changelog/feed.xml
+    type: atom
+    category: tooling
+    trust_weight: 3
+    enabled: true
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-05-25 — valid Atom 1.0, 30 items, most recent
+      May 21, 2026. AI Gateway model additions, Firewall enhancements,
+      agent-dev infrastructure cadence. Canary for AI-native dev tooling.
+      Tier-1 when AI Gateway / agent infra ships; Tier-3 risk on plain
+      web-deploy features. Eval to filter. Added 2026-05-25 (source
+      council, Andreessen lens).
 
   # ---------------------------------------------------------------------------
   # FINANCE-AI LENS
@@ -846,6 +1122,25 @@ sources:
       low-noise. Finance-lens Tier-2 (regulatory movement directly relevant to
       productionising AI under EU regulatory constraints). Added 2026-05-24 from
       awesome-list survey.
+
+  # ---- Added 2026-05-25 source council brainstorm ----
+
+  - name: Fintech Business Weekly (Jason Mikula)
+    url: https://fintechbusinessweekly.substack.com/feed
+    type: rss
+    category: finance-ai
+    trust_weight: 3
+    enabled: true
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-05-25 — valid RSS 2.0, 3 items, most recent
+      "CFSB Hit With BSA/AML Enforcement Action" May 24, 2026. Substack
+      publication by Jason Mikula on BaaS, fintech compliance, and where
+      embedded-AI claims unravel. Free Sunday weekly is in the public RSS;
+      Pro Insights tier paywalled and does NOT appear in the public feed.
+      AI is a recurring sub-theme, not the primary beat — Eval to filter
+      for AI-relevance. Trust weight 3 — established.
+      Added 2026-05-25 (source council, Rubinstein lens).
 
   # ---- Added 2026-05-24 from council brainstorm: high-frequency cadence ----
   # Source Engineer's Phase-1 win (per tmp/council-synthesis.md). Existing

@@ -444,3 +444,90 @@ Six categories were systematically probed:
 13. **ECB Working Papers**: No working RSS endpoint confirmed after multiple attempts. ECB does have a research section at ecb.europa.eu but feed URLs tried all return 404. If Arman values ECB monetary policy + AI research, this would require either a direct URL discovery (check ECB press RSS pages) or a dedicated scraper.
 
 14. **IMF Blogs and Working Papers**: IMF blocks WebFetch (403). IMF publishes AI-relevant research (FinTech Notes, Staff Discussion Notes on AI). The IMF blog at imf.org/en/Blogs also blocked. If Arman values IMF signal, probe from the pipeline Actions runner directly — institutional feeds sometimes allow known IP ranges.
+
+---
+
+## Practitioner expansion (2026-05-25)
+
+*Eight candidates probed to broaden the practitioner / evals / criticism / inference-platform tapestry. Three feeds confirmed and enabled; five had no discoverable RSS at common paths.*
+
+### Enabled (3)
+
+| Name | Feed URL | Format | Why |
+|------|----------|--------|-----|
+| Hamel Husain | `https://hamel.dev/index.xml` | RSS 2.0 | Applied ML/LLM eval practitioner — error analysis, metrics design, evaluation systems. Trust weight 2. |
+| Normal Technology (Narayanan/Kapoor) | `https://www.normaltech.ai/feed` | RSS 2.0 | Rebrand of "AI Snake Oil" (aisnakeoil.com/feed now 301-redirects). Critical/accountability lens; counterweight to vendor-PR feeds. Trust weight 2. |
+| Vicki Boykis | `https://vickiboykis.com/index.xml` | RSS 2.0 | Production ML, embeddings, retrieval. Note: `/feed.xml` returns 404 — canonical is `/index.xml`. Trust weight 2. |
+
+### Probed but no discoverable feed (5)
+
+| Name | URLs probed | Verdict |
+|------|-------------|---------|
+| Maxime Labonne | `/blog/index.xml`, `/blog/atom.xml`, `/blog/feed.xml` | All 404. Blog may have moved or removed the feed; needs HTML head inspection from a non-WebFetch environment. |
+| METR | `/blog/feed`, `/feed`, `/blog.atom` | All 404. Active org but no public feed endpoint discoverable via common paths. |
+| Modal | `/blog/feed.xml`, `/blog/rss` | All 404. Blog is active (Webflow/Framer site); no `<link rel="alternate">` visible in WebFetch's body-only excerpt. Needs view-source from browser to confirm. |
+| Baseten | `/blog/rss.xml`, `/blog/feed` | All 404. Active blog ("Sub-second image generation with Flux.2", "Baseten Loops"); same situation as Modal — head tags stripped by WebFetch. |
+| Fireworks AI | `/blog/feed.xml`, `/rss.xml` | All 404. Active blog (last post May 5, 2026); same situation — needs HTML head inspection. |
+
+### Notes
+
+- **Maxime Labonne, METR**: probably feed-less by design. Deprioritise unless a workaround surfaces.
+- **Modal, Baseten, Fireworks**: marketing-CMS sites (Webflow/Framer-pattern). Pattern observed: blogs are active and obviously valuable, but feed discoverability requires `view-source` in a browser to inspect the `<link rel="alternate">` tag — WebFetch returns body-only markdown. **TODO for Arman**: 30-second browser check on each — open the blog, view-source, search for `rel="alternate"`. If a feed URL is in the head tag, paste it back and they go in as enabled.
+- **Pattern for future practitioner rounds**: the Substack / GitHub-hosted-blog / Hugo / Jekyll feeds work first try. Webflow / Framer / Wix sites need browser HTML inspection — don't burn WebFetch probes guessing.
+
+---
+
+## Source council brainstorm (2026-05-25)
+
+*Six-character council (Karpathy, Weng, Andreessen, Russell, Taleb, Rubinstein), each brainstorming from a distinct lens. Facilitated synthesis, ~25 URLs probed live, 16 added. Full brainstorm in `_scratch/source_council_2026-05-25.md`. Cross-mention signal (≥2 lenses) was a strong heuristic for ranking.*
+
+### Enabled (16)
+
+| Name | Feed URL | Section | Lens | Trust |
+|------|----------|---------|------|-------|
+| Bounded Regret (Jacob Steinhardt) | `https://bounded-regret.ghost.io/rss/` | newsletter | Weng | 3 |
+| Bruce Schneier | `https://www.schneier.com/feed/atom/` | newsletter | Taleb | 3 |
+| Krebs on Security | `https://krebsonsecurity.com/feed/` | newsletter | Taleb + Rubinstein adj | 3 |
+| Andrew Gelman — Statistical Modeling | `https://statmodeling.stat.columbia.edu/feed/` | newsletter | Taleb | 2 |
+| Cosma Shalizi — Three-Toed Sloth | `http://bactra.org/weblog/index.rss` | newsletter | Taleb | 3 |
+| Gary Marcus — Marcus on AI | `https://garymarcus.substack.com/feed` | newsletter | Taleb | 2 |
+| Artificial Fintelligence (Finbarr Timbers) | `https://www.artfintel.com/feed` | newsletter | Karpathy | 2 |
+| Neel Nanda | `https://www.neelnanda.io/blog?format=rss` | research | Karpathy + Weng | 2 |
+| AI Alignment Forum | `https://www.alignmentforum.org/feed.xml` | research | Weng | 2 |
+| Redwood Research | `https://blog.redwoodresearch.org/feed` | research | Weng + Russell | 3 |
+| Transformer Circuits Thread (Anthropic interp) | `https://transformer-circuits.pub/feed.xml` | research | Karpathy + Weng | 4 |
+| AI Incident Database | `https://incidentdatabase.ai/rss.xml` | news | Taleb | 2 |
+| Sequoia Capital — Perspectives | `https://www.sequoiacap.com/feed/` | news | Andreessen | 2 |
+| FlashAttention releases (Tri Dao) | `https://github.com/Dao-AILab/flash-attention/releases.atom` | tooling | Karpathy | 4 |
+| Vercel Changelog | `https://vercel.com/changelog/feed.xml` | tooling | Andreessen | 3 |
+| Fintech Business Weekly (Jason Mikula) | `https://fintechbusinessweekly.substack.com/feed` | finance-ai | Rubinstein | 3 |
+
+### Rejected — paywall (1)
+
+| Name | Reason |
+|------|--------|
+| Sifted (European fintech) | `sifted.eu/feed` is live RSS but articles paywalled beyond standfirst. Per "no paywall" instruction for this round, excluded. (Compare to existing Risk.net Cutting Edge which is grandfathered as paywalled.) |
+
+### Deferred — strong endorsement but no discoverable feed (~14)
+
+Common-path probes exhausted without success. Likely require browser view-source on `<link rel="alternate">` to discover any feed URL the marketing-CMS site is hiding. **TODO for Arman**: 30-sec view-source check on each.
+
+Priority five (strongest cross-mention or editorial fit): METR, Apollo Research, Modal Labs, a16z, Cursor Changelog.
+
+Full list: METR, Apollo Research, Epoch AI, Modal Labs, a16z AI, Goodfire, Sasha Rush, Hazy Research, Owain Evans, Cursor Changelog, UK AI Security Institute, OECD.AI Policy Observatory, Patrick McKenzie (Bits about Money), MAS Singapore.
+
+### Email-bridge candidates (~5, deferred for separate decision)
+
+Kill-the-Newsletter setup required (~5 min per source, one-time):
+- CAIS Newsletter (Hendrycks et al.)
+- ECB Banking Supervision Newsletter
+- Matt Levine — Money Stuff (Bloomberg)
+- AQR Insights (already disabled in sources.yaml pending feed; this is the workaround)
+- GARP Risk Intelligence (existing TODO)
+
+### Patterns observed
+
+1. **Cross-mention is a strong filter.** 10 candidates had ≥2 lenses endorsing them (METR, Apollo, Redwood, Epoch, Transformer Circuits, Neel Nanda, Modal, Stripe, NIST AI, CAIS). 4 of those 10 made it in (Redwood, Transformer Circuits via precedent, Neel Nanda by alternative URL). The other 6 are in the deferred list — exactly the candidates that justify the 30-sec view-source ask.
+2. **The character lens that produced the most additions was Taleb** (5 of 16 — Schneier, Krebs, Gelman, Shalizi, Gary Marcus, AI Incident Database). Antifragile / skeptic / statistical-rigour sources are heavily under-represented in awesome-list aggregators; the character framing surfaced them.
+3. **Karpathy contributed the highest-confidence single find** (FlashAttention releases, trust 4) but his lens has lower hit rate because most of what he wants ships through GitHub commits (noisy) rather than tagged releases (useful).
+4. **Sources count** went 67 → 83 (77 enabled, 6 disabled). Adding 16 in a single round is the largest expansion since the initial 2026-05-23 round.
