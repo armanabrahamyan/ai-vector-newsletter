@@ -1066,18 +1066,35 @@ def fetch_day(
     # ---- Within-batch URL dedup -------------------------------------------
     kept_items, kept_count_by_source = _dedup_items(source_items)
 
-    # ---- Recency filter ----------------------------------------------------
-    # Drop items whose `published_at` is older than MAX_ITEM_AGE_DAYS. Many
-    # feeds (especially lab blogs and newsletters) return their full archive,
-    # which would otherwise flood cluster/rank with years-old content.
-    cutoff = _utcnow() - datetime.timedelta(days=MAX_ITEM_AGE_DAYS)
+    # ---- Recency filter (per-source max_age_days) --------------------------
+    # Drop items whose `published_at` is older than the source's max_age_days
+    # window.  Sources publish on different cadences: daily news feeds need 2
+    # days; weekly/monthly FS research sources (BIS, FRBNY, Bank Underground,
+    # etc.) need 7–14 days so their items are not silently discarded.
+    #
+    # Per-source override: read `max_age_days` from the source config entry.
+    # When absent, fall back to the global MAX_ITEM_AGE_DAYS constant.
+    #
+    # Build a lookup from source name → max_age_days for fast per-item lookup.
+    source_max_age: dict[str, int] = {
+        src["name"]: int(src["max_age_days"])
+        for src in sources
+        if "max_age_days" in src
+    }
+    now = _utcnow()
     before_age_filter = len(kept_items)
-    kept_items = [item for item in kept_items if item.published_at >= cutoff]
-    dropped_old = before_age_filter - len(kept_items)
+    kept_after_age: list[Item] = []
+    for item in kept_items:
+        age_days = source_max_age.get(item.source, MAX_ITEM_AGE_DAYS)
+        cutoff = now - datetime.timedelta(days=age_days)
+        if item.published_at >= cutoff:
+            kept_after_age.append(item)
+    dropped_old = before_age_filter - len(kept_after_age)
+    kept_items = kept_after_age
     if dropped_old > 0:
         log.info(
-            "filtered %d items older than %d days (cutoff: %s)",
-            dropped_old, MAX_ITEM_AGE_DAYS, cutoff.isoformat(),
+            "filtered %d items older than their source max_age_days window",
+            dropped_old,
         )
 
     # ---- Cross-issue item dedup (against canonical archive) ----------------
@@ -1087,10 +1104,18 @@ def fetch_day(
     # inside the recency window). The existing `data/published_urls.txt`
     # filter (applied in cluster.py + rank.py) only covers URLs that ended
     # up in a RELEASED issue's top-N -- not the broader items.jsonl. This
-    # filter closes that gap. Lookback matches MAX_ITEM_AGE_DAYS + 1 (any
-    # item older than the recency window wouldn't be re-fetched anyway).
+    # filter closes that gap.
+    #
+    # Lookback: use the largest effective age window across all sources
+    # (max of per-source overrides and global default), plus 1 day of safety
+    # margin.  This ensures slow-cadence FS research sources (max_age_days=14)
+    # are covered.  Per-source max_age_days is capped at 30 days here to avoid
+    # an unbounded lookback on misconfigured entries.
+    _effective_max_age = max(
+        [MAX_ITEM_AGE_DAYS] + [min(v, 30) for v in source_max_age.values()]
+    )
     canonical_urls = _load_recent_canonical_item_urls(
-        run_date, MAX_ITEM_AGE_DAYS + 1
+        run_date, _effective_max_age + 1
     )
     before_canon_filter = len(kept_items)
     kept_items = [item for item in kept_items if str(item.url) not in canonical_urls]

@@ -846,3 +846,267 @@ class TestJunkPageFilter:
 
         # The fixture has 2 entries; items_in counts both
         assert health.items_in == 2
+
+
+# ---------------------------------------------------------------------------
+# Task #87 — per-source max_age_days override in the recency filter.
+#
+# Four cases tested:
+#   1. No override → global MAX_ITEM_AGE_DAYS (2) applies.
+#   2. Override max_age_days=14 → keeps items up to 14 days old, drops at 15.
+#   3. Override max_age_days=7 → keeps up to 7, drops at 8.
+#   4. Mixed batch — each source's items get *its own* cutoff; one source's
+#      override must not bleed into another source.
+# ---------------------------------------------------------------------------
+
+def _make_item(
+    source: str,
+    url: str,
+    published_at: datetime.datetime,
+) -> "Item":
+    """Minimal valid Item for age-filter tests."""
+    return Item(
+        id=_url_hash(url),
+        source=source,
+        source_type="rss",
+        url=url,
+        title="Test item",
+        published_at=published_at,
+        raw_summary="summary",
+        fetched_at=FIXED_FETCH_AT,
+        trust_weight=3,
+    )
+
+
+def _config_yaml(sources: list[dict]) -> str:
+    return yaml.dump({"sources": sources})
+
+
+class TestPerSourceMaxAgeDays:
+    """Per-source max_age_days override — Task #87."""
+
+    def test_no_override_uses_global_default(self, tmp_data_root: Path) -> None:
+        """A source with no max_age_days field uses MAX_ITEM_AGE_DAYS (= 2)."""
+        # Item published exactly 3 days ago — must be dropped under global=2.
+        pub_3d_ago = FIXED_FETCH_AT - datetime.timedelta(days=3)
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Blog</title>
+<item>
+  <title>Three-day-old post</title>
+  <link>https://blog.example.com/post-3d</link>
+  <description>Old.</description>
+  <pubDate>{pub_3d_ago.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://blog.example.com/post-3d</guid>
+</item>
+</channel></rss>"""
+        feed = feedparser.parse(xml)
+
+        config_yaml = _config_yaml([{
+            "name": "default_source",
+            "url": "https://blog.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+            # no max_age_days field
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        assert items == [], "Item 3 days old must be dropped by global 2-day window"
+
+    def test_override_14_keeps_items_within_14_days(self, tmp_data_root: Path) -> None:
+        """Source with max_age_days=14 keeps items ≤ 14 days old."""
+        pub_10d_ago = FIXED_FETCH_AT - datetime.timedelta(days=10)
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>FS Research</title>
+<item>
+  <title>Ten-day-old research post</title>
+  <link>https://research.example.com/post-10d</link>
+  <description>A BIS-style paper.</description>
+  <pubDate>{pub_10d_ago.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://research.example.com/post-10d</guid>
+</item>
+</channel></rss>"""
+        feed = feedparser.parse(xml)
+
+        config_yaml = _config_yaml([{
+            "name": "fs_research_source",
+            "url": "https://research.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+            "max_age_days": 14,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        assert len(items) == 1, "Item 10 days old must be kept under max_age_days=14"
+
+    def test_override_14_drops_items_older_than_14_days(self, tmp_data_root: Path) -> None:
+        """Source with max_age_days=14 drops items > 14 days old."""
+        pub_15d_ago = FIXED_FETCH_AT - datetime.timedelta(days=15)
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>FS Research</title>
+<item>
+  <title>Fifteen-day-old research post</title>
+  <link>https://research.example.com/post-15d</link>
+  <description>Too old.</description>
+  <pubDate>{pub_15d_ago.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://research.example.com/post-15d</guid>
+</item>
+</channel></rss>"""
+        feed = feedparser.parse(xml)
+
+        config_yaml = _config_yaml([{
+            "name": "fs_research_source",
+            "url": "https://research.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+            "max_age_days": 14,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        assert items == [], "Item 15 days old must be dropped under max_age_days=14"
+
+    def test_override_7_keeps_within_7_drops_at_8(self, tmp_data_root: Path) -> None:
+        """Source with max_age_days=7 keeps 5-day-old items and drops 8-day-old ones.
+
+        We use 5 days (comfortably inside the 7-day window) for the "keep"
+        case because feedparser's pubDate parsing goes through time.mktime()
+        which applies local-timezone rounding; testing at the exact boundary
+        is fragile on non-UTC machines.
+        """
+        pub_5d = FIXED_FETCH_AT - datetime.timedelta(days=5)
+        pub_8d = FIXED_FETCH_AT - datetime.timedelta(days=8)
+
+        def make_xml(pub: datetime.datetime, slug: str) -> str:
+            return f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Regulator</title>
+<item>
+  <title>Post {slug}</title>
+  <link>https://regulator.example.com/{slug}</link>
+  <description>Regulatory item.</description>
+  <pubDate>{pub.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://regulator.example.com/{slug}</guid>
+</item>
+</channel></rss>"""
+
+        feed_5d = feedparser.parse(make_xml(pub_5d, "post-5d"))
+        feed_8d = feedparser.parse(make_xml(pub_8d, "post-8d"))
+
+        config_yaml = _config_yaml([{
+            "name": "regulator_source",
+            "url": "https://regulator.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+            "max_age_days": 7,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        # 5-day-old item must be kept (inside the 7-day window)
+        with patch("src.fetch.feedparser.parse", return_value=feed_5d), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items_5d, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        assert len(items_5d) == 1, "Item 5 days old must be kept under max_age_days=7"
+
+        # 8-day-old item must be dropped (outside the 7-day window)
+        with patch("src.fetch.feedparser.parse", return_value=feed_8d), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items_8d, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        assert items_8d == [], "Item 8 days old must be dropped under max_age_days=7"
+
+    def test_mixed_sources_each_get_own_cutoff(self, tmp_data_root: Path) -> None:
+        """In a mixed batch, each source's override applies only to its own items.
+
+        - Source A: max_age_days=14  → its 10-day-old item is KEPT.
+        - Source B: no override (global=2)  → its 3-day-old item is DROPPED.
+        The 14-day override on source A must not cause source B's item to survive.
+        """
+        pub_10d = FIXED_FETCH_AT - datetime.timedelta(days=10)
+        pub_3d = FIXED_FETCH_AT - datetime.timedelta(days=3)
+
+        xml_a = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>FS Research</title>
+<item>
+  <title>FS post 10 days old</title>
+  <link>https://fs.example.com/post-10d</link>
+  <description>Deep research.</description>
+  <pubDate>{pub_10d.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://fs.example.com/post-10d</guid>
+</item>
+</channel></rss>"""
+
+        xml_b = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Daily Blog</title>
+<item>
+  <title>Daily post 3 days old</title>
+  <link>https://daily.example.com/post-3d</link>
+  <description>News item.</description>
+  <pubDate>{pub_3d.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://daily.example.com/post-3d</guid>
+</item>
+</channel></rss>"""
+
+        feed_a = feedparser.parse(xml_a)
+        feed_b = feedparser.parse(xml_b)
+
+        call_seq = [feed_a, feed_b]
+        call_idx = {"i": 0}
+
+        def side_effect(url: str, **kwargs: object) -> object:
+            result = call_seq[call_idx["i"]]
+            call_idx["i"] += 1
+            return result
+
+        config_yaml = _config_yaml([
+            {
+                "name": "fs_research_source",
+                "url": "https://fs.example.com/feed.xml",
+                "type": "rss",
+                "trust_weight": 3,
+                "enabled": True,
+                "max_age_days": 14,
+            },
+            {
+                "name": "daily_source",
+                "url": "https://daily.example.com/feed.xml",
+                "type": "rss",
+                "trust_weight": 3,
+                "enabled": True,
+                # no max_age_days — uses global default of 2
+            },
+        ])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", side_effect=side_effect), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, healths = fetch_day(FIXED_DATE, config_path=config_path)
+
+        kept_sources = {item.source for item in items}
+
+        assert "fs_research_source" in kept_sources, (
+            "fs_research_source's 10-day-old item must survive under max_age_days=14"
+        )
+        assert "daily_source" not in kept_sources, (
+            "daily_source's 3-day-old item must be dropped by global 2-day window; "
+            "the 14-day override on fs_research_source must not bleed over"
+        )
