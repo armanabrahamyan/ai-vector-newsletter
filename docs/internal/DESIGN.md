@@ -606,6 +606,20 @@ target date (default: today):
 2. **Read staging.** Load `data/staging/<date>/issue.json`. Validate
    against the `Issue` model (must parse; `issue_number` is expected to
    be `None`).
+2b. **Staging integrity gate (publish gate).** Call
+   `evals.run_evals.check_integrity(date, staging=True)`. This asserts
+   pulse ≥ 1, hands_on ≥ 3, source fire rate ≥ 0.80, no `score ≥ 35`
+   cluster wrongly tiered as `cut`, and full schema + referential
+   integrity. On **failure** the release is refused with a
+   `StagingIntegrityFailure` exception listing every failed assertion;
+   the operator either fixes the staging draft (re-run the failing
+   stage) or passes `--force` to bypass. **`--force` does NOT silence
+   the assertions** — every bypassed failure is emitted at WARNING
+   level so the audit trail records what the operator chose to ship
+   over the gate. The gate exists because we shipped a 3-story
+   draft on 2026-05-24 (Issue #2.1) when nothing prevented `release_promote`
+   from publishing a regression-thin staging — see `evals/failure_modes.md`
+   FM-13 for the postmortem.
 3. **Assign the issue number.** Scan the **canonical** archive
    (`data/*/issue.json`, **excluding** `data/staging/`) for existing
    `issue_number` values. Compute `next_number = max(existing) + 1`,

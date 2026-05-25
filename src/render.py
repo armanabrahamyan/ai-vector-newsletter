@@ -141,6 +141,31 @@ class IncompleteStaging(ReleaseError):
         self.missing_path = missing_path
 
 
+class StagingIntegrityFailure(ReleaseError):
+    """Raised when ``release_promote`` runs ``check_integrity()`` against the
+    staging archive and one or more assertions fail. The release is refused
+    so that we never ship an issue with broken pipeline health (e.g. too few
+    hands_on stories, source fire rate below 0.80, missing pulse, or a
+    score-≥35 cluster wrongly tiered as ``cut``).
+
+    The full list of human-readable failure strings is exposed as
+    ``.failures`` so the orchestrator (run.py) can render them one per line.
+    Pass ``--force`` to ``aiv release`` (or ``force=True`` to ``release_promote``)
+    to bypass the gate; the operator's intent is recorded in the warning
+    log line for audit."""
+
+    def __init__(self, date: datetime.date, failures: list[str]) -> None:
+        joined = "\n  - ".join(failures) if failures else "(none reported)"
+        super().__init__(
+            f"staging integrity check FAILED for {date}: refusing to release."
+            f"\n  - {joined}"
+            f"\nRe-run the pipeline (or the specific stage) to fix the staging "
+            f"draft, or pass --force to bypass (logged as a WARNING for audit)."
+        )
+        self.date = date
+        self.failures = list(failures)
+
+
 # ---------------------------------------------------------------------------
 # Jinja2 helpers
 # ---------------------------------------------------------------------------
@@ -505,7 +530,12 @@ def render(
 # release_promote -- the 7-step release transition per DESIGN.md.
 # ---------------------------------------------------------------------------
 
-def release_promote(date: datetime.date, *, revise: bool = False) -> Issue:
+def release_promote(
+    date: datetime.date,
+    *,
+    revise: bool = False,
+    force: bool = False,
+) -> Issue:
     """
     Promote ``data/staging/<date>/`` to canonical ``data/released/<date>/``
     and ship.
@@ -519,6 +549,13 @@ def release_promote(date: datetime.date, *, revise: bool = False) -> Issue:
          re-release*: preserve the original ``issue_number``, bump
          ``revision`` by 1, and overwrite the canonical files.
       2. Validate staging exists -- otherwise ``NoStagingDraft``.
+      2b. **Staging integrity gate** -- call
+         ``evals.run_evals.check_integrity(date, staging=True)``. On
+         failure, raise ``StagingIntegrityFailure`` with the full list
+         of failed assertions so the caller can render them. The gate is
+         bypassed when ``force=True``; the bypassed assertions are
+         emitted at WARNING level for audit (an operator who knows
+         better must be able to justify the override after the fact).
       3. Read + pydantic-validate the staging ``Issue``. Warn if
          ``issue_number`` was somehow already set in staging (overwrite).
       4. Derive ``issue_number`` + ``revision``:
@@ -574,6 +611,37 @@ def release_promote(date: datetime.date, *, revise: bool = False) -> Issue:
     staging_issue = paths.issue_path(date, canonical=False)
     if not staging_issue.exists():
         raise NoStagingDraft(date)
+
+    # --- Step 2b: staging integrity gate ---------------------------------
+    # The eval-engineer-owned ``check_integrity()`` asserts source fire
+    # rate >= 0.80, pulse >= 1, hands_on >= 3, no score-≥35 cluster tiered
+    # as ``cut``, and full schema + referential integrity. A failing
+    # staging draft is refused unless the operator explicitly opts in via
+    # ``force=True`` (audited with a WARNING log line).
+    #
+    # Import is lazy so the standalone ``python -m src.render`` entry
+    # point and unit tests that don't exercise the gate don't pay the
+    # eval-module import cost. ``evals/`` is not a package installed by
+    # pyproject (packages are scoped to ``src*``); bootstrap the repo
+    # root onto sys.path the same way run.py's eval command does.
+    import sys as _sys
+    _repo_root = Path(__file__).resolve().parent.parent
+    if str(_repo_root) not in _sys.path:
+        _sys.path.insert(0, str(_repo_root))
+    from evals.run_evals import check_integrity as _check_integrity
+
+    integrity_failures, integrity_ok = _check_integrity(date, staging=True)
+    if not integrity_ok:
+        if force:
+            log.warning(
+                "release --force: BYPASSING staging integrity gate for %s "
+                "(%d failing assertion(s)). Audit trail:",
+                date, len(integrity_failures),
+            )
+            for failure in integrity_failures:
+                log.warning("  - %s", failure)
+        else:
+            raise StagingIntegrityFailure(date, integrity_failures)
 
     # --- Step 3: read + validate staging issue ----------------------------
     staged = Issue.model_validate_json(
@@ -845,6 +913,14 @@ if __name__ == "__main__":
              "preserves issue_number, bumps revision (#N -> #N.1 -> #N.2).",
     )
     parser.add_argument(
+        "--force",
+        action="store_true",
+        default=False,
+        help="With --promote, bypass the staging integrity gate even if "
+             "check_integrity() reports failures. Each bypassed assertion is "
+             "logged at WARNING for audit.",
+    )
+    parser.add_argument(
         "--date",
         default=None,
         metavar="YYYY-MM-DD",
@@ -863,7 +939,9 @@ if __name__ == "__main__":
             removed = unrelease(run_date)
             print(f"unreleased {run_date} ({removed} URLs removed)")
         elif args.promote:
-            issue = release_promote(run_date, revise=args.revise)
+            issue = release_promote(
+                run_date, revise=args.revise, force=args.force,
+            )
             print(f"released {run_date} as issue #{issue.display_number}")
         else:
             out = render(run_date, mode=args.mode)

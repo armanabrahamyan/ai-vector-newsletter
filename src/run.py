@@ -561,6 +561,7 @@ def _run_release(
     back_release: bool,
     *,
     revise: bool = False,
+    force: bool = False,
 ) -> int:
     """Run the release transition. Returns Unix exit code.
 
@@ -569,6 +570,10 @@ def _run_release(
     ``issue_number`` is preserved and ``revision`` is bumped (rendered
     as ``#N.M``). See DESIGN.md "Issue Number Registry -> Same-date
     re-release (revision bump)" for the full state model.
+
+    ``force=True`` bypasses the staging integrity gate (publish gate) --
+    failing assertions are logged at WARNING for audit but the release
+    proceeds anyway. For the rare case the operator knows better.
     """
     _banner_release(run_date, back_release)
     if dry_run:
@@ -579,12 +584,18 @@ def _run_release(
 
     try:
         before_published = _count_published_urls()
-        issue = render_mod.release_promote(run_date, revise=revise)
+        issue = render_mod.release_promote(run_date, revise=revise, force=force)
     except render_mod.AlreadyReleased as exc:
         _LOG.error("release: %s", exc)
         return 1
     except render_mod.NoStagingDraft as exc:
         _LOG.error("release: %s", exc)
+        return 1
+    except render_mod.StagingIntegrityFailure as exc:
+        _LOG.error("release: %s", exc)
+        _LOG.error("release: refusing to publish. Fix the staging draft "
+                   "(re-run the pipeline or the failing stage) OR pass "
+                   "--force to bypass (logged as a WARNING for audit).")
         return 1
 
     after_published = _count_published_urls()
@@ -732,6 +743,14 @@ def release(
              "to overwrite a released date; without it, an already-released "
              "date errors with AlreadyReleased.",
     ),
+    force: bool = typer.Option(
+        False, "--force",
+        help="Bypass the staging integrity gate. Without this, release "
+             "refuses staging that fails check_integrity() (e.g. fewer "
+             "than 3 hands_on stories, missing pulse, source fire rate "
+             "below 0.80). Each bypassed assertion is logged at WARNING "
+             "for audit. Use sparingly.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
 ) -> None:
     """Promote a staging draft to released and rebuild the index."""
@@ -739,7 +758,7 @@ def release(
     _load_env()
     run_date = _resolve_date(date)
     back_release = run_date != _dt.date.today()
-    sys.exit(_run_release(run_date, dry_run, back_release, revise=revise))
+    sys.exit(_run_release(run_date, dry_run, back_release, revise=revise, force=force))
 
 
 @app.command()

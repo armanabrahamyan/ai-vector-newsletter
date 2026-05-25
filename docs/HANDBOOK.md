@@ -532,12 +532,33 @@ The eval writes a timestamped JSON report to
 (generated outputs), but `evals/reports/weekly/` is tracked — it holds
 the Eval Engineer's curated weekly behavioural-integrity notes.
 
-The CLI is being built as Phase E of the eval plan (task #68). Until
-it lands, run the harness directly:
+### The publish gate (you can't accidentally ship a broken issue)
 
-```bash
-python -m evals.run_evals --against fixtures --report pretty
+`aiv release` now runs `check_integrity()` against the staging draft
+automatically. If staging has fewer than 3 hands_on stories, no pulse,
+a source fire rate below 0.80, or a `score ≥ 35` cluster wrongly
+tiered as `cut`, the release is **refused** with a clear list of
+failures:
+
 ```
+release: staging integrity check FAILED for 2026-05-25: refusing to release.
+  - PIPELINE HEALTH: issue.json has 1 hands_on story (minimum 3 required)
+release: refusing to publish. Fix the staging draft (re-run the pipeline
+or the failing stage) OR pass --force to bypass (logged as a WARNING for audit).
+```
+
+Two paths from here:
+- **Fix the staging draft** — usually a re-run with `aiv run --stages
+  rank,summarise,render --date <date>` after addressing the cause
+  (often a thin news day or a prompt that just landed).
+- **`aiv release --force`** — bypass the gate. Each bypassed assertion
+  is logged at WARNING level. Use sparingly; the audit log is the only
+  thing standing between intentional override and silent regression.
+
+The gate was added after a 3-story draft shipped publicly because nothing
+prevented it (Issue #2.1 on 2026-05-24, postmortem in
+`evals/failure_modes.md` FM-13). The gate makes that class of mistake
+structurally impossible without explicit `--force`.
 
 ---
 
