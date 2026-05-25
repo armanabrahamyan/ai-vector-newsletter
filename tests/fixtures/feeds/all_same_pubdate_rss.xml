@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture for Bug #71: all items lack a pubDate, so they all fall back to
+     fetched_at.  Simulates the FCA News feed pattern where 15-20 items all
+     get identical published_at = fetched_at. -->
+<rss version="2.0">
+  <channel>
+    <title>No PubDate Feed</title>
+    <link>https://www.regulator.example/news/</link>
+    <description>Regulatory news without per-item publication dates</description>
+    <item>
+      <title>AI Model Risk Guidance Published</title>
+      <link>https://www.regulator.example/news/ai-model-risk</link>
+      <description>New guidance on AI model risk management for financial services firms.</description>
+      <guid>https://www.regulator.example/news/ai-model-risk</guid>
+    </item>
+    <item>
+      <title>Synthetic Data Governance Consultation</title>
+      <link>https://www.regulator.example/news/synthetic-data</link>
+      <description>Consultation paper on use of synthetic data in financial ML pipelines.</description>
+      <guid>https://www.regulator.example/news/synthetic-data</guid>
+    </item>
+    <item>
+      <title>Consumer Credit Act Reform Update</title>
+      <link>https://www.regulator.example/news/cca-reform</link>
+      <description>Policy statement on consumer credit reform framework.</description>
+      <guid>https://www.regulator.example/news/cca-reform</guid>
+    </item>
+  </channel>
+</rss>

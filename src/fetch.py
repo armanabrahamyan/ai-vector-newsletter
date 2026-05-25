@@ -35,6 +35,7 @@ import time
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse as _urlparse
 
 import feedparser  # type: ignore[import-untyped]
 import httpx
@@ -64,6 +65,21 @@ HN_POINTS_THRESHOLD: int = 50
 # Many feeds return their full archive; we only want today + recent yesterday
 # for a daily newsletter. Items dropped here do NOT count toward items_kept.
 MAX_ITEM_AGE_DAYS: int = 2
+
+# Bug #70 — BIS future timestamps.
+# Clamp any `published_at` more than this many hours ahead of `fetched_at`
+# to `fetched_at`.  Feeds occasionally embed bogus far-future dates (observed:
+# BIS reshub_papers.rss entry with published_at=2035-08-31).  The item is real;
+# the timestamp is a typo.  We treat it as "just-arrived" so freshness scoring
+# stays accurate.  A WARNING is logged with the original value so the Eval
+# Engineer can spot patterns.
+MAX_FUTURE_CLOCK_SKEW_HOURS: int = 24
+
+# Bug #72 — Lil'Log FAQ ingestion.
+# Hugo-generated feeds include non-post pages (FAQ, about, etc.) as entries.
+# Drop any item whose URL path matches one of these prefixes/patterns.
+# Extend this list if new sources surface similar junk pages.
+_JUNK_URL_PATH_PREFIXES: tuple[str, ...] = ("/faq/", "/about/", "/tags/", "/categories/")
 
 # Reddit: number of top hot posts to pull per subreddit.
 REDDIT_LIMIT: int = 30
@@ -276,12 +292,38 @@ def _fetch_rss(source: dict[str, Any]) -> tuple[list[Item], SourceHealth]:
                         summary_raw = content_list[0].get("value", "")
                 raw_summary = _cap_summary(_strip_html(summary_raw))
 
+                # Bug #72 — drop Hugo-generated junk pages (FAQ, about, etc.)
+                # that appear as RSS entries alongside real blog posts.
+                _parsed_url = _urlparse(raw_link)
+                _path = _parsed_url.path.rstrip("/") + "/"
+                if any(_path.startswith(prefix) for prefix in _JUNK_URL_PATH_PREFIXES):
+                    log.debug(
+                        "[%s] dropping non-post page entry: %s", name, raw_link
+                    )
+                    continue
+
                 # Timestamps: prefer published_parsed then updated_parsed
                 pub_dt = (
                     _feedparser_time_to_datetime(entry.get("published_parsed"))
                     or _feedparser_time_to_datetime(entry.get("updated_parsed"))
                 )
                 published_at = pub_dt or fetched_at
+
+                # Bug #70 — clamp far-future timestamps.
+                # Some feeds (observed: BIS reshub_papers.rss) emit published_at
+                # values years in the future (typo in feed metadata).  The item
+                # is real; treat it as just-arrived so freshness scoring is
+                # accurate.  Log a WARNING so the Eval Engineer can spot
+                # recurring patterns.
+                skew_limit = datetime.timedelta(hours=MAX_FUTURE_CLOCK_SKEW_HOURS)
+                if published_at > fetched_at + skew_limit:
+                    log.warning(
+                        "[%s] future published_at clamped: original=%s url=%s",
+                        name,
+                        published_at.isoformat(),
+                        raw_link,
+                    )
+                    published_at = fetched_at
 
                 # last_modified from feed-level metadata
                 last_mod = _feedparser_time_to_datetime(
@@ -303,6 +345,44 @@ def _fetch_rss(source: dict[str, Any]) -> tuple[list[Item], SourceHealth]:
             except Exception as exc:
                 parse_errors += 1
                 log.debug("[%s] skipping entry due to parse error: %s", name, exc)
+
+        # Bug #71 — detect sources where every item's published_at fell back
+        # to fetched_at (i.e. the feed provides no per-item pubdates, or they
+        # are all identical and match fetched_at to the second).  When this
+        # pattern is detected: tag every item with extras["freshness_inferred"]
+        # = "true" so rank.py can downweight freshness_momentum, and emit a
+        # WARNING so the Eval Engineer sees the pattern in logs.
+        # Detection: >= 2 items, all share the same published_at (truncated to
+        # second), and that shared timestamp equals fetched_at (to the second).
+        if len(items) >= 2:
+            fetched_at_sec = fetched_at.replace(microsecond=0)
+            pub_secs = {item.published_at.replace(microsecond=0) for item in items}
+            if len(pub_secs) == 1 and fetched_at_sec in pub_secs:
+                log.warning(
+                    "[%s] all %d items share published_at=fetched_at — "
+                    "feed likely has no per-item pubdates; "
+                    "marking freshness_inferred=true on all items",
+                    name,
+                    len(items),
+                )
+                tagged: list[Item] = []
+                for _item in items:
+                    tagged.append(
+                        Item(
+                            id=_item.id,
+                            source=_item.source,
+                            source_type=_item.source_type,
+                            url=str(_item.url),  # type: ignore[arg-type]
+                            title=_item.title,
+                            published_at=_item.published_at,
+                            raw_summary=_item.raw_summary,
+                            fetched_at=_item.fetched_at,
+                            trust_weight=_item.trust_weight,
+                            language=_item.language,
+                            extras={**_item.extras, "freshness_inferred": "true"},
+                        )
+                    )
+                items = tagged
 
         missed_reason: MissedReason | None = None
         fired = True

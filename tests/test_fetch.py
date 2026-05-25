@@ -703,3 +703,146 @@ class TestAtomicWrites:
         # Should not have doubled up — each line is a unique URL
         urls = [json.loads(l)["url"] for l in lines]
         assert len(urls) == len(set(urls))
+
+
+# ---------------------------------------------------------------------------
+# Bug #70 — BIS future timestamps: far-future published_at is clamped to
+# fetched_at, item is kept, WARNING is logged.
+# ---------------------------------------------------------------------------
+
+class TestFutureTimestampClamp:
+    def test_future_published_at_is_clamped_to_fetched_at(self) -> None:
+        """An item with published_at 9 years in the future must be clamped."""
+        feed = _parse_fixture("future_timestamp_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = _fetch_rss(_source())
+
+        # Both items are kept (item is not dropped, only clamped)
+        assert len(items) == 2
+        future_item = next(i for i in items if "payments-paper" in str(i.url))
+        assert future_item.published_at == FIXED_FETCH_AT
+
+    def test_future_published_at_clamp_logged_as_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Clamping a future timestamp emits a WARNING with the original value."""
+        import logging as _logging
+        feed = _parse_fixture("future_timestamp_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT), \
+             caplog.at_level(_logging.WARNING, logger="src.fetch"):
+            _fetch_rss(_source())
+
+        warning_texts = [r.message for r in caplog.records if r.levelno >= _logging.WARNING]
+        assert any("future published_at clamped" in t for t in warning_texts)
+        # The original bad timestamp should appear in the log message
+        assert any("2035" in t for t in warning_texts)
+
+    def test_normal_recent_item_published_at_unchanged(self) -> None:
+        """An item with a sane pubDate must keep its original published_at."""
+        feed = _parse_fixture("future_timestamp_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = _fetch_rss(_source())
+
+        normal_item = next(i for i in items if "normal-post" in str(i.url))
+        # pubDate is Sun, 24 May 2026 09:00:00 +0000 — must not equal fetched_at
+        assert normal_item.published_at != FIXED_FETCH_AT
+        assert normal_item.published_at.year == 2026
+
+
+# ---------------------------------------------------------------------------
+# Bug #71 — FCA missing pubdates: when all items share published_at=fetched_at,
+# SourceHealth is flagged and items carry extras["freshness_inferred"]="true".
+# ---------------------------------------------------------------------------
+
+class TestFreshnessInferredDetection:
+    def test_all_same_pubdate_tags_items_with_freshness_inferred(self) -> None:
+        """All items sharing published_at=fetched_at get freshness_inferred=true."""
+        feed = _parse_fixture("all_same_pubdate_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = _fetch_rss(_source())
+
+        assert len(items) == 3
+        for item in items:
+            assert item.extras.get("freshness_inferred") == "true", (
+                f"Expected freshness_inferred=true on {item.url!r}"
+            )
+
+    def test_all_same_pubdate_logs_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """The freshness_inferred detection emits a WARNING for the source."""
+        import logging as _logging
+        feed = _parse_fixture("all_same_pubdate_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT), \
+             caplog.at_level(_logging.WARNING, logger="src.fetch"):
+            _fetch_rss(_source())
+
+        warning_texts = [r.message for r in caplog.records if r.levelno >= _logging.WARNING]
+        assert any("freshness_inferred" in t for t in warning_texts)
+
+    def test_feed_with_real_dates_not_tagged(self) -> None:
+        """A feed with genuine per-item dates must NOT get freshness_inferred."""
+        feed = _parse_fixture("sample_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = _fetch_rss(_source())
+
+        for item in items:
+            assert item.extras.get("freshness_inferred") is None, (
+                f"Unexpected freshness_inferred on {item.url!r}"
+            )
+
+    def test_single_item_feed_not_tagged(self) -> None:
+        """A single-item feed (no pattern to detect) must not be tagged."""
+        feed = _parse_fixture("no_date_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = _fetch_rss(_source())
+
+        # Detection requires >= 2 items — single-item feed must not fire
+        assert len(items) == 1
+        assert items[0].extras.get("freshness_inferred") is None
+
+
+# ---------------------------------------------------------------------------
+# Bug #72 — Lil'Log FAQ ingestion: the /faq/ page is filtered out; the real
+# blog post survives.
+# ---------------------------------------------------------------------------
+
+class TestJunkPageFilter:
+    def test_faq_page_is_dropped(self) -> None:
+        """An RSS entry whose URL path is /faq/ must be dropped."""
+        feed = _parse_fixture("lil_log_with_faq_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = _fetch_rss(_source())
+
+        urls = [str(i.url) for i in items]
+        assert not any("/faq/" in u for u in urls), (
+            "FAQ page must not appear in fetched items"
+        )
+
+    def test_real_blog_post_survives(self) -> None:
+        """The real blog post in the fixture must be kept after the filter."""
+        feed = _parse_fixture("lil_log_with_faq_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = _fetch_rss(_source())
+
+        assert len(items) == 1
+        assert "posts/2025-05-01-thinking" in str(items[0].url)
+
+    def test_items_in_counts_all_entries_including_junk(self) -> None:
+        """items_in reflects raw feed entry count (before junk filter)."""
+        feed = _parse_fixture("lil_log_with_faq_rss.xml")
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            _, health = _fetch_rss(_source())
+
+        # The fixture has 2 entries; items_in counts both
+        assert health.items_in == 2

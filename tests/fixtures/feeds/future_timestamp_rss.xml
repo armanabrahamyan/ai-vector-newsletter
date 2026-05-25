@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture for Bug #70: one item with a legitimate pubDate, one with a
+     far-future pubDate (2035) simulating the BIS reshub_papers.rss bug. -->
+<rss version="2.0">
+  <channel>
+    <title>Future Timestamp Test Feed</title>
+    <link>https://example.com/</link>
+    <description>Feed with a far-future timestamp entry</description>
+    <item>
+      <title>Normal Recent Post</title>
+      <link>https://example.com/normal-post</link>
+      <description>A post with a sane publication date.</description>
+      <pubDate>Sun, 24 May 2026 09:00:00 +0000</pubDate>
+      <guid>https://example.com/normal-post</guid>
+    </item>
+    <item>
+      <title>Working Paper on AI in Payments</title>
+      <link>https://example.com/ai-payments-paper</link>
+      <description>Central bank research on AI agents in payment systems.</description>
+      <pubDate>Sat, 31 Aug 2035 14:00:00 +0000</pubDate>
+      <guid>https://example.com/ai-payments-paper</guid>
+    </item>
+  </channel>
+</rss>
