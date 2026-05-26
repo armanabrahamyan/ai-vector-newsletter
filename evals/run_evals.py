@@ -1226,7 +1226,8 @@ def check_integrity(
       2. Source fire rate >= 0.80 (from source_health.json).
       3. pulse.stories | length >= 1.
       4. sum(hands_on section stories) >= 3.
-      5. No cluster with score >= 35 tiered as "cut" in ranked.jsonl.
+      5. No cluster with score >= 35 tiered as "cut" in ranked.jsonl,
+         excluding ``novelty == "none"`` (legitimate prior-coverage cuts).
 
     Returns:
         ``(failures, all_passed)`` where ``failures`` is a list of
@@ -1402,14 +1403,24 @@ def check_integrity(
                 f"(minimum 3 required)"
             )
 
-    # (D3) No cluster with score >= 35 tiered 'cut' in ranked.jsonl
+    # (D3) No cluster with score >= 35 tiered 'cut' in ranked.jsonl.
+    # novelty="none" cuts are a legitimate prior-coverage dedup outcome
+    # (rank.py caps significance at 25 to trip the cut, but the aggregated
+    # score can still exceed 35 when other dimensions are high), so they
+    # are excluded from the inconsistency check.
     CUT_SCORE_CEILING = 35
     high_score_cuts: list[dict] = []
     for record in raw_ranked:
         score = record.get("score")
         tier = record.get("tier")
+        novelty = record.get("novelty")
         cid = record.get("cluster_id", "<unknown>")
-        if tier == "cut" and score is not None and score >= CUT_SCORE_CEILING:
+        if (
+            tier == "cut"
+            and novelty != "none"
+            and score is not None
+            and score >= CUT_SCORE_CEILING
+        ):
             high_score_cuts.append({"cluster_id": cid, "score": score})
 
     if high_score_cuts:
@@ -1675,8 +1686,14 @@ def eval_module_integrity(
     for record in raw_ranked:
         score = record.get("score")
         tier = record.get("tier")
+        novelty = record.get("novelty")
         cid = record.get("cluster_id", "<unknown>")
-        if tier == "cut" and score is not None and score >= CUT_SCORE_CEILING:
+        if (
+            tier == "cut"
+            and novelty != "none"
+            and score is not None
+            and score >= CUT_SCORE_CEILING
+        ):
             high_score_cuts.append({"cluster_id": cid, "score": score})
 
     health_details["high_score_cuts"] = high_score_cuts
