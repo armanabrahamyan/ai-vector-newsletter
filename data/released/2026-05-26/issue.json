@@ -1,0 +1,179 @@
+{
+  "schema_version": 5,
+  "issue_number": 4,
+  "revision": 0,
+  "date": "2026-05-26",
+  "pulse": {
+    "schema_version": 2,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_9b0827f911f70787",
+        "headline": "Open deep-research agents now match proprietary rivals across eight benchmarks",
+        "summary": "QUEST releases open-weight deep-research agents (2B to 35B parameters) trained on just 8,000 fully synthetic tasks, matching or beating closed proprietary systems across eight benchmarks. Models, data, and training scripts are all public. Benchmarks are self-reported by the authors, so run QUEST against your own retrieval tasks before swapping out a commercial deep-research dependency.",
+        "source_urls": [
+          "https://arxiv.org/abs/2605.24218"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 2,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_e8ebc2cdb77b58a4",
+          "headline": "A runtime compliance score could replace the once-a-year AI audit",
+          "summary": "Treat-it-once audit logic doesn't satisfy the EU AI Act's continuous-oversight requirement. govllm routes model selection by live compliance scores, using a panel of small on-premise language models as regulatory judges. On a 49-pair test corpus, agreement topped out at 69%. No independent benchmark exists yet. Raise this architecture at your next model-risk review before committing to a static audit approach.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.24737"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_30e2359973706314",
+          "headline": "AI coding agents quietly change personality during long sessions, new benchmark shows",
+          "summary": "AI coding agents drift from their trained persona across long sessions. ContextEcho tests 23 models on sessions up to 9,716 turns and finds drift is universal across model families. A single re-anchor prompt restores behaviour. Academic paper only, no production tooling yet; run the open-source harness against your agent before shipping.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.24279"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_a8ea35b39059ad13",
+          "headline": "Conversation history quietly skews AI judgements, even across top models",
+          "summary": "When a language model evaluates items in sequence, prior positive or negative results contaminate subsequent scores. Across nearly 76,000 API calls spanning 11 models, negative histories produced 1.6 times more bias than positive ones. Larger models reduced but didn't eliminate the effect. The fix is simple: use a fresh context per evaluation item before trusting any batched scoring pipeline.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.22714"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_fa5c442df30d90a8",
+          "headline": "A new monitor detects AI agents that pursue hidden goals",
+          "summary": "Agent-ToM frames agent monitoring around inferred beliefs and intent, not just observed actions. A two-call reasoning pipeline outperforms ensemble baselines on adversarial benchmarks, but no code or weights are public yet. Raise this at your next agentic architecture review before committing to a monitoring approach for autonomous systems.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.24216"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Trust is not static.",
+      "intro_body": "Across compliance, coding, evaluation, and agent behaviour, today's research shares one finding: AI systems drift or distort over time. Governance built on point-in-time checks will not hold."
+    },
+    {
+      "schema_version": 2,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_082264dd7ef039bb",
+          "headline": "A 9-millisecond CPU model strips personal data before it leaves your machine",
+          "summary": "A developer has released a local model that scrubs personally identifiable information from computer-use data in roughly 9 milliseconds on CPU alone, no GPU required. Single Reddit post, no repository link yet, and benchmarks are self-reported. If you're building agentic pipelines under data-residency constraints, bookmark it and wait for a public repo before evaluating.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tnqk4h/new_local_model_reaching_near_frontier_on_pii"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_a437deb04c70e996",
+          "headline": "A browser-based gym lets you train mobile agents at scale cheaply",
+          "summary": "Training mobile GUI agents has meant slow, unverifiable emulators. MobileGym runs hundreds of browser-hosted parallel sessions from a single server (around 400 MB each), judges outcomes against structured app state, and transfers training gains to real devices at 95% fidelity. Single-source preprint; no independent benchmarks yet. If you're building mobile agents, clone it before committing to a heavier eval stack.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.26114"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_30a8da2d0491b127",
+          "headline": "Multi-agent AI systems reach false consensus in nearly all cases",
+          "summary": "Scoring final answers misses how multi-agent systems actually fail. MedAgentAudit, auditing 14,400 cases across six architectures, found agents repeat initial views without re-examining evidence in 98% of discussions, and unsupported observations propagate in 17% of cases. No code is released yet; raise the taxonomy of ten failure modes at your next agentic system design review.",
+          "source_urls": [
+            "https://arxiv.org/abs/2510.10185"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_d853042dbd53437f",
+          "headline": "Open tool cuts long-context memory use tenfold with no measurable quality loss",
+          "summary": "Shard (krish1905/shard) compresses the key-value memory that long-context inference consumes by 10x at 8K context and 11x at 32K, with no measurable quality loss on standard benchmarks. It treats the two memory components differently rather than applying one method to both. Single Reddit post, self-reported benchmarks; run your own evals before committing to on-prem deployments.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tnvo7r/shard_getting_to_10_kv_cache_compression"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_dfd240feb43f90d8",
+          "headline": "A quarter of benchmark tasks contain errors that skew model rankings",
+          "summary": "Auto Benchmark Audit, an agentic tool released alongside a new arXiv paper, scanned 168 benchmarks and found critical flaws in over 25.7% of tasks: ambiguous specs, wrong ground truths, brittle grading. Filtering them shifted model rankings and lifted scores by roughly 10%. Code is public. Before trusting a leaderboard to inform a model selection decision, run it.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.26079"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Verify before you build.",
+      "intro_body": "Today's releases look useful on paper, but most rest on self-reported numbers or unaudited benchmarks. The pattern worth noting: the tooling for checking claims is maturing faster than the claims themselves."
+    },
+    {
+      "schema_version": 2,
+      "name": "on_the_radar",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_dd414e1ba21d0eb0",
+          "headline": "A new benchmark tests language models on real trading strategy backtests",
+          "summary": "BacktestBench is the first benchmark built for language-model-driven quantitative backtesting, drawing on 6 million real market records and 18,246 annotated tasks. A multi-agent baseline translates plain-language strategies into runnable code. No independent code release is confirmed yet. If you're evaluating language models for quant research, this sets the comparison baseline to beat.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.17937"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_c52d228ba43a2c23",
+          "headline": "A new eval framework judges agent reasoning, not just the final answer",
+          "summary": "Most agent benchmarks only check the final answer, ignoring wasted tool calls, hallucinated steps, and poor adaptivity. TRACE scores the full reasoning trajectory across three dimensions using an evidence bank that accumulates context step-by-step, without needing hand-labelled ground-truth paths. No code repository is linked; raise it before locking in an answer-only benchmark design.",
+          "source_urls": [
+            "https://arxiv.org/abs/2510.02837"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "For awareness only.",
+      "intro_body": "Both items introduce evaluation tools that lack independent verification or full code releases. Promising in framing, but too early to assess real-world utility."
+    }
+  ],
+  "generated_at": "2026-05-26T11:43:28.886119Z",
+  "prompt_versions": {
+    "rank": "v0.5",
+    "summarise": "v0.9",
+    "pulse": "v0.10"
+  },
+  "notes": ""
+}
