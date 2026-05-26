@@ -18,10 +18,12 @@ import datetime as _dt
 
 import pytest
 
-from src.models import Item, RankedStory, SummaryBlock
+from src.models import Cluster, Item, RankedStory, SummaryBlock
 from src.summarise import (
+    PULSE_ELIGIBILITY_TRUST_FLOOR,
     _pick_pulse,
     _pick_source_urls,
+    _pulse_eligibility,
     _reconcile_signal_with_audience_tags,
     _url_dedup_key,
 )
@@ -502,3 +504,301 @@ class TestPulseSelectionPriorCoverageBias:
         )
         pulse_id = _pick_pulse([a, b])
         assert pulse_id == "c_eeeeeeeeeeee0030"
+
+
+# ===========================================================================
+# _pick_pulse -- sourcing-credibility eligibility gate (v0.10 / 2026-05-26).
+#
+# Fixes the May 26, 2026 PII-scrubber regression: a singleton cluster with
+# one trust=2 Reddit source (no repo, no canonical artefact) was promoted
+# to Pulse via the score fallback path because the picker had no notion
+# of *eligibility*. The eligibility gate sits in front of the existing
+# fresh/recurring partition and >=2 signal-dimension Pulse-class check.
+#
+# Eligibility requires AT LEAST ONE of:
+#   1. cluster.size > 1                (multi-source corroboration)
+#   2. cluster.canonical_id is not None (verifiable artefact)
+#   3. max trust_weight in cluster >= PULSE_ELIGIBILITY_TRUST_FLOOR (=3)
+#
+# If zero candidates pass, fall back to current behaviour with WARNING.
+# ===========================================================================
+
+def _cluster(
+    cluster_id: str,
+    *,
+    size: int = 1,
+    canonical_id: str | None = None,
+    item_ids: list[str] | None = None,
+    sources: list[str] | None = None,
+) -> Cluster:
+    """Build a minimal Cluster for eligibility tests. Defaults to a
+    thin-sourced singleton (the May 26 PII pattern). Override size /
+    canonical_id / item_ids / sources for the must-pass cases."""
+    if item_ids is None:
+        # Synthesise size distinct item ids of the right cardinality.
+        item_ids = [f"item_{cluster_id[2:6]}_{i:02d}" for i in range(size)]
+    if sources is None:
+        sources = ["r/LocalLLaMA (Reddit)"]
+    return Cluster(
+        cluster_id=cluster_id,
+        item_ids=item_ids,
+        canonical_title="A canonical title that exists",
+        sources=sources,
+        earliest_published=FIXED_EARLIER,
+        size=len(item_ids),
+        prior_coverage_ref=None,
+        canonical_id=canonical_id,
+    )
+
+
+def _items_by_id(
+    item_ids: list[str],
+    *,
+    trust: int = 2,
+    source: str = "r/LocalLLaMA (Reddit)",
+) -> dict[str, Item]:
+    """Build {item_id: Item} for the eligibility gate's trust_weight lookup.
+    Each item shares the same trust + source unless tests override."""
+    return {
+        iid: Item(
+            id=iid,
+            source=source,
+            source_type="rss",
+            url=f"https://example.com/{iid}",  # type: ignore[arg-type]
+            title=f"t-{iid}",
+            published_at=FIXED_EARLIER,
+            raw_summary="",
+            fetched_at=FIXED_NOW,
+            trust_weight=trust,
+        )
+        for iid in item_ids
+    }
+
+
+class TestPulseEligibilityGate:
+    """The sourcing-credibility gate that sits in front of _pick_pulse."""
+
+    def test_filters_singleton_low_trust(self, caplog) -> None:
+        """The May 26 smoking gun. PII-scrubber cluster pattern: size=1,
+        canonical_id=None, trust=2 Reddit source. Higher-scored but
+        sourcing-thin story must be demoted in favour of an eligible
+        lower-scored story. INFO log records the demotion."""
+        # Ineligible top story (May 26 PII pattern): singleton, no canonical,
+        # trust=2 only. Higher significance + higher score than the
+        # eligible story below.
+        thin_cluster = _cluster("c_eeeeeeeeeeee0040", size=1)
+        thin = (
+            _ranked("c_eeeeeeeeeeee0040", score=56, significance=65,
+                    hands_on=72, freshness=50),
+            _block("c_eeeeeeeeeeee0040", prior_coverage_ref=None),
+        )
+        # Eligible candidate: multi-source (size=2). Lower score.
+        multi_cluster = _cluster(
+            "c_eeeeeeeeeeee0041", size=2,
+            sources=["github_releases", "r/LocalLLaMA (Reddit)"],
+        )
+        multi = (
+            _ranked("c_eeeeeeeeeeee0041", score=45, significance=50,
+                    hands_on=40, freshness=50),
+            _block("c_eeeeeeeeeeee0041", prior_coverage_ref=None),
+        )
+        clusters_by_id = {
+            thin_cluster.cluster_id: thin_cluster,
+            multi_cluster.cluster_id: multi_cluster,
+        }
+        items_by_id = {
+            **_items_by_id(thin_cluster.item_ids, trust=2),
+            **_items_by_id(multi_cluster.item_ids, trust=2),
+        }
+        import logging
+        with caplog.at_level(logging.INFO, logger="ai_vector.summarise"):
+            pulse_id = _pick_pulse(
+                [thin, multi],
+                clusters_by_id=clusters_by_id,
+                items_by_id=items_by_id,
+            )
+        assert pulse_id == "c_eeeeeeeeeeee0041"
+        # The thin story was logged as filtered AND the demotion was logged.
+        assert any("eligibility gate filtered" in r.message
+                   for r in caplog.records)
+
+    def test_passes_multi_source(self) -> None:
+        """Pulse-eligible when size > 1 (multi-source corroboration)."""
+        cluster = _cluster(
+            "c_eeeeeeeeeeee0050", size=2,
+            sources=["github_releases", "r/LocalLLaMA (Reddit)"],
+        )
+        eligible, reason = _pulse_eligibility(
+            cluster, _items_by_id(cluster.item_ids, trust=2),
+        )
+        assert eligible is True
+        assert "size=2" in reason
+
+    def test_passes_canonical_id(self) -> None:
+        """Pulse-eligible when canonical_id is set (verifiable artefact)
+        even if singleton and trust=2."""
+        cluster = _cluster(
+            "c_eeeeeeeeeeee0060", size=1,
+            canonical_id="arxiv:2605.12345",
+        )
+        eligible, reason = _pulse_eligibility(
+            cluster, _items_by_id(cluster.item_ids, trust=2),
+        )
+        assert eligible is True
+        assert "canonical_id=present" in reason
+
+    def test_passes_established_source(self) -> None:
+        """Pulse-eligible when max trust_weight >= floor (3), even if
+        singleton with no canonical_id. Models the OpenAI/Anthropic/EU AI
+        Act Newsletter case."""
+        cluster = _cluster(
+            "c_eeeeeeeeeeee0070", size=1,
+            sources=["The EU AI Act Newsletter"],
+        )
+        items = _items_by_id(
+            cluster.item_ids, trust=PULSE_ELIGIBILITY_TRUST_FLOOR,
+            source="The EU AI Act Newsletter",
+        )
+        eligible, reason = _pulse_eligibility(cluster, items)
+        assert eligible is True
+        assert f"trust_max={PULSE_ELIGIBILITY_TRUST_FLOOR}" in reason
+
+    def test_filters_singleton_low_trust_no_canonical(self) -> None:
+        """The exact PII pattern: size=1, canonical_id=None,
+        all sources at trust=2. Ineligible. Reason string carries all three
+        fields for operator clarity."""
+        cluster = _cluster("c_eeeeeeeeeeee0080", size=1)
+        eligible, reason = _pulse_eligibility(
+            cluster, _items_by_id(cluster.item_ids, trust=2),
+        )
+        assert eligible is False
+        assert "size=1" in reason
+        assert "canonical_id=none" in reason
+        assert "trust_max=2" in reason
+
+    def test_degraded_mode_fallback_when_no_eligible(self, caplog) -> None:
+        """All candidates ineligible: gate falls back to unfiltered set
+        with a WARNING; highest-scoring story is chosen anyway so the
+        issue still ships. The warning is visible at ratification."""
+        a_cluster = _cluster("c_eeeeeeeeeeee0090", size=1)
+        b_cluster = _cluster("c_eeeeeeeeeeee0091", size=1)
+        a = (
+            _ranked("c_eeeeeeeeeeee0090", score=56, significance=65,
+                    hands_on=72, freshness=50),
+            _block("c_eeeeeeeeeeee0090", prior_coverage_ref=None),
+        )
+        b = (
+            _ranked("c_eeeeeeeeeeee0091", score=45, significance=50,
+                    hands_on=40, freshness=50),
+            _block("c_eeeeeeeeeeee0091", prior_coverage_ref=None),
+        )
+        clusters_by_id = {
+            a_cluster.cluster_id: a_cluster,
+            b_cluster.cluster_id: b_cluster,
+        }
+        items_by_id = {
+            **_items_by_id(a_cluster.item_ids, trust=2),
+            **_items_by_id(b_cluster.item_ids, trust=2),
+        }
+        import logging
+        with caplog.at_level(logging.WARNING, logger="ai_vector.summarise"):
+            pulse_id = _pick_pulse(
+                [a, b],
+                clusters_by_id=clusters_by_id,
+                items_by_id=items_by_id,
+            )
+        # Fallback runs: top-scored ineligible story is picked.
+        assert pulse_id == "c_eeeeeeeeeeee0090"
+        # WARNING was logged.
+        assert any("PULSE ELIGIBILITY GATE FOUND NO ELIGIBLE CANDIDATES"
+                   in r.message for r in caplog.records)
+
+    def test_does_not_promote_ineligible_over_eligible(self) -> None:
+        """When an ineligible story has higher significance AND score, the
+        eligible story still wins. This is the core demotion rule the
+        gate enforces."""
+        ineligible_cluster = _cluster("c_eeeeeeeeeeee00a0", size=1)
+        eligible_cluster = _cluster(
+            "c_eeeeeeeeeeee00a1", size=1,
+            canonical_id="github_release:org/repo:v1.0",
+        )
+        ineligible = (
+            _ranked("c_eeeeeeeeeeee00a0", score=70, significance=95,
+                    hands_on=80, freshness=70),
+            _block("c_eeeeeeeeeeee00a0", prior_coverage_ref=None),
+        )
+        eligible = (
+            _ranked("c_eeeeeeeeeeee00a1", score=40, significance=40,
+                    hands_on=40, freshness=40),
+            _block("c_eeeeeeeeeeee00a1", prior_coverage_ref=None),
+        )
+        clusters_by_id = {
+            ineligible_cluster.cluster_id: ineligible_cluster,
+            eligible_cluster.cluster_id: eligible_cluster,
+        }
+        items_by_id = {
+            **_items_by_id(ineligible_cluster.item_ids, trust=2),
+            **_items_by_id(eligible_cluster.item_ids, trust=2),
+        }
+        pulse_id = _pick_pulse(
+            [ineligible, eligible],
+            clusters_by_id=clusters_by_id,
+            items_by_id=items_by_id,
+        )
+        assert pulse_id == "c_eeeeeeeeeeee00a1"
+
+    def test_deterministic_across_runs(self) -> None:
+        """Same input -> same Pulse pick. The gate is pure-deterministic
+        (no LLM, no randomness); we pin that explicitly."""
+        thin_cluster = _cluster("c_eeeeeeeeeeee00b0", size=1)
+        multi_cluster = _cluster(
+            "c_eeeeeeeeeeee00b1", size=2,
+            sources=["github_releases", "r/LocalLLaMA (Reddit)"],
+        )
+        thin = (
+            _ranked("c_eeeeeeeeeeee00b0", score=56, significance=65),
+            _block("c_eeeeeeeeeeee00b0", prior_coverage_ref=None),
+        )
+        multi = (
+            _ranked("c_eeeeeeeeeeee00b1", score=45, significance=50),
+            _block("c_eeeeeeeeeeee00b1", prior_coverage_ref=None),
+        )
+        clusters_by_id = {
+            thin_cluster.cluster_id: thin_cluster,
+            multi_cluster.cluster_id: multi_cluster,
+        }
+        items_by_id = {
+            **_items_by_id(thin_cluster.item_ids, trust=2),
+            **_items_by_id(multi_cluster.item_ids, trust=2),
+        }
+        ids = {
+            _pick_pulse(
+                [thin, multi],
+                clusters_by_id=clusters_by_id,
+                items_by_id=items_by_id,
+            )
+            for _ in range(5)
+        }
+        assert ids == {"c_eeeeeeeeeeee00b1"}
+
+    def test_eligibility_gate_with_missing_clusters_is_safe(self) -> None:
+        """If clusters_by_id is None (back-compat path used only by
+        narrow unit tests that don't exercise the gate), the gate
+        degrades to the all-ineligible fallback rather than crashing.
+        Existing behaviour preserved."""
+        # No clusters_by_id, no items_by_id provided. The original two
+        # blocks-only signature still works (eligibility check returns
+        # False for every cluster, fallback kicks in).
+        a = (
+            _ranked("c_eeeeeeeeeeee00c0", score=60, significance=80,
+                    hands_on=75, freshness=75),
+            _block("c_eeeeeeeeeeee00c0", prior_coverage_ref=None),
+        )
+        b = (
+            _ranked("c_eeeeeeeeeeee00c1", score=55, significance=70,
+                    hands_on=70, freshness=70),
+            _block("c_eeeeeeeeeeee00c1", prior_coverage_ref=None),
+        )
+        pulse_id = _pick_pulse([a, b])
+        # All ineligible -> fallback -> top Pulse-class story wins.
+        assert pulse_id == "c_eeeeeeeeeeee00c0"

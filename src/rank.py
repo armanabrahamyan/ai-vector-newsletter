@@ -56,11 +56,13 @@ import logging
 import os
 import statistics
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
 import yaml
+from pydantic import ValidationError
 
 from src import paths
 from src.models import RUBRIC_WEIGHTS, Cluster, Item, RankedStory
@@ -70,10 +72,10 @@ from src.models import RUBRIC_WEIGHTS, Cluster, Item, RankedStory
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-RANK_PROMPT_VERSION = "v0.4"
+RANK_PROMPT_VERSION = "v0.5"
 r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``rank-v0.4-2026-05-25``. Bump (e.g. ``v0.4``) when the prompt
+Audit tag: ``rank-v0.5-2026-05-26``. Bump (e.g. ``v0.5``) when the prompt
 content changes -- so the eval harness can correlate score movement against
 prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 """
@@ -121,12 +123,44 @@ prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 # keeps the existing 50 cap. Missing/invalid novelty defaults to 50 (don't
 # punish when uncertain). The novelty value is persisted on RankedStory
 # so the eval harness can see which calls fired.
+#
+# v0.5 (2026-05-26): AUDIENCE_TAGS TIGHTENING. Runtime log on 2026-05-26
+# showed cluster c_fb359151221d4e62 lost to a pydantic ValidationError --
+# the LLM returned audience_tags=[] and the model (List min_length=1)
+# rejected. The existing skip-on-validation-failure path worked as the
+# safety net intended, but burning a cluster on one bad sample is wasteful.
+# Two-part fix, surgical so we don't repeat the #75/#77 cliff:
+# (a) PROMPT: add an explicit AUDIENCE TAGS block stating the list must
+# never be empty, quoting the allowed values, and naming "general" as the
+# fallback when nothing else fits. Additive only -- no rewrite of the
+# existing prompt body, no anchor reminders the LLM could invert.
+# (b) RETRY: _call_and_parse_rank now catches pydantic.ValidationError in
+# addition to JSON parse failure, with a corrective nudge that quotes the
+# specific validation error back to the LLM. Reuses the existing single-
+# retry budget; second failure still skips the cluster.
 
 MAX_ITEMS_IN_CLUSTER_PROMPT = 3
 """How many member items to inline in the per-cluster prompt body."""
 
 JSON_RETRY_BUDGET = 1
 """One retry on JSON parse failure; second failure -> skip the cluster."""
+
+_LLM_CONCURRENCY_DEFAULT = 8
+"""Default per-stage LLM concurrency (read from ``LLM_CONCURRENCY`` env var).
+
+The per-cluster ranking calls are fully independent -- scoring cluster A
+doesn't depend on cluster B -- so we fan them out across a thread pool.
+The Anthropic SDK is sync and thread-safe (each call constructs its own
+client in ``_llm_call_anthropic``); ThreadPoolExecutor wraps the existing
+sync code without an asyncio migration.
+
+Default 8 is conservative for Anthropic build-tier-1 (50 RPM). Tier-4
+(4000 RPM) users can crank this to 50+. Cap at ``_LLM_CONCURRENCY_MAX``
+so a typo (``LLM_CONCURRENCY=800``) can't melt the API.
+"""
+
+_LLM_CONCURRENCY_MAX = 50
+"""Sanity ceiling on ``LLM_CONCURRENCY`` -- prevents typo disasters."""
 
 _DEFAULT_RUBRIC_PATH = Path("config/rubric.yaml")
 _SOURCES_YAML_PATH = Path("config/sources.yaml")
@@ -250,41 +284,64 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
     rubric_block = _build_rubric_block(_DEFAULT_RUBRIC_PATH)
 
     # --- Step 3+4: LLM scoring ---------------------------------------------
+    # Fan out per-cluster LLM calls across a thread pool. The calls are fully
+    # independent and the Anthropic / Bedrock / OpenAI-compatible client paths
+    # each construct their own client per call, so sharing nothing across
+    # threads is the default. Concurrency is configurable via
+    # ``LLM_CONCURRENCY`` (default 8, capped at ``_LLM_CONCURRENCY_MAX`` to
+    # bound typo-disasters); same-day re-runs still overwrite ``ranked.jsonl``
+    # atomically because results are sorted by score below, not by future
+    # completion order.
     trust_weights = _load_trust_weights(_SOURCES_YAML_PATH)
+    concurrency = _resolve_llm_concurrency()
     ranked: list[RankedStory] = []
     llm_errors = 0
-    for cluster in survivors:
-        try:
-            story = _rank_one(
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        future_to_cluster = {
+            pool.submit(
+                _rank_one,
                 cluster=cluster,
                 items_by_id=items_by_id,
                 rubric_block=rubric_block,
                 trust_weights=trust_weights,
                 today=run_date,
-            )
-        except Exception:  # noqa: BLE001 -- never crash the issue
-            _LOG.exception(
-                "rank: LLM error for cluster_id=%s; skipping",
+            ): cluster
+            for cluster in survivors
+        }
+        for future in as_completed(future_to_cluster):
+            cluster = future_to_cluster[future]
+            try:
+                story = future.result()
+            except Exception:  # noqa: BLE001 -- never crash the issue
+                # ``_rank_one`` already catches its own known failure modes
+                # (JSON parse, pydantic validation, LLM call) and returns
+                # ``None`` -- this outer except is the belt-and-braces guard
+                # for truly-unexpected exceptions (thread-level failures,
+                # network panics) so one bad cluster doesn't poison the issue.
+                _LOG.exception(
+                    "rank: LLM error for cluster_id=%s; skipping",
+                    cluster.cluster_id,
+                )
+                llm_errors += 1
+                continue
+            if story is None:
+                llm_errors += 1
+                continue
+            ranked.append(story)
+            _LOG.info(
+                "[cluster %s] score=%d (sig:%d ho:%d bp:%d fs:%d fm:%d) tags=%s",
                 cluster.cluster_id,
+                story.score,
+                story.breakdown.get("significance", 0),
+                story.breakdown.get("hands_on_utility", 0),
+                story.breakdown.get("big_picture_relevance", 0),
+                story.breakdown.get("financial_services_impact", 0),
+                story.breakdown.get("freshness_momentum", 0),
+                list(story.audience_tags),
             )
-            llm_errors += 1
-            continue
-        if story is None:
-            llm_errors += 1
-            continue
-        ranked.append(story)
-        _LOG.info(
-            "[cluster %s] score=%d (sig:%d ho:%d bp:%d fs:%d fm:%d) tags=%s",
-            cluster.cluster_id,
-            story.score,
-            story.breakdown.get("significance", 0),
-            story.breakdown.get("hands_on_utility", 0),
-            story.breakdown.get("big_picture_relevance", 0),
-            story.breakdown.get("financial_services_impact", 0),
-            story.breakdown.get("freshness_momentum", 0),
-            list(story.audience_tags),
-        )
 
+    # Sort by score desc so on-disk ordering is deterministic from the
+    # rubric, not from future-completion order.
     ranked.sort(key=lambda r: r.score, reverse=True)
 
     # --- Step 5: atomic write (to staging) --------------------------------
@@ -302,6 +359,31 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
         len(ranked), dropped, llm_errors, top_score, median_score, ranked_out,
     )
     return ranked
+
+
+# ---------------------------------------------------------------------------
+# Concurrency knob.
+# ---------------------------------------------------------------------------
+
+def _resolve_llm_concurrency() -> int:
+    """Read ``LLM_CONCURRENCY`` from the environment, clamp to sane bounds.
+
+    Returns an int in ``[1, _LLM_CONCURRENCY_MAX]``. On parse failure (non-int
+    value) we log a warning and fall back to ``_LLM_CONCURRENCY_DEFAULT`` --
+    a typo in the env var should not crash the issue.
+    """
+    raw = os.getenv("LLM_CONCURRENCY")
+    if raw is None or not raw.strip():
+        return _LLM_CONCURRENCY_DEFAULT
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        _LOG.warning(
+            "rank: LLM_CONCURRENCY=%r is not an int; falling back to %d",
+            raw, _LLM_CONCURRENCY_DEFAULT,
+        )
+        return _LLM_CONCURRENCY_DEFAULT
+    return max(1, min(value, _LLM_CONCURRENCY_MAX))
 
 
 # ---------------------------------------------------------------------------
@@ -621,45 +703,51 @@ def _rank_one(
     )
     temperature = float(os.getenv("LLM_TEMPERATURE_RANK", "0.2"))
 
-    parsed = _call_and_parse_rank(prompt, temperature, cluster.cluster_id)
-    if parsed is None:
-        return None
+    def _build_story_from_parsed(parsed: _ParsedScore) -> RankedStory:
+        """Apply deterministic post-LLM penalties + tier assignment, then
+        construct ``RankedStory``. Raises ``pydantic.ValidationError`` on
+        validation failure so the retry loop in ``_call_and_parse_rank``
+        can re-prompt (v0.5 -- task: audience_tags=[] case).
 
-    # Task #81: deterministic post-LLM prior-coverage penalty. If the
-    # cluster carries a prior_coverage_ref (we've covered this topic on a
-    # previous day), cap breakdown["significance"] at 50 (rubric anchor
-    # 50 = "single signal-filter dimension hit"). A recurring topic is
-    # rarely the day's freshest signal; allowing it to score 65+ on
-    # significance crowds genuinely-new stories out of Pulse / Big Picture
-    # slots. The penalty is applied to BREAKDOWN; score is recomputed
-    # below so the pydantic invariant `score == weighted_sum(breakdown)`
-    # still holds. Logged when fired so operators see the rule's effect.
-    _apply_prior_coverage_penalty(parsed, cluster)
+        Side effects on ``parsed.breakdown`` are idempotent across retries
+        because each retry produces a fresh ``_ParsedScore``. Score is
+        recomputed AFTER the caps mutate breakdown, so the pydantic
+        invariant ``score == weighted_sum(breakdown)`` holds exactly.
+        """
+        # Task #81: deterministic post-LLM prior-coverage penalty. If the
+        # cluster carries a prior_coverage_ref (we've covered this topic on
+        # a previous day), cap breakdown["significance"] at 50 (rubric
+        # anchor 50 = "single signal-filter dimension hit"). A recurring
+        # topic is rarely the day's freshest signal; allowing it to score
+        # 65+ on significance crowds genuinely-new stories out of Pulse /
+        # Big Picture slots. Score is recomputed below so the pydantic
+        # invariant `score == weighted_sum(breakdown)` still holds. Logged
+        # when fired so operators see the rule's effect.
+        _apply_prior_coverage_penalty(parsed, cluster)
 
-    # Task #86: deterministic post-LLM freshness-inferred penalty. If EVERY
-    # item in the cluster carries `extras["freshness_inferred"] == "true"`
-    # (fetch.py couldn't trust the feed's pubdates -- FCA News pattern),
-    # cap `breakdown["freshness_momentum"]` at 30. Composes cleanly with
-    # the continuation penalty above: that one caps significance, this one
-    # caps freshness_momentum, both recompute score via `_weighted_score`.
-    _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
+        # Task #86: deterministic post-LLM freshness-inferred penalty. If
+        # EVERY item in the cluster carries
+        # `extras["freshness_inferred"] == "true"` (fetch.py couldn't trust
+        # the feed's pubdates -- FCA News pattern), cap
+        # `breakdown["freshness_momentum"]` at 30. Composes cleanly with
+        # the continuation penalty above: that one caps significance, this
+        # one caps freshness_momentum, both recompute score via
+        # `_weighted_score`.
+        _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
 
-    # Recompute score from breakdown x weights -- ignore any LLM-returned
-    # `score` field. Pydantic enforces the same invariant; recomputing here
-    # absorbs LLM arithmetic noise (and the continuation penalty above)
-    # before pydantic raises.
-    score = _weighted_score(parsed.breakdown)
+        # Recompute score from breakdown x weights -- ignore any
+        # LLM-returned `score` field. Pydantic enforces the same invariant;
+        # recomputing here absorbs LLM arithmetic noise (and the penalties
+        # above) before pydantic raises.
+        score = _weighted_score(parsed.breakdown)
 
-    # The LLM picks audience tags; tier is the editorial slot. rank.py's
-    # job is to assign an initial tier -- summarise.py and the Editor may
-    # relabel. Below-threshold -> "cut"; everything else starts as
-    # "on_the_radar" and summarise.py promotes by section logic. (DESIGN.md
-    # says tier is the bridge between rank and summarise; the strong
-    # opinion on which threshold drives "cut" lives below.)
-    tier = _assign_initial_tier(score, parsed.breakdown)
+        # The LLM picks audience tags; tier is the editorial slot. rank.py's
+        # job is to assign an initial tier -- summarise.py and the Editor
+        # may relabel. Below-threshold -> "cut"; everything else starts as
+        # "on_the_radar" and summarise.py promotes by section logic.
+        tier = _assign_initial_tier(score, parsed.breakdown)
 
-    try:
-        story = RankedStory(
+        return RankedStory(
             cluster_id=cluster.cluster_id,
             score=score,
             breakdown=parsed.breakdown,
@@ -669,14 +757,11 @@ def _rank_one(
             prompt_version=RANK_PROMPT_VERSION,
             novelty=parsed.novelty,  # type: ignore[arg-type]
         )
-    except Exception:  # noqa: BLE001
-        _LOG.exception(
-            "rank: RankedStory validation failed for cluster_id=%s -- "
-            "skipping. breakdown=%s tags=%s",
-            cluster.cluster_id, parsed.breakdown, parsed.audience_tags,
-        )
-        return None
-    return story
+
+    return _call_and_parse_rank(
+        prompt, temperature, cluster.cluster_id,
+        build_story=_build_story_from_parsed,
+    )
 
 
 def _build_prior_coverage_block(
@@ -783,8 +868,12 @@ INSTRUCTIONS
 Score the cluster against the rubric. Apply the EDITORIAL FOCUS pre-filter
 first -- Tier-3 stories MUST score significance <= 25. Audience tags are
 independent of score: pick the subset of {{hands_on, big_picture, finance, general}}
-that this story is actually for (at least one). `hands_on` = practitioner
-(DS / engineer) audience; `big_picture` = senior-leader audience.
+that this story is actually for. `hands_on` = practitioner (DS / engineer)
+audience; `big_picture` = senior-leader audience.
+
+AUDIENCE TAGS -- REQUIRED: pick at least one tag from exactly this set:
+"hands_on", "big_picture", "finance", "general". The list must never be
+empty. If no other tag fits, use "general".
 
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
@@ -798,7 +887,7 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
     "financial_services_impact": <int 0-100>,
     "freshness_momentum": <int 0-100>
   }},
-  "audience_tags": [<one or more of: "hands_on", "big_picture", "finance", "general">],
+  "audience_tags": [<at least one of: "hands_on", "big_picture", "finance", "general">],
   "rationale": "<one sentence, <= 240 chars, specific not generic>"{novelty_schema_hint}
 }}
 """
@@ -828,11 +917,29 @@ def _select_items_for_prompt(
 
 
 def _call_and_parse_rank(
-    prompt: str, temperature: float, cluster_id: str
-) -> _ParsedScore | None:
-    """Issue the LLM call, parse JSON, retry once on parse failure with a
-    corrective nudge. Returns ``None`` after the retry budget is spent --
-    the caller logs and skips."""
+    prompt: str,
+    temperature: float,
+    cluster_id: str,
+    *,
+    build_story: "_BuildStoryFn | None" = None,
+) -> "_ParsedScore | RankedStory | None":
+    """Issue the LLM call, parse JSON, retry once on parse OR pydantic
+    validation failure with a corrective nudge. Returns ``None`` after the
+    retry budget is spent -- the caller logs and skips.
+
+    Two modes:
+
+    * Legacy (``build_story=None``): returns the parsed shape (or ``None``).
+      Retries on JSON parse failure only. Kept for test compatibility and
+      for any future caller that wants the intermediate ``_ParsedScore``.
+
+    * Validator-aware (``build_story`` callable): calls ``build_story`` on
+      the parsed shape -- typically constructs a ``RankedStory`` which can
+      raise ``pydantic.ValidationError``. Both ``JSONDecodeError`` /
+      structural parse failures AND ``ValidationError`` consume from the
+      same single-retry budget. v0.5 (2026-05-26) -- ships the
+      audience_tags=[] retry path.
+    """
     attempts = JSON_RETRY_BUDGET + 1
     current_prompt = prompt
     for attempt in range(1, attempts + 1):
@@ -844,21 +951,60 @@ def _call_and_parse_rank(
                 cluster_id, attempt, attempts,
             )
             return None
+
         parsed = _parse_rank_json(raw)
-        if parsed is not None:
-            return parsed
-        _LOG.warning(
-            "rank: JSON parse failed for cluster_id=%s (attempt %d/%d)",
-            cluster_id, attempt, attempts,
-        )
-        if attempt < attempts:
-            current_prompt = (
-                "Your previous response was not valid JSON matching the "
-                "schema below. Return JSON ONLY (no markdown fences, no "
-                "prose) matching the schema. Original request follows.\n\n"
-                + prompt
+        if parsed is None:
+            _LOG.warning(
+                "rank: JSON parse failed for cluster_id=%s (attempt %d/%d)",
+                cluster_id, attempt, attempts,
             )
+            if attempt < attempts:
+                current_prompt = (
+                    "Your previous response was not valid JSON matching the "
+                    "schema below. Return JSON ONLY (no markdown fences, no "
+                    "prose) matching the schema. Original request follows.\n\n"
+                    + prompt
+                )
+            continue
+
+        # Legacy callers (and the unit tests for the parser) want the raw
+        # parsed shape; skip the build_story validation hop entirely.
+        if build_story is None:
+            return parsed
+
+        try:
+            return build_story(parsed)
+        except ValidationError as exc:
+            # Quote the SPECIFIC validation error back to the LLM so the
+            # retry has signal to act on. We pass the full str(exc) -- it's
+            # already structured ("audience_tags: List should have at least
+            # 1 item after validation, not 0") and short enough not to
+            # blow up the input tokens.
+            err_msg = str(exc)
+            _LOG.warning(
+                "rank: pydantic validation failed for cluster_id=%s "
+                "(attempt %d/%d): %s",
+                cluster_id, attempt, attempts, err_msg,
+            )
+            if attempt < attempts:
+                current_prompt = (
+                    "Your prior response failed validation: "
+                    f"{err_msg}\n\n"
+                    "Fix the failing field(s) and return the SAME JSON "
+                    "schema. Reminder: `audience_tags` must contain at "
+                    "least one of \"hands_on\", \"big_picture\", "
+                    "\"finance\", \"general\" -- use \"general\" if no "
+                    "other tag fits. Original request follows.\n\n"
+                    + prompt
+                )
     return None
+
+
+# Forward declaration -- the callable shape `_rank_one` passes into
+# `_call_and_parse_rank`. Exposed as a module-level alias so the signature
+# stays readable; the actual return type is RankedStory.
+from typing import Callable as _Callable
+_BuildStoryFn = _Callable[["_ParsedScore"], "RankedStory"]
 
 
 def _parse_rank_json(raw: str) -> _ParsedScore | None:

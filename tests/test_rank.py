@@ -22,6 +22,9 @@ crowd fresh items out of high-scoring slots.
 from __future__ import annotations
 
 import datetime as _dt
+import json
+import time
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -35,9 +38,12 @@ from src.rank import (
     _ParsedScore,
     _apply_freshness_inferred_penalty,
     _apply_prior_coverage_penalty,
+    _build_rank_prompt,
     _llm_call_openai_compatible,
     _lookup_prior_coverage,
+    _rank_one,
     _weighted_score,
+    rank,
 )
 from tests.conftest import FIXED_EARLIER, FIXED_NOW
 
@@ -736,3 +742,503 @@ class TestNoveltyDetection:
             "c_56849ea45c325178", today=_dt.date(2026, 5, 25),
         )
         assert out is None
+
+
+# ===========================================================================
+# audience_tags validation retry (v0.5, 2026-05-26)
+#
+# The runtime log on 2026-05-26 surfaced cluster c_fb359151221d4e62 lost to
+# `audience_tags=[] -> pydantic ValidationError`. The existing skip-on-
+# validation-failure path was correct safety-net behaviour; the v0.5 change
+# extends the JSON-parse retry budget (which already existed) to ALSO retry
+# on pydantic ValidationError, with a corrective nudge quoting the specific
+# error. The retry budget is shared (single attempt across parse/validate
+# failures) so the failure modes can't compound into more LLM calls.
+#
+# The three tests below pin: (1) successful retry, (2) skip on both fail,
+# (3) the prompt actually carries the "use general if no other tag fits"
+# guidance so the LLM has a clean fallback (a prompt regression test).
+# ===========================================================================
+
+def _rank_one_test_cluster() -> Cluster:
+    """A fresh cluster (no prior coverage, no special flags) so the
+    deterministic post-LLM penalties don't fire and we isolate the
+    audience_tags retry path."""
+    return Cluster(
+        cluster_id="c_fb359151221d4e62",  # the runtime-log anchor cluster
+        item_ids=["i1"],
+        canonical_title="A small open model handles invoices on-device",
+        sources=["example_blog"],
+        earliest_published=FIXED_EARLIER,
+        size=1,
+        prior_coverage_ref=None,
+    )
+
+
+def _rank_one_items_by_id() -> dict[str, Item]:
+    return {
+        "i1": Item(
+            id="i1",
+            source="example_blog",
+            source_type="rss",
+            url="https://example.com/i1",
+            title="t",
+            published_at=FIXED_EARLIER,
+            raw_summary="raw",
+            fetched_at=FIXED_NOW,
+        ),
+    }
+
+
+_VALID_PAYLOAD_TEMPLATE = (
+    '{{'
+    '"cluster_id": "c_fb359151221d4e62",'
+    '"score": 63,'
+    '"breakdown": {{'
+    '"significance": 70,'
+    '"hands_on_utility": 80,'
+    '"big_picture_relevance": 50,'
+    '"financial_services_impact": 40,'
+    '"freshness_momentum": 60'
+    '}},'
+    '"audience_tags": {tags},'
+    '"rationale": "Practical for FS doc workflows; on-device deployment."'
+    '}}'
+)
+
+
+def _payload_with_tags(tags_json: str) -> str:
+    """Build a JSON LLM-output payload with the given ``audience_tags`` JSON
+    fragment (e.g. ``"[]"`` for the bug-repro case, ``'["hands_on"]'`` for a
+    valid follow-up)."""
+    return _VALID_PAYLOAD_TEMPLATE.format(tags=tags_json)
+
+
+class TestAudienceTagsRetry:
+    """v0.5 retry-on-ValidationError. Mirrors the runtime log:
+    audience_tags=[] -> pydantic rejects -> retry with nudge -> success
+    (or skip after second failure)."""
+
+    def test_retry_on_validation_error_succeeds_on_second_attempt(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """First LLM response returns audience_tags=[]; pydantic rejects;
+        retry with corrective nudge returns audience_tags=["hands_on"];
+        ``_rank_one`` returns the RankedStory built from the second attempt.
+        The validation-error log line must fire (operator-visibility)."""
+        # Force LLM_TEMPERATURE_RANK to a known value so _rank_one doesn't
+        # read an unset env var; also no other env required because the
+        # patch targets _llm_call directly.
+        monkeypatch.setenv("LLM_TEMPERATURE_RANK", "0.2")
+
+        responses = [
+            _payload_with_tags("[]"),               # bug-repro: empty list
+            _payload_with_tags('["hands_on"]'),     # fixed on retry
+        ]
+        with patch("src.rank._llm_call", side_effect=responses) as mock_llm:
+            with caplog.at_level("WARNING", logger="ai_vector.rank"):
+                story = _rank_one(
+                    cluster=_rank_one_test_cluster(),
+                    items_by_id=_rank_one_items_by_id(),
+                    rubric_block="(rubric)",
+                    trust_weights={},
+                )
+
+        assert story is not None, (
+            "retry should have built RankedStory from the second response"
+        )
+        assert story.cluster_id == "c_fb359151221d4e62"
+        assert list(story.audience_tags) == ["hands_on"]
+        # Both LLM calls were made (initial + 1 retry).
+        assert mock_llm.call_count == 2
+        # The retry prompt must quote the specific validation error back to
+        # the LLM (signal the operator sees in logs too).
+        assert any(
+            "pydantic validation failed" in rec.getMessage()
+            for rec in caplog.records
+        ), "validation-error log line should fire on the first attempt"
+        # And the corrective nudge text reaches the LLM call on attempt 2.
+        retry_prompt = mock_llm.call_args_list[1].args[0]
+        assert "Your prior response failed validation" in retry_prompt
+        assert "audience_tags" in retry_prompt
+
+    def test_retry_on_validation_error_then_skip_when_both_fail(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Both attempts return audience_tags=[]. ``_rank_one`` returns None;
+        the cluster is skipped. The existing safety net stays intact -- this
+        test pins it explicitly so a future refactor can't break the
+        skip-on-second-failure behaviour."""
+        monkeypatch.setenv("LLM_TEMPERATURE_RANK", "0.2")
+
+        responses = [
+            _payload_with_tags("[]"),
+            _payload_with_tags("[]"),
+        ]
+        with patch("src.rank._llm_call", side_effect=responses) as mock_llm:
+            with caplog.at_level("WARNING", logger="ai_vector.rank"):
+                story = _rank_one(
+                    cluster=_rank_one_test_cluster(),
+                    items_by_id=_rank_one_items_by_id(),
+                    rubric_block="(rubric)",
+                    trust_weights={},
+                )
+
+        assert story is None, (
+            "two consecutive validation failures must produce a skip "
+            "(safety net intact)"
+        )
+        # Both attempts ran (initial + 1 retry); no third attempt.
+        assert mock_llm.call_count == 2
+        # The validation-error log must have fired for BOTH attempts so the
+        # operator sees the full story.
+        validation_logs = [
+            rec for rec in caplog.records
+            if "pydantic validation failed" in rec.getMessage()
+        ]
+        assert len(validation_logs) == 2, (
+            f"expected 2 validation-error log lines, got {len(validation_logs)}"
+        )
+
+    def test_audience_tags_general_fallback_in_prompt(self) -> None:
+        """The rank prompt must explicitly tell the LLM to fall back to
+        "general" when no other tag fits, and that the list must never be
+        empty. Pins the v0.5 prompt change so it can't silently regress."""
+        prompt = _build_rank_prompt(
+            cluster=_rank_one_test_cluster(),
+            items_by_id=_rank_one_items_by_id(),
+            rubric_block="(rubric)",
+            trust_weights={},
+        )
+        # The exact wording matters (cheap to maintain, expensive to lose):
+        # the LLM needs an unambiguous fallback path so empty-list never
+        # becomes its default escape hatch. Collapse whitespace before the
+        # substring check so a wrap-line refactor doesn't break the test
+        # (the rendered prompt wraps "must never be / empty").
+        flat = " ".join(prompt.split())
+        assert "must never be empty" in flat
+        assert 'use "general"' in flat
+        # And all four allowed tag values must be quoted in the AUDIENCE
+        # TAGS block so the LLM can copy-paste rather than invent variants.
+        for tag in ("hands_on", "big_picture", "finance", "general"):
+            assert f'"{tag}"' in prompt
+
+
+# ===========================================================================
+# Parallel ranking -- the per-cluster LLM calls are fully independent, so
+# `rank()` fans them out across a ThreadPoolExecutor (workers configurable
+# via LLM_CONCURRENCY). The tests below pin: (1) sort-by-score-desc is
+# preserved regardless of future-completion order, (2) per-call skip
+# semantics survive parallelisation, (3) unexpected exceptions are caught
+# per-future and logged at ERROR level, (4) the env-var concurrency knob is
+# respected, (5) the implementation is actually parallel (wall-clock check).
+# ===========================================================================
+
+def _write_clusters_jsonl(
+    *,
+    tmp_data_root: Path,
+    run_date: _dt.date,
+    n: int,
+) -> tuple[list[str], list[str]]:
+    """Set up `data/staging/<date>/clusters.jsonl` + `items.jsonl` with `n`
+    minimal clusters (one item each). Returns (cluster_ids, item_ids) in
+    submission order.
+
+    Used by the parallel-rank tests: the actual cluster content doesn't
+    matter because `_rank_one` is mocked -- we just need real on-disk
+    records so `rank()` reaches the parallel block.
+    """
+    from src import paths as _paths
+
+    staging = _paths.staging_dir(run_date)
+    staging.mkdir(parents=True, exist_ok=True)
+
+    cluster_ids: list[str] = []
+    item_ids: list[str] = []
+    cluster_lines: list[str] = []
+    item_lines: list[str] = []
+    for idx in range(n):
+        # cluster_id must match the `c_<12+ hex>` pattern -- pad with zeros.
+        cid = f"c_{idx:016x}"
+        iid = f"i_{idx}"
+        cluster_ids.append(cid)
+        item_ids.append(iid)
+        cluster = Cluster(
+            cluster_id=cid,
+            item_ids=[iid],
+            canonical_title=f"Cluster {idx}",
+            sources=["example_blog"],
+            earliest_published=FIXED_EARLIER,
+            size=1,
+        )
+        item = Item(
+            id=iid,
+            source="example_blog",
+            source_type="rss",
+            url=f"https://example.com/{idx}",
+            title=f"Title {idx}",
+            published_at=FIXED_EARLIER,
+            raw_summary=f"summary {idx}",
+            fetched_at=FIXED_NOW,
+        )
+        cluster_lines.append(cluster.model_dump_json())
+        item_lines.append(item.model_dump_json())
+
+    (staging / "clusters.jsonl").write_text(
+        "\n".join(cluster_lines) + "\n", encoding="utf-8"
+    )
+    (staging / "items.jsonl").write_text(
+        "\n".join(item_lines) + "\n", encoding="utf-8"
+    )
+    return cluster_ids, item_ids
+
+
+def _make_ranked_story(cluster_id: str, score: int):
+    """Build a real `RankedStory` whose `score` matches `_weighted_score` of
+    its breakdown -- pydantic's invariant requires this. The breakdown
+    weights are: sig 30, ho 25, bp 20, fs 15, fm 10. Setting every field to
+    `score` makes the weighted sum equal `score` exactly."""
+    from src.models import RankedStory as _RS
+
+    breakdown = {
+        "significance": score,
+        "hands_on_utility": score,
+        "big_picture_relevance": score,
+        "financial_services_impact": score,
+        "freshness_momentum": score,
+    }
+    return _RS(
+        cluster_id=cluster_id,
+        score=score,
+        breakdown=breakdown,
+        audience_tags=["hands_on"],
+        rationale="parallel-rank test fixture",
+        tier="on_the_radar",
+        prompt_version="v1",
+    )
+
+
+class TestParallelRank:
+    """End-to-end-ish tests for the parallel rank() entry point.
+
+    `_rank_one` is mocked at the `src.rank._rank_one` symbol; this is the
+    public seam between rank() and the per-cluster LLM machinery. The
+    rest of rank() -- IO, clamps, sort, atomic write -- runs unmocked so
+    we exercise the actual ThreadPoolExecutor path."""
+
+    def _run_with_mocked_rank_one(
+        self,
+        *,
+        tmp_data_root: Path,
+        n_clusters: int,
+        side_effect,
+        monkeypatch: pytest.MonkeyPatch,
+        concurrency: str = "8",
+    ) -> tuple[list, list[str]]:
+        """Helper: write n clusters, mock `_rank_one`, run `rank()`, return
+        the (ranked, cluster_ids) tuple. `side_effect` is the
+        MagicMock side-effect for `_rank_one` (a callable mapping
+        kwargs->RankedStory|None|raise)."""
+        run_date = FIXED_NOW.date()
+        cluster_ids, _ = _write_clusters_jsonl(
+            tmp_data_root=tmp_data_root, run_date=run_date, n=n_clusters,
+        )
+        monkeypatch.setenv("LLM_CONCURRENCY", concurrency)
+        # LLM_MODEL is asserted by _llm_call but we mock above it; still set
+        # it so any unmocked codepath fails loud instead of silently.
+        monkeypatch.setenv("LLM_MODEL", "test-model")
+
+        with patch("src.rank._rank_one", side_effect=side_effect) as mock:
+            ranked = rank(run_date)
+        return ranked, cluster_ids, mock
+
+    def test_parallel_rank_preserves_order(
+        self,
+        tmp_data_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Even when futures complete in arbitrary order, the final ranked
+        list is sorted by score desc. We assign scrambled scores
+        (40, 95, 60, 80, 25) and assert the output is [95, 80, 60, 40, 25]."""
+        scrambled_scores = [40, 95, 60, 80, 25]
+        n = len(scrambled_scores)
+
+        def fake_rank_one(cluster, items_by_id, rubric_block,
+                          trust_weights, *, today=None):
+            # Map cluster_id back to its index via the deterministic id pattern.
+            idx = int(cluster.cluster_id.split("_", 1)[1], 16)
+            return _make_ranked_story(cluster.cluster_id, scrambled_scores[idx])
+
+        ranked, _cluster_ids, _mock = self._run_with_mocked_rank_one(
+            tmp_data_root=tmp_data_root,
+            n_clusters=n,
+            side_effect=fake_rank_one,
+            monkeypatch=monkeypatch,
+        )
+
+        assert [r.score for r in ranked] == sorted(
+            scrambled_scores, reverse=True
+        )
+        # And the on-disk file mirrors the in-memory order (the atomic write
+        # iterates the sorted list).
+        from src import paths as _paths
+        ranked_path = _paths.ranked_path(FIXED_NOW.date(), canonical=False)
+        on_disk_scores = [
+            json.loads(line)["score"]
+            for line in ranked_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        assert on_disk_scores == sorted(scrambled_scores, reverse=True)
+
+    def test_parallel_rank_skips_failed_calls(
+        self,
+        tmp_data_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """`_rank_one` returning `None` for one cluster must not abort the
+        batch -- the other clusters still land in ranked.jsonl. Mirrors
+        the existing skip-on-error semantics."""
+        n = 5
+
+        def fake_rank_one(cluster, items_by_id, rubric_block,
+                          trust_weights, *, today=None):
+            idx = int(cluster.cluster_id.split("_", 1)[1], 16)
+            if idx == 2:  # the middle cluster fails to parse / validate
+                return None
+            return _make_ranked_story(cluster.cluster_id, 50 + idx)
+
+        ranked, cluster_ids, _mock = self._run_with_mocked_rank_one(
+            tmp_data_root=tmp_data_root,
+            n_clusters=n,
+            side_effect=fake_rank_one,
+            monkeypatch=monkeypatch,
+        )
+
+        assert len(ranked) == n - 1
+        returned_ids = {r.cluster_id for r in ranked}
+        # The "None" cluster is absent; the others are all present.
+        assert cluster_ids[2] not in returned_ids
+        for idx in (0, 1, 3, 4):
+            assert cluster_ids[idx] in returned_ids
+
+    def test_parallel_rank_propagates_unexpected_exceptions_to_skip(
+        self,
+        tmp_data_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """`_rank_one` raising an unexpected exception (e.g. thread-level
+        failure beyond its own try/except) must be caught at the future
+        boundary, logged at ERROR, and the other clusters still ship."""
+        n = 4
+
+        def fake_rank_one(cluster, items_by_id, rubric_block,
+                          trust_weights, *, today=None):
+            idx = int(cluster.cluster_id.split("_", 1)[1], 16)
+            if idx == 1:
+                raise RuntimeError("simulated thread panic")
+            return _make_ranked_story(cluster.cluster_id, 50 + idx)
+
+        with caplog.at_level("ERROR", logger="ai_vector.rank"):
+            ranked, cluster_ids, _mock = self._run_with_mocked_rank_one(
+                tmp_data_root=tmp_data_root,
+                n_clusters=n,
+                side_effect=fake_rank_one,
+                monkeypatch=monkeypatch,
+            )
+
+        # The exception cluster is skipped; the three survivors land.
+        assert len(ranked) == n - 1
+        assert cluster_ids[1] not in {r.cluster_id for r in ranked}
+        # And the log line names the failed cluster_id so an operator can
+        # correlate against the input clusters.jsonl.
+        error_logs = [
+            rec for rec in caplog.records
+            if rec.levelname == "ERROR" and cluster_ids[1] in rec.getMessage()
+        ]
+        assert error_logs, (
+            "expected an ERROR log line naming the failed cluster_id"
+        )
+
+    def test_llm_concurrency_env_var_respected(
+        self,
+        tmp_data_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Setting `LLM_CONCURRENCY=2` must pass `max_workers=2` to
+        ThreadPoolExecutor. Spies on the executor constructor so the
+        assertion is direct -- no inference from observed concurrency."""
+
+        from src import rank as _rank_module
+
+        captured: dict[str, Any] = {}
+        real_pool_cls = _rank_module.ThreadPoolExecutor
+
+        def spy_pool(*args, **kwargs):
+            captured["max_workers"] = kwargs.get("max_workers")
+            return real_pool_cls(*args, **kwargs)
+
+        def fake_rank_one(cluster, items_by_id, rubric_block,
+                          trust_weights, *, today=None):
+            idx = int(cluster.cluster_id.split("_", 1)[1], 16)
+            return _make_ranked_story(cluster.cluster_id, 50 + idx)
+
+        run_date = FIXED_NOW.date()
+        _write_clusters_jsonl(
+            tmp_data_root=tmp_data_root, run_date=run_date, n=3,
+        )
+        monkeypatch.setenv("LLM_CONCURRENCY", "2")
+        monkeypatch.setenv("LLM_MODEL", "test-model")
+
+        with patch.object(_rank_module, "ThreadPoolExecutor", spy_pool):
+            with patch("src.rank._rank_one", side_effect=fake_rank_one):
+                rank(run_date)
+
+        assert captured["max_workers"] == 2
+
+    def test_parallel_rank_actually_parallel(
+        self,
+        tmp_data_root: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Sleep-based wall-clock check. With 10 clusters x 0.1s per call and
+        concurrency=5, total wall clock should be ~0.2s -- definitely under
+        the sequential 1.0s. We assert at least 3x speedup vs the upper
+        sequential bound so the test stays robust on a loaded CI runner."""
+        n_clusters = 10
+        per_call_sleep = 0.1
+        concurrency = 5
+        sequential_upper_bound = n_clusters * per_call_sleep  # ~1.0s
+
+        def fake_rank_one(cluster, items_by_id, rubric_block,
+                          trust_weights, *, today=None):
+            time.sleep(per_call_sleep)
+            idx = int(cluster.cluster_id.split("_", 1)[1], 16)
+            return _make_ranked_story(cluster.cluster_id, 50 + idx)
+
+        run_date = FIXED_NOW.date()
+        _write_clusters_jsonl(
+            tmp_data_root=tmp_data_root, run_date=run_date, n=n_clusters,
+        )
+        monkeypatch.setenv("LLM_CONCURRENCY", str(concurrency))
+        monkeypatch.setenv("LLM_MODEL", "test-model")
+
+        with patch("src.rank._rank_one", side_effect=fake_rank_one):
+            t0 = time.monotonic()
+            ranked = rank(run_date)
+            elapsed = time.monotonic() - t0
+
+        assert len(ranked) == n_clusters
+        # Sanity: with concurrency=5 and 10 calls x 0.1s, ideal is ~0.2s.
+        # Allow generous headroom for CI jitter -- 3x faster than sequential
+        # is the contract.
+        assert elapsed * 3 < sequential_upper_bound, (
+            f"parallel rank took {elapsed:.3f}s; expected < "
+            f"{sequential_upper_bound/3:.3f}s (3x speedup vs sequential "
+            f"upper bound {sequential_upper_bound:.3f}s)"
+        )
+

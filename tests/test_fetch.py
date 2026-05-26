@@ -1110,3 +1110,145 @@ class TestPerSourceMaxAgeDays:
             "daily_source's 3-day-old item must be dropped by global 2-day window; "
             "the 14-day override on fs_research_source must not bleed over"
         )
+
+
+# ---------------------------------------------------------------------------
+# TestPublishedUrlsDedup — cross-issue dedup reads published_urls.txt, not
+# items.jsonl.  Three cases:
+#   1. URLs in published_urls.txt are filtered; a third URL survives.
+#   2. Missing published_urls.txt → no filtering (fresh-repo safe).
+#   3. A released items.jsonl whose URLs are absent from published_urls.txt
+#      must NOT filter — proves we're reading the right file.
+# ---------------------------------------------------------------------------
+
+def _rss_xml_for_urls(urls: list[str]) -> str:
+    """Build a minimal RSS feed with one item per URL."""
+    items = ""
+    for i, url in enumerate(urls):
+        items += f"""
+  <item>
+    <title>Post {i}</title>
+    <link>{url}</link>
+    <description>Content {i}.</description>
+    <pubDate>Sun, 24 May 2026 09:00:00 +0000</pubDate>
+    <guid>{url}</guid>
+  </item>"""
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Test Feed</title>{items}
+</channel></rss>"""
+
+
+class TestPublishedUrlsDedup:
+
+    def test_dedup_filters_items_in_published_urls_txt(
+        self, tmp_data_root: Path
+    ) -> None:
+        """Items whose URLs appear in published_urls.txt are dropped; the rest survive."""
+        from src import paths as _paths
+
+        url_a = "https://example.com/already-published-1"
+        url_b = "https://example.com/already-published-2"
+        url_c = "https://example.com/new-item"
+
+        # Write two published URLs
+        published_path = _paths.PUBLISHED_URLS_PATH
+        published_path.write_text(f"{url_a}\n{url_b}\n", encoding="utf-8")
+
+        feed = feedparser.parse(_rss_xml_for_urls([url_a, url_b, url_c]))
+        config_yaml = _config_yaml([{
+            "name": "test_source",
+            "url": "https://example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        surviving_urls = {str(item.url) for item in items}
+        assert url_c in surviving_urls, "New item must survive"
+        assert url_a not in surviving_urls, "Published URL A must be filtered"
+        assert url_b not in surviving_urls, "Published URL B must be filtered"
+        assert len(items) == 1
+
+    def test_dedup_no_published_urls_file_means_no_filtering(
+        self, tmp_data_root: Path
+    ) -> None:
+        """When published_urls.txt does not exist, dedup is a no-op (fresh repo)."""
+        from src import paths as _paths
+
+        assert not _paths.PUBLISHED_URLS_PATH.exists(), (
+            "Test precondition: published_urls.txt must not exist"
+        )
+
+        url_a = "https://example.com/item-one"
+        url_b = "https://example.com/item-two"
+
+        feed = feedparser.parse(_rss_xml_for_urls([url_a, url_b]))
+        config_yaml = _config_yaml([{
+            "name": "test_source",
+            "url": "https://example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        assert len(items) == 2, (
+            "All items must survive when published_urls.txt does not exist"
+        )
+
+    def test_published_urls_dedup_independent_of_items_jsonl(
+        self, tmp_data_root: Path
+    ) -> None:
+        """URLs in a released items.jsonl that are absent from published_urls.txt
+        must NOT be filtered — proves we're reading the right file."""
+        from src import paths as _paths
+
+        url_in_jsonl = "https://example.com/in-jsonl-not-published"
+        url_new = "https://example.com/truly-new"
+
+        # Write a released items.jsonl containing url_in_jsonl
+        released_day = FIXED_DATE - datetime.timedelta(days=1)
+        released_dir = _paths.RELEASED_ROOT / released_day.isoformat()
+        released_dir.mkdir(parents=True, exist_ok=True)
+        jsonl_path = released_dir / "items.jsonl"
+        jsonl_path.write_text(
+            json.dumps({"url": url_in_jsonl, "source": "old_source"}) + "\n",
+            encoding="utf-8",
+        )
+
+        # published_urls.txt is empty (url_in_jsonl was never released to readers)
+        _paths.PUBLISHED_URLS_PATH.write_text("", encoding="utf-8")
+
+        feed = feedparser.parse(_rss_xml_for_urls([url_in_jsonl, url_new]))
+        config_yaml = _config_yaml([{
+            "name": "test_source",
+            "url": "https://example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(FIXED_DATE, config_path=config_path)
+
+        surviving_urls = {str(item.url) for item in items}
+        assert url_in_jsonl in surviving_urls, (
+            "URL present in released items.jsonl but absent from published_urls.txt "
+            "must NOT be filtered — we dedup against published, not fetched"
+        )
+        assert url_new in surviving_urls, "Fresh URL must also survive"
+        assert len(items) == 2

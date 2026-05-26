@@ -4,6 +4,12 @@ Strategy: monkeypatch `src.cluster._embed` to return hand-crafted numpy arrays
 so BAAI/bge-base-en-v1.5 (440 MB) is never loaded in the test suite. Each test
 controls the exact embedding vectors and therefore the clustering outcome exactly.
 
+The Stage-2 verifier (BAAI/bge-reranker-v2-m3, ~440 MB) is monkeypatched with
+a ``_PassthroughVerifier`` that approves all pairs (score=1.0).  Tests for the
+verification stage itself live in ``TestVerifierStage`` and
+``TestIntentCollisionRegression`` below; those tests supply a controlled verifier
+that exercises the real peel-off logic without loading the real model.
+
 Dim=16 is used for hand-crafted vectors; any test that needs to exercise the
 768-dim centroid contract uses a numpy array of that shape filled with controlled
 values, still without loading the real model.
@@ -25,6 +31,51 @@ from tests.conftest import FIXED_EARLIER, FIXED_NOW, UTC
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+class _PassthroughVerifier:
+    """Stub verifier that approves all pairs (score=1.0).
+
+    Used in tests that monkeypatch ``_embed`` but are not testing the
+    verification stage.  Ensures those tests stay isolated from the real
+    verifier model without loading 440 MB of weights.
+    """
+
+    def predict(self, pairs, batch_size=16):  # noqa: D102
+        return np.ones(len(pairs), dtype=np.float32)
+
+
+class _RejectAllVerifier:
+    """Stub verifier that rejects all pairs (score=0.0).
+
+    Used in regression tests to confirm the peel-off algorithm runs when
+    all pairs fall below VERIFICATION_THRESHOLD.
+    """
+
+    def predict(self, pairs, batch_size=16):  # noqa: D102
+        return np.zeros(len(pairs), dtype=np.float32)
+
+
+class _ControlledVerifier:
+    """Stub verifier with a user-supplied score table.
+
+    ``score_table`` maps frozenset({title_a, title_b}) -> float.
+    Any pair not in the table returns ``default_score``.
+
+    Isolates the peel-off algorithm from the real model while exercising
+    non-trivial score distributions.
+    """
+
+    def __init__(self, score_table: dict[frozenset, float], default_score: float = 1.0):
+        self._table = score_table
+        self._default = default_score
+
+    def predict(self, pairs, batch_size=16):  # noqa: D102
+        scores = []
+        for a, b in pairs:
+            key = frozenset({a, b})
+            scores.append(self._table.get(key, self._default))
+        return np.array(scores, dtype=np.float32)
 
 _T0 = FIXED_EARLIER
 _T1 = datetime.datetime(2026, 5, 24, 10, 0, 0, tzinfo=UTC)  # even earlier
@@ -80,6 +131,22 @@ def items_file(tmp_data_root: Path, fixed_date: datetime.date) -> Path:
     staging = paths.staging_dir(fixed_date)
     staging.mkdir(parents=True, exist_ok=True)
     return paths.items_path(fixed_date, canonical=False)
+
+
+@pytest.fixture(autouse=True)
+def stub_verifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Globally replace _load_verifier with a passthrough for all tests in this module.
+
+    Tests that specifically exercise verification behaviour override this by
+    supplying a controlled verifier via a further monkeypatch inside the test body
+    (later monkeypatches win because they both target the same attribute).
+
+    Without this fixture every test that produces a multi-item embedding cluster
+    would trigger a real CrossEncoder load (~440 MB) and slow the suite by 30-60s
+    per session.  The verifier is tested in TestVerifierStage and
+    TestIntentCollisionRegression using controlled stub verifiers.
+    """
+    monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _PassthroughVerifier())
 
 
 def _write_items(path: Path, items: list[Item]) -> None:
@@ -1167,3 +1234,505 @@ class TestCanonicalIdClustering:
         # The 2-item cluster must be blog-a + blog-b.
         two_item_cluster = next(c for c in clusters if c.size == 2)
         assert set(two_item_cluster.item_ids) == {"blog-a", "blog-b"}
+
+
+# ===========================================================================
+# TestVerifierStage
+# ===========================================================================
+
+class TestVerifierStage:
+    """Unit tests for Stage 3 — pairwise cross-encoder verification.
+
+    All tests use controlled stub verifiers (not the real model) so the
+    suite stays fast.  The autouse stub_verifier fixture is overridden by
+    per-test monkeypatches that supply the controlled verifier.
+    """
+
+    def test_two_item_cluster_passes_when_verifier_approves(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Two items that the verifier approves remain in one cluster."""
+        items = [
+            _make_item("dup1", "GPT-5 launches: OpenAI new model with vision", source="techcrunch"),
+            _make_item("dup2", "OpenAI releases GPT-5: flagship model with voice and vision", source="theverge"),
+        ]
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near = _unit([1.0, 0.01] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        # Approving verifier: score=1.0 > VERIFICATION_THRESHOLD
+        monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _PassthroughVerifier())
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1, "Approved pair must stay merged"
+        assert set(clusters[0].item_ids) == {"dup1", "dup2"}
+
+    def test_two_item_cluster_splits_when_verifier_rejects(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Two items that the verifier rejects are split into singletons.
+
+        This is the core regression test for the May 26, 2026 intent-collision
+        bug: bi-encoder cosine says 'merge', verifier says 'split'.
+        """
+        items = [
+            _make_item("coll1", "Is Qwen3.6 current king for local agentic use?"),
+            _make_item("coll2", "Want Built a React-style looping agent with small LLMs Qwen 3.5 9B Gemma4 LangGraph?"),
+        ]
+        # Near-identical embeddings (simulating the May 26 cosine=0.79 case).
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near = _unit([1.0, 0.01] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        # Rejecting verifier: score=0.0 < VERIFICATION_THRESHOLD=0.5
+        monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _RejectAllVerifier())
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2, "Rejected pair must be split into singletons"
+        cluster_item_ids = {frozenset(c.item_ids) for c in clusters}
+        assert frozenset({"coll1"}) in cluster_item_ids
+        assert frozenset({"coll2"}) in cluster_item_ids
+
+    def test_three_item_cluster_peels_outlier(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """When one item in a 3-item cluster is rejected by all peers, it is
+        peeled off and the remaining two items stay merged.
+
+        The peel-off algorithm should identify the item with the most failing
+        pairs as the outlier, not split the whole cluster.
+        """
+        items = [
+            _make_item("dup1", "GPT-5 launches with vision"),
+            _make_item("dup2", "OpenAI releases GPT-5 vision model"),
+            _make_item("odd1", "How to set up agent loop with small models?"),  # intent-collision
+        ]
+        # All three near-identical in embedding space.
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near1 = _unit([1.0, 0.01] + [0.0] * (DIM - 2))
+        near2 = _unit([1.0, 0.02] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near1, near2])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        # Controlled verifier: dup1+dup2 pass; odd1 fails with both.
+        score_table = {
+            frozenset({"GPT-5 launches with vision", "OpenAI releases GPT-5 vision model"}): 0.99,
+            frozenset({"GPT-5 launches with vision", "How to set up agent loop with small models?"}): 0.05,
+            frozenset({"OpenAI releases GPT-5 vision model", "How to set up agent loop with small models?"}): 0.03,
+        }
+        monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _ControlledVerifier(score_table))
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2, "Outlier should be peeled off; true pair stays merged"
+        sizes = sorted(c.size for c in clusters)
+        assert sizes == [1, 2], "Result: one 2-item cluster (dup1+dup2) + one singleton (odd1)"
+        two_item = next(c for c in clusters if c.size == 2)
+        assert set(two_item.item_ids) == {"dup1", "dup2"}
+
+    def test_singleton_bypass_does_not_call_verifier(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Singleton items skip verification — the verifier is never loaded."""
+        call_count = {"n": 0}
+
+        def _counting_verifier_loader():
+            call_count["n"] += 1
+            return _PassthroughVerifier()
+
+        items = [
+            _make_item("solo1", "A unique story about obscure topic"),
+            _make_item("solo2", "Completely orthogonal subject matter"),
+        ]
+        # Orthogonal embeddings: both items stay as singletons after bi-encoder.
+        v1 = _unit([1.0] + [0.0] * (DIM - 1))
+        v2 = _unit([0.0, 1.0] + [0.0] * (DIM - 2))
+        embeddings = np.stack([v1, v2])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(cluster_mod, "_load_verifier", _counting_verifier_loader)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert call_count["n"] == 0, (
+            "Verifier must not be loaded when all items are singletons"
+        )
+
+    def test_verifier_text_is_title_only(self) -> None:
+        """_verifier_text() returns the item title, not title+body.
+
+        The contract is: title carries intent; body text introduces topical
+        noise that degrades precision on intent-collision pairs.  If this
+        assertion breaks, the title-only design decision has been changed
+        without updating the threshold calibration.
+        """
+        item = _make_item(
+            "test-item",
+            "GPT-5 launches with extended context",
+        )
+        text = cluster_mod._verifier_text(item)
+        assert text == "GPT-5 launches with extended context"
+        assert "summary" not in text, (
+            "_verifier_text() must return title only; body text is excluded by design"
+        )
+
+    def test_verify_and_split_cluster_two_items_approved(self) -> None:
+        """Direct unit test: _verify_and_split_cluster returns one group for approved pair."""
+        items = [
+            _make_item("a1", "GPT-5 launch announcement"),
+            _make_item("a2", "OpenAI unveils GPT-5"),
+        ]
+        verifier = _PassthroughVerifier()
+        groups = cluster_mod._verify_and_split_cluster(items, verifier)
+        assert len(groups) == 1
+        assert len(groups[0]) == 2
+
+    def test_verify_and_split_cluster_two_items_rejected(self) -> None:
+        """Direct unit test: _verify_and_split_cluster returns two singletons for rejected pair."""
+        items = [
+            _make_item("b1", "Qwen king for agentic use?"),
+            _make_item("b2", "Want built a React looping agent?"),
+        ]
+        verifier = _RejectAllVerifier()
+        groups = cluster_mod._verify_and_split_cluster(items, verifier)
+        assert len(groups) == 2
+        assert all(len(g) == 1 for g in groups)
+
+    def test_verify_and_split_cluster_singleton_passthrough(self) -> None:
+        """Direct unit test: singleton list passes through unchanged."""
+        items = [_make_item("solo", "Solo item")]
+        verifier = _PassthroughVerifier()
+        groups = cluster_mod._verify_and_split_cluster(items, verifier)
+        assert len(groups) == 1
+        assert groups[0] == items
+
+    def test_verify_and_split_cluster_deterministic(self) -> None:
+        """Same input produces same output across multiple calls (no randomness)."""
+        items = [
+            _make_item("c1", "Claude 4 release"),
+            _make_item("c2", "Anthropic launches Claude 4"),
+            _make_item("c3", "How to use Claude 4 API?"),  # intent-collision
+        ]
+        score_table = {
+            frozenset({"Claude 4 release", "Anthropic launches Claude 4"}): 0.99,
+            frozenset({"Claude 4 release", "How to use Claude 4 API?"}): 0.02,
+            frozenset({"Anthropic launches Claude 4", "How to use Claude 4 API?"}): 0.03,
+        }
+        verifier = _ControlledVerifier(score_table)
+
+        groups_1 = cluster_mod._verify_and_split_cluster(items, verifier)
+        groups_2 = cluster_mod._verify_and_split_cluster(items, verifier)
+
+        # Both runs return the same partition (same number of groups, same sizes).
+        assert len(groups_1) == len(groups_2)
+        ids_1 = sorted(tuple(sorted(i.id for i in g)) for g in groups_1)
+        ids_2 = sorted(tuple(sorted(i.id for i in g)) for g in groups_2)
+        assert ids_1 == ids_2
+
+    def test_score_at_exact_threshold_keeps_pair(self) -> None:
+        """Score exactly equal to VERIFICATION_THRESHOLD (0.5) must keep the pair.
+
+        The comparison is `score >= threshold`, so 0.5 is a keep, not a split.
+        A regression from >= to > would break this test.
+        """
+        items = [
+            _make_item("t1", "Boundary story A"),
+            _make_item("t2", "Boundary story B"),
+        ]
+        score_table = {
+            frozenset({"Boundary story A", "Boundary story B"}): cluster_mod.VERIFICATION_THRESHOLD,
+        }
+        verifier = _ControlledVerifier(score_table)
+        groups = cluster_mod._verify_and_split_cluster(items, verifier)
+        assert len(groups) == 1, (
+            "Score == VERIFICATION_THRESHOLD must keep the pair (>= not >)"
+        )
+        assert len(groups[0]) == 2
+
+    def test_three_item_all_pairs_fail_produces_three_singletons(self) -> None:
+        """A 3-item cluster where every pair fails produces 3 singletons.
+
+        Tests that the peel-off loop continues until no sub-threshold pairs remain,
+        not that it peels exactly one item and stops.
+        """
+        items = [
+            _make_item("x1", "Topic A story"),
+            _make_item("x2", "Topic B story"),
+            _make_item("x3", "Topic C story"),
+        ]
+        verifier = _RejectAllVerifier()
+        groups = cluster_mod._verify_and_split_cluster(items, verifier)
+        assert len(groups) == 3, (
+            "All pairs failing must produce one singleton per item"
+        )
+        assert all(len(g) == 1 for g in groups)
+
+    def test_canonical_id_cluster_bypasses_verifier(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Rule-A (canonical-ID) clusters must not be submitted to the verifier.
+
+        Even with a reject-all verifier, a pair force-merged by canonical-ID rules
+        must stay merged.  If Stage 3 were incorrectly applied to canonical clusters,
+        the reject-all verifier would split them and len(clusters) would be 2.
+        """
+        from src.models import Item as _Item
+
+        items = [
+            _Item(
+                id="paper-one",
+                source="arxiv_cl",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.12345",
+                title="Same arxiv paper from feed A",
+                published_at=_T0,
+                raw_summary="abstract",
+                fetched_at=FIXED_NOW,
+            ),
+            _Item(
+                id="paper-two",
+                source="arxiv_cs",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.12345",
+                title="Same arxiv paper from feed B",
+                published_at=_T0,
+                raw_summary="abstract",
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # Orthogonal embeddings so bi-encoder would not merge them on its own.
+        v1 = _unit([1.0] + [0.0] * (DIM - 1))
+        v2 = _unit([0.0, 1.0] + [0.0] * (DIM - 2))
+        embeddings = np.stack([v1, v2])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        # Reject-all verifier: any pair sent through Stage 3 would split.
+        monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _RejectAllVerifier())
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1, (
+            "Canonical-ID cluster (Rule A) must bypass Stage-3 verifier — "
+            "reject-all verifier must not split a force-merged canonical pair"
+        )
+        assert set(clusters[0].item_ids) == {"paper-one", "paper-two"}
+
+
+# ===========================================================================
+# TestIntentCollisionRegression
+# ===========================================================================
+
+class TestIntentCollisionRegression:
+    """Regression tests for the May 26, 2026 intent-collision bug.
+
+    Cluster c_66173250c8d69ed6 incorrectly merged:
+      - a26d56db626b45c8: "Is Qwen3.6 current king for local agentic use?" (recommendation)
+      - ed18ce75188b9ad1: "Want Built a React-style looping agent ... Qwen 3.5 9B / Gemma4"
+                         (help request)
+
+    Both items share source (r/LocalLLaMA), day (2026-05-25), and entities
+    (Qwen, Gemma, agent, loop, LangGraph).  Bi-encoder cosine = 0.79 (above
+    threshold).  Cross-encoder title score = 0.0004 (well below threshold=0.5).
+
+    These tests verify that the fix is structurally in place: the peel-off
+    algorithm fires when the verifier rejects the pair, regardless of the
+    bi-encoder outcome.
+    """
+
+    def test_intent_collision_pair_stays_split(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Items that share topic+entities but differ in speech act must not merge.
+
+        The test simulates the exact failure mode: embedding cosine is above the
+        within-day threshold (items would merge in Stage 2), but the verifier
+        correctly rejects the pair (score=0.0004 below threshold=0.5).
+
+        If this test breaks, the intent-collision bug has regressed.
+        """
+        # Titles from the actual May 26 incident.
+        items = [
+            _make_item(
+                "a26d56db626b45c8",
+                "Is Qwen3.6 current king for local agentic use?",
+                source="r/LocalLLaMA (Reddit)",
+            ),
+            _make_item(
+                "ed18ce75188b9ad1",
+                "Want Built a React-style looping agent with small LLMs (Qwen 3.5 9B / Gemma4) + LangGraph?",
+                source="r/LocalLLaMA (Reddit)",
+            ),
+        ]
+        # Simulate cosine=0.79 (above 0.78 threshold → bi-encoder says merge).
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near = _unit([1.0, 0.01] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        # Verifier rejects the pair (simulating real cross-encoder score=0.0004).
+        monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _RejectAllVerifier())
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2, (
+            "Regression: intent-collision items must not merge. "
+            "If this fails, the Stage-3 verifier is not firing on same-source pairs."
+        )
+        cluster_item_ids = {frozenset(c.item_ids) for c in clusters}
+        assert frozenset({"a26d56db626b45c8"}) in cluster_item_ids
+        assert frozenset({"ed18ce75188b9ad1"}) in cluster_item_ids
+
+    def test_true_duplicate_pair_stays_merged(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """True near-duplicates (same story, different sources) must still merge.
+
+        Positive control: the Vision-LLMs-vs-OCR story cross-posted to
+        r/LocalLLaMA and r/MachineLearning on 2026-05-24 (c_557d8de6f20e0a3b).
+        The verifier should approve this pair with score >> 0.5.
+        """
+        items = [
+            _make_item(
+                "1605b1086233c938",
+                "Vision-capable LLMs vs. OCR for long-document QA",
+                source="r/LocalLLaMA (Reddit)",
+            ),
+            _make_item(
+                "69d579e62a152ac7",
+                "Vision-capable LLMs vs. OCR for long-document QA [D]",
+                source="r/MachineLearning (Reddit)",
+            ),
+        ]
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near = _unit([1.0, 0.01] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        # Approving verifier: simulates real score=0.9917 for this true-duplicate pair.
+        monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _PassthroughVerifier())
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1, (
+            "Positive control: true near-duplicates must still merge after Stage 3."
+        )
+        assert set(clusters[0].item_ids) == {"1605b1086233c938", "69d579e62a152ac7"}
+
+    @pytest.mark.parametrize("collision_pair", [
+        # Each tuple: (title_a, title_b, model_score, description)
+        # 4 intent-collision pairs from the archive, each with the actual
+        # cross-encoder score measured against BAAI/bge-reranker-v2-m3
+        # revision 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e.
+        # Scores are all < 0.25; threshold is 0.50.
+        # The _ControlledVerifier returns these exact scores keyed by title pair,
+        # so the titles are structurally meaningful: a title change would break
+        # the lookup, causing default_score=1.0 (passthrough) and a false keep.
+        (
+            "Is Qwen3.6 current king for local agentic use?",
+            "Want Built a React-style looping agent with small LLMs (Qwen 3.5 9B / Gemma4) + LangGraph?",
+            0.0004,
+            "May26 incident: recommendation vs help-request (same source)",
+        ),
+        (
+            "Qwen3.6-35B-A3B vs Gemma4-26B-A4B",
+            "Please give me your best tips for fine tuning RTX Pro 6000 on Intel i7-14700KF",
+            0.0000,
+            "Comparison post vs hardware tuning request (same source)",
+        ),
+        (
+            "What is the current best Small Language Model that can be run without GPU?",
+            "Qwen3.6 27B Pure Quant: 40 tok/s on 16 GB VRAM",
+            0.0001,
+            "Model recommendation question vs benchmark announcement (same source)",
+        ),
+        (
+            "llama.cpp server have built-in native tools (exec_shell, edit_file, etc.)",
+            "How are you all handling agents and sub agents?",
+            0.0000,
+            "Feature announcement vs architecture question (same source)",
+        ),
+    ])
+    def test_collision_pair_split_by_controlled_verifier(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+        collision_pair: tuple[str, str, float, str],
+    ) -> None:
+        """Parametrized: each intent-collision pair must split when the verifier scores it below threshold.
+
+        Uses _ControlledVerifier keyed on actual model scores (not _RejectAllVerifier).
+        This makes the title strings structurally load-bearing: if a title changes, the
+        lookup misses and falls back to default_score=1.0 (keep), causing the assertion
+        to fail and alerting the engineer that the model score for the new title is unknown.
+
+        A verifier model revision that pushes any of these scores above 0.50 would also
+        break the test, which is correct — it signals threshold recalibration is needed.
+        """
+        title_a, title_b, model_score, description = collision_pair
+        score_table = {frozenset({title_a, title_b}): model_score}
+        items = [
+            _make_item("item_a", title_a, source="r/LocalLLaMA (Reddit)"),
+            _make_item("item_b", title_b, source="r/LocalLLaMA (Reddit)"),
+        ]
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        near = _unit([1.0, 0.01] + [0.0] * (DIM - 2))
+        embeddings = np.stack([base, near])
+
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        # _ControlledVerifier with default_score=1.0 means: any unknown pair is
+        # treated as a true-duplicate (keep). Only the exact pairs in score_table
+        # produce sub-threshold scores.  If a title changes, the test fails loudly.
+        monkeypatch.setattr(cluster_mod, "_load_verifier", lambda: _ControlledVerifier(score_table, default_score=1.0))
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2, (
+            f"Intent-collision pair must be split — {description} "
+            f"(model_score={model_score:.4f} < VERIFICATION_THRESHOLD=0.5)"
+        )

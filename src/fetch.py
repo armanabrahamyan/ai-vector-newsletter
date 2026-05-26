@@ -878,50 +878,36 @@ def _dispatch_api_source(
 
 
 # ---------------------------------------------------------------------------
-# Cross-issue dedup against canonical archive
+# Cross-issue dedup against published_urls.txt
 # ---------------------------------------------------------------------------
 
 
-def _load_recent_canonical_item_urls(
-    today: datetime.date,
-    lookback_days: int,
-) -> set[str]:
-    """Load every item URL that appeared in a canonical ``items.jsonl`` in
-    the last ``lookback_days``. Used by ``fetch_day`` to drop items that
-    we've already fetched into yesterday's (or earlier) canonical archive.
+def _load_published_urls() -> set[str]:
+    """Return the set of URLs that have already been shipped to readers.
 
-    The window matches the recency filter -- an item older than
-    MAX_ITEM_AGE_DAYS would never re-enter the fetch anyway, so the
-    canonical lookback only needs to cover the same window (plus one day
-    of safety margin for timezone edge cases).
+    Reads ``data/published_urls.txt`` — one URL per line, atomically
+    maintained by ``aiv release`` on every publish.  This is the correct
+    dedup target: once a URL is in a released issue it must never reappear,
+    regardless of how long ago it was shipped.
 
-    Tolerant of missing dates and malformed lines.
+    Tolerant of a missing file (fresh repo or pre-first-release run returns
+    an empty set — no filtering applied).
     """
-    urls: set[str] = set()
-    for delta in range(1, lookback_days + 1):
-        day = today - datetime.timedelta(days=delta)
-        items_path = paths.items_path(day, canonical=True)
-        if not items_path.exists():
-            continue
-        try:
-            with items_path.open("r", encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        payload = json.loads(line)
-                    except json.JSONDecodeError:
-                        continue
-                    url = payload.get("url")
-                    if isinstance(url, str) and url:
-                        urls.add(url)
-        except Exception as exc:  # noqa: BLE001 -- never crash fetch on read error
-            log.warning(
-                "fetch: could not read canonical items %s for dedup: %s",
-                items_path, exc,
-            )
-    return urls
+    p = paths.PUBLISHED_URLS_PATH
+    if not p.exists():
+        return set()
+    try:
+        return set(
+            line.strip()
+            for line in p.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
+    except Exception as exc:  # noqa: BLE001 -- never crash fetch on read error
+        log.warning(
+            "fetch: could not read %s for dedup: %s",
+            p, exc,
+        )
+        return set()
 
 
 # ---------------------------------------------------------------------------
@@ -1097,33 +1083,24 @@ def fetch_day(
             dropped_old,
         )
 
-    # ---- Cross-issue item dedup (against canonical archive) ----------------
-    # Drop items whose URL has already been fetched into a recent CANONICAL
-    # items.jsonl. Without this, the same Reddit thread / lab blog post
-    # appears in consecutive days' staging (its `published_at` is still
-    # inside the recency window). The existing `data/published_urls.txt`
-    # filter (applied in cluster.py + rank.py) only covers URLs that ended
-    # up in a RELEASED issue's top-N -- not the broader items.jsonl. This
-    # filter closes that gap.
+    # ---- Cross-issue item dedup (against published_urls.txt) ---------------
+    # Drop items whose URL has already been shipped to readers.  The source
+    # of truth is data/published_urls.txt — one URL per line, atomically
+    # maintained by `aiv release` on every publish.  Once a URL is in a
+    # released issue it must never reappear, regardless of age.
     #
-    # Lookback: use the largest effective age window across all sources
-    # (max of per-source overrides and global default), plus 1 day of safety
-    # margin.  This ensures slow-cadence FS research sources (max_age_days=14)
-    # are covered.  Per-source max_age_days is capped at 30 days here to avoid
-    # an unbounded lookback on misconfigured entries.
-    _effective_max_age = max(
-        [MAX_ITEM_AGE_DAYS] + [min(v, 30) for v in source_max_age.values()]
-    )
-    canonical_urls = _load_recent_canonical_item_urls(
-        run_date, _effective_max_age + 1
-    )
-    before_canon_filter = len(kept_items)
-    kept_items = [item for item in kept_items if str(item.url) not in canonical_urls]
-    dropped_canonical = before_canon_filter - len(kept_items)
-    if dropped_canonical > 0:
+    # This replaces the old "walk released items.jsonl for last N days"
+    # approach, which deduped against *everything ever fetched* (227 items/day)
+    # rather than *what we actually shipped* (≈12 stories/day).  That caused
+    # arxiv and FS sources to be wiped entirely on re-fetch days.
+    published_urls = _load_published_urls()
+    before_published_filter = len(kept_items)
+    kept_items = [item for item in kept_items if str(item.url) not in published_urls]
+    dropped_published = before_published_filter - len(kept_items)
+    if dropped_published > 0:
         log.info(
-            "filtered %d items already in canonical archive (last %d days)",
-            dropped_canonical, MAX_ITEM_AGE_DAYS + 1,
+            "filtered %d items already in data/published_urls.txt (%d total published)",
+            dropped_published, len(published_urls),
         )
 
     # Recompute kept_count_by_source after both filters so

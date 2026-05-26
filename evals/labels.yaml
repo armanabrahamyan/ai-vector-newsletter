@@ -575,6 +575,277 @@ per_cluster:
       no named feature. Part of g_20260524_llamacpp_maintenance dedup group
       ratified by Arman.
 
+  # ===========================================================================
+  # FIXTURE: 2026-05-26-intent-collision — Two-stage clustering eval
+  # Added to support the Stage-3 verifier eval (BAAI/bge-reranker-v2-m3).
+  # Fixture exercises: 4 intent-collision pairs (should NOT merge) +
+  # 1 true-duplicate pair (MUST merge).
+  # Dataset name: "2026-05-26-intent-collision"
+  # ===========================================================================
+
+  # INTENT_COLLISION_PAIR_1 — May 26, 2026 incident: recommendation vs help-request.
+  # Item a: "Is Qwen3.6 current king for local agentic use?" (declarative claim)
+  # Item b: "Want Built a React-style looping agent..." (help request)
+  # Expected: NOT merged. Cross-encoder title score = 0.0004.
+  - cluster_id: "c_312129592ce5a4bb"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P1-A: "Is Qwen3.6 current king for local agentic use?"
+      — declarative recommendation about Qwen3.6 35B A3B agentic tool-use.
+      Should NOT merge with the help-request post (c_2ad4b0b41b5347bb).
+      Both share source (r/LocalLLaMA), entities (Qwen, Gemma, agent, loop)
+      but differ in speech act (recommendation vs question).
+      Bi-encoder cosine = 0.79 (above threshold); verifier rejects merge.
+
+  - cluster_id: "c_2ad4b0b41b5347bb"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 2
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P1-B: "Want Built a React-style looping agent with small
+      LLMs (Qwen 3.5 9B / Gemma4) + LangGraph?" — help request about agent
+      loop instability. Should NOT merge with c_312129592ce5a4bb.
+      Low relevance (2): help thread, no concrete artefact, minor reddit score.
+
+  # INTENT_COLLISION_PAIR_2 — Naive help-request vs expert feature announcement (llama.cpp domain).
+  # Replaced 2026-05-26: original pair 2 (Qwen comparison vs RTX hardware tuning) was weak —
+  # different entities, bi-encoder already separated them without the verifier.
+  # This pair has bi-encoder cosine=0.8327 (above 0.78 threshold) and cross-encoder
+  # title score=0.1948 (below 0.50 threshold): the verifier is the load-bearing component.
+  - cluster_id: "c_161a5115032d1383"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 1
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P2-A: "LLaMa.cpp basic question" — naive installation
+      help-request from a beginner (PI agent + Vulkan setup, no idea how to get models).
+      Should NOT merge with c_f0913d044505b14a (expert feature fork announcement).
+      Both are r/LocalLLaMA, same entity domain (llama.cpp).
+      Bi-encoder cosine=0.8327 (above 0.78 threshold); verifier score=0.1948 (below 0.50).
+      This is a genuine hard intent-collision: the verifier is the load-bearing separator.
+
+  - cluster_id: "c_f0913d044505b14a"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P2-B: "Experts first llama.cpp" — expert fork announcement
+      with benchmarks and a call for testers (MoE expert-placement optimisation,
+      22-26 tk/s on RTX 2060). Should NOT merge with c_161a5115032d1383.
+      High reddit score (59) vs help-request (4); different speech acts despite
+      sharing llama.cpp vocabulary. Verifier score=0.1948 (correct split).
+
+  # INTENT_COLLISION_PAIR_3 — Recommendation question vs benchmark announcement.
+  - cluster_id: "c_819dccf6931fdf63"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 2
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P3-A: "What is the current best Small Language Model
+      that can be run without GPU?" — recommendation question. Should NOT merge
+      with c_c9b8d1571483c77a (benchmark post for specific model).
+      Cross-encoder title score = 0.0001.
+
+  - cluster_id: "c_c9b8d1571483c77a"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P3-B: "Qwen3.6 27B Pure Quant: 40 tok/s on 16 GB VRAM"
+      — benchmark result announcement. Should NOT merge with c_819dccf6931fdf63.
+
+  # INTENT_COLLISION_PAIR_4 — Feature announcement vs architecture question.
+  - cluster_id: "c_cf0b99c06c42a9ba"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [hands_on, finance]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P4-A: "llama.cpp server have built-in native tools
+      (exec_shell, edit_file, etc.)" — feature announcement. Should NOT merge
+      with c_0a5d1ec6fa76b393 (general question about agent architecture).
+      Cross-encoder title score = 0.0000.
+
+  - cluster_id: "c_0a5d1ec6fa76b393"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: null
+    human_relevance: 2
+    expected_audience_tags: [hands_on]
+    expected_tier: "cut"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      INTENT COLLISION P4-B: "How are you all handling agents and sub agents?"
+      — open architecture question. Should NOT merge with c_cf0b99c06c42a9ba.
+
+  # TRUE DUPLICATE PAIR (positive control) — same story, different subreddits.
+  # The Vision-LLMs-vs-OCR benchmark cross-posted to r/LocalLLaMA and r/ML.
+  #
+  # LABEL DESIGN NOTE (Eval Engineer, 2026-05-26):
+  # Two pre-merge singleton cluster_ids are labelled with the same group_id so
+  # the dedup_quality eval can actually test merge recall. The expected output
+  # clusters.jsonl already shows them merged into c_557d8de6f20e0a3b (size=2).
+  # The dedup eval sees both pre-merge cluster_ids absent from the pipeline output
+  # and correctly scores this as a TP (the pipeline merged them as intended).
+  #
+  # Singleton cluster_ids (SHA-256 of single item_id, same formula as _build_cluster):
+  #   1605b1086233c938 -> c_af3853ebd28c9960
+  #   69d579e62a152ac7 -> c_7e8821b14d8216de
+  # Merged cluster_id: SHA-256(sorted joined) -> c_557d8de6f20e0a3b (confirmed match).
+  - cluster_id: "c_af3853ebd28c9960"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: "g_ic_fixture_ocr_benchmark"
+    human_relevance: 4
+    expected_audience_tags: [hands_on, finance]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      TRUE DUPLICATE (positive control), item 1: "Vision-capable LLMs vs. OCR for
+      long-document QA" posted to r/LocalLLaMA (item_id=1605b1086233c938).
+      Pre-merge singleton cluster_id. MUST merge with c_7e8821b14d8216de.
+      Cross-encoder title score = 0.9917. Any regression that splits this pair
+      is a recall failure. Expected merged output cluster: c_557d8de6f20e0a3b.
+
+  - cluster_id: "c_7e8821b14d8216de"
+    dataset: "2026-05-26-intent-collision"
+    ground_truth_group_id: "g_ic_fixture_ocr_benchmark"
+    human_relevance: 4
+    expected_audience_tags: [hands_on, finance]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      TRUE DUPLICATE (positive control), item 2: "Vision-capable LLMs vs. OCR for
+      long-document QA [D]" posted to r/MachineLearning (item_id=69d579e62a152ac7).
+      Pre-merge singleton cluster_id. MUST merge with c_af3853ebd28c9960.
+      Cross-encoder title score = 0.9917. Any regression that splits this pair
+      is a recall failure. Expected merged output cluster: c_557d8de6f20e0a3b.
+
+  # ===========================================================================
+  # FIXTURE: 2026-05-26-pulse-eligibility — Pulse sourcing-credibility gate.
+  # Added 2026-05-26 to support the v0.10 _pick_pulse eligibility gate
+  # (the May 26 PII-scrubber regression fix). Five clusters:
+  #   - 1 must-filter case (the PII pattern: singleton, no canonical_id, trust=2)
+  #   - 3 must-pass cases (multi-source, canonical_id, established source)
+  #   - 1 degraded-mode counterpart (second ineligible singleton; pair with the
+  #     must-filter case to exercise the all-ineligible fallback warning path)
+  #
+  # Dataset name: "2026-05-26-pulse-eligibility"
+  # Eligibility-rule outcomes are pinned by the new tests in
+  # tests/test_summarise.py::TestPulseEligibilityGate; the fixture is the
+  # corpus-level labelled record of the same outcomes for future evals.
+  # ===========================================================================
+
+  - cluster_id: "c_e2cd1f9251bdf691"
+    dataset: "2026-05-26-pulse-eligibility"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [hands_on, finance]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      MUST_FILTER (PII-scrubber pattern, the May 26, 2026 incident).
+      Singleton (size=1), canonical_id=null, single r/LocalLLaMA source at
+      trust_weight=2. Score was high enough on May 26 (significance=65,
+      total=56) to become Pulse via the score fallback path; the v0.10
+      eligibility gate must REJECT this cluster from Pulse candidacy.
+      Eligible_for_pulse: false. The story belongs in Hands-On or On the
+      Radar, never as the day's anchor.
+
+  - cluster_id: "c_27da0f437b8b867f"
+    dataset: "2026-05-26-pulse-eligibility"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      MUST_PASS_SIZE — multi-source case: a llama.cpp GitHub release
+      cross-posted to r/LocalLLaMA. size=2 with two distinct sources
+      (github_releases + r/LocalLLaMA), canonical_id present
+      (github_release:ggerganov/llama.cpp:b9999). Eligible_for_pulse: true
+      via BOTH size>1 and canonical_id; the gate's OR composition means
+      either one is sufficient. Mirrors the b9320 cross-post pattern from
+      2026-05-26 staging that the editor flagged as legitimate.
+
+  - cluster_id: "c_1457f3e894103797"
+    dataset: "2026-05-26-pulse-eligibility"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      MUST_PASS_CANONICAL — a single arxiv preprint, singleton cluster
+      (no cross-post), trust=1 source. Eligible_for_pulse: true ONLY via
+      canonical_id (arxiv:2605.12345). Pins that a verifiable artefact
+      identifier alone clears the gate even with the weakest trust signal.
+
+  - cluster_id: "c_59dd007e4cebd910"
+    dataset: "2026-05-26-pulse-eligibility"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [big_picture, finance]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      MUST_PASS_TRUST — established source: The EU AI Act Newsletter,
+      trust_weight=3 per config/sources.yaml. Singleton, no canonical_id.
+      Eligible_for_pulse: true ONLY via the trust floor
+      (PULSE_ELIGIBILITY_TRUST_FLOOR=3). Pins that trust>=floor alone
+      suffices; the same shape as the c_491e0b408f3bab95 case that the
+      v0.10 gate elevated to Pulse on the May 26 staging spot-check.
+
+  - cluster_id: "c_92b03b8fbb078a33"
+    dataset: "2026-05-26-pulse-eligibility"
+    ground_truth_group_id: null
+    human_relevance: 2
+    expected_audience_tags: [big_picture, general]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      DEGRADED_MODE_PARTNER — a SECOND ineligible singleton (the METR
+      graph-flaws Reddit post, trust=2, no canonical_id). On its own it's
+      a "must_filter" case; paired with c_e2cd1f9251bdf691 in a test
+      scenario where NO eligible candidate exists, the v0.10 fallback
+      path must fire: top-scored ineligible story is chosen anyway, and
+      a WARNING is logged. Eligible_for_pulse: false.
+
 # ---------------------------------------------------------------------------
 # 2. PER-ISSUE LABELS
 #

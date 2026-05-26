@@ -13,8 +13,9 @@ Round B (DESIGN.md "Archive: staging vs canonical"):
     so a draft Arman never released cannot influence today's continuations.
   * `data/published_urls.txt` is canonical-only (lives at the data root).
 
-No LLM calls. Embedding model only (BAAI/bge-base-en-v1.5 via sentence-transformers).
-No .env loading — embeddings are fully local.
+No LLM calls. Embedding model only (BAAI/bge-base-en-v1.5 via sentence-transformers)
+plus a cross-encoder verifier (BAAI/bge-reranker-v2-m3).
+No .env loading — both models are fully local.
 
 Public entry point (per DESIGN.md module boundary table):
     cluster_day(run_date, data_dir, lookback_days) -> list[Cluster]
@@ -30,6 +31,35 @@ Canonical-ID-aware clustering (tasks #80 + #83):
     Rule B — different canonical IDs: forbidden from merging via embeddings.
   Items without a canonical ID fall through to the existing embedding path.
   See _canonical_id() and _apply_canonical_id_rules() for implementation.
+
+Two-stage clustering (Stage 2 — pair verification):
+  After agglomerative clustering, each multi-item candidate cluster is
+  verified by a cross-encoder reranker (BAAI/bge-reranker-v2-m3).  For
+  every pair in the candidate cluster the verifier scores how likely the
+  two items are the *same story*.  Pairs that fall below
+  VERIFICATION_THRESHOLD are split out; clusters that survive all pairwise
+  checks are emitted unchanged.  This second stage catches the "topically
+  adjacent but different speech act" failure mode — e.g. a recommendation
+  post vs. a help-request thread about the same model family — which
+  bi-encoder cosine cannot distinguish.
+
+  The verifier uses only item titles as input (not full body text).  Titles
+  carry the clearest intent signal; body text introduces topical noise that
+  degrades the verifier's precision on the intent-collision failure mode.
+  Tested against the May 26, 2026 incident: cosine=0.79 (above threshold),
+  cross-encoder title score=0.0004 (well below VERIFICATION_THRESHOLD=0.5).
+
+  Algorithm: peel-off (greedy single-linkage split).  Starting from the
+  bi-encoder candidate cluster, find the pair with the lowest verifier
+  score.  If that score is below VERIFICATION_THRESHOLD, split the lower-
+  scored item into its own singleton and repeat.  This preserves legitimate
+  multi-item merges (true near-duplicates score >> 0.9) while peeling off
+  false merges.  See _verify_and_split_cluster() for the implementation.
+
+  DESIGN.md note: VERIFICATION_THRESHOLD (0.5) is higher than the implicit
+  same-day bi-encoder threshold and lower than the cross-time threshold.
+  Tuned against: 4 intent-collision pairs (all score < 0.25 on titles) and
+  2 true-duplicate pairs (both score > 0.99 on titles).
 """
 
 from __future__ import annotations
@@ -53,12 +83,48 @@ from src.models import Cluster, Item
 # ---------------------------------------------------------------------------
 
 EMBEDDING_MODEL_NAME = "BAAI/bge-base-en-v1.5"  # local HF model, ~440 MB fp32
+# Revision SHA pinned to the HF commit that was calibrated against.
+# Pinning is non-optional: the bi-encoder threshold (0.78) and the cross-encoder
+# threshold (0.50) were tuned against these specific weight snapshots.  A silent
+# HF weight update would shift embedding distances and verifier scores, potentially
+# invalidating both thresholds without any test failures.  Re-calibrate and update
+# the SHA whenever an intentional model upgrade is made.
+EMBEDDING_MODEL_REVISION = "a5beb1e3e68b9ab74eb54cfd186867f64f240e1a"
 EMBEDDING_DIM = 768                              # output dimension of bge-base-en-v1.5
 WITHIN_DAY_COSINE_THRESHOLD = 0.78              # two items share a cluster when cosine >= this
 CROSS_TIME_COSINE_THRESHOLD = 0.82              # higher bar: cross-day similarity to set prior_coverage_ref
 CROSS_TIME_LOOKBACK_DAYS = 14                   # days of history to consult for cross-time dedup
 MAX_CHAIN_DEPTH = 30                             # cycle-guard: max hops when resolving chain root
 BATCH_SIZE = 32                                  # sentence-transformers encode batch size
+
+# ---------------------------------------------------------------------------
+# Stage-2 verifier constants
+# ---------------------------------------------------------------------------
+
+# Cross-encoder model used for pairwise verification of candidate clusters.
+# BAAI/bge-reranker-v2-m3: MIT license, ~440 MB fp32, CPU-runnable, no
+# trust_remote_code required.  Apache-2.0 alternative (mxbai-rerank-large-v1)
+# tested but scores intent-collision pairs higher (0.32 vs 0.00), giving worse
+# precision on the target failure mode.  DeBERTa-MNLI tested but produces
+# near-neutral scores for both true duplicates and intent-collision pairs —
+# NLI contradiction/entailment labels don't map cleanly to same-story detection
+# in this domain.  bge-reranker-v2-m3 chosen for clean bimodal score
+# distribution: intent-collision pairs score < 0.25; true duplicates > 0.87.
+VERIFIER_MODEL_NAME = "BAAI/bge-reranker-v2-m3"
+# Revision SHA pinned for the same reason as EMBEDDING_MODEL_REVISION above.
+# VERIFICATION_THRESHOLD (0.50) was calibrated against this exact revision.
+VERIFIER_MODEL_REVISION = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+
+# Cross-encoder score below which a pair is considered "not the same story."
+# Tuned against 4 intent-collision pairs (max score 0.24) and 2 true-duplicate
+# pairs (min score 0.87).  A threshold of 0.5 leaves a gap > 0.60 between
+# the highest false-positive score (0.24) and the lowest true-positive (0.87).
+# See module docstring for the per-pair evidence.
+VERIFICATION_THRESHOLD = 0.5
+
+# Cross-encoder batch size for prediction.  Larger batches amortise tokeniser
+# overhead; 16 is conservative for CPU with the 280M-param verifier.
+VERIFIER_BATCH_SIZE = 16
 
 # ---------------------------------------------------------------------------
 # Module-level logger (structured fields appended by callers via extra=).
@@ -172,7 +238,7 @@ def _embed(items: list[Item]) -> np.ndarray:
     """
     from sentence_transformers import SentenceTransformer  # lazy import; heavy
 
-    model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+    model = SentenceTransformer(EMBEDDING_MODEL_NAME, revision=EMBEDDING_MODEL_REVISION)
     texts = [
         f"{item.title}. {item.raw_summary or ''}".strip()
         for item in items
@@ -185,6 +251,154 @@ def _embed(items: list[Item]) -> np.ndarray:
         convert_to_numpy=True,
     )
     return embeddings.astype(np.float32)
+
+
+# ---------------------------------------------------------------------------
+# Stage-2 verifier helpers
+# ---------------------------------------------------------------------------
+
+
+def _load_verifier():
+    """Load the cross-encoder verifier model (lazy import).
+
+    Returns a ``sentence_transformers.CrossEncoder`` instance.  Called once
+    per ``_cluster_within_day`` call; the caller does not cache the model
+    across invocations (process-level caching via HF model cache is enough).
+
+    Model: BAAI/bge-reranker-v2-m3 (MIT, ~440 MB fp32, no trust_remote_code).
+    """
+    from sentence_transformers import CrossEncoder  # lazy import; heavy
+
+    return CrossEncoder(
+        VERIFIER_MODEL_NAME,
+        revision=VERIFIER_MODEL_REVISION,
+        trust_remote_code=False,
+        max_length=512,
+    )
+
+
+def _verifier_text(item: Item) -> str:
+    """Return the text string fed to the cross-encoder for a single item.
+
+    Design choice: title only (not title+summary).
+
+    Rationale: the title captures the speech act and intent most directly.
+    Body text introduces topical vocabulary that degrades verifier precision
+    on the intent-collision failure mode.  Evidence: on the May 26, 2026
+    incident, title-only gives scores of 0.0004 (collision) vs 1.0 (duplicate);
+    title+full-body gives 0.6353 (collision) — above the threshold, causing a
+    false-positive merge.  Title+150-char body gives 0.014 — correct, but the
+    margin is smaller.  Title-only provides the largest decision margin.
+    """
+    return item.title.strip()
+
+
+def _verify_and_split_cluster(
+    cluster_items: list[Item],
+    verifier,
+) -> list[list[Item]]:
+    """Peel-off algorithm: split a candidate cluster into verified sub-clusters.
+
+    For a singleton or two-item cluster that passes the verifier, returns the
+    original group unchanged (fast path).  For larger clusters, scores every
+    pair and repeatedly peels off items that fail pairwise verification.
+
+    Algorithm (greedy peel-off):
+      1. Score all pairs in the candidate cluster.
+      2. While any pair scores below VERIFICATION_THRESHOLD:
+         a. Find the item with the most sub-threshold pair memberships.
+            (Tie-break: item with the lowest average score across its pairs.)
+         b. Peel that item off into its own singleton group.
+         c. Re-score remaining items (reuse cached scores; no new model call).
+      3. Return the remaining multi-item group (if any) plus all singletons.
+
+    This is greedy and O(n^2) in the number of items per cluster.  In practice
+    each candidate cluster has 2–5 items, so this is cheap.  A cluster with
+    10+ items would already be suspicious at the bi-encoder stage.
+
+    Returns a list of item groups (each group is a non-empty list[Item]).
+    The caller converts each group into a Cluster via _build_cluster().
+    """
+    if len(cluster_items) <= 1:
+        return [cluster_items]
+
+    # Fast path: two-item cluster, score the single pair.
+    if len(cluster_items) == 2:
+        a, b = cluster_items
+        texts = [_verifier_text(a), _verifier_text(b)]
+        scores = verifier.predict([texts], batch_size=VERIFIER_BATCH_SIZE)
+        if float(scores[0]) >= VERIFICATION_THRESHOLD:
+            return [cluster_items]
+        else:
+            logger.debug(
+                "Verifier split: score=%.4f < threshold=%.2f | '%s' vs '%s'",
+                float(scores[0]),
+                VERIFICATION_THRESHOLD,
+                a.title[:60],
+                b.title[:60],
+                extra={"component": "cluster"},
+            )
+            return [[a], [b]]
+
+    # General case: score all pairs, then peel.
+    n = len(cluster_items)
+    # pair_score[i][j] for i < j
+    all_pairs: list[list[str]] = []
+    pair_idx: list[tuple[int, int]] = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            all_pairs.append([_verifier_text(cluster_items[i]), _verifier_text(cluster_items[j])])
+            pair_idx.append((i, j))
+
+    raw_scores = verifier.predict(all_pairs, batch_size=VERIFIER_BATCH_SIZE)
+    # Build score matrix (symmetric).
+    score_matrix: dict[tuple[int, int], float] = {}
+    for (i, j), s in zip(pair_idx, raw_scores):
+        score_matrix[(i, j)] = float(s)
+        score_matrix[(j, i)] = float(s)
+
+    # Peel-off loop.
+    remaining: list[int] = list(range(n))
+    groups: list[list[Item]] = []
+
+    while len(remaining) > 1:
+        # Collect failing pairs (both indices still in remaining).
+        failing_pairs = [
+            (i, j)
+            for i, j in pair_idx
+            if i in remaining and j in remaining
+            and score_matrix[(i, j)] < VERIFICATION_THRESHOLD
+        ]
+        if not failing_pairs:
+            break  # All remaining pairs pass.
+
+        # Count failures per item; tie-break on average score (lowest = most outlying).
+        failure_count: dict[int, int] = {}
+        score_sum: dict[int, float] = {}
+        for i, j in failing_pairs:
+            for idx in (i, j):
+                failure_count[idx] = failure_count.get(idx, 0) + 1
+                score_sum[idx] = score_sum.get(idx, 0.0) + score_matrix[(idx, i if idx == j else j)]
+
+        # Item to peel: most failures, then lowest average score.
+        peel_idx = max(
+            failure_count,
+            key=lambda idx: (failure_count[idx], -score_sum[idx] / failure_count[idx]),
+        )
+        logger.debug(
+            "Verifier peel: peeling item '%s' (failures=%d, avg_score=%.4f)",
+            cluster_items[peel_idx].title[:60],
+            failure_count[peel_idx],
+            score_sum[peel_idx] / failure_count[peel_idx],
+            extra={"component": "cluster"},
+        )
+        remaining.remove(peel_idx)
+        groups.append([cluster_items[peel_idx]])
+
+    if remaining:
+        groups.append([cluster_items[idx] for idx in remaining])
+
+    return groups
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +546,12 @@ def _apply_canonical_id_rules(
     #         group from rule A), forbidden from merging with other buckets.
     for cid, indices in bucket.items():
         cluster_items = [items[i] for i in indices]
-        canonical_clusters.append(_build_cluster(cluster_items, trust_weights))
+        cluster = _build_cluster(cluster_items, trust_weights)
+        # Persist the bucketing key onto the cluster so downstream stages
+        # (e.g. summarise._pick_pulse eligibility) can read it without
+        # re-running URL pattern matching.
+        cluster.canonical_id = cid
+        canonical_clusters.append(cluster)
         logger.debug(
             "Canonical-ID cluster: cid=%s items=%d",
             cid,
@@ -360,45 +579,62 @@ def _cluster_within_day(
     items: list[Item],
     embeddings: np.ndarray,
     trust_weights: dict[str, int],
+    skip_verification: bool = False,
 ) -> list[Cluster]:
-    """Agglomerative clustering with cosine distance threshold.
+    """Two-stage clustering: bi-encoder candidate generation + pair verification.
 
-    Two-phase approach:
-      Phase 1 — canonical-ID rules (tasks #80 + #83):
-        - Rule A: items sharing the same canonical ID (arxiv abs, GitHub release
-          tag, DOI) are force-grouped, bypassing embedding similarity.
-        - Rule B: items with distinct canonical IDs are separated as individual
-          clusters and excluded from the embedding pass — different arxiv IDs
-          are by definition different papers and must not merge on thematic
-          similarity.
-        Items with no canonical ID are collected for Phase 2.
-      Phase 2 — embedding-based agglomerative clustering (unchanged):
-        sklearn.cluster.AgglomerativeClustering with:
-          - metric="cosine"
-          - linkage="average"
-          - distance_threshold = 1 - WITHIN_DAY_COSINE_THRESHOLD
+    Stage 1 — canonical-ID rules (tasks #80 + #83):
+      - Rule A: items sharing the same canonical ID (arxiv abs, GitHub release
+        tag, DOI) are force-grouped, bypassing embedding similarity.
+      - Rule B: items with distinct canonical IDs are separated as individual
+        clusters and excluded from the embedding pass — different arxiv IDs
+        are by definition different papers and must not merge on thematic
+        similarity.
+      Items with no canonical ID are collected for Stage 2.
 
-    DESIGN.md note: distance = 1 - cosine_similarity for L2-normalised vectors.
-    With normalize_embeddings=True from sentence-transformers, ||v||=1, so
-    dot(v_i, v_j) = cos(v_i, v_j) and distance = 1 - dot = ||v_i - v_j||^2 / 2.
-    sklearn's cosine metric computes 1 - cos directly, which is correct here.
+    Stage 2 — embedding-based agglomerative clustering:
+      sklearn.cluster.AgglomerativeClustering with:
+        - metric="cosine"
+        - linkage="average"
+        - distance_threshold = 1 - WITHIN_DAY_COSINE_THRESHOLD
+
+      DESIGN.md note: distance = 1 - cosine_similarity for L2-normalised
+      vectors.  With normalize_embeddings=True, dot(v_i, v_j) == cosine.
+      sklearn's cosine metric computes 1 - cos directly.
+
+    Stage 3 — pairwise cross-encoder verification:
+      Each multi-item embedding cluster is submitted to the verifier
+      (_verify_and_split_cluster).  Pairs that score below
+      VERIFICATION_THRESHOLD on the verifier are split.  Singletons and
+      canonical-ID clusters skip verification (they carry a stronger signal
+      than embedding similarity alone and do not exhibit the intent-collision
+      failure mode).
+
+      Verification is skipped when skip_verification=True (used in tests
+      that monkeypatch _embed but do not need the second model loaded).
+
+    Args:
+        items: Items to cluster.
+        embeddings: L2-normalised embeddings for items (shape n x EMBEDDING_DIM).
+        trust_weights: {source_name: weight} for canonical_title selection.
+        skip_verification: When True, omit Stage 3 (useful for unit tests).
     """
     if not items:
         return []
 
-    # Phase 1: canonical-ID rules (fire before any cosine comparison).
+    # Stage 1: canonical-ID rules (fire before any cosine comparison).
     canonical_clusters, free_items, free_embeddings = _apply_canonical_id_rules(
         items, embeddings, trust_weights
     )
 
-    # Phase 2: embedding-based clustering for free-text items only.
-    embedding_clusters: list[Cluster] = []
+    # Stage 2: embedding-based clustering for free-text items only.
+    candidate_groups: list[list[Item]] = []  # groups before verification
 
     if not free_items:
         pass  # Nothing left for the embedding pass.
     elif len(free_items) == 1:
         # sklearn requires >= 2 samples; handle singleton directly.
-        embedding_clusters = [_build_cluster([free_items[0]], trust_weights)]
+        candidate_groups = [[free_items[0]]]
     else:
         from sklearn.cluster import AgglomerativeClustering
 
@@ -412,13 +648,48 @@ def _cluster_within_day(
         labels: np.ndarray = model.fit_predict(free_embeddings)
 
         # Group items by cluster label.
-        label_to_items: dict[int, list[tuple[int, Item]]] = {}
+        label_to_items: dict[int, list[Item]] = {}
         for idx, label in enumerate(labels.tolist()):
-            label_to_items.setdefault(label, []).append((idx, free_items[idx]))
+            label_to_items.setdefault(label, []).append(free_items[idx])
 
-        for label_items in label_to_items.values():
-            cluster_items = [pair[1] for pair in label_items]
-            embedding_clusters.append(_build_cluster(cluster_items, trust_weights))
+        candidate_groups = list(label_to_items.values())
+
+    # Stage 3: pairwise cross-encoder verification.
+    # Only multi-item candidate clusters are submitted to the verifier.
+    # Singletons pass through unchanged.
+    embedding_clusters: list[Cluster] = []
+
+    # Check if any multi-item candidate exists — avoid loading the verifier
+    # model when all candidates are singletons (common on sparse days).
+    multi_candidates = [g for g in candidate_groups if len(g) > 1]
+
+    if multi_candidates and not skip_verification:
+        verifier = _load_verifier()
+        for group in candidate_groups:
+            if len(group) == 1:
+                embedding_clusters.append(_build_cluster(group, trust_weights))
+            else:
+                # Verify; may return multiple sub-groups if pairs fail.
+                sub_groups = _verify_and_split_cluster(group, verifier)
+                for sub in sub_groups:
+                    embedding_clusters.append(_build_cluster(sub, trust_weights))
+
+        n_before = len(candidate_groups)
+        n_after = len(embedding_clusters)
+        n_splits = n_after - n_before
+        if n_splits > 0:
+            logger.info(
+                "Verifier stage: %d candidate cluster(s) -> %d cluster(s) "
+                "(%d split(s))",
+                n_before,
+                n_after,
+                n_splits,
+                extra={"component": "cluster"},
+            )
+    else:
+        # Verification skipped (all singletons, or skip_verification=True).
+        for group in candidate_groups:
+            embedding_clusters.append(_build_cluster(group, trust_weights))
 
     return canonical_clusters + embedding_clusters
 

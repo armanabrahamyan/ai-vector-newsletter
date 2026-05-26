@@ -101,12 +101,26 @@ SUMMARISE_PROMPT_VERSION = "v0.9"
     (better to ship than to silently drop a top-N story)
 v0.8 vocabulary unchanged (big_picture / hands_on / on_the_radar)."""
 
-PULSE_PROMPT_VERSION = "v0.9"
-"""Audit tag: ``pulse-v0.9-2026-05-25``. v0.9 (#82): the Pulse SELECTION
-RULE now biases against prior coverage -- a fresh (prior_coverage_ref is
-None) story beats any prior-coverage story regardless of score. This is a
-behavioural change in ``_pick_pulse``, not a prompt change. v0.8 mirrored
-summarise v0.9's length-cap hardening."""
+PULSE_PROMPT_VERSION = "v0.10"
+"""Audit tag: ``pulse-v0.10-2026-05-26``. v0.10 (2026-05-26 fix): the Pulse
+SELECTION RULE now gates candidacy on sourcing credibility BEFORE the
+fresh/recurring partition. A cluster must clear at least one of
+(size > 1) | (canonical_id present) | (max trust_weight >= floor) to be
+Pulse-eligible. If zero candidates clear, fall back to the unfiltered pool
+with a loud WARNING (operator sees it at ratification). The previous
+fresh-over-prior-coverage bias and the >=2 signal-dimensions Pulse-class
+bar still run inside the eligible pool. This is a behavioural change in
+``_pick_pulse``, not a prompt change. v0.9 (#82) biased against prior
+coverage."""
+
+PULSE_ELIGIBILITY_TRUST_FLOOR = 3
+"""Minimum trust_weight (from ``config/sources.yaml``) such that a single
+cluster source carrying this weight or higher clears the Pulse eligibility
+gate on its own. Established-source threshold: trust 3+ covers OpenAI /
+Anthropic / Hugging Face blogs, regulatory feeds, top independent
+authors. Reddit subs (trust 2) and similar community sources require
+multi-source corroboration or a canonical artefact instead. Tunable in
+one place so eval-engineer can calibrate against labels."""
 
 TOP_N_STORIES = 12
 """How many ranked stories to summarise. PLAN §8 open question -- 12 sits
@@ -610,8 +624,15 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # --- Section assembly ------------------------------------------------
     # v0.8: pulse -> big_picture -> hands_on -> on_the_radar.
     # The Big Picture comes first per Arman's reading order.
+    # clusters_by_id + items_by_id are threaded through so the v0.10 Pulse
+    # eligibility gate can read cluster size, canonical_id, and item-level
+    # trust_weight without re-reading JSONL.
     pulse_section, big_picture_section, hands_on_section, on_the_radar_section = \
-        _assemble_sections(blocks)
+        _assemble_sections(
+            blocks,
+            clusters_by_id=clusters_by_id,
+            items_by_id=items_by_id,
+        )
 
     # --- Section intros (Phase B) ---------------------------------------
     # One LLM call per non-pulse section, fed the section's stories so the
@@ -1424,6 +1445,8 @@ def _reconcile_signal_with_audience_tags(
 
 def _assemble_sections(
     blocks: list[tuple[RankedStory, SummaryBlock]],
+    clusters_by_id: dict[str, Cluster] | None = None,
+    items_by_id: dict[str, Item] | None = None,
 ) -> tuple[IssueSection, IssueSection, IssueSection, IssueSection]:
     """Place every summarised story into exactly one section. Returns the
     four sections in display order: pulse, big_picture, hands_on, on_the_radar.
@@ -1441,6 +1464,11 @@ def _assemble_sections(
     Direction notes and finance angles are embedded in summary prose,
     not separate fields (schema v4); the assembler no longer filters on
     direction_note presence.
+
+    ``clusters_by_id`` + ``items_by_id`` are threaded into ``_pick_pulse``
+    for the eligibility gate (PULSE v0.10, 2026-05-26). When omitted (only
+    happens in narrow unit tests that don't exercise the gate), the gate
+    degrades to current-behaviour fallback with a warning.
     """
     # blocks already arrive in score-desc order (ranked.jsonl order,
     # preserved by the loop above).
@@ -1448,7 +1476,8 @@ def _assemble_sections(
     unplaced = set(by_id.keys())
 
     # --- Pulse ----------------------------------------------------------
-    pulse_id = _pick_pulse(blocks)
+    pulse_id = _pick_pulse(blocks, clusters_by_id=clusters_by_id,
+                            items_by_id=items_by_id)
     if pulse_id is None:
         raise RuntimeError(
             "summarise: cannot select a Pulse story -- no surviving stories."
@@ -1508,12 +1537,91 @@ def _signal_dimensions_hit(story: RankedStory) -> int:
     return hits
 
 
+def _pulse_eligibility(
+    cluster: Cluster | None,
+    items_by_id: dict[str, Item] | None,
+) -> tuple[bool, str]:
+    """Sourcing-credibility gate for Pulse candidacy (v0.10, 2026-05-26).
+
+    A cluster is Pulse-eligible if it clears at least one of:
+
+      1. ``cluster.size > 1`` -- multiple feeds independently surfaced the
+         story (the natural near-dedup signal that a story is real).
+      2. ``cluster.canonical_id is not None`` -- the cluster carries a
+         verifiable artefact identifier (arxiv abs ID, GitHub release tag,
+         DOI). The thing exists; readers can check it.
+      3. At least one source in the cluster carries trust_weight >=
+         ``PULSE_ELIGIBILITY_TRUST_FLOOR`` (currently 3). Established
+         outlets, regulatory feeds, top independent authors -- not Reddit
+         and not vendor newsroom hype channels.
+
+    Why these three. Each is an independent sourcing-credibility signal:
+    multiple feeds = corroboration, canonical_id = verifiability,
+    established source = curator stamp. A Pulse should carry at least one;
+    a story with none belongs in Hands-On or On the Radar.
+
+    Returns ``(eligible, reason)`` where ``reason`` is a short human-
+    readable string (single source + no canonical_id + trust_max=N) used
+    in INFO logs at ratification time. The full check still runs even
+    when one criterion already passes -- the reason string is built from
+    the same fields regardless so logs are uniform.
+    """
+    if cluster is None:
+        # Missing cluster: we cannot evaluate sourcing. Conservatively
+        # treat as ineligible (caller falls back with a warning).
+        return False, "cluster_missing"
+
+    size_ok = cluster.size > 1
+    canonical_ok = cluster.canonical_id is not None
+
+    # Compute max trust_weight across the cluster's items. Items carry
+    # their trust_weight from fetch time (sources.yaml mirrored onto
+    # Item.trust_weight per src/models.py). If items_by_id is missing
+    # (some test paths), we cannot read trust; default conservatively
+    # so the gate doesn't silently always pass.
+    max_trust: int | None
+    if items_by_id is None:
+        max_trust = None
+    else:
+        trust_vals = [
+            items_by_id[iid].trust_weight
+            for iid in cluster.item_ids
+            if iid in items_by_id
+        ]
+        max_trust = max(trust_vals) if trust_vals else None
+
+    trust_ok = (max_trust is not None
+                and max_trust >= PULSE_ELIGIBILITY_TRUST_FLOOR)
+
+    eligible = size_ok or canonical_ok or trust_ok
+
+    reason = (
+        f"size={cluster.size} "
+        f"canonical_id={'present' if canonical_ok else 'none'} "
+        f"trust_max={max_trust if max_trust is not None else 'unknown'} "
+        f"floor={PULSE_ELIGIBILITY_TRUST_FLOOR}"
+    )
+    return eligible, reason
+
+
 def _pick_pulse(
     blocks: list[tuple[RankedStory, SummaryBlock]],
+    clusters_by_id: dict[str, Cluster] | None = None,
+    items_by_id: dict[str, Item] | None = None,
 ) -> str | None:
-    """The Pulse selection rule (v0.3 -- task #82: bias against prior coverage).
+    """The Pulse selection rule (v0.10 -- 2026-05-26: add eligibility gate).
 
-    Selection order:
+    Selection order (precedence: eligible fresh > eligible recurring >
+    ineligible-fallback with WARNING):
+
+      0. **Eligibility gate (v0.10).** Before anything else, filter the
+         candidate set to clusters that carry at least one piece of
+         sourcing-credibility evidence -- multi-source, canonical artefact,
+         or a trust_weight >= floor source. The thin-sourced singleton
+         that became the May 26 PII-scrubber Pulse fails this test. If
+         zero candidates pass, fall back to the original logic on the
+         unfiltered blocks with a loud WARNING so the operator sees the
+         smell at ratification.
 
       1. **Prefer fresh (no prior coverage) for Pulse.** A story with prior
          coverage (the SummaryBlock carries a non-null
@@ -1543,11 +1651,56 @@ def _pick_pulse(
     if not blocks:
         return None
 
+    # --- v0.10 eligibility gate ----------------------------------------
+    # Partition into eligible / ineligible *before* the fresh/recurring
+    # partition. Ineligible candidates are excluded from the normal pool;
+    # only when EVERY candidate is ineligible do we fall back to the
+    # unfiltered set (with a WARNING).
+    eligible_blocks: list[tuple[RankedStory, SummaryBlock]] = []
+    ineligible_blocks: list[tuple[RankedStory, SummaryBlock]] = []
+    for story, block in blocks:
+        cluster = (
+            clusters_by_id.get(story.cluster_id)
+            if clusters_by_id is not None
+            else None
+        )
+        eligible, reason = _pulse_eligibility(cluster, items_by_id)
+        if eligible:
+            eligible_blocks.append((story, block))
+        else:
+            ineligible_blocks.append((story, block))
+            _LOG.info(
+                "summarise: Pulse eligibility gate filtered %s "
+                "(headline=%r): %s",
+                story.cluster_id, block.headline, reason,
+            )
+
+    using_fallback = False
+    if eligible_blocks:
+        gate_blocks = eligible_blocks
+    else:
+        # Hard fallback. Every candidate failed the gate. Pick from the
+        # full set anyway so the issue still ships, but log loudly --
+        # Arman sees this at ratification and decides whether to ship.
+        using_fallback = True
+        top = blocks[0][0]  # blocks are score-desc; top is the chosen-anyway
+        _LOG.warning(
+            "summarise: PULSE ELIGIBILITY GATE FOUND NO ELIGIBLE CANDIDATES "
+            "(%d candidates, all failed sourcing-credibility test). "
+            "Falling back to unfiltered pool; chosen-anyway top story is %s "
+            "(score=%d, headline=%r). Consider whether today's issue should "
+            "ship at all -- no story carries multi-source, a canonical "
+            "artefact, or a trust>=%d source.",
+            len(ineligible_blocks), top.cluster_id, top.score,
+            blocks[0][1].headline, PULSE_ELIGIBILITY_TRUST_FLOOR,
+        )
+        gate_blocks = blocks
+
     # Partition by prior-coverage status. prior_coverage_ref lives on the
     # SummaryBlock (mirrored from Cluster at construction time in
     # _summarise_one). This is the deterministic seam -- no LLM, no prompt.
-    fresh = [(s, b) for s, b in blocks if b.prior_coverage_ref is None]
-    recurring = [(s, b) for s, b in blocks if b.prior_coverage_ref is not None]
+    fresh = [(s, b) for s, b in gate_blocks if b.prior_coverage_ref is None]
+    recurring = [(s, b) for s, b in gate_blocks if b.prior_coverage_ref is not None]
 
     pool: list[tuple[RankedStory, SummaryBlock]]
     if fresh:
@@ -1591,6 +1744,20 @@ def _pick_pulse(
                 top_recurring.cluster_id, top_recurring.score,
                 chosen[0].cluster_id, chosen[0].score,
             )
+
+    # v0.10: when the eligibility gate fires and the unfiltered top
+    # candidate is NOT what we chose, log INFO with both ids. (Skip in
+    # fallback mode -- the WARNING above already says everything.)
+    if (not using_fallback and ineligible_blocks
+            and blocks[0][0].cluster_id != chosen[0].cluster_id):
+        top_overall = blocks[0][0]
+        _LOG.info(
+            "summarise: Pulse eligibility gate demoted top-scored "
+            "ineligible story %s (score=%d) in favour of eligible story "
+            "%s (score=%d). v0.10.",
+            top_overall.cluster_id, top_overall.score,
+            chosen[0].cluster_id, chosen[0].score,
+        )
 
     return chosen[0].cluster_id
 

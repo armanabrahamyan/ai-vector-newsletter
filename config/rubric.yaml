@@ -12,9 +12,11 @@
 #   - editorial-focus  -> Significance anchors (Tier 1/2/3 + signal filter)
 #   - finance-lens     -> Financial-services impact anchors (two-tier test)
 #
-# Weights match PLAN §5 exactly. Tune ONLY after the Eval Engineer's
-# harness exists (Phase 1) -- per design-first-eval-first, we don't
-# optimise against vibes.
+# Weights tuned 2026-05-26 (Arman-directed) from the original PLAN §5
+# split (30/25/20/15/10) to (30/15/30/15/10): big_picture +10,
+# hands_on -10, others unchanged. Intent: shift editorial centre of
+# gravity toward strategic content; reduce dominance of practitioner-
+# tool stories. Eval Engineer ratification pending.
 
 schema_version: 2
 rubric_version: "v0.2-2026-05-24"
@@ -64,7 +66,7 @@ criteria:
         usable now). Pulse-candidate territory.
 
   - name: hands_on_utility
-    weight: 25
+    weight: 15
     description: >
       Can a DS or engineer act on this *this week*? New tool, new technique,
       new constraint, new repo, new API, new eval, new benchmark. Concrete
@@ -92,7 +94,7 @@ criteria:
         benchmark with code, a tool with a documented API.
 
   - name: big_picture_relevance
-    weight: 20
+    weight: 30
     description: >
       Does this shift what a Head of AI / CDO / CTO would PRIORITISE next
       quarter? Strategy, risk, governance, vendor calculus, talent. This is
@@ -278,7 +280,7 @@ calibration_notes: |
 
   Hands-on vs. big-picture split
   ------------------------------
-  hands_on_utility (25) and big_picture_relevance (20) are split rather
+  hands_on_utility (15) and big_picture_relevance (30) are split rather
   than combined on purpose. A `big_picture`-only story with weak hands-on
   utility (e.g. a major regulatory shift) should still surface via a
   high big_picture_relevance score even if hands_on_utility is low.

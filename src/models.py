@@ -279,6 +279,27 @@ class Cluster(BaseModel):
     Pydantic alias `cross_time_ref` keeps released archive files parseable.
     """
 
+    canonical_id: str | None = None
+    """
+    Stable per-story identifier when the items in the cluster carry one
+    (arxiv abs ID, GitHub release tag, DOI). Populated by
+    `src.cluster._apply_canonical_id_rules` at clustering time -- the same
+    string used to bucket items under canonical-ID rule A. ``None`` for
+    free-text clusters (most Reddit posts, blog entries, news without a
+    canonical artefact link).
+
+    Downstream readers (e.g. `summarise._pick_pulse`'s eligibility gate)
+    use this as a sourcing-credibility signal: a cluster with a non-null
+    `canonical_id` references a verifiable artefact and clears the
+    eligibility bar without needing multi-source corroboration.
+
+    Backwards-compatible Optional field addition (default None): older
+    `clusters.jsonl` records written before this field existed still parse
+    cleanly. The schema version is NOT bumped because the field is
+    additive-only with a safe default; existing readers that ignore the
+    field continue to work unchanged.
+    """
+
     embedding_dim: int | None = None
     """Length of the centroid vector if stored; `None` if vectors are external."""
 
