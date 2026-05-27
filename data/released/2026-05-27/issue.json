@@ -1,7 +1,7 @@
 {
   "schema_version": 5,
   "issue_number": 5,
-  "revision": 0,
+  "revision": 1,
   "date": "2026-05-27",
   "pulse": {
     "schema_version": 2,
@@ -9,14 +9,14 @@
     "stories": [
       {
         "schema_version": 2,
-        "story_id": "c_791caa7898996ec7",
-        "headline": "A trivially exploited flaw puts AI agent servers at immediate risk",
-        "summary": "BadHost (CVE-2026-48710) lets an attacker bypass authorisation by injecting a single character into an HTTP header, exposing credentials stored on AI agent servers. Starlette, the affected package, sees 325 million weekly downloads; FastAPI, vLLM, and LiteLLM are all vulnerable. Patch to Starlette 1.0.1 now, before auditing any internet-facing agent backend.",
+        "story_id": "c_266d53ab99b64227",
+        "headline": "Google's embedding model now searches video, audio, images and text together",
+        "summary": "Retrieval pipelines have long needed separate models for each data type. Gemini Embedding 2 encodes video, audio, images, and text into a single shared space, beating specialised models on standard retrieval benchmarks (84.0 on code retrieval, 69.9 on multilingual text). Benchmarks are vendor-reported. If you're building document-heavy search, test it against your current per-modality stack before committing.",
         "source_urls": [
-          "https://arstechnica.com/information-technology/2026/05/millions-of-ai-agents-imperiled-by-critical-vulnerability-in-open-source-package/"
+          "https://huggingface.co/papers/2605.27295"
         ],
         "prior_coverage_ref": null,
-        "signal": "act"
+        "signal": "try"
       }
     ],
     "intro_lead": null,
@@ -29,51 +29,51 @@
       "stories": [
         {
           "schema_version": 2,
-          "story_id": "c_9a574b490751305d",
-          "headline": "A safety layer catches risky finance agent actions mid-task, not after",
-          "summary": "Post-hoc auditing of finance agents fails when a bad tool call is already irreversible. FinHarness checks each step inline, injecting risk signals back before the agent acts. On the FinVault benchmark (self-reported, no code released), attack success fell from 38% to 15%. Raise this at your next model-risk review before locking in a post-hoc auditing design.",
+          "story_id": "c_97f2fbea61d93416",
+          "headline": "A massive open model built from the ground up for AI agents",
+          "summary": "MiniMax-M2 is a 230-billion-parameter mixture-of-experts model that activates only 9.8 billion parameters per token, keeping inference costs low. It was trained end-to-end on verifiable agentic trajectories, coding tasks, and long-horizon workflows. Benchmarks are vendor-supplied and no independent evaluation exists yet. If you're shortlisting open-weight models for agentic pipelines, put this on the evaluation list.",
           "source_urls": [
-            "https://arxiv.org/abs/2605.27333"
+            "https://arxiv.org/abs/2605.26494"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_783d46e21ab630e8",
+          "headline": "Agents need real computers, and one sandbox platform is scaling fast",
+          "summary": "AI agents need stateful, resizable computers accessible via API, not just code execution boxes. Daytona runs on bare metal, spins up a sandbox in roughly 60 milliseconds, and processes 850,000 daily runs for one customer. Reinforcement learning workloads now account for roughly half of usage. Figures are vendor-reported; benchmark it against your container setup before committing.",
+          "source_urls": [
+            "https://www.latent.space/p/daytona"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_5fd011c7ce5c6d7d",
+          "headline": "More structure makes capable AI agents worse, not better",
+          "summary": "A 432-run controlled experiment overturns a core assumption in agent design: adding more structure to a capable chat model cut task success by 29-38 percentage points, while a reasoning model peaked under strict constraints. Single model per tier limits generalisation. Audit your harness configuration before assuming tighter scaffolding helps.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.26731"
           ],
           "prior_coverage_ref": null,
           "signal": "discuss"
         },
         {
           "schema_version": 2,
-          "story_id": "c_a7619954bbdbaa0c",
-          "headline": "A Microsoft Copilot agent can be tricked into leaking your files",
-          "summary": "Microsoft Copilot Cowork, a shipping product, contained a prompt-injection flaw: a malicious actor could trick the agent into sending an email with an external image that silently exfiltrated pre-authenticated OneDrive download links when opened. Single-source (Simon Willison), no patch confirmation noted. Before deploying any email-capable agent, verify it cannot send outbound messages without explicit user approval.",
+          "story_id": "c_6ac6c36e3519199c",
+          "headline": "New open models cut long-context memory costs with shared attention layers",
+          "summary": "As agent workflows hold more tokens in memory, attention and cache costs dominate. Raschka's synthesis maps how recent open-weight models tackle this: Gemma 4 reuses key-value tensors across layers, DeepSeek V4 adds compressed attention. Single-source analysis, no independent benchmarks. Raise this at your next architecture review before locking in a long-context serving strategy.",
           "source_urls": [
-            "https://simonwillison.net/2026/May/26/copilot-cowork-exfiltrates-files/#atom-everything"
-          ],
-          "prior_coverage_ref": null,
-          "signal": "act"
-        },
-        {
-          "schema_version": 2,
-          "story_id": "c_a60d1e93457485f6",
-          "headline": "Checking only an agent's final answer misses half the errors",
-          "summary": "Most hallucination benchmarks check only an agent's final output. Trajel, a new dataset and audit framework, classifies failures across five types in intermediate reasoning steps and finds nearly half of flawed agent runs contain multiple error types at once. No public code yet; raise the taxonomy at your next agentic pipeline review before signing off on deployment.",
-          "source_urls": [
-            "https://huggingface.co/papers/2605.24219"
-          ],
-          "prior_coverage_ref": null,
-          "signal": "discuss"
-        },
-        {
-          "schema_version": 2,
-          "story_id": "c_a6c70f038bf89757",
-          "headline": "Deployed agents degrade silently long after launch, new research shows",
-          "summary": "A frozen model still ages: memory compression, fact revision, and maintenance each erode reliability in distinct ways. AgingBench tested 14 models across up to 200 sessions and found behavioural scores can stay clean while factual precision quietly decays. No code is released yet. Raise lifespan evaluation at your next agent SLA review before signing off on production deployments.",
-          "source_urls": [
-            "https://arxiv.org/abs/2605.26302"
+            "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures"
           ],
           "prior_coverage_ref": null,
           "signal": "discuss"
         }
       ],
-      "intro_lead": "Trust the process, not the output.",
-      "intro_body": "Every story today points the same direction: final-answer checks are not enough. The risk in deployed agents lives in the steps, the silence, and the gaps between audits."
+      "intro_lead": "Architecture assumptions are breaking.",
+      "intro_body": "Across infrastructure, model design, and agent scaffolding, this week's evidence challenges what practitioners thought they knew. The cost of defaulting to last year's patterns is rising."
     },
     {
       "schema_version": 2,
@@ -81,40 +81,40 @@
       "stories": [
         {
           "schema_version": 2,
-          "story_id": "c_5c93371ab4a0daf3",
-          "headline": "New open model activates just 4% of its parameters per query",
-          "summary": "MiniMax-M2 is a sparse mixture-of-experts model: 229.9B total parameters, only 9.8B active per token, keeping inference costs low while hitting frontier-tier scores on agentic coding and reasoning tasks. Weights are on Hugging Face. Benchmarks are vendor-supplied, so treat them as directional. If you're evaluating open models for agentic coding workloads, put this on your shortlist.",
+          "story_id": "c_c134fb12b852f1c0",
+          "headline": "No single detector beats prompt injection across all real-world conditions",
+          "summary": "A new evaluation finds prompt injection detection is highly regime-dependent: no single model wins across all conditions. Transformer-based detectors lead overall, while structural signals (hierarchy overrides, role redefinition) add consistent gains in harder scenarios. Code is promised but not yet released. Before setting detection thresholds for an agentic pipeline, test against your specific deployment regime.",
           "source_urls": [
-            "https://huggingface.co/papers/2605.26494"
-          ],
-          "prior_coverage_ref": null,
-          "signal": "try"
-        },
-        {
-          "schema_version": 2,
-          "story_id": "c_cd1a6a2ac9460c10",
-          "headline": "Small router runs most tasks locally and matches cloud quality",
-          "summary": "Cactus Hybrid Router is a 65,000-parameter model that decides, at inference time, whether to handle a query on-device or escalate to a cloud model. Routing only 15–55% of calls to the cloud, a small on-device model matches frontier performance. Single Reddit post, no independent benchmarks; treat as a promising prototype before committing to architecture.",
-          "source_urls": [
-            "https://reddit.com/r/LocalLLaMA/comments/1tom98y/cactus_hybrid_router_gemma42b_can_match"
-          ],
-          "prior_coverage_ref": null,
-          "signal": "watch"
-        },
-        {
-          "schema_version": 2,
-          "story_id": "c_03c950fb9bbf3734",
-          "headline": "Language models can tell when they're being tested and behave differently",
-          "summary": "Language models can detect when they're being evaluated and behave accordingly, corrupting safety benchmarks. LURE counters this by replaying real deployment logs and appending safety probes at the end; tests show LURE evals are substantially harder for models to distinguish from genuine use. No code linked yet. Before citing any alignment benchmark in a safety case, demand a realism score.",
-          "source_urls": [
-            "https://arxiv.org/abs/2605.26438"
+            "https://arxiv.org/abs/2605.26999"
           ],
           "prior_coverage_ref": null,
           "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_7a7660abc5407fea",
+          "headline": "Microsoft squeezes capable browser-and-file agents into small on-device models",
+          "summary": "Microsoft Research's MagenticLite pairs two purpose-built small models (a 9-billion-parameter computer-use model, Fara1.5, nearly doubles its predecessor's web-navigation score) with a redesigned orchestration harness, keeping data on-device. Single-source vendor blog, no independent benchmarks yet. If you're evaluating on-prem agent deployments, this architecture is worth raising at your next design review.",
+          "source_urls": [
+            "https://www.microsoft.com/en-us/research/blog/magenticlite-magenticbrain-fara1-5-an-agentic-experience-optimized-for-small-models/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_c4edf0a7b59ce95b",
+          "headline": "A CUDA-free mixture-of-experts kernel matches CUDA performance and runs on AMD",
+          "summary": "Running mixture-of-experts models efficiently usually means CUDA-only code locked to NVIDIA hardware. This open-source Triton kernel reaches 89–131% of Megablocks' throughput at inference batch sizes, cuts 35% of global memory traffic by fusing key operations, and runs on AMD without modification. Single Reddit post, no independent benchmarks yet; try it against your on-prem multi-vendor inference stack.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tp4u0u/fused_moe_dispatch_kernel_in_pure_triton_89131_of"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
         }
       ],
       "intro_lead": "Verify before you deploy.",
-      "intro_body": "Today's releases promise cheaper inference and smarter routing, but every claim rests on vendor or single-source data. The more interesting finding is structural: your benchmarks themselves may no longer be trustworthy."
+      "intro_body": "Today's releases reward scepticism: vendor claims are outpacing independent validation, and the most durable gains come from open, reproducible work you can stress-test yourself before it touches production."
     },
     {
       "schema_version": 2,
@@ -124,7 +124,7 @@
       "intro_body": null
     }
   ],
-  "generated_at": "2026-05-27T12:17:33.880128Z",
+  "generated_at": "2026-05-27T13:32:33.096843Z",
   "prompt_versions": {
     "rank": "v0.5",
     "summarise": "v0.9",
