@@ -1014,6 +1014,167 @@ class TestCanonicalIdHelper:
             "https://arxiv.org/abs/2605.23904v2"
         ) == "arxiv:2605.23904"
 
+    def test_canonical_id_from_hf_papers_url(self) -> None:
+        """huggingface.co/papers/<arxiv_id> extracts to the arxiv canonical key.
+
+        Regression for the 2026-05-27 MiniMax-M2 dedup miss: the HF Daily Papers
+        feed posts the same paper as arxiv under huggingface.co/papers/<arxiv_id>.
+        Both URL forms must resolve to the identical arxiv:<ID> key so rule A
+        force-merges items across the two domains.
+        """
+        item = Item(
+            id="hf1",
+            source="Hugging Face Daily Papers",
+            source_type="api",
+            url="https://huggingface.co/papers/2605.26494",
+            title="The MiniMax-M2 Series",
+            published_at=_T0,
+            raw_summary="",  # HF Papers feed ships empty raw_summary in this repo
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "arxiv:2605.26494"
+
+    def test_canonical_id_versioned_hf_papers_url(self) -> None:
+        """huggingface.co/papers/<arxiv_id>v2 strips the version suffix.
+
+        Same normalisation as the arxiv.org pattern: a versioned URL points to
+        the same paper as the un-versioned URL, and they must merge.
+        """
+        assert cluster_mod._extract_canonical_id_from_url(
+            "https://huggingface.co/papers/2605.26494v2"
+        ) == "arxiv:2605.26494"
+        # And the un-versioned arxiv.org form must collapse to the same key.
+        assert cluster_mod._extract_canonical_id_from_url(
+            "https://huggingface.co/papers/2605.26494v2"
+        ) == cluster_mod._extract_canonical_id_from_url(
+            "https://arxiv.org/abs/2605.26494"
+        )
+
+    def test_hf_papers_body_text_scan(self) -> None:
+        """Body-text scanner picks up HF Papers URLs and yields the arxiv key.
+
+        Primary URL has no canonical ID; body mentions a HF Papers URL ->
+        canonical id is the unified arxiv:<ID> key. Mirrors the rule-A-via-body
+        path that already exists for arxiv.org and GitHub release URLs.
+        """
+        item = Item(
+            id="blog-hf",
+            source="some_blog",
+            source_type="rss",
+            url="https://example.com/post",
+            title="A blog discussing a new paper",
+            published_at=_T0,
+            raw_summary=(
+                "We riff on the MiniMax-M2 series here — see "
+                "https://huggingface.co/papers/2605.26494 for the paper."
+            ),
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "arxiv:2605.26494"
+
+    def test_hf_papers_and_arxiv_in_body_not_ambiguous(self) -> None:
+        """Body referencing both arxiv.org and huggingface.co/papers for the
+        SAME paper must NOT be treated as ambiguous.
+
+        Before the fix this would have yielded zero or one canonical ID; with
+        HF Papers folded onto the arxiv key, both forms produce the same string
+        and the dedup `found` list stays length 1.
+        """
+        item = Item(
+            id="blog-dual",
+            source="some_blog",
+            source_type="rss",
+            url="https://example.com/dual",
+            title="Cross-referencing post",
+            published_at=_T0,
+            raw_summary=(
+                "Paper at https://arxiv.org/abs/2605.26494 — and the HF page is "
+                "https://huggingface.co/papers/2605.26494 ."
+            ),
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "arxiv:2605.26494"
+
+    def test_existing_arxiv_extraction_unchanged(self) -> None:
+        """Regression: the existing arxiv.org URL pattern still produces the
+        identical canonical key after the HF Papers branch is added.
+
+        Guards against accidental reordering / pattern interference between
+        the arxiv.org and huggingface.co/papers branches in
+        ``_extract_canonical_id_from_url``.
+        """
+        assert (
+            cluster_mod._extract_canonical_id_from_url("https://arxiv.org/abs/2605.23904")
+            == "arxiv:2605.23904"
+        )
+        assert (
+            cluster_mod._extract_canonical_id_from_url("https://arxiv.org/abs/2605.23904v3")
+            == "arxiv:2605.23904"
+        )
+
+    def test_hf_papers_non_arxiv_path_returns_none(self) -> None:
+        """Other huggingface.co paths (datasets, spaces, model repos) must NOT
+        match the HF Papers regex.
+
+        Documents the URL-space boundary: only /papers/<arxiv_id> is treated as
+        an arxiv alias. False-positive risk audit — see DESIGN.md.
+        """
+        for url in [
+            "https://huggingface.co/datasets/wikitext",
+            "https://huggingface.co/spaces/some/space",
+            "https://huggingface.co/openai/gpt-2",
+            "https://huggingface.co/papers",                       # no ID
+            "https://huggingface.co/papers/not-a-real-id",         # bad shape
+            "https://huggingface.co/papers/12345",                 # too short
+        ]:
+            assert (
+                cluster_mod._extract_canonical_id_from_url(url) is None
+            ), f"non-paper HF URL must not match HF Papers regex: {url!r}"
+
+    def test_hf_papers_two_distinct_ids_in_body_returns_none(self) -> None:
+        """Body linking to two different HF Papers (different arxiv IDs) is ambiguous.
+
+        Mirrors test_body_multiple_distinct_canonical_ids_returns_none which covers
+        the arxiv.org form.  The body-text scanner must NOT return the first hit
+        when two distinct canonical IDs are present.
+        """
+        item = Item(
+            id="blog-multi-hf",
+            source="some_blog",
+            source_type="rss",
+            url="https://example.com/roundup",
+            title="Papers roundup",
+            published_at=_T0,
+            raw_summary=(
+                "Check out https://huggingface.co/papers/2605.26494 and also "
+                "https://huggingface.co/papers/2605.11111 from this week."
+            ),
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) is None
+
+    def test_hf_papers_same_paper_versioned_and_unversioned_in_body(self) -> None:
+        """Body mentioning both plain and versioned HF URL for the same paper is not ambiguous.
+
+        huggingface.co/papers/2605.26494 and huggingface.co/papers/2605.26494v2 both
+        resolve to arxiv:2605.26494; the body-scanner dedup guard (``if cid not in
+        found``) must keep ``found`` at length 1 so the single canonical ID is returned.
+        """
+        item = Item(
+            id="blog-hf-dupe",
+            source="some_blog",
+            source_type="rss",
+            url="https://example.com/post",
+            title="A paper discussion",
+            published_at=_T0,
+            raw_summary=(
+                "See https://huggingface.co/papers/2605.26494 or "
+                "https://huggingface.co/papers/2605.26494v2 — same paper."
+            ),
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "arxiv:2605.26494"
+
 
 # ===========================================================================
 # TestCanonicalIdClustering  (integration with cluster_day)
@@ -1173,6 +1334,70 @@ class TestCanonicalIdClustering:
             "must be force-merged (rule A via body extraction)"
         )
         assert set(clusters[0].item_ids) == {"reddit-b9297", "release-b9297"}
+
+    def test_arxiv_and_hf_papers_force_group_via_rule_a(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+    ) -> None:
+        """Rule A across the arxiv.org/abs and huggingface.co/papers URL forms.
+
+        Regression for the 2026-05-27 MiniMax-M2 dedup miss: an arXiv cs.CL
+        item at arxiv.org/abs/2605.26494 and a Hugging Face Daily Papers item
+        at huggingface.co/papers/2605.26494 are the same paper. Both URL forms
+        must map to ``arxiv:2605.26494`` and force-merge via rule A.
+
+        The HF item ships with an empty raw_summary in this repo (per
+        Source Engineer fetch path), so the body-text fallback cannot rescue
+        it — the URL-pattern fix is the load-bearing path.
+        """
+        items = [
+            Item(
+                id="arxiv-minimax",
+                source="arXiv cs.CL",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.26494",
+                title="The MiniMax-M2 Series: Mini Activations Unleashing Max Real-World Intelligence",
+                published_at=_T0,
+                raw_summary="arXiv:2605.26494v1 Announce Type: cross Abstract: We introduce the MiniMax-M2 series...",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="hf-minimax",
+                source="Hugging Face Daily Papers",
+                source_type="api",
+                url="https://huggingface.co/papers/2605.26494",
+                title="The MiniMax-M2 Series: Mini Activations Unleashing Max Real-World Intelligence",
+                published_at=_T0,
+                raw_summary="",  # HF Papers feed yields empty body
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # Orthogonal embeddings — cosine alone would NOT merge them; rule A
+        # via shared canonical ID must force-merge regardless. (Titles happen
+        # to be identical here, but the test deliberately disables that signal
+        # by feeding orthogonal vectors so the assertion isolates rule A.)
+        v1 = _unit([1.0] + [0.0] * (DIM - 1))
+        v2 = _unit([0.0, 1.0] + [0.0] * (DIM - 2))
+        embeddings = np.stack([v1, v2])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1, (
+            "arxiv.org/abs and huggingface.co/papers pointing at the same "
+            "arxiv ID must collapse to ONE cluster (rule A across HF Papers alias)"
+        )
+        assert set(clusters[0].item_ids) == {"arxiv-minimax", "hf-minimax"}
+        # Canonical ID should be the arxiv key — proving HF Papers folded onto
+        # the arxiv canonical space (not a parallel HF-specific space).
+        assert clusters[0].canonical_id == "arxiv:2605.26494"
 
     def test_free_text_items_use_embedding_clustering_unchanged(
         self,

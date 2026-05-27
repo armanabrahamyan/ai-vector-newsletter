@@ -1,0 +1,42 @@
+# config/editorial.yaml — AI Vector editorial post-rank assembly rules
+#
+# Last updated: 2026-05-27
+# Owner: LLM Engineer (mechanics); Editor + Arman ratify the values.
+#
+# This file governs HOW today's ranked stories are assembled into an issue,
+# AFTER ranking. It is separate from `config/sources.yaml` (what to fetch)
+# and `config/rubric.yaml` (how to score) by design — they answer different
+# questions and the agents that own them differ.
+#
+# Section caps fix the May 27, 2026 single-category dominance pattern: 9 of
+# 12 stories from arxiv / HF Daily Papers because arxiv cs.CL alone supplied
+# 252 of 424 fetched items, and the recent rubric rebalance (big_picture +10)
+# further favoured paper-shaped content. The fix is post-rank, deterministic,
+# inside the picker chain in src/summarise.py (no LLM, no prompt change).
+#
+# Forkers without AI Vector's editorial intent can leave this file absent or
+# empty — defaults are baked into code (per_source_per_section = 2) and
+# per_category_per_issue defaults to no cap when unspecified.
+
+section_caps:
+
+  # Universal rule (applies regardless of config presence): no single section
+  # may carry more than N stories from the same source name. Default N=2
+  # baked into src/summarise.py (DEFAULT_PER_SOURCE_PER_SECTION); this value
+  # overrides it. Setting null/omitting falls back to the code default.
+  per_source_per_section: 2
+
+  # Per-issue cap by source category (from config/sources.yaml `category`
+  # field). Key = category name; value = max stories of that category across
+  # the whole issue (pulse + big_picture + hands_on + on_the_radar combined).
+  # Categories not listed here are uncapped. Source names without a category
+  # entry in sources.yaml are bucketed as "unknown" and treated as uncapped.
+  #
+  # AI Vector's editorial intent (2026-05-27):
+  #   - `papers` capped at 4 per issue. Two flavours of paper-shaped content
+  #     (arXiv cs.CL and Hugging Face Daily Papers) together produced > 60%
+  #     of fetched items on the trigger day. A meaningful issue carries some
+  #     papers but cannot be DOMINATED by them; the rest of the field needs
+  #     room to surface (labs, news, community, tooling, finance).
+  per_category_per_issue:
+    papers: 4

@@ -20,7 +20,14 @@ import pytest
 
 from src.models import Cluster, Item, RankedStory, SummaryBlock
 from src.summarise import (
+    DEFAULT_PER_SOURCE_PER_SECTION,
+    EditorialConfig,
     PULSE_ELIGIBILITY_TRUST_FLOOR,
+    _assemble_sections,
+    _cluster_category,
+    _pick_big_picture,
+    _pick_hands_on,
+    _pick_on_the_radar,
     _pick_pulse,
     _pick_source_urls,
     _pulse_eligibility,
@@ -802,3 +809,491 @@ class TestPulseEligibilityGate:
         pulse_id = _pick_pulse([a, b])
         # All ineligible -> fallback -> top Pulse-class story wins.
         assert pulse_id == "c_eeeeeeeeeeee00c0"
+
+
+# ===========================================================================
+# Source-diversity caps (2026-05-27).
+#
+# Two-layer post-rank rule, fixes May 27 single-category dominance pattern
+# (9 of 12 stories from papers because arxiv cs.CL alone supplied 252 of 424
+# fetched items + recent rubric rebalance favoured paper-shaped content).
+#
+# Layer 1: per_source_per_section (default 2, baked in code).
+# Layer 2: per_category_per_issue (config-driven; AI Vector caps papers=4).
+#
+# Degraded mode: if caps starve Hands-On below the minimum-of-3 integrity
+# gate, the picker logs WARNING and fills from over-cap candidates.
+# ===========================================================================
+
+def _cluster_with_source(
+    cluster_id: str, source: str, *, item_count: int = 1,
+) -> Cluster:
+    """Minimal Cluster keyed to a single source name for cap tests. Source-
+    name is the cap key for Layer 1; cluster_id is the routing handle.
+    """
+    item_ids = [f"item_{cluster_id[2:6]}_{i:02d}" for i in range(item_count)]
+    return Cluster(
+        cluster_id=cluster_id,
+        item_ids=item_ids,
+        canonical_title="A canonical title",
+        sources=[source],
+        earliest_published=FIXED_EARLIER,
+        size=item_count,
+        prior_coverage_ref=None,
+        canonical_id=None,
+    )
+
+
+def _ranked_tagged(
+    cluster_id: str, *, score: int, tags: list[str], hands_on_score: int = 75,
+) -> RankedStory:
+    """A ranked story with chosen audience tags. Score chosen against the
+    rubric weights so RankedStory validates."""
+    big_picture = 50
+    fs = 25
+    significance = 60
+    freshness = 60
+    weighted = (
+        0.30 * significance + 0.25 * hands_on_score + 0.20 * big_picture
+        + 0.15 * fs + 0.10 * freshness
+    )
+    breakdown = {
+        "significance": significance,
+        "hands_on_utility": hands_on_score,
+        "big_picture_relevance": big_picture,
+        "financial_services_impact": fs,
+        "freshness_momentum": freshness,
+    }
+    return RankedStory(
+        cluster_id=cluster_id,
+        score=round(weighted),
+        breakdown=breakdown,
+        audience_tags=tags,  # type: ignore[arg-type]
+        rationale="t",
+        tier="on_the_radar",
+        prompt_version="v0.2",
+    )
+
+
+def _summary_for(cluster_id: str) -> SummaryBlock:
+    return SummaryBlock(
+        story_id=cluster_id,
+        headline="A headline that exists for the seam test",
+        summary="A body that exists for the seam test of cap logic.",
+        source_urls=["https://example.com/x"],  # type: ignore[list-item]
+        prior_coverage_ref=None,
+    )
+
+
+def _papers_cfg(
+    *, per_source: int = 2, papers_cap: int = 4,
+) -> EditorialConfig:
+    """An EditorialConfig pinned for the AI Vector editorial intent (papers
+    capped at 4 per issue, per-source-per-section default 2). Source map
+    minimal: just the few names the tests reference."""
+    return EditorialConfig(
+        per_source_per_section=per_source,
+        per_category_per_issue={"papers": papers_cap},
+        source_to_category={
+            "arXiv cs.CL": "papers",
+            "Hugging Face Daily Papers": "papers",
+            "Simon Willison's Blog": "newsletter",
+            "Ars Technica AI": "news",
+            "r/LocalLLaMA (Reddit)": "community",
+            "OpenAI": "lab",
+            "Anthropic": "lab",
+        },
+        source_to_trust={
+            "arXiv cs.CL": 1,
+            "Hugging Face Daily Papers": 4,
+            "Simon Willison's Blog": 4,
+            "Ars Technica AI": 3,
+            "r/LocalLLaMA (Reddit)": 2,
+            "OpenAI": 3,
+            "Anthropic": 3,
+        },
+    )
+
+
+class TestSourceCapPerSection:
+    """Layer 1: no single section may carry more than N stories from the
+    same source name."""
+
+    def test_per_section_cap_filters_excess(self) -> None:
+        """Three candidates from the same source name + cap=2: only the
+        first two land in the section; the third is skipped."""
+        from collections import Counter
+        cfg = _papers_cfg(per_source=2)
+        # All three from the same source name -- Layer 1 binds.
+        ids = [f"c_aaaaaaaaaaaa00{i:02x}" for i in (1, 2, 3)]
+        blocks = [
+            (_ranked_tagged(cid, score=55, tags=["big_picture"]), _summary_for(cid))
+            for cid in ids
+        ]
+        clusters = {cid: _cluster_with_source(cid, "arXiv cs.CL") for cid in ids}
+        available = set(ids)
+        categories_used: Counter[str] = Counter()
+        picked = _pick_big_picture(
+            blocks, available,
+            clusters_by_id=clusters,
+            cfg=cfg,
+            categories_used_this_issue=categories_used,
+        )
+        assert picked == ids[:2]
+        # And the category counter recorded 2 papers consumed by this section.
+        assert categories_used["papers"] == 2
+
+    def test_no_caps_configured_default_per_source_cap_still_applies(self) -> None:
+        """Forker case: empty editorial config (cfg with default cap=2 and
+        empty per_category_per_issue). Per-source cap still binds; no
+        category cap fires."""
+        from collections import Counter
+        # The defaults a forker who hasn't created editorial.yaml gets.
+        cfg = EditorialConfig(
+            per_source_per_section=DEFAULT_PER_SOURCE_PER_SECTION,
+            per_category_per_issue={},
+            source_to_category={},
+            source_to_trust={},
+        )
+        ids = [f"c_bbbbbbbbbbbb00{i:02x}" for i in (1, 2, 3)]
+        blocks = [
+            (_ranked_tagged(cid, score=55, tags=["big_picture"]), _summary_for(cid))
+            for cid in ids
+        ]
+        clusters = {cid: _cluster_with_source(cid, "some_source") for cid in ids}
+        available = set(ids)
+        categories_used: Counter[str] = Counter()
+        picked = _pick_big_picture(
+            blocks, available,
+            clusters_by_id=clusters, cfg=cfg,
+            categories_used_this_issue=categories_used,
+        )
+        # Per-source cap (default 2) binds even without a config file.
+        assert picked == ids[:2]
+        # No category cap fires (unknown category, no entry in cap dict).
+        # All categories ended up in "unknown".
+        assert categories_used["unknown"] == 2
+
+
+class TestCategoryCapPerIssue:
+    """Layer 2: across the whole issue, no more than M stories of any one
+    category. Counter is threaded from Pulse through every picker."""
+
+    def test_category_cap_filters_across_sections(self) -> None:
+        """Six paper candidates across big_picture + hands_on, cap=4. Only
+        4 papers land in the whole issue; the remaining 2 are dropped."""
+        from collections import Counter
+        cfg = _papers_cfg(per_source=10, papers_cap=4)  # high per-source so only category binds
+        # Three big_picture papers + three hands_on papers; cap=4.
+        bp_ids = [f"c_cccccccccccc00{i:02x}" for i in (1, 2, 3)]
+        ho_ids = [f"c_cccccccccccc01{i:02x}" for i in (1, 2, 3)]
+        all_ids = bp_ids + ho_ids
+        # Each from a distinct paper-source so Layer 1 doesn't bind.
+        source_pool = [
+            "arXiv cs.CL", "Hugging Face Daily Papers", "arXiv cs.CL",
+            "Hugging Face Daily Papers", "arXiv cs.CL", "Hugging Face Daily Papers",
+        ]
+        clusters = {
+            cid: _cluster_with_source(cid, source_pool[i])
+            for i, cid in enumerate(all_ids)
+        }
+        bp_blocks = [
+            (_ranked_tagged(cid, score=55, tags=["big_picture"]), _summary_for(cid))
+            for cid in bp_ids
+        ]
+        ho_blocks = [
+            (_ranked_tagged(cid, score=55, tags=["hands_on"], hands_on_score=80),
+             _summary_for(cid))
+            for cid in ho_ids
+        ]
+        blocks = bp_blocks + ho_blocks
+        available = set(all_ids)
+        categories_used: Counter[str] = Counter()
+        bp_picked = _pick_big_picture(
+            blocks, available, clusters_by_id=clusters, cfg=cfg,
+            categories_used_this_issue=categories_used,
+        )
+        for cid in bp_picked:
+            available.discard(cid)
+        ho_picked = _pick_hands_on(
+            blocks, available, clusters_by_id=clusters, cfg=cfg,
+            categories_used_this_issue=categories_used,
+        )
+        # Big Picture takes 3 (its hard cap is 4, all 3 are eligible).
+        # Hands-On then sees 1 paper slot left in the issue-wide cap.
+        # But Hands-On has a minimum of 3, so degraded mode fires and
+        # fills past the cap to reach 3. Crucially, the cap WAS the active
+        # gate in Pass 1 -- the test asserts that.
+        assert len(bp_picked) == 3
+        # Hands-On gets 3 via degraded mode (one in cap, two over cap).
+        assert len(ho_picked) == 3
+        # The category counter ends at the actually-accepted count
+        # (including degraded-mode fills, which still update the counter
+        # so On the Radar sees an honest picture).
+        assert categories_used["papers"] == 6
+
+    def test_pulse_category_counts_toward_per_category_cap(self) -> None:
+        """When the Pulse is itself a paper, the per-issue category counter
+        sees it before any other picker runs. Subsequent picks of papers
+        come under a smaller remaining budget."""
+        from collections import Counter
+        cfg = _papers_cfg(per_source=10, papers_cap=4)
+        # Five candidates all from papers; cap=4.
+        ids = [f"c_dddddddddddd00{i:02x}" for i in (1, 2, 3, 4, 5)]
+        clusters = {
+            cid: _cluster_with_source(cid, "arXiv cs.CL")
+            for cid in ids
+        }
+        blocks = [
+            (_ranked_tagged(cid, score=55, tags=["big_picture"]), _summary_for(cid))
+            for cid in ids
+        ]
+        # Simulate Pulse already accepted a paper (counter pre-incremented).
+        categories_used: Counter[str] = Counter({"papers": 1})
+        available = set(ids)
+        picked = _pick_big_picture(
+            blocks, available, clusters_by_id=clusters, cfg=cfg,
+            categories_used_this_issue=categories_used,
+        )
+        # 4 cap - 1 already used by Pulse = 3 slots left. But per_source
+        # cap=10 ensures Layer 1 doesn't bind. Layer 2 limits Big Picture
+        # acceptance to 3 papers (4 - 1 already used).
+        assert len(picked) == 3
+        assert categories_used["papers"] == 4
+
+
+class TestCapDegradedMode:
+    """When source-diversity caps would starve Hands-On below the minimum
+    of 3, the picker logs WARNING and fills from over-cap candidates."""
+
+    def test_degraded_mode_fills_to_minimum_with_warning(self, caplog) -> None:
+        """Cap=4 papers; Pulse + Big Picture have already consumed 4.
+        Hands-On then sees 5 paper candidates with cap exhausted. Pass 1
+        accepts 0; Pass 2 (degraded mode) accepts 3 (the minimum), logs
+        WARNING."""
+        from collections import Counter
+        import logging as _logging
+        cfg = _papers_cfg(per_source=10, papers_cap=4)
+        ho_ids = [f"c_eeeeeeeeeeee20{i:02x}" for i in (1, 2, 3, 4, 5)]
+        clusters = {
+            cid: _cluster_with_source(cid, "arXiv cs.CL")
+            for cid in ho_ids
+        }
+        blocks = [
+            (_ranked_tagged(cid, score=55, tags=["hands_on"], hands_on_score=80),
+             _summary_for(cid))
+            for cid in ho_ids
+        ]
+        available = set(ho_ids)
+        # Pre-fill the per-issue counter as if Pulse + Big Picture used 4.
+        categories_used: Counter[str] = Counter({"papers": 4})
+        with caplog.at_level(_logging.WARNING, logger="ai_vector.summarise"):
+            picked = _pick_hands_on(
+                blocks, available, clusters_by_id=clusters, cfg=cfg,
+                categories_used_this_issue=categories_used,
+            )
+        # Minimum 3 hit via degraded mode.
+        assert len(picked) == 3
+        # WARNING was logged with the cap-starved Hands-On message.
+        assert any("SOURCE-DIVERSITY CAPS STARVED HANDS-ON" in r.message
+                   for r in caplog.records)
+        # Category counter reflects the degraded fills too.
+        assert categories_used["papers"] == 7
+
+
+class TestUnknownCategoryUncapped:
+    """A cluster whose highest-trust source has no category in sources.yaml
+    resolves to ``"unknown"`` and is treated as uncapped by Layer 2."""
+
+    def test_unknown_category_is_uncapped(self) -> None:
+        """Five candidates from a source not in source_to_category; their
+        category resolves to 'unknown'. Layer 2 has no 'unknown' cap, so
+        no filter fires. (Layer 1's per-source cap still binds when the
+        SAME source is repeated; this test uses distinct sources to
+        isolate Layer 2.)"""
+        from collections import Counter
+        cfg = EditorialConfig(
+            per_source_per_section=10,  # high so Layer 1 doesn't bind
+            per_category_per_issue={"papers": 4},  # 'unknown' not in cap dict
+            source_to_category={},  # empty -> every source unknown
+            source_to_trust={},
+        )
+        ids = [f"c_ffffffffffff10{i:02x}" for i in (1, 2, 3, 4, 5)]
+        clusters = {
+            cid: _cluster_with_source(cid, f"unknown_source_{i:02x}")
+            for i, cid in enumerate(ids, start=1)
+        }
+        blocks = [
+            (_ranked_tagged(cid, score=55, tags=["big_picture"]), _summary_for(cid))
+            for cid in ids
+        ]
+        available = set(ids)
+        categories_used: Counter[str] = Counter()
+        picked = _pick_big_picture(
+            blocks, available, clusters_by_id=clusters, cfg=cfg,
+            categories_used_this_issue=categories_used,
+        )
+        # Hard cap on big_picture is 4 (independent of source-diversity caps).
+        # Five candidates, no Layer 1 or Layer 2 firing => 4 accepted.
+        assert len(picked) == 4
+        # All counted as 'unknown' -- uncapped.
+        assert categories_used["unknown"] == 4
+
+
+class TestClusterCategoryResolution:
+    """The ``_cluster_category`` helper: pick the category of the
+    highest-trust source; tie-break by source name asc."""
+
+    def test_picks_highest_trust_source_category(self) -> None:
+        cfg = EditorialConfig(
+            source_to_category={"low_trust": "community", "high_trust": "lab"},
+            source_to_trust={"low_trust": 1, "high_trust": 5},
+        )
+        cluster = Cluster(
+            cluster_id="c_aaaaaaaaaaaa1000",
+            item_ids=["i_01", "i_02"],
+            canonical_title="t",
+            sources=["low_trust", "high_trust"],
+            earliest_published=FIXED_EARLIER,
+            size=2,
+        )
+        assert _cluster_category(cluster, cfg) == "lab"
+
+    def test_tie_break_by_source_name_ascending(self) -> None:
+        cfg = EditorialConfig(
+            source_to_category={"zsource": "lab", "asource": "papers"},
+            source_to_trust={"zsource": 3, "asource": 3},
+        )
+        cluster = Cluster(
+            cluster_id="c_aaaaaaaaaaaa1001",
+            item_ids=["i_03"],
+            canonical_title="t",
+            sources=["zsource", "asource"],
+            earliest_published=FIXED_EARLIER,
+            size=1,
+        )
+        # asource < zsource ascending, trust equal -> asource wins -> papers.
+        assert _cluster_category(cluster, cfg) == "papers"
+
+    def test_unknown_source_returns_unknown(self) -> None:
+        cfg = EditorialConfig(
+            source_to_category={"known": "papers"},
+            source_to_trust={"known": 3},
+        )
+        cluster = Cluster(
+            cluster_id="c_aaaaaaaaaaaa1002",
+            item_ids=["i_04"],
+            canonical_title="t",
+            sources=["mystery_source"],
+            earliest_published=FIXED_EARLIER,
+            size=1,
+        )
+        assert _cluster_category(cluster, cfg) == "unknown"
+
+
+class TestCapsDeterminism:
+    """Pure-code deterministic guard: same input -> same output across
+    repeated runs of the picker chain."""
+
+    def test_same_input_same_output(self) -> None:
+        from collections import Counter
+        cfg = _papers_cfg(per_source=2, papers_cap=4)
+        ids = [f"c_aaaaaaaaaaaa30{i:02x}" for i in (1, 2, 3, 4, 5, 6)]
+        # Mix of paper + non-paper sources, all big_picture tagged.
+        sources_cycle = [
+            "arXiv cs.CL", "Hugging Face Daily Papers", "arXiv cs.CL",
+            "Simon Willison's Blog", "OpenAI", "Anthropic",
+        ]
+        clusters = {
+            cid: _cluster_with_source(cid, sources_cycle[i])
+            for i, cid in enumerate(ids)
+        }
+        blocks = [
+            (_ranked_tagged(cid, score=55, tags=["big_picture"]), _summary_for(cid))
+            for cid in ids
+        ]
+        # Run the picker 5 times; results identical.
+        outputs = []
+        for _ in range(5):
+            counters: Counter[str] = Counter()
+            picked = _pick_big_picture(
+                blocks, set(ids), clusters_by_id=clusters, cfg=cfg,
+                categories_used_this_issue=counters,
+            )
+            outputs.append(tuple(picked))
+        assert len(set(outputs)) == 1, "picker should be deterministic"
+
+
+class TestAssembleSectionsIntegration:
+    """End-to-end seam: _assemble_sections threading the EditorialConfig
+    through every picker and the cap state surviving Pulse -> Big Picture
+    -> Hands-On -> On the Radar."""
+
+    def test_caps_propagate_pulse_to_subsequent_sections(self) -> None:
+        """Pulse picks a paper. The per-category counter sees it before
+        Big Picture runs; Big Picture's paper budget is therefore reduced."""
+        # Build 7 paper candidates: top one becomes Pulse, rest go through
+        # picker chain. Cap=4 papers per issue.
+        ids = [f"c_aaaaaaaaaaaa40{i:02x}" for i in (1, 2, 3, 4, 5, 6, 7)]
+        # All have hands_on + big_picture so they're eligible for either.
+        # significance/hands_on_utility/freshness >= 70 so they're pulse-class.
+        breakdown = {
+            "significance": 80, "hands_on_utility": 80,
+            "big_picture_relevance": 70, "financial_services_impact": 50,
+            "freshness_momentum": 80,
+        }
+        weighted = round(
+            0.30 * 80 + 0.25 * 80 + 0.20 * 70 + 0.15 * 50 + 0.10 * 80
+        )
+        ranked = [
+            RankedStory(
+                cluster_id=cid, score=weighted, breakdown=breakdown,
+                audience_tags=["big_picture", "hands_on"],
+                rationale="t", tier="pulse", prompt_version="v0.2",
+            )
+            for cid in ids
+        ]
+        blocks = list(zip(ranked, [_summary_for(cid) for cid in ids]))
+        # All from arXiv cs.CL (papers). Source is multi-item so each
+        # cluster passes Pulse eligibility via size>1.
+        clusters = {
+            cid: Cluster(
+                cluster_id=cid,
+                item_ids=[f"i_{cid[2:6]}_a", f"i_{cid[2:6]}_b"],
+                canonical_title="t",
+                sources=["arXiv cs.CL"],
+                earliest_published=FIXED_EARLIER,
+                size=2,
+                canonical_id=None,
+            )
+            for cid in ids
+        }
+        items: dict[str, Item] = {}
+        for cid in ids:
+            cluster = clusters[cid]
+            for iid in cluster.item_ids:
+                items[iid] = Item(
+                    id=iid, source="arXiv cs.CL", source_type="rss",
+                    url=f"https://arxiv.org/abs/{iid}",  # type: ignore[arg-type]
+                    title=f"t-{iid}",
+                    published_at=FIXED_EARLIER, raw_summary="",
+                    fetched_at=FIXED_NOW, trust_weight=1,
+                )
+        cfg = _papers_cfg(per_source=10, papers_cap=4)
+        pulse, bp, ho, rad = _assemble_sections(
+            blocks, clusters_by_id=clusters, items_by_id=items,
+            editorial_config=cfg,
+        )
+        # Pulse always carries 1 paper. Remaining cap budget: 3 papers.
+        # Big Picture has hard cap 4 but only 3 paper slots remain -> 3.
+        # Hands-On: has 0 paper slots left under cap; minimum 3 forces
+        # degraded mode -> 3.
+        # On the Radar gets whatever's left; cap is exhausted so all
+        # remaining papers are dropped from the issue.
+        assert len(pulse.stories) == 1
+        assert len(bp.stories) == 3  # paper cap exhausts at 4 total used
+        assert len(ho.stories) == 3  # degraded-mode fill to minimum
+        # 7 candidates - 1 (pulse) - 3 (bp) - 3 (ho) = 0 remaining; the
+        # category cap has been exhausted plus degraded-mode-pulled, so
+        # On the Radar has nothing eligible left.
+        assert len(rad.stories) == 0

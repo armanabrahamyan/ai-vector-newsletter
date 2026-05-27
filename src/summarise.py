@@ -51,9 +51,12 @@ import logging
 import os
 import re
 import sys
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
+
+import yaml
 
 # Re-use rank.py's helpers so we have one LLM-client surface, one atomic
 # writer, one JSON extractor. Keeping these in rank.py is fine -- both
@@ -137,6 +140,191 @@ prompt focused and prevents the model getting lost in history."""
 JSON_RETRY_BUDGET = 1
 """Mirrors rank.py: one retry on JSON parse failure; second failure -> the
 story is dropped from the issue (logged)."""
+
+# ---------------------------------------------------------------------------
+# Source-diversity caps (task added 2026-05-27).
+#
+# Two-layer deterministic post-rank rule, fixes the May 27 single-category
+# dominance pattern (9 of 12 stories from papers because arxiv cs.CL alone
+# supplied 252 of 424 fetched items + the recent rubric rebalance favoured
+# paper-shaped content).
+#
+# Layer 1 -- universal: no single section may carry > N stories from the
+# same source name. Default N=2, baked into code so a forker with no config
+# still gets it.
+#
+# Layer 2 -- per-issue per-category: AI Vector caps `papers` at 4. Forkers
+# set their own caps in config/editorial.yaml; absent file = no category cap.
+#
+# Both layers are pure code -- no LLM, no prompt. Mirrors the architectural
+# shape of the v0.10 Pulse-eligibility gate.
+# ---------------------------------------------------------------------------
+
+DEFAULT_PER_SOURCE_PER_SECTION = 2
+"""Universal per-section cap: no section may carry more than this many
+stories from the same source name. Default 2; overridable via
+``config/editorial.yaml`` -> ``section_caps.per_source_per_section``. Applies
+to every fork by default -- no configuration needed."""
+
+_EDITORIAL_YAML_PATH = Path("config/editorial.yaml")
+"""Editorial assembly rules (post-rank, deterministic). Separate from
+sources.yaml and rubric.yaml; this file governs HOW we ASSEMBLE the issue,
+not what we fetch or how we score."""
+
+_SOURCES_YAML_PATH = Path("config/sources.yaml")
+"""Reused from rank.py -- we read it for the ``name -> category`` and
+``name -> trust_weight`` mappings the cap logic needs. Best-effort load;
+missing file degrades to empty mappings (no category cap, no tie-breaks)."""
+
+_UNKNOWN_CATEGORY = "unknown"
+"""Bucket label for sources whose category is missing from sources.yaml.
+Treated as UNCAPPED by Layer 2 -- a forker who hasn't filled categories
+yet should not be silently penalised."""
+
+
+@dataclass(frozen=True)
+class EditorialConfig:
+    """Resolved editorial assembly config, threaded through the pickers.
+
+    Built once at ``summarise()`` entry; immutable after that. Holds the
+    cap values plus the source -> category and source -> trust lookups so
+    the pickers can resolve a cluster to its category without touching
+    sources.yaml again. If editorial.yaml is missing, defaults apply
+    (per_source_per_section=2, no category cap)."""
+
+    per_source_per_section: int = DEFAULT_PER_SOURCE_PER_SECTION
+    per_category_per_issue: dict[str, int] = field(default_factory=dict)
+    source_to_category: dict[str, str] = field(default_factory=dict)
+    source_to_trust: dict[str, int] = field(default_factory=dict)
+
+
+def _load_editorial_config(
+    editorial_yaml: Path = _EDITORIAL_YAML_PATH,
+    sources_yaml: Path = _SOURCES_YAML_PATH,
+) -> EditorialConfig:
+    """Best-effort load of editorial.yaml + sources.yaml mappings. Missing
+    files / unexpected shapes degrade to defaults (per_source_per_section=2,
+    no category cap, empty source maps -- every source category resolves to
+    "unknown" and is uncapped). Forkers can drop editorial.yaml entirely and
+    the per-source-per-section default still applies."""
+    per_source = DEFAULT_PER_SOURCE_PER_SECTION
+    per_category: dict[str, int] = {}
+
+    if editorial_yaml.exists():
+        try:
+            data = yaml.safe_load(editorial_yaml.read_text(encoding="utf-8")) or {}
+        except Exception:  # noqa: BLE001
+            _LOG.warning(
+                "summarise: could not parse %s -- proceeding with defaults",
+                editorial_yaml,
+            )
+            data = {}
+        caps = data.get("section_caps") if isinstance(data, dict) else None
+        if isinstance(caps, dict):
+            n = caps.get("per_source_per_section")
+            if isinstance(n, int) and n >= 1:
+                per_source = n
+            pc = caps.get("per_category_per_issue")
+            if isinstance(pc, dict):
+                for cat, val in pc.items():
+                    if isinstance(cat, str) and isinstance(val, int) and val >= 0:
+                        per_category[cat] = val
+
+    source_to_category: dict[str, str] = {}
+    source_to_trust: dict[str, int] = {}
+    if sources_yaml.exists():
+        try:
+            sdata = yaml.safe_load(sources_yaml.read_text(encoding="utf-8")) or {}
+        except Exception:  # noqa: BLE001
+            _LOG.warning(
+                "summarise: could not parse %s -- proceeding without category map",
+                sources_yaml,
+            )
+            sdata = {}
+        slist = sdata.get("sources") if isinstance(sdata, dict) else None
+        if isinstance(slist, list):
+            for entry in slist:
+                if not isinstance(entry, dict):
+                    continue
+                name = entry.get("name")
+                if not isinstance(name, str):
+                    continue
+                cat = entry.get("category")
+                if isinstance(cat, str):
+                    source_to_category[name] = cat
+                tw = entry.get("trust_weight")
+                if isinstance(tw, int):
+                    source_to_trust[name] = tw
+
+    return EditorialConfig(
+        per_source_per_section=per_source,
+        per_category_per_issue=per_category,
+        source_to_category=source_to_category,
+        source_to_trust=source_to_trust,
+    )
+
+
+def _cluster_category(cluster: Cluster, cfg: EditorialConfig) -> str:
+    """Resolve a cluster to a single category for the per-issue cap.
+
+    Rule: pick the category of the highest-trust source in the cluster.
+    Ties broken deterministically by source name (ascending). This matches
+    the ``canonical_title`` selection style in ``_build_cluster`` -- the
+    highest-trust voice is the one we attribute the cluster to. Sources
+    without an entry in sources.yaml resolve to ``"unknown"`` (uncapped).
+
+    A cluster carries `Cluster.sources: list[str]` (distinct source names).
+    We do NOT iterate items here -- one trust value per source name is
+    enough, and sources.yaml is the system-of-record for that mapping."""
+    if not cluster.sources:
+        return _UNKNOWN_CATEGORY
+
+    # Deterministic sort: highest trust first, then source name ascending
+    # for stable tie-breaks across re-runs.
+    def _key(src: str) -> tuple[int, str]:
+        # Negative trust so descending sort by trust falls out of asc sort.
+        trust = cfg.source_to_trust.get(src, 0)
+        return (-trust, src)
+
+    chosen_source = sorted(cluster.sources, key=_key)[0]
+    return cfg.source_to_category.get(chosen_source, _UNKNOWN_CATEGORY)
+
+
+def _would_exceed_section_cap(
+    cluster: Cluster | None,
+    sources_used_this_section: Counter[str],
+    cfg: EditorialConfig,
+) -> bool:
+    """Layer 1 check: would accepting this cluster push any of its sources
+    over the per-section cap? If the cluster carries multiple source names,
+    EVERY source is incremented on acceptance -- a single over-cap source
+    blocks the whole cluster. Missing cluster degrades to ``False`` (we
+    cannot evaluate; let the caller decide)."""
+    if cluster is None:
+        return False
+    cap = cfg.per_source_per_section
+    if cap <= 0:
+        return False
+    for src in cluster.sources:
+        if sources_used_this_section[src] + 1 > cap:
+            return True
+    return False
+
+
+def _would_exceed_category_cap(
+    category: str,
+    categories_used_this_issue: Counter[str],
+    cfg: EditorialConfig,
+) -> bool:
+    """Layer 2 check: would accepting one more story of this category exceed
+    its per-issue cap? Categories not present in ``per_category_per_issue``
+    are UNCAPPED (return False). The ``unknown`` bucket is, by definition,
+    not in the cap map -- so unknown-category clusters are uncapped."""
+    cap = cfg.per_category_per_issue.get(category)
+    if cap is None:
+        return False
+    return categories_used_this_issue[category] + 1 > cap
+
 
 _LOG = logging.getLogger("ai_vector.summarise")
 
@@ -626,12 +814,16 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # The Big Picture comes first per Arman's reading order.
     # clusters_by_id + items_by_id are threaded through so the v0.10 Pulse
     # eligibility gate can read cluster size, canonical_id, and item-level
-    # trust_weight without re-reading JSONL.
+    # trust_weight without re-reading JSONL. editorial_config is loaded
+    # once here (source-diversity caps, 2026-05-27) and threaded through
+    # the pickers; defaults apply when config/editorial.yaml is missing.
+    editorial_config = _load_editorial_config()
     pulse_section, big_picture_section, hands_on_section, on_the_radar_section = \
         _assemble_sections(
             blocks,
             clusters_by_id=clusters_by_id,
             items_by_id=items_by_id,
+            editorial_config=editorial_config,
         )
 
     # --- Section intros (Phase B) ---------------------------------------
@@ -1447,6 +1639,7 @@ def _assemble_sections(
     blocks: list[tuple[RankedStory, SummaryBlock]],
     clusters_by_id: dict[str, Cluster] | None = None,
     items_by_id: dict[str, Item] | None = None,
+    editorial_config: EditorialConfig | None = None,
 ) -> tuple[IssueSection, IssueSection, IssueSection, IssueSection]:
     """Place every summarised story into exactly one section. Returns the
     four sections in display order: pulse, big_picture, hands_on, on_the_radar.
@@ -1469,11 +1662,29 @@ def _assemble_sections(
     for the eligibility gate (PULSE v0.10, 2026-05-26). When omitted (only
     happens in narrow unit tests that don't exercise the gate), the gate
     degrades to current-behaviour fallback with a warning.
+
+    Source-diversity caps (2026-05-27). Two-layer deterministic filter:
+      - Layer 1: per-source-per-section cap (default 2).
+      - Layer 2: per-category-per-issue cap (config-driven; AI Vector caps
+        ``papers`` at 4). Categories resolve via the highest-trust source
+        in each cluster.
+    Hands-On has a minimum-of-3 requirement (the eval gate); if caps
+    starve it, the picker degrades with a WARNING and fills from over-cap
+    candidates. ``editorial_config=None`` (older test paths) loads from
+    disk; pass a config explicitly to control test isolation.
     """
     # blocks already arrive in score-desc order (ranked.jsonl order,
     # preserved by the loop above).
     by_id = {story.cluster_id: (story, block) for story, block in blocks}
     unplaced = set(by_id.keys())
+
+    cfg = editorial_config if editorial_config is not None else _load_editorial_config()
+
+    # State threaded through the pickers. Per-section source counters live
+    # inside each picker (Layer 1 binds per-section, not per-issue). The
+    # per-issue category counter is shared so Pulse's category counts
+    # toward the cap before Big Picture, Hands-On, On the Radar run.
+    categories_used_this_issue: Counter[str] = Counter()
 
     # --- Pulse ----------------------------------------------------------
     pulse_id = _pick_pulse(blocks, clusters_by_id=clusters_by_id,
@@ -1483,21 +1694,42 @@ def _assemble_sections(
             "summarise: cannot select a Pulse story -- no surviving stories."
         )
     unplaced.discard(pulse_id)
+    # Pulse's category counts toward the per-issue cap. Pulse is a single
+    # story so Layer 1 (per-section cap, n<2) never binds; Layer 2 must
+    # see it.
+    _accept_into_counters(
+        pulse_id, clusters_by_id, cfg,
+        sources_in_section=None,
+        categories_used_this_issue=categories_used_this_issue,
+    )
 
     # --- The Big Picture (first per Arman's reading order) --------------
-    big_picture_ids = _pick_big_picture(blocks, unplaced)
+    big_picture_ids = _pick_big_picture(
+        blocks, unplaced,
+        clusters_by_id=clusters_by_id,
+        cfg=cfg,
+        categories_used_this_issue=categories_used_this_issue,
+    )
     for cid in big_picture_ids:
         unplaced.discard(cid)
 
     # --- Hands-On -------------------------------------------------------
-    hands_on_ids = _pick_hands_on(blocks, unplaced)
+    hands_on_ids = _pick_hands_on(
+        blocks, unplaced,
+        clusters_by_id=clusters_by_id,
+        cfg=cfg,
+        categories_used_this_issue=categories_used_this_issue,
+    )
     for cid in hands_on_ids:
         unplaced.discard(cid)
 
     # --- On the Radar ---------------------------------------------------
-    on_the_radar_ids = [
-        story.cluster_id for story, _ in blocks if story.cluster_id in unplaced
-    ]
+    on_the_radar_ids = _pick_on_the_radar(
+        blocks, unplaced,
+        clusters_by_id=clusters_by_id,
+        cfg=cfg,
+        categories_used_this_issue=categories_used_this_issue,
+    )
 
     pulse_section = IssueSection(
         name="pulse",
@@ -1516,6 +1748,32 @@ def _assemble_sections(
         stories=[by_id[cid][1] for cid in on_the_radar_ids],
     )
     return (pulse_section, big_picture_section, hands_on_section, on_the_radar_section)
+
+
+def _accept_into_counters(
+    cluster_id: str,
+    clusters_by_id: dict[str, Cluster] | None,
+    cfg: EditorialConfig,
+    *,
+    sources_in_section: Counter[str] | None,
+    categories_used_this_issue: Counter[str],
+) -> None:
+    """Bookkeeping helper -- update the cap counters on acceptance. Pure
+    side-effecting; mirrors the small helpers in `_pick_pulse` for clarity.
+
+    ``sources_in_section=None`` is the Pulse case: a section of one story
+    cannot trigger the per-section cap by definition (cap >= 2 by default),
+    so the per-section counter is skipped. The per-issue category counter
+    is ALWAYS updated."""
+    cluster = clusters_by_id.get(cluster_id) if clusters_by_id else None
+    if cluster is None:
+        # No category resolvable -- count as unknown (uncapped, harmless).
+        categories_used_this_issue[_UNKNOWN_CATEGORY] += 1
+        return
+    if sources_in_section is not None:
+        for src in cluster.sources:
+            sources_in_section[src] += 1
+    categories_used_this_issue[_cluster_category(cluster, cfg)] += 1
 
 
 def _signal_dimensions_hit(story: RankedStory) -> int:
@@ -1762,19 +2020,55 @@ def _pick_pulse(
     return chosen[0].cluster_id
 
 
+_BIG_PICTURE_HARD_CAP = 4
+_HANDS_ON_HARD_CAP = 5
+_HANDS_ON_MIN_COUNT = 3
+"""Mirrors the eval harness assertion (``evals/run_evals.py`` check_integrity:
+"PIPELINE HEALTH: issue.json has N hands_on stories (minimum 3 required)").
+If source-diversity caps would starve Hands-On below this floor, the picker
+degrades and relaxes caps -- better to ship with a smell loud than fail
+the integrity gate."""
+
+
 def _pick_big_picture(
     blocks: list[tuple[RankedStory, SummaryBlock]],
     available: set[str],
+    *,
+    clusters_by_id: dict[str, Cluster] | None = None,
+    cfg: EditorialConfig | None = None,
+    categories_used_this_issue: Counter[str] | None = None,
 ) -> list[str]:
     """Tagged 'big_picture' and not yet placed. Hard cap at 4. The Big
-    Picture is the first section after Pulse, per editorial direction."""
+    Picture is the first section after Pulse, per editorial direction.
+
+    Source-diversity caps (2026-05-27): when ``cfg`` is provided, accept
+    only stories that don't push any of their sources over the per-section
+    cap and don't push their category over the per-issue cap. Big Picture
+    has no minimum, so no degraded-mode fill -- under-cap is fine here.
+    """
     out: list[str] = []
+    sources_in_section: Counter[str] = Counter()
     for story, _block in blocks:
         if story.cluster_id not in available:
             continue
-        if "big_picture" in set(story.audience_tags):
-            out.append(story.cluster_id)
-        if len(out) >= 4:
+        if "big_picture" not in set(story.audience_tags):
+            continue
+        if cfg is not None:
+            cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
+            if _would_exceed_section_cap(cluster, sources_in_section, cfg):
+                continue
+            cat = _cluster_category(cluster, cfg) if cluster is not None else _UNKNOWN_CATEGORY
+            if categories_used_this_issue is not None and _would_exceed_category_cap(
+                cat, categories_used_this_issue, cfg
+            ):
+                continue
+            if cluster is not None:
+                for src in cluster.sources:
+                    sources_in_section[src] += 1
+            if categories_used_this_issue is not None:
+                categories_used_this_issue[cat] += 1
+        out.append(story.cluster_id)
+        if len(out) >= _BIG_PICTURE_HARD_CAP:
             break
     return out
 
@@ -1782,20 +2076,138 @@ def _pick_big_picture(
 def _pick_hands_on(
     blocks: list[tuple[RankedStory, SummaryBlock]],
     available: set[str],
+    *,
+    clusters_by_id: dict[str, Cluster] | None = None,
+    cfg: EditorialConfig | None = None,
+    categories_used_this_issue: Counter[str] | None = None,
 ) -> list[str]:
     """Tagged 'hands_on', OR tagged 'general' with hands_on_utility >= 70.
-    Hard cap at 5."""
+    Hard cap at 5.
+
+    Source-diversity caps (2026-05-27) plus degraded-mode safety net. Two
+    passes:
+
+      Pass 1: cap-aware fill in score-desc order. Skip any candidate that
+      would push a source over the per-section cap or a category over the
+      per-issue cap.
+
+      Pass 2 (degraded mode): if the section has fewer than
+      ``_HANDS_ON_MIN_COUNT`` stories after Pass 1, log a loud WARNING
+      and fill from the remaining cap-eligible pool ignoring caps until
+      the minimum is hit or the pool is exhausted. Mirrors the
+      ``_pick_pulse`` fallback log shape.
+    """
     out: list[str] = []
+    sources_in_section: Counter[str] = Counter()
+
+    # Build the candidate pool once (preserves score-desc order). Pool
+    # holds (story, cluster) tuples so Pass 2 can iterate without
+    # re-scanning blocks.
+    candidates: list[tuple[RankedStory, Cluster | None, str]] = []
     for story, _block in blocks:
         if story.cluster_id not in available:
             continue
         tags = set(story.audience_tags)
-        if "hands_on" in tags or (
-            "general" in tags and story.breakdown.get("hands_on_utility", 0) >= 70
+        if not (
+            "hands_on" in tags or (
+                "general" in tags and story.breakdown.get("hands_on_utility", 0) >= 70
+            )
         ):
-            out.append(story.cluster_id)
-        if len(out) >= 5:
+            continue
+        cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
+        cat = _cluster_category(cluster, cfg) if (cluster is not None and cfg is not None) else _UNKNOWN_CATEGORY
+        candidates.append((story, cluster, cat))
+
+    accepted: set[str] = set()
+
+    # --- Pass 1: cap-aware ---
+    for story, cluster, cat in candidates:
+        if len(out) >= _HANDS_ON_HARD_CAP:
             break
+        if cfg is not None:
+            if _would_exceed_section_cap(cluster, sources_in_section, cfg):
+                continue
+            if categories_used_this_issue is not None and _would_exceed_category_cap(
+                cat, categories_used_this_issue, cfg
+            ):
+                continue
+        if cluster is not None:
+            for src in cluster.sources:
+                sources_in_section[src] += 1
+        if categories_used_this_issue is not None:
+            categories_used_this_issue[cat] += 1
+        out.append(story.cluster_id)
+        accepted.add(story.cluster_id)
+
+    # --- Pass 2: degraded-mode fill if below minimum ---
+    if cfg is not None and len(out) < _HANDS_ON_MIN_COUNT:
+        remaining = [c for c in candidates if c[0].cluster_id not in accepted]
+        if remaining:
+            _LOG.warning(
+                "summarise: SOURCE-DIVERSITY CAPS STARVED HANDS-ON -- "
+                "section has %d stories under cap (minimum %d). Relaxing "
+                "caps and filling from %d over-cap candidates. "
+                "per_source_per_section=%d, per_category_per_issue=%s, "
+                "categories_used_so_far=%s. Ship the smell loud so Arman "
+                "sees it at ratification.",
+                len(out), _HANDS_ON_MIN_COUNT, len(remaining),
+                cfg.per_source_per_section,
+                dict(cfg.per_category_per_issue),
+                dict(categories_used_this_issue) if categories_used_this_issue else {},
+            )
+            for story, cluster, cat in remaining:
+                if len(out) >= _HANDS_ON_MIN_COUNT or len(out) >= _HANDS_ON_HARD_CAP:
+                    break
+                # Still update counters so On the Radar sees an honest
+                # picture (the cap was relaxed, not ignored everywhere).
+                if cluster is not None:
+                    for src in cluster.sources:
+                        sources_in_section[src] += 1
+                if categories_used_this_issue is not None:
+                    categories_used_this_issue[cat] += 1
+                out.append(story.cluster_id)
+
+    return out
+
+
+def _pick_on_the_radar(
+    blocks: list[tuple[RankedStory, SummaryBlock]],
+    available: set[str],
+    *,
+    clusters_by_id: dict[str, Cluster] | None = None,
+    cfg: EditorialConfig | None = None,
+    categories_used_this_issue: Counter[str] | None = None,
+) -> list[str]:
+    """Everything left in score-desc order. Source-diversity caps still
+    apply: the per-issue category cap is a HARD ceiling -- a paper that
+    would push us over the cap is dropped from the issue entirely rather
+    than landing here. The per-section cap (Layer 1) gates this section
+    independently. No minimum, no degraded-mode fill -- if everything
+    remaining is over-cap, On the Radar can be empty.
+
+    Falls back to the pre-cap behaviour (accept everything left) when no
+    ``cfg`` is passed -- preserves old test paths that built sections
+    without threading a config."""
+    out: list[str] = []
+    sources_in_section: Counter[str] = Counter()
+    for story, _block in blocks:
+        if story.cluster_id not in available:
+            continue
+        if cfg is not None:
+            cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
+            if _would_exceed_section_cap(cluster, sources_in_section, cfg):
+                continue
+            cat = _cluster_category(cluster, cfg) if cluster is not None else _UNKNOWN_CATEGORY
+            if categories_used_this_issue is not None and _would_exceed_category_cap(
+                cat, categories_used_this_issue, cfg
+            ):
+                continue
+            if cluster is not None:
+                for src in cluster.sources:
+                    sources_in_section[src] += 1
+            if categories_used_this_issue is not None:
+                categories_used_this_issue[cat] += 1
+        out.append(story.cluster_id)
     return out
 
 

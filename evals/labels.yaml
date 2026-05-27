@@ -846,6 +846,236 @@ per_cluster:
       path must fire: top-scored ineligible story is chosen anyway, and
       a WARNING is logged. Eligible_for_pulse: false.
 
+  # ===========================================================================
+  # FIXTURE: 2026-05-27-source-caps — Source-diversity caps in section assembly.
+  # Added 2026-05-27 to support the two-layer cap fix:
+  #   Layer 1 (per_source_per_section, default 2) and
+  #   Layer 2 (per_category_per_issue, AI Vector: papers=4)
+  # The fixture mirrors the May 27 staging issue pattern in stylised form:
+  #   - 5 arXiv cs.CL papers (Layer 1 binds if 5 land in one section)
+  #   - 3 Hugging Face Daily Papers (papers category)
+  #   - 1 Simon Willison's Blog (newsletter category, uncapped)
+  #   - 1 Ars Technica AI (news category, uncapped)
+  #   - 1 r/LocalLLaMA (community category, uncapped)
+  #   - 1 mystery_blog_no_category (unknown category, uncapped)
+  # Total 12 clusters / 12 items, all singletons.
+  #
+  # Dataset name: "2026-05-27-source-caps"
+  # Cap-rule outcomes are pinned by the new tests in
+  # tests/test_summarise.py classes:
+  #   TestSourceCapPerSection
+  #   TestCategoryCapPerIssue
+  #   TestCapDegradedMode
+  #   TestUnknownCategoryUncapped
+  #   TestClusterCategoryResolution
+  #   TestCapsDeterminism
+  #   TestAssembleSectionsIntegration
+  # The fixture is the corpus-level labelled record of the same outcomes
+  # for future evals. Eval-engineer to add a dedicated cap-coverage gate
+  # at ratification time if desired (no new gate added here; existing
+  # module_integrity covers schema validation).
+  # ===========================================================================
+
+  - cluster_id: "c_a1a1a1a1a1a10001"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [big_picture, finance]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #1 (arXiv cs.CL). Within Layer 1 budget (per-section <= 2 papers
+      from arXiv cs.CL) when grouped with c_a1a1a1a1a1a10002. Counts toward
+      the per-issue papers cap (=4 by AI Vector intent).
+
+  - cluster_id: "c_a1a1a1a1a1a10002"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #2 (arXiv cs.CL). Pairs with #1 to fill the per-section-cap=2
+      arXiv slot for one section.
+
+  - cluster_id: "c_a1a1a1a1a1a10003"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #3 (arXiv cs.CL). If 5 arXiv cs.CL stories appear in one
+      section's candidate pool, Layer 1 must skip this one in favour of
+      diversifying.
+
+  - cluster_id: "c_a1a1a1a1a1a10004"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 2
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #4 (arXiv cs.CL). Same role as #3; demonstrates Layer 1
+      binding when multiple same-source candidates queue up.
+
+  - cluster_id: "c_a1a1a1a1a1a10005"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 2
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #5 (arXiv cs.CL). FIFTH arXiv cs.CL story -- guaranteed
+      over per-section cap when 4 already accepted in same section.
+
+  - cluster_id: "c_a1a1a1a1a1a10006"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #6 (Hugging Face Daily Papers). Different source NAME but
+      same CATEGORY ("papers") -- still counts toward Layer 2 issue cap.
+
+  - cluster_id: "c_a1a1a1a1a1a10007"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #7 (Hugging Face Daily Papers). With #6 and 2 arXiv cs.CL
+      papers already in, this is the 4th papers slot -- Layer 2 cap
+      reached.
+
+  - cluster_id: "c_a1a1a1a1a1a10008"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 3
+    expected_audience_tags: [hands_on]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      PAPER #8 (Hugging Face Daily Papers). Over the Layer 2 cap
+      (papers=4) -- must be dropped from the issue unless degraded
+      mode fires.
+
+  - cluster_id: "c_a1a1a1a1a1a10009"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [big_picture]
+    expected_tier: "big_picture"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      NEWSLETTER (Simon Willison's Blog). Uncapped category. MUST land
+      in the issue even when the papers cap is exhausted.
+
+  - cluster_id: "c_a1a1a1a1a1a1000a"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 5
+    expected_audience_tags: [big_picture, general]
+    expected_tier: "pulse"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      NEWS (Ars Technica AI). Uncapped category. Pulse-eligibility-
+      passing story (established source, trust=3). Mirrors the actual
+      May 27 staged Pulse pick.
+
+  - cluster_id: "c_a1a1a1a1a1a1000b"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 4
+    expected_audience_tags: [hands_on]
+    expected_tier: "hands_on"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      COMMUNITY (r/LocalLLaMA). Uncapped category. Adds non-paper
+      diversity to Hands-On under the new cap regime.
+
+  - cluster_id: "c_a1a1a1a1a1a1000c"
+    dataset: "2026-05-27-source-caps"
+    ground_truth_group_id: null
+    human_relevance: 2
+    expected_audience_tags: [general]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      UNKNOWN CATEGORY (mystery_blog_no_category). Source name absent
+      from sources.yaml category map; resolves to "unknown" and treated
+      as uncapped by Layer 2 (forker-friendly default).
+
+  # ===========================================================================
+  # FIXTURE: 2026-05-27-hf-papers-canonical — Canonical-ID across HF Papers + arxiv.
+  # Added 2026-05-27 to support the canonical-ID URL pattern extension.
+  # Two pre-merge singletons labelled with the same ground_truth_group_id so
+  # the dedup_quality eval scores a must-merge pair across the
+  # arxiv.org/abs and huggingface.co/papers URL spaces.
+  #
+  # Dataset name: "2026-05-27-hf-papers-canonical"
+  #
+  # Pre-merge singleton cluster_ids (SHA-256 of single item_id, same formula
+  # as _build_cluster):
+  #   fxhf_minimax_arxiv -> c_35015ce4ac093533
+  #   fxhf_minimax_hf    -> c_1df54b4a8f65bbb0
+  # Merged cluster_id: SHA-256(sorted joined) -> c_400ad9a451367f3f.
+  # The dedup eval reports merge recall by checking that both pre-merge
+  # cluster_ids are absent from clusters.jsonl (because they were merged).
+  # ===========================================================================
+
+  - cluster_id: "c_35015ce4ac093533"
+    dataset: "2026-05-27-hf-papers-canonical"
+    ground_truth_group_id: "g_20260527_minimax_m2_hf_papers"
+    human_relevance: 4
+    expected_audience_tags: [hands_on, big_picture]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      HF_PAPERS_CANONICAL — pre-merge singleton, item 1 (arXiv cs.CL URL):
+      "The MiniMax-M2 Series" at https://arxiv.org/abs/2605.26494
+      (item_id=fxhf_minimax_arxiv). MUST merge with c_1df54b4a8f65bbb0 via
+      rule A on shared canonical_id arxiv:2605.26494. Expected merged
+      output cluster: c_400ad9a451367f3f. Any regression that keeps these
+      separate is the same bug as the 2026-05-27 pre-cap staging miss.
+
+  - cluster_id: "c_1df54b4a8f65bbb0"
+    dataset: "2026-05-27-hf-papers-canonical"
+    ground_truth_group_id: "g_20260527_minimax_m2_hf_papers"
+    human_relevance: 4
+    expected_audience_tags: [hands_on, big_picture]
+    expected_tier: "on_the_radar"
+    voice_label: ~
+    tier_label: ~
+    notes: >
+      HF_PAPERS_CANONICAL — pre-merge singleton, item 2 (Hugging Face Daily
+      Papers URL): same paper at https://huggingface.co/papers/2605.26494
+      (item_id=fxhf_minimax_hf). raw_summary is empty by design (mirrors
+      the production HF Papers feed) so body-text fallback cannot rescue
+      this; the URL-pattern extension is load-bearing. MUST merge with
+      c_35015ce4ac093533. Expected merged output cluster: c_400ad9a451367f3f.
+
 # ---------------------------------------------------------------------------
 # 2. PER-ISSUE LABELS
 #

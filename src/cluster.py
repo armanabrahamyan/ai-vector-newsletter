@@ -410,6 +410,16 @@ _RE_ARXIV_URL = re.compile(
     r"arxiv\.org/abs/([0-9]{4}\.[0-9]{4,5})(?:v\d+)?",
     re.IGNORECASE,
 )
+# Hugging Face Daily Papers (huggingface.co/papers/<arxiv_id>) maps directly to
+# an arxiv abstract — the URL path IS the arxiv ID. Treated as an arxiv-domain
+# alias so HF Papers items collapse onto the arxiv canonical key. Anchored on
+# the literal "/papers/<arxiv_id>" path and the strict arxiv-ID shape
+# (YYMM.NNNNN with optional vN suffix), which is mutually exclusive with HF's
+# other URL spaces (e.g. /datasets/, /spaces/, model repos).
+_RE_HF_PAPERS_URL = re.compile(
+    r"huggingface\.co/papers/([0-9]{4}\.[0-9]{4,5})(?:v\d+)?",
+    re.IGNORECASE,
+)
 _RE_GITHUB_RELEASE_URL = re.compile(
     r"github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/releases/tag/([^)\s\"'>\]]+)",
     re.IGNORECASE,
@@ -424,13 +434,24 @@ def _extract_canonical_id_from_url(url_str: str) -> Optional[str]:
     """Return a canonical identity string from a single URL string, or None.
 
     Patterns handled:
-      arxiv.org/abs/<ID>             -> "arxiv:<ID>"  (version suffix stripped)
+      arxiv.org/abs/<ID>                    -> "arxiv:<ID>"  (version suffix stripped)
+      huggingface.co/papers/<arxiv_id>      -> "arxiv:<ID>"  (HF Daily Papers alias;
+                                                              same key as arxiv.org/abs)
       github.com/<o>/<r>/releases/tag/<tag> -> "github_release:<o>/<r>:<tag>"
-      doi.org/<doi> / dx.doi.org/<doi>     -> "doi:<doi>"
+      doi.org/<doi> / dx.doi.org/<doi>      -> "doi:<doi>"
+
+    HF Papers URLs collapse onto the arxiv canonical space deliberately:
+    huggingface.co/papers/2605.26494 and arxiv.org/abs/2605.26494 refer to the
+    same paper, so rule A force-merges items pointing at either URL. Different
+    arxiv IDs (under either domain) remain forbidden from merging by rule B.
 
     Returns None when the URL matches none of the above patterns.
     """
     m = _RE_ARXIV_URL.search(url_str)
+    if m:
+        return f"arxiv:{m.group(1)}"
+
+    m = _RE_HF_PAPERS_URL.search(url_str)
     if m:
         return f"arxiv:{m.group(1)}"
 
@@ -476,6 +497,14 @@ def _canonical_id(item: Item) -> Optional[str]:
     found: list[str] = []
 
     for m in _RE_ARXIV_URL.finditer(body):
+        cid_body = f"arxiv:{m.group(1)}"
+        if cid_body not in found:
+            found.append(cid_body)
+
+    # HF Papers URLs in body-text map to the same arxiv:<ID> key as arxiv.org
+    # so a body mentioning both forms of the same paper does NOT register as
+    # ambiguous (two distinct canonical IDs).
+    for m in _RE_HF_PAPERS_URL.finditer(body):
         cid_body = f"arxiv:{m.group(1)}"
         if cid_body not in found:
             found.append(cid_body)
