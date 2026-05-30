@@ -20,6 +20,7 @@ import pytest
 
 from src.models import Cluster, IssueSection, Item, RankedStory, SummaryBlock
 from src.summarise import (
+    DEFAULT_CURRENTS_MAX_STORIES,
     DEFAULT_PER_SOURCE_PER_SECTION,
     EditorialConfig,
     PULSE_ELIGIBILITY_TRUST_FLOOR,
@@ -27,8 +28,8 @@ from src.summarise import (
     _cluster_category,
     _compute_issue_shape,
     _pick_big_picture,
+    _pick_currents,
     _pick_hands_on,
-    _pick_on_the_radar,
     _pick_pulse,
     _pick_source_urls,
     _pulse_eligibility,
@@ -307,7 +308,7 @@ def _ranked_story(
         breakdown=breakdown,
         audience_tags=audience_tags,  # type: ignore[arg-type]
         rationale="test",
-        tier="on_the_radar",
+        tier="currents",
         prompt_version="v0.2",
     )
 
@@ -416,7 +417,7 @@ def _ranked(cluster_id: str, score: int, *,
         breakdown=breakdown,
         audience_tags=["hands_on"],
         rationale="t",
-        tier="on_the_radar",
+        tier="currents",
         prompt_version="v0.1",
     )
 
@@ -853,7 +854,7 @@ def _ranked_tagged(
     rubric weights so RankedStory validates.
 
     Schema v3 (2026-05-30): ``tier`` defaults to one derived from ``tags``
-    (big_picture / hands_on / on_the_radar) so callers asking for
+    (big_picture / hands_on / currents) so callers asking for
     ``tags=["big_picture"]`` see a story that the picker will accept under
     the tier-pool gate. Explicit ``tier=`` overrides -- callers that want
     to test the gate REJECTING a story (e.g. wrong tier) pass it directly.
@@ -879,7 +880,7 @@ def _ranked_tagged(
         elif "hands_on" in tags:
             tier = "hands_on"
         else:
-            tier = "on_the_radar"
+            tier = "currents"
     return RankedStory(
         cluster_id=cluster_id,
         score=round(weighted),
@@ -1323,8 +1324,206 @@ class TestAssembleSectionsIntegration:
         # stories); cap=4 - 1 (pulse) = 3 slots remain -> all 3 land.
         # Hands-On's pool has 3 hands_on-tier candidates and 0 paper slots
         # under cap; degraded-mode fill is GONE -> 0 accepted.
-        # On the Radar is empty (no on_the_radar-tier stories in the input).
+        # Currents is empty (no currents-tier stories in the input).
         assert len(pulse.stories) == 1
         assert len(bp.stories) == 3
         assert len(ho.stories) == 0
         assert len(rad.stories) == 0
+
+
+# ===========================================================================
+# Phase 2 (2026-05-30) -- section taxonomy + voice + caps.
+#
+# - on_the_radar -> currents rename (with pydantic alias for archived data)
+# - explicit hard ceiling on Currents via editorial.yaml
+# - audience-only routing in head pickers (no maturity gate)
+# ===========================================================================
+
+class TestLegacyTierAlias:
+    """Phase 2: archived ranked.jsonl records carrying ``tier="on_the_radar"``
+    must continue to parse cleanly. The model_validator(mode="before")
+    transparently coerces the legacy value to ``"currents"`` at input time."""
+
+    def test_ranked_story_legacy_tier_value_coerces_to_currents(self) -> None:
+        """A v3 archive record with ``tier="on_the_radar"`` round-trips as
+        ``tier="currents"`` on the v4 model."""
+        breakdown = {
+            "significance": 60, "hands_on_utility": 60,
+            "big_picture_relevance": 60, "financial_services_impact": 25,
+            "freshness_momentum": 60,
+        }
+        # 60*.3 + 60*.25 + 60*.2 + 25*.15 + 60*.1 = 18+15+12+3.75+6 = 54.75
+        weighted = round(
+            0.30 * 60 + 0.25 * 60 + 0.20 * 60 + 0.15 * 25 + 0.10 * 60
+        )
+        # Build the payload the way ranked.jsonl rows arrive: raw dict
+        # mirroring the v3 schema (with the old tier value).
+        legacy_payload = {
+            "schema_version": 3,
+            "cluster_id": "c_aaaaaaaaaaaaaaaa",
+            "score": weighted,
+            "breakdown": breakdown,
+            "audience_tags": ["hands_on"],
+            "rationale": "legacy archive row",
+            "tier": "on_the_radar",
+            "prompt_version": "v0.4",
+        }
+        rs = RankedStory.model_validate(legacy_payload)
+        # Alias collapsed the legacy value to the canonical name.
+        assert rs.tier == "currents"
+
+    def test_issue_section_legacy_name_coerces_to_currents(self) -> None:
+        """A v2 IssueSection record with ``name="on_the_radar"`` parses on
+        the v3 model and the name is coerced to ``"currents"``."""
+        legacy_payload = {
+            "schema_version": 2,
+            "name": "on_the_radar",
+            "stories": [],
+        }
+        section = IssueSection.model_validate(legacy_payload)
+        assert section.name == "currents"
+
+
+class TestCurrentsCapEnforcement:
+    """Phase 2: ``_pick_currents`` enforces a hard ceiling from
+    ``cfg.currents_max_stories``. Earlier behaviour relied on the upstream
+    ``CURRENTS_TIER_SUMMARISE_BUDGET`` to bound the section; that's now
+    the input safety bound, this is the editorial authority."""
+
+    def test_caps_cuts_currents_at_configured_ceiling(self) -> None:
+        """Ten currents-tier candidates + cap=4 -> only 4 land."""
+        from collections import Counter
+        cfg = EditorialConfig(
+            per_source_per_section=100,  # high so per-section never binds
+            per_category_per_issue={},
+            source_to_category={},
+            source_to_trust={},
+            currents_max_stories=4,
+        )
+        ids = [f"c_aaaaaaaaaaaa50{i:02x}" for i in range(10)]
+        clusters = {
+            cid: _cluster_with_source(cid, f"src_{i:02x}")
+            for i, cid in enumerate(ids)
+        }
+        blocks = [
+            (_ranked_tagged(cid, score=45, tags=["general"],
+                            tier="currents"), _summary_for(cid))
+            for cid in ids
+        ]
+        categories_used: Counter[str] = Counter()
+        picked = _pick_currents(
+            blocks, set(ids),
+            clusters_by_id=clusters, cfg=cfg,
+            categories_used_this_issue=categories_used,
+        )
+        assert len(picked) == 4
+        # Score-desc input order is preserved (file order is score-desc).
+        assert picked == ids[:4]
+
+    def test_default_config_uses_default_currents_max(self) -> None:
+        """When no cfg is passed, ``_pick_currents`` still bounds at the
+        in-code default (8). Mirrors the fork-friendly defaults elsewhere
+        in the module."""
+        # 12 candidates, no cfg -> default cap (8) binds.
+        ids = [f"c_bbbbbbbbbbbb50{i:02x}" for i in range(12)]
+        blocks = [
+            (_ranked_tagged(cid, score=45, tags=["general"],
+                            tier="currents"), _summary_for(cid))
+            for cid in ids
+        ]
+        picked = _pick_currents(blocks, set(ids))
+        assert len(picked) == DEFAULT_CURRENTS_MAX_STORIES == 8
+
+
+class TestHeadPickersNoMaturityGate:
+    """Phase 2: head-section pickers (``_pick_big_picture``,
+    ``_pick_hands_on``) route on TIER only. They must NOT impose a
+    secondary maturity / freshness / signal-dimensions filter -- that
+    would re-create the audience-vs-maturity conflation EDITORIAL.md
+    flagged. ``_pick_pulse`` retains its eligibility gate (sourcing
+    credibility) and signal-dimensions Pulse-class bar; those gates are
+    Pulse-specific, not head-section maturity gates, and live in
+    ``TestPulseEligibilityGate`` + ``TestPulseSelectionPriorCoverageBias``."""
+
+    def test_big_picture_accepts_low_freshness_story(self) -> None:
+        """A big_picture-tier story with low freshness still lands -- the
+        head picker does not gate on freshness_momentum."""
+        from collections import Counter
+        cfg = EditorialConfig(
+            per_source_per_section=10,
+            per_category_per_issue={},
+            source_to_category={},
+            source_to_trust={},
+        )
+        # Build a story with explicitly low freshness.
+        breakdown = {
+            "significance": 70, "hands_on_utility": 40,
+            "big_picture_relevance": 80, "financial_services_impact": 30,
+            "freshness_momentum": 10,  # cold story
+        }
+        weighted = round(
+            0.30 * 70 + 0.25 * 40 + 0.20 * 80 + 0.15 * 30 + 0.10 * 10
+        )
+        story = RankedStory(
+            cluster_id="c_aaaaaaaaaaaa6001",
+            score=weighted,
+            breakdown=breakdown,
+            audience_tags=["big_picture"],
+            rationale="cold but strategic",
+            tier="big_picture",
+            prompt_version="v0.4",
+        )
+        block = _summary_for(story.cluster_id)
+        cluster = _cluster_with_source(story.cluster_id, "some_lab")
+        picked = _pick_big_picture(
+            [(story, block)],
+            {story.cluster_id},
+            clusters_by_id={story.cluster_id: cluster},
+            cfg=cfg,
+            categories_used_this_issue=Counter(),
+        )
+        # Audience-only: low freshness does not block.
+        assert picked == [story.cluster_id]
+
+    def test_hands_on_accepts_story_regardless_of_signal_dimensions(self) -> None:
+        """A hands_on-tier story that misses the >= 2 signal-dimensions
+        Pulse bar still lands in Hands-On -- that bar applies only inside
+        ``_pick_pulse``."""
+        from collections import Counter
+        cfg = EditorialConfig(
+            per_source_per_section=10,
+            per_category_per_issue={},
+            source_to_category={},
+            source_to_trust={},
+        )
+        # All three "signal dimensions" (significance, hands_on_utility,
+        # freshness_momentum) below 70 -- the Pulse-class bar fails.
+        breakdown = {
+            "significance": 60, "hands_on_utility": 60,
+            "big_picture_relevance": 30, "financial_services_impact": 30,
+            "freshness_momentum": 50,
+        }
+        weighted = round(
+            0.30 * 60 + 0.25 * 60 + 0.20 * 30 + 0.15 * 30 + 0.10 * 50
+        )
+        story = RankedStory(
+            cluster_id="c_aaaaaaaaaaaa6002",
+            score=weighted,
+            breakdown=breakdown,
+            audience_tags=["hands_on"],
+            rationale="below the Pulse-class bar, still a Hands-On",
+            tier="hands_on",
+            prompt_version="v0.4",
+        )
+        block = _summary_for(story.cluster_id)
+        cluster = _cluster_with_source(story.cluster_id, "some_repo")
+        picked = _pick_hands_on(
+            [(story, block)],
+            {story.cluster_id},
+            clusters_by_id={story.cluster_id: cluster},
+            cfg=cfg,
+            categories_used_this_issue=Counter(),
+        )
+        # Audience-only: no signal-dimension filter applied inside the
+        # head picker.
+        assert picked == [story.cluster_id]

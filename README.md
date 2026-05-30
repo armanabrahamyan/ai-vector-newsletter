@@ -26,7 +26,7 @@ Four sections per issue:
 | **The Pulse** | Story of the day — the one thing that matters |
 | **The Big Picture** | Strategic context for leaders |
 | **Hands-On** | Practitioners — what to build or try |
-| **On the Radar** | Short-form: worth watching, not yet acting on |
+| **Currents** | Worth watching: the field is moving here, no action yet |
 
 Each story carries a **signal pill** and a short editorial intro — both written fresh each day, ratified by a human before publish.
 

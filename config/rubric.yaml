@@ -19,7 +19,11 @@
 # tool stories. Eval Engineer ratification pending.
 
 schema_version: 2
-rubric_version: "v0.4-2026-05-30"
+rubric_version: "v0.5-2026-05-30"
+# v0.5 (2026-05-30, Phase 2 section-taxonomy rename): tier_thresholds key
+# ``on_the_radar`` renamed to ``currents`` in lockstep with the tier value-
+# space rename in src/models.py. No score / anchor changes here. The rank
+# loader transparently accepts the legacy key for one rollout cycle.
 # v0.4 (2026-05-30, Phase 1 calibration): promote_to_section.min_score
 # lowered 70 -> 55 against post-Shape-A staging distribution; re-anchored
 # financial_services_impact so FS-specialist coverage clears the new floor;
@@ -44,11 +48,15 @@ rubric_version: "v0.4-2026-05-30"
 #   cut.max_score         -- below this, a story is cut regardless of fit.
 #   cut.max_significance  -- significance <= this also cuts (the editorial-
 #                            focus skill's Tier-3 trap door).
-#   on_the_radar.min_score          -- floor for surfacing at all.
+#   currents.min_score              -- floor for surfacing at all.
 #   promote_to_section.min_score    -- floor for landing in Big Picture or
 #                                      Hands-On (anything between
-#                                      on_the_radar.min and promote.min
-#                                      stays as on_the_radar).
+#                                      currents.min and promote.min stays
+#                                      as currents).
+#
+# Phase 2 (2026-05-30): the middle-band threshold key renamed from
+# ``on_the_radar`` to ``currents``. The rank loader still accepts the legacy
+# key during rollout (see src/rank.py::_load_tier_thresholds).
 # ---------------------------------------------------------------------------
 
 # Promote floor calibrated v0.4 (2026-05-30) from 70 -> 50 against the
@@ -60,7 +68,7 @@ rubric_version: "v0.4-2026-05-30"
 # Composes with the NEITHER-by-sub-score routing fix in rank.py.
 tier_thresholds:
   cut: { max_score: 39, max_significance: 25 }
-  on_the_radar: { min_score: 40 }
+  currents: { min_score: 40 }
   promote_to_section: { min_score: 50 }
 
 # ---------------------------------------------------------------------------
@@ -92,7 +100,7 @@ criteria:
       "50": >
         Tier-1 (Agentic AI / Generative AI) hitting ZERO or ONE of the
         three signal-filter dimensions (today / tomorrow / practical).
-        Real topic but weak relevance -- On the Radar tail at best.
+        Real topic but weak relevance -- Currents tail at best.
       "75": >
         Tier-1 hitting TWO signal-filter dimensions, OR load-bearing
         Tier-2 hitting two. A real shift; readers should know about it.

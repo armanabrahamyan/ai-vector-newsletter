@@ -173,7 +173,9 @@ class StagingIntegrityFailure(ReleaseError):
 _SECTION_TITLES: dict[str, str] = {
     "big_picture": "The Big Picture",
     "hands_on": "Hands-On",
-    "on_the_radar": "On the Radar",
+    "currents": "Currents",
+    # legacy archive support: on_the_radar issues render as Currents
+    "on_the_radar": "Currents",
 }
 
 

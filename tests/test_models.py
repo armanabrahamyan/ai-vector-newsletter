@@ -118,7 +118,7 @@ class TestRankedStory:
                 cluster_id=VALID_CLUSTER_ID,
                 score=50,  # wrong
                 breakdown=breakdown,
-                audience_tags=["hands_on"], rationale="r", tier="pulse",
+                audience_tags=["hands_on"], rationale="r", tier="hands_on",
                 prompt_version="v1",
             )
 
@@ -129,7 +129,7 @@ class TestRankedStory:
         rs = RankedStory(
             cluster_id=VALID_CLUSTER_ID,
             score=100, breakdown=breakdown,
-            audience_tags=["hands_on"], rationale="r", tier="pulse",
+            audience_tags=["hands_on"], rationale="r", tier="hands_on",
             prompt_version="v1",
         )
         assert rs.score == 100

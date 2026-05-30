@@ -231,9 +231,13 @@ def test_check_integrity_passes_without_source_health(tmp_path, monkeypatch):
             "prompt_version": "v1",
         }
 
+    # Under Shape A (RankedStory v3+), pulse is not a stored tier -- the
+    # pulse story is picked from head-tier candidates. All four clusters
+    # tier=hands_on here so the fixture parses; the issue.json below still
+    # places PULSE_CID into the pulse section via the picker contract.
     ranked_text = "\n".join(
-        json.dumps(_rs(cid, "pulse" if i == 0 else "on_the_radar"))
-        for i, cid in enumerate(ALL_CIDS)
+        json.dumps(_rs(cid, "hands_on"))
+        for cid in ALL_CIDS
     )
     (released_dir / "ranked.jsonl").write_text(ranked_text + "\n", encoding="utf-8")
 

@@ -61,7 +61,7 @@ DESIGN.md "Embedding model" for the storage contract.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AliasChoices,
@@ -89,7 +89,7 @@ Renamed in v0.8 (2026-05-24) to match section names:
   - ``leader``  -> ``big_picture``
 """
 
-RankTier = Literal["big_picture", "hands_on", "on_the_radar", "cut"]
+RankTier = Literal["big_picture", "hands_on", "currents", "cut"]
 """
 Editorial slot a RankedStory belongs in. `summarise.py` reads this to assign
 sections; Editor may relabel; `cut` is below threshold and excluded from the
@@ -104,13 +104,21 @@ audience_tags + score (which was producing empty On-the-Radar / Hands-On
 sections when rank.py only ever wrote on_the_radar + cut). See
 config/rubric.yaml `tier_thresholds` for the score bands that drive the
 assignment in `src/rank.py::_assign_initial_tier`.
+
+Schema v4 (Phase 2, 2026-05-30): ``on_the_radar`` renamed to ``currents``.
+The old name implied "you might act on this soon" -- a maturity floor with
+action-readiness implied. ``currents`` drops the action implication and
+keeps the maturity-tail meaning, which is what the section is actually
+doing in practice. Pydantic ``model_validator(mode="before")`` coerces
+the archived ``"on_the_radar"`` value to ``"currents"`` so released v3
+ranked.jsonl rows still parse.
 """
 
 SectionName = Literal[
     "pulse",          # The Pulse -- 1 story, the most important thing today
     "big_picture",    # The Big Picture -- strategic angles
     "hands_on",       # Hands-On -- enthusiasts + builders, hands-on news
-    "on_the_radar",   # On the Radar -- terse linked list
+    "currents",       # Currents -- maturity-tail, early signals (Phase 2)
 ]
 """IssueSection.name -- the four sections of the rendered newsletter.
 
@@ -118,6 +126,12 @@ Renamed in schema v5 (2026-05-24):
 - ``leaders`` -> ``big_picture`` (display: "The Big Picture")
 - ``geeks`` -> ``hands_on`` (display: "Hands-On")
 - ``notable`` -> ``on_the_radar`` (display: "On the Radar")
+
+Renamed in schema v3 of IssueSection (Phase 2, 2026-05-30):
+- ``on_the_radar`` -> ``currents`` (display: "Currents")
+  Pydantic ``model_validator(mode="before")`` coerces archived
+  ``"on_the_radar"`` values to ``"currents"`` so released issue.json files
+  still parse.
 """
 
 Signal = Literal["act", "try", "read", "watch", "discuss"]
@@ -349,7 +363,7 @@ class RankedStory(BaseModel):
     Downstream readers preserve that order.
     """
 
-    schema_version: int = 3
+    schema_version: int = 4
     cluster_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """FK to Cluster.cluster_id."""
 
@@ -403,9 +417,27 @@ class RankedStory(BaseModel):
     is driven by the ``tier`` value-space expansion (see RankTier). Released
     rows with ``schema_version=2`` and tier in {on_the_radar, cut} parse
     fine -- the value-space EXPANDED, didn't shrink.
+
+    Schema v4 (Phase 2, 2026-05-30): tier value ``on_the_radar`` renamed to
+    ``currents`` (see RankTier). The ``_coerce_legacy_tier`` validator below
+    transparently maps ``"on_the_radar"`` -> ``"currents"`` at parse time so
+    released v3 rows continue to load.
     """
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_legacy_tier(cls, data: Any) -> Any:
+        """Phase 2 (2026-05-30) backwards-compat alias: archived
+        ``ranked.jsonl`` records carry ``tier="on_the_radar"``; coerce them
+        to the new ``"currents"`` value at input time so existing v3 archive
+        files parse without rewrite. Only fires when the input is a mapping;
+        non-mapping inputs (model copies, partial fixtures) are passed
+        through untouched."""
+        if isinstance(data, dict) and data.get("tier") == "on_the_radar":
+            data = {**data, "tier": "currents"}
+        return data
 
     @field_validator("breakdown")
     @classmethod
@@ -529,14 +561,19 @@ class IssueSection(BaseModel):
 
     Per DESIGN.md, the per-section invariants are:
       - `pulse` must contain exactly 1 SummaryBlock.
-      - `on_the_radar` may be empty on a slow day.
+      - `currents` may be empty on a slow day.
 
     Schema v4 (2026-05-23): direction-note enforcement removed; direction
     lives in summary prose now ("Where it's heading" is no longer a section,
     and Pulse carries its direction in its own summary).
+
+    Schema v3 of IssueSection (Phase 2, 2026-05-30): section name
+    ``on_the_radar`` renamed to ``currents``. The ``_coerce_legacy_name``
+    validator below transparently maps the archived value at parse time so
+    released v2 issue.json files continue to load.
     """
 
-    schema_version: int = 2
+    schema_version: int = 3
     name: SectionName
     """Which section this is."""
 
@@ -553,6 +590,18 @@ class IssueSection(BaseModel):
     section. Phase B; LLM-written. None for pulse / pre-Phase-B issues."""
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_legacy_name(cls, data: Any) -> Any:
+        """Phase 2 (2026-05-30) backwards-compat alias: archived
+        ``issue.json`` records carry ``name="on_the_radar"``; coerce them to
+        the new ``"currents"`` value at input time so released v2 archive
+        files parse without rewrite. Only fires when the input is a mapping;
+        non-mapping inputs (model copies, partial fixtures) pass through."""
+        if isinstance(data, dict) and data.get("name") == "on_the_radar":
+            data = {**data, "name": "currents"}
+        return data
 
     @model_validator(mode="after")
     def _section_invariants(self) -> "IssueSection":
@@ -645,8 +694,8 @@ class Issue(BaseModel):
 
     sections: list[IssueSection]
     """
-    Remaining sections in display order: leaders, geeks, notable. Pulse
-    lives in the dedicated `pulse` field above.
+    Remaining sections in display order: big_picture, hands_on, currents.
+    Pulse lives in the dedicated `pulse` field above.
     """
 
     generated_at: datetime
@@ -660,7 +709,7 @@ class Issue(BaseModel):
 
     notes: Annotated[str, Field(max_length=2000)] = ""
     """
-    Optional engine-side notes (e.g. "slow day; On the Radar tail shortened").
+    Optional engine-side notes (e.g. "slow day; Currents tail shortened").
     Not rendered.
     """
 

@@ -237,7 +237,10 @@
       font-weight: 700;
     }
 
-    /* ── On the Radar (terse) ──────────────────────────────── */
+    /* ── Currents (terse) ─────────────────────────────────── */
+    .av-section.currents .av-story { margin: 0 0 22px; }
+    .av-section.currents .av-story-body { font-size: 16px; }
+    /* legacy alias for archived issues still carrying on_the_radar class */
     .av-section.on_the_radar .av-story { margin: 0 0 22px; }
     .av-section.on_the_radar .av-story-body { font-size: 16px; }
 
@@ -332,7 +335,7 @@
             <div class="av-section-title-wrap">
               <h2 class="av-section-title">{{ section_title(section.name) }}</h2>
             </div>
-            <span class="av-section-count">{{ section.stories|length }} {% if section.name == 'on_the_radar' %}items{% else %}stories{% endif %}</span>
+            <span class="av-section-count">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}items{% else %}stories{% endif %}</span>
           </div>
           {% if section.intro_lead or section.intro_body %}
             <p class="av-section-intro">

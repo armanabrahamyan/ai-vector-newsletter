@@ -1019,7 +1019,7 @@ def _make_ranked_story(cluster_id: str, score: int):
         breakdown=breakdown,
         audience_tags=["hands_on"],
         rationale="parallel-rank test fixture",
-        tier="on_the_radar",
+        tier="currents",
         prompt_version="v1",
     )
 
@@ -1251,9 +1251,9 @@ class TestParallelRank:
 #
 # Tier is now the AUTHORITY for summarise.py's section routing -- rank.py
 # writes the full editorial slot here (no scavenging downstream). The four
-# outcomes:
+# outcomes (Phase 2 rename, 2026-05-30: on_the_radar -> currents):
 #   cut             -- below thresholds.cut.max_score OR sig <= max_significance
-#   on_the_radar    -- in middle band OR promoted but no head-section tag
+#   currents        -- in middle band OR promoted but no head-section tag
 #   big_picture     -- promoted AND big_picture tag (with tiebreak vs hands_on)
 #   hands_on        -- promoted AND hands_on tag (with tiebreak vs big_picture)
 # ===========================================================================
@@ -1301,11 +1301,12 @@ class TestAssignInitialTier:
         )
         assert tier == "cut"
 
-    def test_on_the_radar_when_between_cut_and_promote(self) -> None:
-        """Score in the middle band -> on_the_radar regardless of tags.
+    def test_currents_when_between_cut_and_promote(self) -> None:
+        """Score in the middle band -> currents regardless of tags.
 
         v0.4 (2026-05-30): promote_to_section.min_score is 55, so 45 is
-        the middle-band test point (40 <= score < 55).
+        the middle-band test point (40 <= score < 55). Phase 2
+        (2026-05-30): tier value renamed on_the_radar -> currents.
         """
         tier = _assign_initial_tier(
             score=45,
@@ -1313,11 +1314,11 @@ class TestAssignInitialTier:
             audience_tags=["hands_on", "big_picture"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
-        assert tier == "on_the_radar"
+        assert tier == "currents"
 
     def test_neither_head_tag_routes_by_subscore_to_hands_on(self) -> None:
         """v0.4 (2026-05-30) NEITHER-branch fix: promoted with only
-        general / finance tags -> route by sub-score, not on_the_radar.
+        general / finance tags -> route by sub-score, not currents.
 
         hands_on_utility > big_picture_relevance -> hands_on. Anchor case:
         a finance-tagged practitioner story that clears the promote floor

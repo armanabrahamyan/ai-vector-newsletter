@@ -34,7 +34,7 @@ Key responsibilities
    lens are woven into the summary prose when relevant -- never as
    separate fields or labels (v0.3 / schema v4).
 4. Assemble sections per editorial rules: The Pulse, The Big Picture,
-   Hands-On, On the Radar. Each top-N story is placed in exactly one section.
+   Hands-On, Currents. Each top-N story is placed in exactly one section.
 5. Construct + validate the ``Issue`` with ``issue_number=None``;
    atomic-write ``issue.json`` to staging.
 
@@ -91,9 +91,19 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.9"
+SUMMARISE_PROMPT_VERSION = "v0.10"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.9-2026-05-24``. v0.9 hardens length caps (tasks #73 + #74):
+``summarise-v0.10-2026-05-30``. v0.10 (Phase 2 section taxonomy + voice):
+  - Section value ``on_the_radar`` renamed to ``currents``; per-story
+    prompt now branches on the destination section and injects 3-5 lines
+    of section-specific voice guidance from EDITORIAL.md "Voice rules per
+    section". Pulse opens on a verb; Big Picture names actors + first-
+    order consequence; Hands-On puts the artefact in the noun phrase;
+    Currents opens conditional / hedged.
+  - Section-intro prompt for Currents now requires the LEAD to name the
+    aggregate direction (not just the section posture) -- EDITORIAL.md
+    promotes it from "nice-to-have" to mandatory for Currents.
+v0.9 hardens length caps (tasks #73 + #74):
   - headline: HARD 90 chars / 12 words (was "ideally <= 90 / <= 12"); the
     LLM is told strings that exceed get rejected, must count before returning
   - body: 60 words HARD; collision allowance still applies but the prose
@@ -102,7 +112,7 @@ SUMMARISE_PROMPT_VERSION = "v0.9"
     with a corrective prompt when either cap is breached; if a second
     attempt still breaches, the story is kept but a warning is logged
     (better to ship than to silently drop a top-N story)
-v0.8 vocabulary unchanged (big_picture / hands_on / on_the_radar)."""
+v0.8 vocabulary big_picture / hands_on / currents (v0.10 rename)."""
 
 PULSE_PROMPT_VERSION = "v0.10"
 """Audit tag: ``pulse-v0.10-2026-05-26``. v0.10 (2026-05-26 fix): the Pulse
@@ -133,10 +143,15 @@ honours tier as a hard boundary, so the upstream summarise budget must
 honour it too -- otherwise a head-tier-heavy day starves the radar pool
 even though radar candidates exist in `ranked.jsonl`."""
 
-RADAR_TIER_SUMMARISE_BUDGET = 8
-"""How many `on_the_radar` tier stories to summarise. Covers the Currents
-section (no hard cap yet; editor's Phase 2 proposes one). Independent of
-the head-tier budget so a head-heavy day doesn't squeeze radar out."""
+CURRENTS_TIER_SUMMARISE_BUDGET = 8
+"""How many ``currents`` tier stories to summarise. Phase 2 (2026-05-30):
+renamed from ``RADAR_TIER_SUMMARISE_BUDGET`` in lockstep with the section
+rename. The authoritative HARD ceiling on Currents is now
+``editorial.yaml: section_caps.currents.max_stories`` (8), enforced inside
+``_pick_currents``; this constant is the upstream INPUT bound (how many
+candidates we'll spend LLM tokens on before the picker decides). Keeping
+both layers prevents a runaway summarise spend on a paper-heavy day even
+if the cap is raised."""
 
 CALLBACK_LOOKBACK_DAYS = 14
 """How many days of past ``issue.json`` to scan for callback context. Matches
@@ -175,6 +190,13 @@ stories from the same source name. Default 2; overridable via
 ``config/editorial.yaml`` -> ``section_caps.per_source_per_section``. Applies
 to every fork by default -- no configuration needed."""
 
+DEFAULT_CURRENTS_MAX_STORIES = 8
+"""Phase 2 (2026-05-30): hard ceiling on the Currents section, enforced
+in ``_pick_currents``. Overridable via ``config/editorial.yaml`` ->
+``section_caps.currents.max_stories``. Default 8 matches the upstream
+``CURRENTS_TIER_SUMMARISE_BUDGET`` so a fork without editorial.yaml sees
+the same shape as AI Vector's editorial intent."""
+
 _EDITORIAL_YAML_PATH = Path("config/editorial.yaml")
 """Editorial assembly rules (post-rank, deterministic). Separate from
 sources.yaml and rubric.yaml; this file governs HOW we ASSEMBLE the issue,
@@ -205,6 +227,10 @@ class EditorialConfig:
     per_category_per_issue: dict[str, int] = field(default_factory=dict)
     source_to_category: dict[str, str] = field(default_factory=dict)
     source_to_trust: dict[str, int] = field(default_factory=dict)
+    currents_max_stories: int = DEFAULT_CURRENTS_MAX_STORIES
+    """Phase 2 cap: hard ceiling on the Currents section. Loaded from
+    ``editorial.yaml: section_caps.currents.max_stories``; falls back to
+    ``DEFAULT_CURRENTS_MAX_STORIES`` (8) when absent."""
 
 
 def _load_editorial_config(
@@ -218,6 +244,7 @@ def _load_editorial_config(
     the per-source-per-section default still applies."""
     per_source = DEFAULT_PER_SOURCE_PER_SECTION
     per_category: dict[str, int] = {}
+    currents_max = DEFAULT_CURRENTS_MAX_STORIES
 
     if editorial_yaml.exists():
         try:
@@ -238,6 +265,12 @@ def _load_editorial_config(
                 for cat, val in pc.items():
                     if isinstance(cat, str) and isinstance(val, int) and val >= 0:
                         per_category[cat] = val
+            # Phase 2 (2026-05-30): currents.max_stories hard ceiling.
+            currents_block = caps.get("currents")
+            if isinstance(currents_block, dict):
+                m = currents_block.get("max_stories")
+                if isinstance(m, int) and m >= 0:
+                    currents_max = m
 
     source_to_category: dict[str, str] = {}
     source_to_trust: dict[str, int] = {}
@@ -270,6 +303,7 @@ def _load_editorial_config(
         per_category_per_issue=per_category,
         source_to_category=source_to_category,
         source_to_trust=source_to_trust,
+        currents_max_stories=currents_max,
     )
 
 
@@ -557,7 +591,7 @@ DON'T:
   - Repeat a framing crutch across the issue -- if you lean on one
     compliance / standard reference (SR 11-7, EU AI Act, etc.), use it
     AT MOST ONCE per issue.
-  - Pad to length. UNDER 60 is fine. "On the Radar" items should run
+  - Pad to length. UNDER 60 is fine. "Currents" items should run
     shortest in the issue.
 
 DIRECTION + FINANCE LENS LIVE IN THE PROSE -- NEVER AS LABELS
@@ -690,6 +724,63 @@ generic "AI is changing X" territory -- if the story didn't earn its place,
 the ranker dropped it; if it's here, name WHY.
 """
 
+# Phase 2 (2026-05-30): per-section voice rules distilled from
+# EDITORIAL.md "Voice rules per section". The summary LLM does not know
+# which section the story will land in (the picker decides downstream),
+# but the tier is a clean 1:1 proxy for the destination section:
+#   tier=big_picture -> Big Picture voice rules
+#   tier=hands_on    -> Hands-On voice rules
+#   tier=currents    -> Currents voice rules
+# Stories tiered ``cut`` never reach summarisation.
+#
+# A head-tier story may also become the Pulse (picked downstream from the
+# union of big_picture + hands_on). The Pulse voice asks for an
+# imperative, verb-led opener -- which is compatible with the head-tier
+# guidance below, and we surface the Pulse hint in the prompt so a story
+# the picker might elevate already reads in voice.
+_VOICE_PER_SECTION: dict[str, str] = {
+    "big_picture": (
+        "BIG PICTURE VOICE -- named actors + first-order consequence\n"
+        "Lead with WHO (organisation, regulator, market) and WHAT CHANGES\n"
+        "for them. The first sentence names a real actor; the close ties\n"
+        "to a decision a senior leader would make THIS WEEK. Avoid\n"
+        "abstract paper-abstract framings (\"Researchers find X\", \"AI\n"
+        "agents now act in ways pre-deployment cannot anticipate\") --\n"
+        "those are off-voice here. Prefer \"X is moving; here's what\n"
+        "shifts\" over \"X has been released.\""
+    ),
+    "hands_on": (
+        "HANDS-ON VOICE -- artefact in the noun phrase\n"
+        "The TOOL / REPO / VERSION / CONFIG must be present in the\n"
+        "headline noun phrase OR in the first sentence of the body. The\n"
+        "reader should be able to tell what they would clone, install, or\n"
+        "evaluate without reading the rest. The direction-note prescribes\n"
+        "the ACTION (\"clone before X\"; \"run against your eval\"; \"wait\n"
+        "for the repo\"). No leader pull-quotes tacked on (\"raise this at\n"
+        "your model-risk review\" is Big Picture voice, off-voice here)."
+    ),
+    "currents": (
+        "CURRENTS VOICE -- conditional / hedged opening; signal of motion,\n"
+        "not arrival. Open with a hedge: \"If this holds...\", \"Early\n"
+        "signal that...\", \"Worth watching: X moving toward Y.\" The\n"
+        "direction-note explicitly says \"no action yet\" and WHY -- thin\n"
+        "sourcing, early trajectory, single benchmark. A Currents story\n"
+        "that reads as a confirmed arrival is mis-tiered; pull the hedge\n"
+        "forward to make the maturity visible. Shorter than head-section\n"
+        "bodies; cap at 50 words when in doubt."
+    ),
+}
+
+_PULSE_HINT_FOR_HEAD_TIER = (
+    "PULSE NOTE -- if this story is the most significant of the day, the\n"
+    "downstream picker may elevate it to The Pulse. The Pulse opens on a\n"
+    "VERB where possible (\"Run autonomous coding agents safely.\" /\n"
+    "\"Stop defaulting to frontier models.\"), with the direction-note\n"
+    "in the body. Writing the headline in that imperative shape now\n"
+    "means the picker doesn't need a separate rewrite."
+)
+
+
 _FINANCE_LENS_BLOCK = """\
 FINANCE-SERVICES LENS -- a SUBJECT filter, not a reader pitch
 
@@ -763,15 +854,15 @@ def summarise(date: _dt.date | None = None) -> Issue:
         )
 
     # Tier-aware truncation: split the summarise budget by tier so a
-    # head-tier-heavy day doesn't starve On the Radar. Ranked.jsonl
-    # arrives in score-desc order; partition then take per-tier budgets.
+    # head-tier-heavy day doesn't starve Currents. Ranked.jsonl arrives
+    # in score-desc order; partition then take per-tier budgets.
     head_top = [r for r in ranked if r.tier in ("big_picture", "hands_on")][
         :HEAD_TIER_SUMMARISE_BUDGET
     ]
-    radar_top = [r for r in ranked if r.tier == "on_the_radar"][
-        :RADAR_TIER_SUMMARISE_BUDGET
+    currents_top = [r for r in ranked if r.tier == "currents"][
+        :CURRENTS_TIER_SUMMARISE_BUDGET
     ]
-    top = head_top + radar_top
+    top = head_top + currents_top
     clusters_by_id = _load_clusters_index(clusters_in)
     items_by_id = _load_items_index(items_in)
 
@@ -828,7 +919,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
     _reconcile_signal_with_audience_tags(blocks)
 
     # --- Section assembly ------------------------------------------------
-    # v0.8: pulse -> big_picture -> hands_on -> on_the_radar.
+    # v0.10 (Phase 2, 2026-05-30): pulse -> big_picture -> hands_on -> currents.
     # The Big Picture comes first per Arman's reading order.
     # clusters_by_id + items_by_id are threaded through so the v0.10 Pulse
     # eligibility gate can read cluster size, canonical_id, and item-level
@@ -836,7 +927,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # once here (source-diversity caps, 2026-05-27) and threaded through
     # the pickers; defaults apply when config/editorial.yaml is missing.
     editorial_config = _load_editorial_config()
-    pulse_section, big_picture_section, hands_on_section, on_the_radar_section = \
+    pulse_section, big_picture_section, hands_on_section, currents_section = \
         _assemble_sections(
             blocks,
             clusters_by_id=clusters_by_id,
@@ -847,11 +938,14 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # --- Section intros (Phase B) ---------------------------------------
     # One LLM call per non-pulse section, fed the section's stories so the
     # intro reads the day's pattern. Pulse never carries an intro -- its
-    # whole job is to BE the framing. Failures degrade gracefully: the
-    # template hides missing intros, the issue still ships.
+    # whole job is to BE the framing. Failures degrade gracefully for Big
+    # Picture / Hands-On: the template hides missing intros, the issue
+    # still ships. For Currents (Phase 2): the aggregate-direction lead
+    # is editorially mandatory per EDITORIAL.md -- ``_populate_section_intro``
+    # retries once on failure and logs a WARNING when both attempts miss.
     _populate_section_intro(big_picture_section)
     _populate_section_intro(hands_on_section)
-    _populate_section_intro(on_the_radar_section)
+    _populate_section_intro(currents_section)
 
     # --- Shape post-condition (schema v3, 2026-05-30) -------------------
     # With tier as authority in section routing, an under-fed section is
@@ -862,7 +956,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # re-deriving from section counts. Does NOT block on red; that's a
     # render-side editorial banner concern.
     shape, shape_reason = _compute_issue_shape(
-        pulse_section, big_picture_section, hands_on_section, on_the_radar_section,
+        pulse_section, big_picture_section, hands_on_section, currents_section,
     )
     if shape in {"amber", "red"}:
         _LOG.warning(
@@ -877,7 +971,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
         issue_number=None,
         date=run_date,
         pulse=pulse_section,
-        sections=[big_picture_section, hands_on_section, on_the_radar_section],
+        sections=[big_picture_section, hands_on_section, currents_section],
         generated_at=_dt.datetime.now(_dt.timezone.utc),
         prompt_versions={
             "rank": _read_rank_version(),
@@ -892,11 +986,11 @@ def summarise(date: _dt.date | None = None) -> Issue:
     pulse_headline = issue.pulse.stories[0].headline if issue.pulse.stories else "?"
     _LOG.info(
         "summarised top %d: pulse=%r / big_picture: %d / hands_on: %d / "
-        "on_the_radar: %d | issue #(staging -- not yet numbered) -> %s",
+        "currents: %d | issue #(staging -- not yet numbered) -> %s",
         len(blocks), pulse_headline,
         len(big_picture_section.stories),
         len(hands_on_section.stories),
-        len(on_the_radar_section.stories),
+        len(currents_section.stories),
         issue_out,
     )
     return issue
@@ -1256,6 +1350,19 @@ def _build_summary_prompt(
         f"{k}:{v}" for k, v in story.breakdown.items()
     )
 
+    # Phase 2 (2026-05-30): section-specific voice rules, keyed on tier.
+    # Tier is a 1:1 proxy for destination section (big_picture / hands_on
+    # / currents). For head-tier stories we also include the Pulse-shape
+    # hint so a story the picker might elevate already reads in voice.
+    section_voice = _VOICE_PER_SECTION.get(story.tier, "")
+    if story.tier in ("big_picture", "hands_on"):
+        section_voice = section_voice + "\n\n" + _PULSE_HINT_FOR_HEAD_TIER
+    section_voice_block = (
+        f"\nSECTION VOICE (tier={story.tier}; this story will land in the\n"
+        f"matching section unless the editor relabels):\n{section_voice}\n"
+        if section_voice else ""
+    )
+
     return f"""\
 You are writing one story for AI Vector -- a daily newsletter about
 Agentic AI and Generative AI. The cluster was already RANKED and
@@ -1263,7 +1370,7 @@ selected for the issue; your job is to write it well.
 
 {_VOICE_BLOCK}
 {_EDITORIAL_FOCUS_BLOCK}
-{_FINANCE_LENS_BLOCK}
+{_FINANCE_LENS_BLOCK}{section_voice_block}
 RANKER NOTES (from the rank stage, for context only -- not for echoing):
   score: {story.score} / 100
   breakdown: {breakdown_str}
@@ -1320,7 +1427,7 @@ ITEMS:
                    tools / repos / techniques you can clone or pip-install.
     * "read"    -- absorb the framing; no clear action yet. Use sparingly.
     * "watch"   -- too thin / too early to act on; monitor for follow-up.
-                   Default for On the Radar items.
+                   Default for Currents items.
     * "discuss" -- design concept worth raising at a review, not yet
                    shippable. Right call for single-source frameworks
                    without code / benchmarks.
@@ -1677,17 +1784,21 @@ def _assemble_sections(
     editorial_config: EditorialConfig | None = None,
 ) -> tuple[IssueSection, IssueSection, IssueSection, IssueSection]:
     """Place every summarised story into exactly one section. Returns the
-    four sections in display order: pulse, big_picture, hands_on, on_the_radar.
+    four sections in display order: pulse, big_picture, hands_on, currents.
 
-    Editorial routing rules (v0.8 -- 2026-05-24 section rename):
-      - Pulse: highest-scoring story that hits >= 2 signal-filter dimensions
-        (significance, hands_on_utility, freshness_momentum >= 70). Fallback
-        (logged): highest breakdown.significance.
-      - The Big Picture: stories tagged `big_picture`. Hard cap at 4.
-        First, per Arman's reading order.
-      - Hands-On: stories tagged `hands_on`, OR tagged `general` with
-        hands_on_utility >= 70. Hard cap at 5.
-      - On the Radar: everything left, in score-desc order.
+    Editorial routing rules (v0.10 -- Phase 2, 2026-05-30 section rename):
+      - Pulse: highest-scoring head-tier story that passes the eligibility
+        gate AND hits >= 2 signal-filter dimensions (significance,
+        hands_on_utility, freshness_momentum >= 70). Fallback (logged):
+        highest breakdown.significance among eligibles.
+      - The Big Picture: stories tiered `big_picture`. Hard cap at 4.
+        First, per Arman's reading order. AUDIENCE-only routing now --
+        rank.py tiered the story `big_picture`; the picker does not
+        re-gate on maturity / signal-filter dimensions.
+      - Hands-On: stories tiered `hands_on`. Hard cap at 5. AUDIENCE-only.
+      - Currents: stories tiered `currents`, in score-desc order. Hard
+        ceiling from ``editorial_config.currents_max_stories`` (Phase 2
+        addition).
 
     Direction notes and finance angles are embedded in summary prose,
     not separate fields (schema v4); the assembler no longer filters on
@@ -1718,7 +1829,7 @@ def _assemble_sections(
     # State threaded through the pickers. Per-section source counters live
     # inside each picker (Layer 1 binds per-section, not per-issue). The
     # per-issue category counter is shared so Pulse's category counts
-    # toward the cap before Big Picture, Hands-On, On the Radar run.
+    # toward the cap before Big Picture, Hands-On, Currents run.
     categories_used_this_issue: Counter[str] = Counter()
 
     # --- Pulse ----------------------------------------------------------
@@ -1758,8 +1869,8 @@ def _assemble_sections(
     for cid in hands_on_ids:
         unplaced.discard(cid)
 
-    # --- On the Radar ---------------------------------------------------
-    on_the_radar_ids = _pick_on_the_radar(
+    # --- Currents -------------------------------------------------------
+    currents_ids = _pick_currents(
         blocks, unplaced,
         clusters_by_id=clusters_by_id,
         cfg=cfg,
@@ -1778,18 +1889,18 @@ def _assemble_sections(
         name="hands_on",
         stories=[by_id[cid][1] for cid in hands_on_ids],
     )
-    on_the_radar_section = IssueSection(
-        name="on_the_radar",
-        stories=[by_id[cid][1] for cid in on_the_radar_ids],
+    currents_section = IssueSection(
+        name="currents",
+        stories=[by_id[cid][1] for cid in currents_ids],
     )
-    return (pulse_section, big_picture_section, hands_on_section, on_the_radar_section)
+    return (pulse_section, big_picture_section, hands_on_section, currents_section)
 
 
 def _compute_issue_shape(
     pulse_section: IssueSection,
     big_picture_section: IssueSection,
     hands_on_section: IssueSection,
-    on_the_radar_section: IssueSection,
+    currents_section: IssueSection,
 ) -> tuple[str, str]:
     """Compute the issue's "shape" (green / amber / red) + a one-line reason.
 
@@ -1800,10 +1911,10 @@ def _compute_issue_shape(
     surfaces that signal via ``Issue.notes`` (not blocking) so the editor
     and Arman see it at ratification.
 
-    Bands:
-      green  -- pulse present AND hands_on >= 3 AND on_the_radar >= 3
+    Bands (Phase 2 rename, 2026-05-30: ``on_the_radar`` -> ``currents``):
+      green  -- pulse present AND hands_on >= 3 AND currents >= 3
       amber  -- pulse present AND (
-                  hands_on in {1, 2} OR on_the_radar in {1, 2} OR
+                  hands_on in {1, 2} OR currents in {1, 2} OR
                   big_picture < 2
                 )
       red    -- pulse missing OR (hands_on == 0 AND big_picture == 0)
@@ -1815,7 +1926,7 @@ def _compute_issue_shape(
     pulse_count = len(pulse_section.stories)
     bp_count = len(big_picture_section.stories)
     ho_count = len(hands_on_section.stories)
-    rad_count = len(on_the_radar_section.stories)
+    cur_count = len(currents_section.stories)
 
     # Red is the hard floor. Pulse missing is a contract violation upstream
     # (Issue.pulse mandates exactly one block), so this branch fires only
@@ -1825,7 +1936,7 @@ def _compute_issue_shape(
     if ho_count == 0 and bp_count == 0:
         return (
             "red",
-            f"hands_on: 0 AND big_picture: 0 (radar: {rad_count}, "
+            f"hands_on: 0 AND big_picture: 0 (currents: {cur_count}, "
             "tier pool exhausted)",
         )
 
@@ -1836,10 +1947,10 @@ def _compute_issue_shape(
             "amber",
             f"hands_on: {ho_count} (tier pool exhausted)",
         )
-    if rad_count in (1, 2):
+    if cur_count in (1, 2):
         return (
             "amber",
-            f"on_the_radar: {rad_count} (tier pool exhausted)",
+            f"currents: {cur_count} (tier pool exhausted)",
         )
     if bp_count < 2:
         return (
@@ -1847,13 +1958,13 @@ def _compute_issue_shape(
             f"big_picture: {bp_count} (tier pool exhausted)",
         )
 
-    # Green path: pulse present, hands_on >= 3, on_the_radar >= 3,
+    # Green path: pulse present, hands_on >= 3, currents >= 3,
     # big_picture >= 2. Reason names the counts so the audit trail is
     # uniform across bands.
     return (
         "green",
         f"pulse: 1, big_picture: {bp_count}, "
-        f"hands_on: {ho_count}, on_the_radar: {rad_count}",
+        f"hands_on: {ho_count}, currents: {cur_count}",
     )
 
 
@@ -1923,7 +2034,7 @@ def _pulse_eligibility(
     Why these three. Each is an independent sourcing-credibility signal:
     multiple feeds = corroboration, canonical_id = verifiability,
     established source = curator stamp. A Pulse should carry at least one;
-    a story with none belongs in Hands-On or On the Radar.
+    a story with none belongs in Hands-On or Currents.
 
     Returns ``(eligible, reason)`` where ``reason`` is a short human-
     readable string (single source + no canonical_id + trust_max=N) used
@@ -2019,7 +2130,7 @@ def _pick_pulse(
     # --- Tier-pool gate (schema v3, 2026-05-30) -------------------------
     # Pulse is picked from the union of the two head-section tiers
     # (big_picture + hands_on). rank.py writes these tiers when a story
-    # clears the promote threshold; on_the_radar / cut stories are not
+    # clears the promote threshold; currents / cut stories are not
     # Pulse-eligible. When the pool is empty (no head-section tiers today),
     # fall back to the unfiltered set with a WARNING -- Issue.pulse
     # requires exactly one story, so we ship the smell rather than crash.
@@ -2032,7 +2143,7 @@ def _pick_pulse(
         _LOG.warning(
             "summarise: NO HEAD-SECTION TIER FOR PULSE -- zero stories tiered "
             "big_picture or hands_on today (%d candidates). Falling back to "
-            "the full block list; Pulse will pick from on_the_radar / cut.",
+            "the full block list; Pulse will pick from currents / cut.",
             len(blocks),
         )
         tier_pool = list(blocks)
@@ -2181,6 +2292,14 @@ def _pick_big_picture(
     is "not enough promoted big_picture stories today," not "the picker
     is starving."
 
+    Phase 2 (2026-05-30): AUDIENCE-ONLY routing pinned. The picker does
+    NOT impose a maturity gate (no freshness / novelty / signal-dimensions
+    filter inside this function). Maturity is carried per-story by
+    ``SummaryBlock.signal`` (act / try / watch / ...) and surfaces in the
+    rendered direction-note prose. EDITORIAL.md "head-section eligibility
+    is audience-primary" -- enforced structurally here by gating only on
+    ``tier`` (the audience-derived editorial slot).
+
     Source-diversity caps (2026-05-27): when ``cfg`` is provided, accept
     only stories that don't push any of their sources over the per-section
     cap and don't push their category over the per-issue cap. Big Picture
@@ -2227,8 +2346,14 @@ def _pick_hands_on(
     audience_tags / hands_on_utility-fallback heuristic is gone -- rank.py
     routes via `_assign_initial_tier`. The degraded-mode Pass 2 (relax
     caps when the section is below minimum) is gone too: cross-tier
-    scavenging is what was producing empty On-the-Radar sections, and the
-    shape post-condition in summarise.py now surfaces under-fill instead.
+    scavenging is what was producing empty Currents sections (pre-Phase-2:
+    On-the-Radar), and the shape post-condition in summarise.py now
+    surfaces under-fill instead.
+
+    Phase 2 (2026-05-30): AUDIENCE-ONLY routing pinned. As with Big
+    Picture, no maturity / signal-dimensions filter is applied here -- a
+    promoted ``hands_on`` story lands regardless of freshness. Maturity is
+    carried per-story by ``SummaryBlock.signal`` and the direction-note.
 
     Source-diversity caps (2026-05-27) still apply within the tier pool:
     skip a candidate that would push a source over the per-section cap or
@@ -2268,7 +2393,7 @@ def _pick_hands_on(
     return out
 
 
-def _pick_on_the_radar(
+def _pick_currents(
     blocks: list[tuple[RankedStory, SummaryBlock]],
     available: set[str],
     *,
@@ -2276,32 +2401,46 @@ def _pick_on_the_radar(
     cfg: EditorialConfig | None = None,
     categories_used_this_issue: Counter[str] | None = None,
 ) -> list[str]:
-    """Stories tiered 'on_the_radar' and not yet placed, in score-desc order.
+    """Stories tiered 'currents' and not yet placed, in score-desc order.
 
-    Schema v3 (2026-05-30): pool is strictly ``tier == "on_the_radar"``.
-    Previously this picker was a catch-all that scavenged every unplaced
-    story; that masked the empty-radar shape signal whenever a head-section
-    starved (Big Picture / Hands-On would pull from the catch-all pool,
-    leaving On the Radar empty). With tier as authority, an empty On the
-    Radar means rank.py wrote zero on_the_radar stories today -- a real
-    editorial signal, not a routing bug.
+    Schema v3 (2026-05-30): pool is strictly ``tier == "currents"``
+    (renamed from ``on_the_radar`` in Phase 2). Previously this picker
+    was a catch-all that scavenged every unplaced story; that masked the
+    empty-section shape signal whenever a head-section starved (Big
+    Picture / Hands-On would pull from the catch-all pool, leaving
+    Currents empty). With tier as authority, an empty Currents means
+    rank.py wrote zero ``currents`` stories today -- a real editorial
+    signal, not a routing bug.
+
+    Phase 2 (2026-05-30): a HARD ceiling on the section is enforced from
+    ``cfg.currents_max_stories`` (config: ``editorial.yaml ->
+    section_caps.currents.max_stories``; default 8). The cap binds even
+    when no ``cfg`` is passed (older test paths) -- the default-config
+    path uses ``DEFAULT_CURRENTS_MAX_STORIES`` so a fork without
+    editorial.yaml still sees a bounded Currents section. The upstream
+    ``CURRENTS_TIER_SUMMARISE_BUDGET`` is now a safety bound on input
+    volume; this cap is the editorial authority.
 
     Source-diversity caps (2026-05-27) still apply: the per-issue category
     cap is a HARD ceiling -- a paper that would push us over the cap is
     dropped from the issue entirely rather than landing here. The
     per-section cap (Layer 1) gates this section independently. No minimum,
-    no degraded-mode fill.
-
-    Falls back to the pre-cap behaviour (accept everything left in the
-    tier pool) when no ``cfg`` is passed -- preserves old test paths that
-    built sections without threading a config."""
+    no degraded-mode fill."""
     out: list[str] = []
     sources_in_section: Counter[str] = Counter()
+    # Phase 2: read the Currents hard ceiling from the config (default
+    # path when cfg is None, matching the fork-friendly default elsewhere).
+    max_stories = (
+        cfg.currents_max_stories if cfg is not None
+        else DEFAULT_CURRENTS_MAX_STORIES
+    )
     for story, _block in blocks:
         if story.cluster_id not in available:
             continue
-        if story.tier != "on_the_radar":
+        if story.tier != "currents":
             continue
+        if len(out) >= max_stories:
+            break
         if cfg is not None:
             cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
             if _would_exceed_section_cap(cluster, sources_in_section, cfg):
@@ -2343,31 +2482,66 @@ _SECTION_INTRO_HINTS: dict[str, str] = {
         "wins single-source benchmarks? Drop-in releases? Capability "
         "shifts? -- in one or two sentences."
     ),
-    "on_the_radar": (
-        "Awareness-only framing: items thin on sourcing or early in "
-        "trajectory. The lead phrase should signal posture (\"For "
-        "awareness only.\" / \"Worth a glance.\"); the body explains "
-        "WHY these sit here rather than higher up, in one short sentence."
+    "currents": (
+        "Early-signal framing: items thin on sourcing, early in trajectory, "
+        "or moving but not yet arrived. EDITORIAL.md makes the Currents "
+        "intro_lead MANDATORY -- the section's whole purpose is the "
+        "AGGREGATE DIRECTION, and without an intro the section degrades to "
+        "an enumeration of early signals. The lead phrase MUST name where "
+        "the field is moving today across these items (\"Regulators are "
+        "circling agentic payments.\" / \"Open-weights are catching the "
+        "frontier on reasoning.\"); the body reads WHY these sit here "
+        "rather than higher up, in one short sentence."
     ),
 }
 
 
+# Phase 2 (2026-05-30): section names where ``intro_lead`` is editorially
+# mandatory. Currents is the only one today -- EDITORIAL.md puts the
+# aggregate-direction lead at the heart of what the section is for. Used
+# by ``_populate_section_intro`` to retry once on failure and to log a
+# WARNING rather than degrade silently.
+_SECTIONS_WITH_MANDATORY_INTRO: set[str] = {"currents"}
+
+
 def _populate_section_intro(section: IssueSection) -> None:
     """Generate {intro_lead, intro_body} for a section via one LLM call.
-    Mutates the section in place. Silent on failure -- the rendered
-    issue still ships without an intro for the affected section."""
+    Mutates the section in place.
+
+    Phase 2 (2026-05-30): for sections in ``_SECTIONS_WITH_MANDATORY_INTRO``
+    (Currents today), an LLM failure or parse miss triggers ONE retry. If
+    the second attempt also fails, the failure is logged at WARNING so the
+    editor / Arman see the smell at ratification -- the issue still ships
+    (we'd rather render Currents without an intro than abort the whole
+    issue), but the audit trail records that the aggregate-direction lead
+    was unavailable today. Other sections continue to degrade silently
+    (the template hides missing intros)."""
     if not section.stories:
         return
     hint = _SECTION_INTRO_HINTS.get(section.name)
     if hint is None:
         return
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
+    mandatory = section.name in _SECTIONS_WITH_MANDATORY_INTRO
 
     story_lines: list[str] = []
     for st in section.stories:
         body = st.summary if len(st.summary) <= 280 else st.summary[:280] + "..."
         story_lines.append(f"- HEADLINE: {st.headline}\n  BODY: {body}")
     stories_block = "\n".join(story_lines)
+
+    # Phase 2: Currents intros get an extra prose nudge so the LEAD names
+    # the AGGREGATE DIRECTION rather than a generic posture phrase. Other
+    # sections retain the existing 2-5-word bold-phrase shape.
+    currents_lead_addendum = ""
+    if section.name == "currents":
+        currents_lead_addendum = (
+            "\n- CURRENTS LEAD: name the AGGREGATE DIRECTION today's items "
+            "point at, not just a posture. \"For awareness only.\" is "
+            "off-voice for Currents; \"Regulators are circling agentic "
+            "payments.\" is in voice. The lead must be a directional "
+            "claim the reader can hold in their head."
+        )
 
     prompt = f"""\
 You are writing the section intro for the "{section.name}" section of
@@ -2382,7 +2556,7 @@ STORIES IN THIS SECTION
 
 INSTRUCTIONS
 - LEAD: a tight bold phrase (2-5 words, full-stop at the end). It IS
-  the section's editorial posture for today.
+  the section's editorial posture for today.{currents_lead_addendum}
 - BODY: one or two sentences, 20-35 words total, that reads the DAY'S
   PATTERN across these stories. What does the editor want the reader
   to notice? Frame, don't restate. Don't list. Don't reference specific
@@ -2400,29 +2574,67 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
   "body": "<20-35 word framing sentence(s)>"
 }}
 """
-    try:
-        raw = _llm_call(prompt, temperature=temperature, max_tokens=400)
-    except Exception:  # noqa: BLE001
-        _LOG.warning(
-            "summarise: section-intro LLM call failed for %s -- skipping intro",
+
+    def _attempt_once(use_prompt: str) -> tuple[str, str] | None:
+        """One LLM round-trip + parse. Returns (lead, body) on success or
+        None on any failure. Side-effect: logs warnings on failure mode."""
+        try:
+            raw = _llm_call(use_prompt, temperature=temperature, max_tokens=400)
+        except Exception:  # noqa: BLE001
+            _LOG.warning(
+                "summarise: section-intro LLM call failed for %s",
+                section.name,
+            )
+            return None
+        payload = _extract_json_object(raw)
+        if not isinstance(payload, dict):
+            _LOG.warning(
+                "summarise: section-intro JSON parse failed for %s",
+                section.name,
+            )
+            return None
+        lead_raw = payload.get("lead")
+        body_raw = payload.get("body")
+        if not isinstance(lead_raw, str) or not isinstance(body_raw, str):
+            return None
+        lead_s = lead_raw.strip()
+        body_s = body_raw.strip()
+        if not lead_s or not body_s:
+            return None
+        return lead_s, body_s
+
+    result = _attempt_once(prompt)
+    if result is None and mandatory:
+        # Phase 2: Currents intro is editorially required. Try once more
+        # with a corrective preface naming the aggregate-direction rule.
+        _LOG.info(
+            "summarise: mandatory intro for %s missed on first pass -- "
+            "retrying once (Phase 2)",
             section.name,
         )
-        return
-    payload = _extract_json_object(raw)
-    if not isinstance(payload, dict):
-        _LOG.warning(
-            "summarise: section-intro JSON parse failed for %s -- skipping",
-            section.name,
+        corrective = (
+            "Your previous response was missing or malformed. The Currents "
+            "intro is EDITORIALLY MANDATORY: the LEAD must name the "
+            "aggregate direction these items point at (a directional "
+            "claim, not a posture), and both LEAD and BODY are required. "
+            "Return ONLY a JSON object with non-empty string fields "
+            "'lead' and 'body'. Original request follows.\n\n"
+            + prompt
         )
+        result = _attempt_once(corrective)
+
+    if result is None:
+        if mandatory:
+            _LOG.warning(
+                "summarise: MANDATORY intro missing for %s after retry "
+                "(Phase 2) -- shipping the section without an intro_lead. "
+                "Editor / Arman: review the Currents section for "
+                "aggregate-direction lead.",
+                section.name,
+            )
         return
-    lead = payload.get("lead")
-    body = payload.get("body")
-    if not isinstance(lead, str) or not isinstance(body, str):
-        return
-    lead = lead.strip()
-    body = body.strip()
-    if not lead or not body:
-        return
+
+    lead, body = result
     try:
         section.intro_lead = lead
         section.intro_body = body

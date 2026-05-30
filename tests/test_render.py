@@ -117,7 +117,7 @@ def rich_issue() -> Issue:
                 ),
             ),
             IssueSection(name="hands_on", stories=[hands_on_block]),
-            IssueSection(name="on_the_radar", stories=[on_radar_block]),
+            IssueSection(name="currents", stories=[on_radar_block]),
         ],
         generated_at=FIXED_NOW,
         prompt_versions={"rank": "v1", "summarise": "v1"},
@@ -267,8 +267,8 @@ class TestTemplateSections:
     def test_hands_on_section_appears(self) -> None:
         assert "Hands-On" in self._html
 
-    def test_on_the_radar_section_appears(self) -> None:
-        assert "On the Radar" in self._html
+    def test_currents_section_appears(self) -> None:
+        assert "Currents" in self._html
 
 
 # ===========================================================================

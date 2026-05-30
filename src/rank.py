@@ -190,13 +190,16 @@ _LOG = logging.getLogger("ai_vector.rank")
 #
 # Schema (mirrors the YAML):
 #   cut: {max_score: int, max_significance: int}
-#   on_the_radar: {min_score: int}
+#   currents: {min_score: int}
 #   promote_to_section: {min_score: int}
+#
+# Phase 2 (2026-05-30): the middle-band key renamed from ``on_the_radar``
+# to ``currents`` in lockstep with the tier rename in src/models.py.
 # ---------------------------------------------------------------------------
 
 _DEFAULT_TIER_THRESHOLDS: dict[str, dict[str, int]] = {
     "cut": {"max_score": 39, "max_significance": 25},
-    "on_the_radar": {"min_score": 40},
+    "currents": {"min_score": 40},
     "promote_to_section": {"min_score": 50},
 }
 
@@ -745,12 +748,19 @@ def _load_tier_thresholds(
         )
         return fallback
     out = fallback
-    for top_key in ("cut", "on_the_radar", "promote_to_section"):
+    # Phase 2 (2026-05-30): accept the legacy ``on_the_radar`` key in
+    # addition to the new ``currents`` key so a stale rubric.yaml during
+    # rollout still loads cleanly. The in-code constant uses ``currents``;
+    # YAML aliasing happens here at the boundary.
+    legacy_to_canonical = {"on_the_radar": "currents"}
+    for top_key in ("cut", "currents", "on_the_radar", "promote_to_section"):
         section = block.get(top_key)
-        if isinstance(section, dict):
-            for sub_key, value in section.items():
-                if isinstance(value, int) and sub_key in out[top_key]:
-                    out[top_key][sub_key] = value
+        if not isinstance(section, dict):
+            continue
+        canonical_key = legacy_to_canonical.get(top_key, top_key)
+        for sub_key, value in section.items():
+            if isinstance(value, int) and sub_key in out[canonical_key]:
+                out[canonical_key][sub_key] = value
     return out
 
 
@@ -838,7 +848,8 @@ def _rank_one(
         score = _weighted_score(parsed.breakdown)
 
         # The LLM picks audience tags; tier is the editorial slot. rank.py
-        # now writes the FULL slot (schema v3, 2026-05-30): cut, on_the_radar,
+        # now writes the FULL slot (schema v3, 2026-05-30; v4 renamed
+        # on_the_radar -> currents in Phase 2): cut, currents,
         # hands_on, or big_picture. summarise.py gates its pickers strictly
         # on this -- no scavenging across tiers. Pulse is picked downstream
         # from the union of the two head-section tiers.
@@ -1350,15 +1361,16 @@ def _assign_initial_tier(
          rule -- vendor fluff and AI-tangential hype get floored at
          significance <= 25 by the prompt and cut here even if their other
          dimensions inflate the weighted score.
-      2. On the Radar: score < promote_to_section.min_score. The
-         middle band -- surfaced but not promoted.
+      2. Currents: score < promote_to_section.min_score. The middle band
+         -- surfaced but not promoted to a head section. Renamed from
+         ``on_the_radar`` in Phase 2 (2026-05-30).
       3. Promoted (score >= promote threshold) -- route by audience_tags:
          * has_hands_on XOR has_big_picture -> the matching tier.
          * BOTH -> tiebreak: pick hands_on iff
            breakdown[hands_on_utility] > breakdown[big_picture_relevance];
            ties go to big_picture (the more strategic surface).
          * NEITHER (only general / finance) -- v0.4 (2026-05-30): route by
-           SUB-SCORE instead of forcing on_the_radar. A high-scoring
+           SUB-SCORE instead of forcing the middle band. A high-scoring
            finance-only or general-only story has earned a head section;
            the LLM merely didn't apply hands_on / big_picture explicitly.
            Pick whichever of hands_on_utility / big_picture_relevance is
@@ -1379,22 +1391,23 @@ def _assign_initial_tier(
     """
     sig = breakdown.get("significance", 0)
     cut = thresholds.get("cut", _DEFAULT_TIER_THRESHOLDS["cut"])
-    radar = thresholds.get(
-        "on_the_radar", _DEFAULT_TIER_THRESHOLDS["on_the_radar"]
+    currents = thresholds.get(
+        "currents", _DEFAULT_TIER_THRESHOLDS["currents"]
     )
     promote = thresholds.get(
         "promote_to_section", _DEFAULT_TIER_THRESHOLDS["promote_to_section"]
     )
-    # `radar` is intentionally unused in the conditions below -- it serves
-    # as the documented floor between cut and the promote band, equivalent
-    # to (cut.max_score + 1). Read on rubric reload to validate via the
-    # schema; the routing itself is driven by cut.* and promote.min_score.
-    _ = radar
+    # `currents` is intentionally unused in the conditions below -- it
+    # serves as the documented floor between cut and the promote band,
+    # equivalent to (cut.max_score + 1). Read on rubric reload to validate
+    # via the schema; the routing itself is driven by cut.* and
+    # promote.min_score.
+    _ = currents
 
     if score < cut["max_score"] or sig <= cut["max_significance"]:
         return "cut"
     if score < promote["min_score"]:
-        return "on_the_radar"
+        return "currents"
 
     tag_set = set(audience_tags)
     has_hands_on = "hands_on" in tag_set

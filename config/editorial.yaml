@@ -28,7 +28,7 @@ section_caps:
 
   # Per-issue cap by source category (from config/sources.yaml `category`
   # field). Key = category name; value = max stories of that category across
-  # the whole issue (pulse + big_picture + hands_on + on_the_radar combined).
+  # the whole issue (pulse + big_picture + hands_on + currents combined).
   # Categories not listed here are uncapped. Source names without a category
   # entry in sources.yaml are bucketed as "unknown" and treated as uncapped.
   #
@@ -40,3 +40,13 @@ section_caps:
   #     room to surface (labs, news, community, tooling, finance).
   per_category_per_issue:
     papers: 4
+
+  # Phase 2 (2026-05-30) -- Currents section hard ceiling. The old "On the
+  # Radar" section had no explicit cap; we relied on the upstream
+  # ``RADAR_TIER_SUMMARISE_BUDGET`` (8) to bound it. Currents has a clearer
+  # editorial role (maturity-tail early signals) and a clearer reader
+  # contract -- bound it deliberately. The number is the authoritative cap
+  # in src/summarise.py::_pick_currents; the upstream summarise budget is
+  # now just a safety bound on input volume.
+  currents:
+    max_stories: 8
