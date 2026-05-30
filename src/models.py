@@ -178,15 +178,19 @@ _PROMPT_VERSION_PATTERN = r"^v\d+(\.\d+)*$"
 # ---------------------------------------------------------------------------
 
 RUBRIC_WEIGHTS: dict[str, int] = {
-    "significance": 30,
-    "hands_on_utility": 25,
-    "big_picture_relevance": 20,
+    "significance": 40,
+    "hands_on_utility": 10,
+    "big_picture_relevance": 30,
     "financial_services_impact": 15,
-    "freshness_momentum": 10,
+    "freshness_momentum": 5,
 }
 """Weights in [0, 100] that sum to 100. Sourced from config/rubric.yaml.
 Renamed in v0.8 (2026-05-24): builder_utility -> hands_on_utility,
-leadership_relevance -> big_picture_relevance, to align with section names."""
+leadership_relevance -> big_picture_relevance, to align with section names.
+Rebalanced v0.6 (2026-05-30): significance 30 -> 40, big_picture_relevance
+20 -> 30, hands_on_utility 25 -> 10, freshness_momentum 10 -> 5. Editorial
+shift: prioritise field-shifting stories and senior-leader strategic
+framing over practitioner-actionability and pure recency."""
 
 
 # ---------------------------------------------------------------------------
@@ -363,12 +367,15 @@ class RankedStory(BaseModel):
     Downstream readers preserve that order.
     """
 
-    schema_version: int = 4
+    schema_version: int = 5
     cluster_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """FK to Cluster.cluster_id."""
 
     score: Annotated[int, Field(ge=0, le=100)]
-    """Final weighted score (rubric sum); must equal the breakdown-weighted sum."""
+    """Final weighted score (rubric sum); must equal the breakdown-weighted sum
+    for schema_version >= 5. Archived rows (schema_version <= 4) carry scores
+    computed under earlier RUBRIC_WEIGHTS and are not re-validated on parse
+    -- the score field is trusted as-written for legacy data."""
 
     breakdown: dict[str, Annotated[int, Field(ge=0, le=100)]]
     """
@@ -476,7 +483,17 @@ class RankedStory(BaseModel):
         enforce the invariant rather than silently accept LLM arithmetic.
         Tolerance: integer-rounded -- expected and provided must match
         exactly after rounding the weighted sum to the nearest int.
+
+        Schema-version gate (v0.6 rebalance, 2026-05-30): the weighted-sum
+        check enforces only for schema_version == 5 (current). Archived
+        ranked.jsonl rows written before today carry scores computed under
+        earlier RUBRIC_WEIGHTS and would fail the new invariant. Trust the
+        score field as-written for legacy rows -- the dedup, eval, and
+        render paths that consume archived data should not be broken by a
+        rubric tuning.
         """
+        if self.schema_version < 5:
+            return self
         expected = sum(
             (RUBRIC_WEIGHTS[name] / 100.0) * value
             for name, value in self.breakdown.items()

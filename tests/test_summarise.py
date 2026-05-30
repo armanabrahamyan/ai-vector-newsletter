@@ -18,7 +18,24 @@ import datetime as _dt
 
 import pytest
 
-from src.models import Cluster, IssueSection, Item, RankedStory, SummaryBlock
+from src.models import (
+    RUBRIC_WEIGHTS,
+    Cluster,
+    IssueSection,
+    Item,
+    RankedStory,
+    SummaryBlock,
+)
+
+
+def _weighted_sum(breakdown: dict[str, int]) -> float:
+    """Compute the weighted score from a breakdown using current RUBRIC_WEIGHTS.
+    Tests use this instead of hardcoded multipliers so weight rebalances
+    don't require fixture rewrites."""
+    return sum(
+        (RUBRIC_WEIGHTS[k] / 100.0) * v
+        for k, v in breakdown.items()
+    )
 from src.summarise import (
     DEFAULT_CURRENTS_MAX_STORIES,
     DEFAULT_PER_SOURCE_PER_SECTION,
@@ -399,11 +416,14 @@ def _ranked(cluster_id: str, score: int, *,
     # in RankedStory rejects mismatched score; we recompute exactly.
     big_picture = 50
     fs = 25
-    # weighted sum: 0.3*sig + 0.25*hands_on + 0.2*bp + 0.15*fs + 0.1*fresh
-    weighted = (
-        0.30 * significance + 0.25 * hands_on + 0.20 * big_picture
-        + 0.15 * fs + 0.10 * freshness
-    )
+    # weighted sum via current RUBRIC_WEIGHTS (auto-stays-in-sync)
+    weighted = _weighted_sum({
+        "significance": significance,
+        "hands_on_utility": hands_on,
+        "big_picture_relevance": big_picture,
+        "financial_services_impact": fs,
+        "freshness_momentum": freshness,
+    })
     breakdown = {
         "significance": significance,
         "hands_on_utility": hands_on,
@@ -863,10 +883,13 @@ def _ranked_tagged(
     fs = 25
     significance = 60
     freshness = 60
-    weighted = (
-        0.30 * significance + 0.25 * hands_on_score + 0.20 * big_picture
-        + 0.15 * fs + 0.10 * freshness
-    )
+    weighted = _weighted_sum({
+        "significance": significance,
+        "hands_on_utility": hands_on_score,
+        "big_picture_relevance": big_picture,
+        "financial_services_impact": fs,
+        "freshness_momentum": freshness,
+    })
     breakdown = {
         "significance": significance,
         "hands_on_utility": hands_on_score,
@@ -1274,9 +1297,7 @@ class TestAssembleSectionsIntegration:
             "big_picture_relevance": 70, "financial_services_impact": 50,
             "freshness_momentum": 80,
         }
-        weighted = round(
-            0.30 * 80 + 0.25 * 80 + 0.20 * 70 + 0.15 * 50 + 0.10 * 80
-        )
+        weighted = round(_weighted_sum(breakdown))
         ranked = [
             RankedStory(
                 cluster_id=cid, score=weighted, breakdown=breakdown,
@@ -1352,10 +1373,7 @@ class TestLegacyTierAlias:
             "big_picture_relevance": 60, "financial_services_impact": 25,
             "freshness_momentum": 60,
         }
-        # 60*.3 + 60*.25 + 60*.2 + 25*.15 + 60*.1 = 18+15+12+3.75+6 = 54.75
-        weighted = round(
-            0.30 * 60 + 0.25 * 60 + 0.20 * 60 + 0.15 * 25 + 0.10 * 60
-        )
+        weighted = round(_weighted_sum(breakdown))
         # Build the payload the way ranked.jsonl rows arrive: raw dict
         # mirroring the v3 schema (with the old tier value).
         legacy_payload = {
@@ -1461,9 +1479,7 @@ class TestHeadPickersNoMaturityGate:
             "big_picture_relevance": 80, "financial_services_impact": 30,
             "freshness_momentum": 10,  # cold story
         }
-        weighted = round(
-            0.30 * 70 + 0.25 * 40 + 0.20 * 80 + 0.15 * 30 + 0.10 * 10
-        )
+        weighted = round(_weighted_sum(breakdown))
         story = RankedStory(
             cluster_id="c_aaaaaaaaaaaa6001",
             score=weighted,
@@ -1503,9 +1519,7 @@ class TestHeadPickersNoMaturityGate:
             "big_picture_relevance": 30, "financial_services_impact": 30,
             "freshness_momentum": 50,
         }
-        weighted = round(
-            0.30 * 60 + 0.25 * 60 + 0.20 * 30 + 0.15 * 30 + 0.10 * 50
-        )
+        weighted = round(_weighted_sum(breakdown))
         story = RankedStory(
             cluster_id="c_aaaaaaaaaaaa6002",
             score=weighted,

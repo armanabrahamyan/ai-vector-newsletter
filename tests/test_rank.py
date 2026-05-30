@@ -333,14 +333,15 @@ class TestPriorCoveragePenalty:
         cluster = _cluster(
             "c_" + "3" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
-        # Anchor expected: 0.3*65 + 0.25*75 + 0 + 0.15*15 + 0.10*40 = 44.5 -> 44
+        # Anchor expected (v0.6 weights 40/10/30/15/5):
+        # 0.40*65 + 0.10*75 + 0.30*0 + 0.15*15 + 0.05*40 = 37.75 -> 38
         score_before = _weighted_score(parsed.breakdown)
-        assert score_before == 44
+        assert score_before == 38
 
         _apply_prior_coverage_penalty(parsed, cluster)
-        # After cap: 0.3*50 + 0.25*75 + 0 + 0.15*15 + 0.10*40 = 40.0 -> 40
+        # After cap: 0.40*50 + 0.10*75 + 0.30*0 + 0.15*15 + 0.05*40 = 31.75 -> 32
         score_after = _weighted_score(parsed.breakdown)
-        assert score_after == 40
+        assert score_after == 32
 
     def test_other_breakdown_dimensions_untouched(self) -> None:
         """The penalty must only touch significance. hands_on_utility,
@@ -524,15 +525,15 @@ class TestFreshnessInferredPenalty:
         parsed = _parsed_fm(freshness_momentum=80)
         cluster = _fresh_cluster("c_" + "f" * 14, ["i1"])
         items_by_id = {"i1": _item("i1", freshness_inferred=True)}
-        # Before: 0.3*60 + 0.25*50 + 0.20*40 + 0.15*30 + 0.10*80
-        #       = 18 + 12.5 + 8 + 4.5 + 8 = 51.0 -> 51
+        # Before (v0.6 weights 40/10/30/15/5):
+        # 0.40*60 + 0.10*50 + 0.30*40 + 0.15*30 + 0.05*80 = 49.5 -> 50
         score_before = _weighted_score(parsed.breakdown)
-        assert score_before == 51
+        assert score_before == 50
 
         _apply_freshness_inferred_penalty(parsed, cluster, items_by_id)
-        # After cap: ... + 0.10*30 = 18 + 12.5 + 8 + 4.5 + 3 = 46.0 -> 46
+        # After cap: 0.40*60 + 0.10*50 + 0.30*40 + 0.15*30 + 0.05*30 = 47.0 -> 47
         score_after = _weighted_score(parsed.breakdown)
-        assert score_after == 46
+        assert score_after == 47
         # Breakdown sums must match the recomputed score exactly.
         assert _weighted_score(parsed.breakdown) == score_after
 
@@ -657,18 +658,15 @@ class TestNoveltyDetection:
         cluster = _cluster(
             "c_" + "1" * 14, prior_coverage_ref="c_" + "f" * 14,
         )
-        # Anchor before: 0.30*50 + 0.25*100 + 0.20*25 + 0.15*50 + 0.10*25
-        #              = 15 + 25 + 5 + 7.5 + 2.5 = 55.0 -> 55
+        # Anchor before (v0.6 weights 40/10/30/15/5):
+        # 0.40*50 + 0.10*100 + 0.30*25 + 0.15*50 + 0.05*25 = 46.25 -> 46
         score_before = _weighted_score(parsed.breakdown)
-        assert score_before == 55
+        assert score_before == 46
 
         _apply_prior_coverage_penalty(parsed, cluster)
-        # After cap: 0.30*25 + 0.25*100 + 0.20*25 + 0.15*50 + 0.10*25
-        #          = 7.5 + 25 + 5 + 7.5 + 2.5 = 47.5 -> 48 (banker's rounding)
+        # After cap: 0.40*25 + 0.10*100 + 0.30*25 + 0.15*50 + 0.05*25 = 36.25 -> 36
         score_after = _weighted_score(parsed.breakdown)
-        # Either banker's rounding (round-half-to-even -> 48) or
-        # half-up (-> 48); pin to the Python 3 `round` behaviour.
-        assert score_after == 48
+        assert score_after == 36
         # AND tier will be "cut" downstream via sig=25 floor.
 
     def test_lookup_prior_coverage_finds_match(self, tmp_path, monkeypatch) -> None:

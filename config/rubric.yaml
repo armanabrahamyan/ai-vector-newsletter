@@ -19,7 +19,7 @@
 # tool stories. Eval Engineer ratification pending.
 
 schema_version: 2
-rubric_version: "v0.5-2026-05-30"
+rubric_version: "v0.6-2026-05-30"
 # v0.5 (2026-05-30, Phase 2 section-taxonomy rename): tier_thresholds key
 # ``on_the_radar`` renamed to ``currents`` in lockstep with the tier value-
 # space rename in src/models.py. No score / anchor changes here. The rank
@@ -81,7 +81,7 @@ tier_thresholds:
 criteria:
 
   - name: significance
-    weight: 30
+    weight: 40
     description: >
       Is this a real shift in the field vs. noise? This criterion is where
       the editorial-focus filter LIVES inside the rubric. Significance
@@ -111,7 +111,7 @@ criteria:
         usable now). Pulse-candidate territory.
 
   - name: hands_on_utility
-    weight: 15
+    weight: 10
     description: >
       Can a DS or engineer act on this *this week*? New tool, new technique,
       new constraint, new repo, new API, new eval, new benchmark. Concrete
@@ -139,7 +139,7 @@ criteria:
         benchmark with code, a tool with a documented API.
 
   - name: big_picture_relevance
-    weight: 30
+    weight: 30  # unchanged from v0.5 (was correct here); models.py was the laggard
     description: >
       Does this shift what a Head of AI / CDO / CTO would PRIORITISE next
       quarter? Strategy, risk, governance, vendor calculus, talent. This is
@@ -212,7 +212,7 @@ criteria:
         eval / benchmark with reproducible methodology.
 
   - name: freshness_momentum
-    weight: 10
+    weight: 5
     description: >
       Breaking now, or building? Recency-weighted but NOT pure recency --
       a paper from 3 weeks ago that's only now hitting industry awareness
@@ -336,15 +336,21 @@ calibration_notes: |
   Per design-first-eval-first: optimise against the rubric and the
   labels, not against vibes.
 
-  Hands-on vs. big-picture split
-  ------------------------------
-  hands_on_utility (15) and big_picture_relevance (30) are split rather
+  Hands-on vs. big-picture split (v0.6, 2026-05-30)
+  --------------------------------------------------
+  hands_on_utility (10) and big_picture_relevance (30) are split rather
   than combined on purpose. A `big_picture`-only story with weak hands-on
   utility (e.g. a major regulatory shift) should still surface via a
   high big_picture_relevance score even if hands_on_utility is low.
   Likewise a hands-on-pure repo release shouldn't be penalised for
   having no senior-leader angle. Don't optimise hands-on readers out
   of the rubric by merging the two criteria.
+
+  v0.6 rebalance (2026-05-30): hands_on_utility 25 -> 10. Editorial
+  shift: practitioner-actionability is now a secondary lever rather
+  than a primary one. The publication leans toward significance and
+  big-picture framing; Hands-On stories must clear a higher significance
+  bar to land, not just be useful.
 
   Significance is load-bearing
   ----------------------------
