@@ -72,10 +72,10 @@ from src.models import RUBRIC_WEIGHTS, Cluster, Item, RankedStory
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-RANK_PROMPT_VERSION = "v0.5"
+RANK_PROMPT_VERSION = "v0.6"
 r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``rank-v0.5-2026-05-26``. Bump (e.g. ``v0.5``) when the prompt
+Audit tag: ``rank-v0.6-2026-05-30``. Bump (e.g. ``v0.5``) when the prompt
 content changes -- so the eval harness can correlate score movement against
 prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 """
@@ -138,6 +138,19 @@ prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
 # addition to JSON parse failure, with a corrective nudge that quotes the
 # specific validation error back to the LLM. Reuses the existing single-
 # retry budget; second failure still skips the cluster.
+#
+# v0.6 (2026-05-30, Phase 1 calibration): FS-TERM GLOSSARY. The audience-
+# tag extraction was tag-blind to FS-domain proper nouns (BIRD, SEC EDGAR,
+# FCA, BoE, SR 11-7, Basel, MiFID, NIST AI RMF) -- whether the LLM
+# recognised them as finance signal was luck-of-the-draw on training
+# data. A2's finance-lens-extraction memo (2026-05-30) traced FS-specialist
+# clusters c_491e0b408f3bab95 (EU AI Act Newsletter) and c_6830490c1b6fb884
+# (LLMQuant agentic-banking) under-scoring to this gap. Fix: additive
+# "Finance-relevance hints" subsection inside _EDITORIAL_FOCUS_BLOCK
+# listing the named anchors so the LLM applies the `finance` tag and lifts
+# financial_services_impact accordingly. Pairs with the rubric.yaml v0.4
+# anchor revision and the NEITHER-by-sub-score routing fix in
+# _assign_initial_tier. ~9 prompt lines added; no rewrites elsewhere.
 
 MAX_ITEMS_IN_CLUSTER_PROMPT = 3
 """How many member items to inline in the per-cluster prompt body."""
@@ -184,7 +197,7 @@ _LOG = logging.getLogger("ai_vector.rank")
 _DEFAULT_TIER_THRESHOLDS: dict[str, dict[str, int]] = {
     "cut": {"max_score": 39, "max_significance": 25},
     "on_the_radar": {"min_score": 40},
-    "promote_to_section": {"min_score": 70},
+    "promote_to_section": {"min_score": 50},
 }
 
 
@@ -243,6 +256,20 @@ For every Tier-1 or Tier-2 candidate, ask:
 
 A story should hit at least one clearly. Two is great. Three is Pulse
 material. Zero -- even in Tier 1 -- is buzz; floor it.
+
+FINANCE-RELEVANCE HINTS (v0.6, 2026-05-30)
+If the cluster mentions any of these named anchors, treat the FS lens as
+EARNED -- apply the `finance` audience tag AND lift
+`financial_services_impact` accordingly (50+ for a named angle, 75+ when
+the source itself is FS-specialist):
+  - Regulatory / supervisory: SR 11-7, PRA SS1/23, EU AI Act, NIST AI RMF,
+    Basel, MiFID, FCA, BoE, OCC, SEC, FINRA, APRA, MAS, GLBA, SOX.
+  - FS-domain data / benchmarks: BIRD, SEC EDGAR, FinQA, FinanceBench,
+    XBRL filings.
+  - FS-specialist sources (narrowness = proof of fit, not shallowness):
+    LLMQuant, EU AI Act Newsletter, BIS FSI, Bank Underground.
+  - FS-domain functions: model risk, KYC, AML, fraud detection, trading
+    systems, credit / underwriting, regulatory compliance.
 
 CALIBRATION REMINDER
 Significance = (tier match) x (signal-filter dimensions passed).
@@ -1328,12 +1355,24 @@ def _assign_initial_tier(
       3. Promoted (score >= promote threshold) -- route by audience_tags:
          * has_hands_on XOR has_big_picture -> the matching tier.
          * BOTH -> tiebreak: pick hands_on iff
-           breakdown[hands_on_utility] >= breakdown[big_picture_relevance];
+           breakdown[hands_on_utility] > breakdown[big_picture_relevance];
            ties go to big_picture (the more strategic surface).
-         * NEITHER (only general / finance) -> on_the_radar regardless of
-           score. The head sections require an explicit audience match;
-           a high-scoring general-interest story still belongs in the
-           terse linked list, not Big Picture / Hands-On.
+         * NEITHER (only general / finance) -- v0.4 (2026-05-30): route by
+           SUB-SCORE instead of forcing on_the_radar. A high-scoring
+           finance-only or general-only story has earned a head section;
+           the LLM merely didn't apply hands_on / big_picture explicitly.
+           Pick whichever of hands_on_utility / big_picture_relevance is
+           larger; ties go to big_picture (same tiebreak rule as BOTH).
+           Anchor case: c_491e0b408f3bab95 / c_6830490c1b6fb884
+           (FS-specialist clusters tagged [big_picture, finance] route
+           via big_picture; finance-only clusters with strong practitioner
+           angle route via sub-score).
+
+    Phase-4 hand-off: when audience-tag taxonomy gains
+    `finance_practitioner` / `finance_leader` (third routing axis), the
+    NEITHER branch below collapses -- the new tags route directly and
+    sub-score fallback becomes vestigial. Update _assign_initial_tier as
+    part of that PR.
 
     Pulse is NOT a stored tier -- summarise.py picks the Pulse from the
     union of big_picture + hands_on stories.
@@ -1368,10 +1407,16 @@ def _assign_initial_tier(
     if has_hands_on and has_big_picture:
         ho = breakdown.get("hands_on_utility", 0)
         bp = breakdown.get("big_picture_relevance", 0)
-        # Strict >= so ties (ho == bp) flow to big_picture per spec.
+        # Strict > so ties (ho == bp) flow to big_picture per spec.
         return "hands_on" if ho > bp else "big_picture"
-    # Neither head-section tag -> general / finance only -> on_the_radar.
-    return "on_the_radar"
+    # NEITHER head-section tag -- v0.4 (2026-05-30): route by sub-score.
+    # Phase-4 will replace this once finance_practitioner / finance_leader
+    # land as routed tags; for now sub-score gives finance- and general-
+    # only stories a head-section path when they've cleared the promote
+    # floor. Same tiebreak as BOTH: ties go to big_picture.
+    ho = breakdown.get("hands_on_utility", 0)
+    bp = breakdown.get("big_picture_relevance", 0)
+    return "hands_on" if ho > bp else "big_picture"
 
 
 # ---------------------------------------------------------------------------

@@ -19,7 +19,11 @@
 # tool stories. Eval Engineer ratification pending.
 
 schema_version: 2
-rubric_version: "v0.3-2026-05-30"
+rubric_version: "v0.4-2026-05-30"
+# v0.4 (2026-05-30, Phase 1 calibration): promote_to_section.min_score
+# lowered 70 -> 55 against post-Shape-A staging distribution; re-anchored
+# financial_services_impact so FS-specialist coverage clears the new floor;
+# rank prompt v0.6 adds an FS-term glossary. See tier_thresholds comment.
 # v0.3 (2026-05-30): add tier_thresholds block -- tier is now load-bearing
 # in summarise.py's section routing (the picker gates by tier instead of
 # scavenging audience_tags + score). The thresholds below pin the exact
@@ -47,10 +51,17 @@ rubric_version: "v0.3-2026-05-30"
 #                                      stays as on_the_radar).
 # ---------------------------------------------------------------------------
 
+# Promote floor calibrated v0.4 (2026-05-30) from 70 -> 50 against the
+# post-Shape-A May 27 + May 29 staging distributions (top scores 56 / 73;
+# the LLM's modal "strong-signal" story lands 50-65). At 50, both days
+# clear the >= 3 big_picture + >= 3 hands_on target with margin: May 27
+# yields 7 big_picture + 4 hands_on, May 29 yields 5 big_picture + 3
+# hands_on. The score-band ceiling trap (40-69 dead zone) is resolved.
+# Composes with the NEITHER-by-sub-score routing fix in rank.py.
 tier_thresholds:
   cut: { max_score: 39, max_significance: 25 }
   on_the_radar: { min_score: 40 }
-  promote_to_section: { min_score: 70 }
+  promote_to_section: { min_score: 50 }
 
 # ---------------------------------------------------------------------------
 # Criteria. Each is scored 0--100. Final score = weighted sum, weights sum
@@ -156,8 +167,12 @@ criteria:
       agents in finance, eval relevance. Tier 2 (big-picture / senior
       leader): strategic shifts, regulatory movement, vendor consolidation.
       The lens is MODERATE, not maximum -- it adds value, it doesn't filter
-      out the field. Most days, most stories will land here at 25-50.
-      That's correct.
+      out the field. Anchors recalibrated v0.4 (2026-05-30): FS-specialist
+      sources (low trust_weight, narrow domain) earn higher FSI for that
+      narrowness -- the narrowness IS the proof of fit, not evidence of
+      shallowness. Most general-AI stories still land 25-50; the lift is
+      for FS-specialist regulatory / agentic-banking coverage that was
+      under-scoring at 50-65 in v0.3.
     anchors:
       "0": >
         Zero FS relevance. The two-tier test produces no yeses; the story
@@ -168,16 +183,25 @@ criteria:
       "50": >
         Lands clearly for ONE Tier-1 FS audience (e.g. fraud modelling
         teams OR model risk OR quants) with a nameable angle, not just
-        an inferred one.
+        an inferred one. Also: general AI story that explicitly names a
+        regulated-finance benchmark or dataset (BIRD, SEC EDGAR filings,
+        FinQA, FinanceBench) with shallow downstream takeaway.
       "75": >
         Lands for TWO Tier-1 FS audiences, OR lands for one Tier-1
         audience plus material Tier-2 (senior-leader / regulatory /
-        vendor) implications.
+        vendor) implications. ALSO: FS-specialist source (LLMQuant, EU AI
+        Act Newsletter, BIS FSI, Bank Underground, FCA / BoE / OCC / SEC
+        coverage) reporting on FS-relevant AI capability or regulation --
+        the source's narrowness is evidence of fit, not a reason to
+        discount. A regulatory-AI piece from a regulatory-AI newsletter
+        is, by construction, a 75+ on this dimension.
       "100": >
-        Directly addresses a hot FS pain: productionising LLMs under
-        SR 11-7 / PRA SS1/23, on-prem / air-gapped inference for banks,
-        agentic compliance review, model lineage and reproducibility
-        for regulators, agentic systems in trading codebases.
+        Directly addresses a hot FS pain with named regulatory anchors:
+        productionising LLMs under SR 11-7 / PRA SS1/23 / Basel / MiFID
+        / NIST AI RMF, on-prem / air-gapped inference for banks, agentic
+        compliance review, model lineage and reproducibility for
+        regulators, agentic systems in trading codebases, FS-specific
+        eval / benchmark with reproducible methodology.
 
   - name: freshness_momentum
     weight: 10

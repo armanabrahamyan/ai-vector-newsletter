@@ -1302,25 +1302,65 @@ class TestAssignInitialTier:
         assert tier == "cut"
 
     def test_on_the_radar_when_between_cut_and_promote(self) -> None:
-        """Score in the middle band -> on_the_radar regardless of tags."""
+        """Score in the middle band -> on_the_radar regardless of tags.
+
+        v0.4 (2026-05-30): promote_to_section.min_score is 55, so 45 is
+        the middle-band test point (40 <= score < 55).
+        """
         tier = _assign_initial_tier(
-            score=55,
+            score=45,
             breakdown=self._base_breakdown(significance=60),
             audience_tags=["hands_on", "big_picture"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
         assert tier == "on_the_radar"
 
-    def test_on_the_radar_when_promoted_but_no_head_section_tag(self) -> None:
-        """Promoted (score >= 70) but tags are only general / finance --
-        no head section to route to, so on_the_radar."""
+    def test_neither_head_tag_routes_by_subscore_to_hands_on(self) -> None:
+        """v0.4 (2026-05-30) NEITHER-branch fix: promoted with only
+        general / finance tags -> route by sub-score, not on_the_radar.
+
+        hands_on_utility > big_picture_relevance -> hands_on. Anchor case:
+        a finance-tagged practitioner story that clears the promote floor
+        but the LLM didn't apply the hands_on tag explicitly.
+        """
         tier = _assign_initial_tier(
-            score=75,
-            breakdown=self._base_breakdown(significance=70),
-            audience_tags=["general", "finance"],
+            score=70,
+            breakdown=self._base_breakdown(
+                significance=70, hands_on_utility=80, big_picture_relevance=50,
+            ),
+            audience_tags=["finance", "general"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
-        assert tier == "on_the_radar"
+        assert tier == "hands_on"
+
+    def test_neither_head_tag_routes_by_subscore_to_big_picture(self) -> None:
+        """v0.4 (2026-05-30) NEITHER-branch fix: bp > ho -> big_picture.
+        Anchor case: c_491e0b408f3bab95-style regulatory finance content
+        promoted at 60+ with strong big_picture_relevance.
+        """
+        tier = _assign_initial_tier(
+            score=65,
+            breakdown=self._base_breakdown(
+                significance=65, hands_on_utility=30, big_picture_relevance=75,
+            ),
+            audience_tags=["finance"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_neither_head_tag_subscore_tie_goes_to_big_picture(self) -> None:
+        """v0.4 NEITHER-branch fix: ho == bp -> big_picture (same tiebreak
+        rule as the BOTH branch). Keeps tiebreak symmetry between the two
+        branches so the more strategic surface wins ties everywhere."""
+        tier = _assign_initial_tier(
+            score=60,
+            breakdown=self._base_breakdown(
+                significance=60, hands_on_utility=60, big_picture_relevance=60,
+            ),
+            audience_tags=["general"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
 
     def test_big_picture_when_promoted_and_only_big_picture_tag(self) -> None:
         """XOR routing -- big_picture tag only -> big_picture tier."""
