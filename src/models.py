@@ -89,11 +89,21 @@ Renamed in v0.8 (2026-05-24) to match section names:
   - ``leader``  -> ``big_picture``
 """
 
-RankTier = Literal["pulse", "on_the_radar", "cut"]
+RankTier = Literal["big_picture", "hands_on", "on_the_radar", "cut"]
 """
 Editorial slot a RankedStory belongs in. `summarise.py` reads this to assign
 sections; Editor may relabel; `cut` is below threshold and excluded from the
 issue (kept in ranked.jsonl for transparency / eval).
+
+Schema v3 (2026-05-30): tier value-space expanded from {pulse, on_the_radar,
+cut} to {big_picture, hands_on, on_the_radar, cut}. Pulse is NOT a stored
+tier -- summarise.py picks the Pulse from the union of the two head-section
+tiers (big_picture + hands_on). The expansion makes tier authoritative for
+section routing; the picker gates strictly on tier instead of scavenging
+audience_tags + score (which was producing empty On-the-Radar / Hands-On
+sections when rank.py only ever wrote on_the_radar + cut). See
+config/rubric.yaml `tier_thresholds` for the score bands that drive the
+assignment in `src/rank.py::_assign_initial_tier`.
 """
 
 SectionName = Literal[
@@ -339,7 +349,7 @@ class RankedStory(BaseModel):
     Downstream readers preserve that order.
     """
 
-    schema_version: int = 2
+    schema_version: int = 3
     cluster_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """FK to Cluster.cluster_id."""
 
@@ -388,6 +398,11 @@ class RankedStory(BaseModel):
     rows (schema_version=1) parse cleanly with ``novelty=None`` via the
     default. The field is non-mandatory by design -- a missing value is
     semantically meaningful ("the prompt didn't ask, or the LLM didn't say").
+
+    Schema v3 (2026-05-30): no shape change to ``novelty``; the version bump
+    is driven by the ``tier`` value-space expansion (see RankTier). Released
+    rows with ``schema_version=2`` and tier in {on_the_radar, cut} parse
+    fine -- the value-space EXPANDED, didn't shrink.
     """
 
     model_config = ConfigDict(extra="forbid")

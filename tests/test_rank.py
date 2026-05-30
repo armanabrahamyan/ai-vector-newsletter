@@ -32,12 +32,14 @@ import pytest
 
 from src.models import Cluster, Item
 from src.rank import (
+    _DEFAULT_TIER_THRESHOLDS,
     _FRESHNESS_INFERRED_CAP,
     _PRIOR_COVERAGE_NOVELTY_CAPS,
     _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
     _ParsedScore,
     _apply_freshness_inferred_penalty,
     _apply_prior_coverage_penalty,
+    _assign_initial_tier,
     _build_rank_prompt,
     _llm_call_openai_compatible,
     _lookup_prior_coverage,
@@ -1068,7 +1070,7 @@ class TestParallelRank:
         n = len(scrambled_scores)
 
         def fake_rank_one(cluster, items_by_id, rubric_block,
-                          trust_weights, *, today=None):
+                          trust_weights, *, tier_thresholds=None, today=None):
             # Map cluster_id back to its index via the deterministic id pattern.
             idx = int(cluster.cluster_id.split("_", 1)[1], 16)
             return _make_ranked_story(cluster.cluster_id, scrambled_scores[idx])
@@ -1105,7 +1107,7 @@ class TestParallelRank:
         n = 5
 
         def fake_rank_one(cluster, items_by_id, rubric_block,
-                          trust_weights, *, today=None):
+                          trust_weights, *, tier_thresholds=None, today=None):
             idx = int(cluster.cluster_id.split("_", 1)[1], 16)
             if idx == 2:  # the middle cluster fails to parse / validate
                 return None
@@ -1137,7 +1139,7 @@ class TestParallelRank:
         n = 4
 
         def fake_rank_one(cluster, items_by_id, rubric_block,
-                          trust_weights, *, today=None):
+                          trust_weights, *, tier_thresholds=None, today=None):
             idx = int(cluster.cluster_id.split("_", 1)[1], 16)
             if idx == 1:
                 raise RuntimeError("simulated thread panic")
@@ -1183,7 +1185,7 @@ class TestParallelRank:
             return real_pool_cls(*args, **kwargs)
 
         def fake_rank_one(cluster, items_by_id, rubric_block,
-                          trust_weights, *, today=None):
+                          trust_weights, *, tier_thresholds=None, today=None):
             idx = int(cluster.cluster_id.split("_", 1)[1], 16)
             return _make_ranked_story(cluster.cluster_id, 50 + idx)
 
@@ -1215,7 +1217,7 @@ class TestParallelRank:
         sequential_upper_bound = n_clusters * per_call_sleep  # ~1.0s
 
         def fake_rank_one(cluster, items_by_id, rubric_block,
-                          trust_weights, *, today=None):
+                          trust_weights, *, tier_thresholds=None, today=None):
             time.sleep(per_call_sleep)
             idx = int(cluster.cluster_id.split("_", 1)[1], 16)
             return _make_ranked_story(cluster.cluster_id, 50 + idx)
@@ -1242,3 +1244,150 @@ class TestParallelRank:
             f"upper bound {sequential_upper_bound:.3f}s)"
         )
 
+
+
+# ===========================================================================
+# _assign_initial_tier -- schema v3 (2026-05-30) tier routing.
+#
+# Tier is now the AUTHORITY for summarise.py's section routing -- rank.py
+# writes the full editorial slot here (no scavenging downstream). The four
+# outcomes:
+#   cut             -- below thresholds.cut.max_score OR sig <= max_significance
+#   on_the_radar    -- in middle band OR promoted but no head-section tag
+#   big_picture     -- promoted AND big_picture tag (with tiebreak vs hands_on)
+#   hands_on        -- promoted AND hands_on tag (with tiebreak vs big_picture)
+# ===========================================================================
+
+class TestAssignInitialTier:
+    """Schema v3 (2026-05-30): tier-as-authority routing in rank.py."""
+
+    def _base_breakdown(
+        self,
+        *,
+        significance: int = 70,
+        hands_on_utility: int = 70,
+        big_picture_relevance: int = 70,
+    ) -> dict[str, int]:
+        """A breakdown the tier function reads. Other dimensions don't
+        affect routing; we set them to a neutral 50."""
+        return {
+            "significance": significance,
+            "hands_on_utility": hands_on_utility,
+            "big_picture_relevance": big_picture_relevance,
+            "financial_services_impact": 50,
+            "freshness_momentum": 50,
+        }
+
+    def test_cut_when_score_below_cut_max_score(self) -> None:
+        """score < cut.max_score -> cut, regardless of other dimensions."""
+        tier = _assign_initial_tier(
+            score=30,
+            breakdown=self._base_breakdown(significance=70),
+            audience_tags=["hands_on", "big_picture"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "cut"
+
+    def test_cut_when_significance_at_or_below_cut_max(self) -> None:
+        """significance <= cut.max_significance is the Tier-3 trapdoor --
+        the editorial-focus skill's pre-filter rule. A vendor announcement
+        scoring high on hands_on_utility but flat on significance gets
+        cut even if the weighted score clears the floor."""
+        tier = _assign_initial_tier(
+            score=80,  # high enough that the score gate alone wouldn't cut
+            breakdown=self._base_breakdown(significance=25),
+            audience_tags=["hands_on"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "cut"
+
+    def test_on_the_radar_when_between_cut_and_promote(self) -> None:
+        """Score in the middle band -> on_the_radar regardless of tags."""
+        tier = _assign_initial_tier(
+            score=55,
+            breakdown=self._base_breakdown(significance=60),
+            audience_tags=["hands_on", "big_picture"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "on_the_radar"
+
+    def test_on_the_radar_when_promoted_but_no_head_section_tag(self) -> None:
+        """Promoted (score >= 70) but tags are only general / finance --
+        no head section to route to, so on_the_radar."""
+        tier = _assign_initial_tier(
+            score=75,
+            breakdown=self._base_breakdown(significance=70),
+            audience_tags=["general", "finance"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "on_the_radar"
+
+    def test_big_picture_when_promoted_and_only_big_picture_tag(self) -> None:
+        """XOR routing -- big_picture tag only -> big_picture tier."""
+        tier = _assign_initial_tier(
+            score=75,
+            breakdown=self._base_breakdown(significance=70),
+            audience_tags=["big_picture", "finance"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_hands_on_when_promoted_and_only_hands_on_tag(self) -> None:
+        """XOR routing -- hands_on tag only -> hands_on tier."""
+        tier = _assign_initial_tier(
+            score=75,
+            breakdown=self._base_breakdown(significance=70),
+            audience_tags=["hands_on", "general"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "hands_on"
+
+    def test_both_tags_tiebreak_hands_on_when_ho_strictly_greater(self) -> None:
+        """BOTH head-section tags -> tiebreak on breakdown. ho > bp -> hands_on."""
+        tier = _assign_initial_tier(
+            score=75,
+            breakdown=self._base_breakdown(
+                significance=70, hands_on_utility=85, big_picture_relevance=60,
+            ),
+            audience_tags=["hands_on", "big_picture"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "hands_on"
+
+    def test_both_tags_tiebreak_big_picture_when_bp_strictly_greater(self) -> None:
+        """BOTH head-section tags -> tiebreak on breakdown. bp > ho -> big_picture."""
+        tier = _assign_initial_tier(
+            score=75,
+            breakdown=self._base_breakdown(
+                significance=70, hands_on_utility=60, big_picture_relevance=85,
+            ),
+            audience_tags=["hands_on", "big_picture"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_both_tags_tie_goes_to_big_picture(self) -> None:
+        """BOTH head-section tags AND ho == bp -> big_picture (the more
+        strategic surface; spec: 'ties go to big_picture')."""
+        tier = _assign_initial_tier(
+            score=75,
+            breakdown=self._base_breakdown(
+                significance=70, hands_on_utility=75, big_picture_relevance=75,
+            ),
+            audience_tags=["hands_on", "big_picture"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_cut_trumps_promote_when_significance_floors(self) -> None:
+        """A story with very high weighted score but significance <= 25
+        (Tier-3 vendor fluff) must cut before the promote routing fires."""
+        tier = _assign_initial_tier(
+            score=90,
+            breakdown=self._base_breakdown(
+                significance=25, hands_on_utility=100, big_picture_relevance=100,
+            ),
+            audience_tags=["hands_on", "big_picture"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "cut"

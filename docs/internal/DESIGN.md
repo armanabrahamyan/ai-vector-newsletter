@@ -143,18 +143,234 @@ class RankedStory(BaseModel):
     breakdown: dict[str, Annotated[int, Field(ge=0, le=100)]]               # per-criterion sub-scores; keys match rubric.yaml criterion names (significance, hands_on_utility, big_picture_relevance, financial_services_impact, freshness_momentum)
     audience_tags: Annotated[list[AudienceTag], Field(min_length=1)]        # who this is for; e.g. ["hands_on", "finance"]
     rationale: Annotated[str, Field(min_length=1, max_length=1000)]         # one-line LLM rationale for transparency and eval
-    tier: Literal["pulse", "on_the_radar", "cut"]
-                                                                            # editorial slot assignment (rank.py picks; summarise.py promotes to a section; "cut" = below threshold)
+    tier: Literal["big_picture", "hands_on", "on_the_radar", "cut"]
+                                                                            # schema v3 (2026-05-30): tier is final from rank.py and acts as a HARD section boundary in summarise.py. "pulse" is no longer a tier value — Pulse is picked inside summarise.py from the big_picture / hands_on pool. See "Tier as authority (rank -> summarise routing)".
+                                                                            # PENDING Phase 2 (2026-05-30 stream C, awaiting Arman ratification): rename "on_the_radar" -> "currents". Pydantic `AliasChoices("currents", "on_the_radar")` retained so v3 archive rows parse transparently. Bumps RankedStory.schema_version v3 -> v4 when applied. See "Pending: Currents rename (Phase 2)" below and `_scratch/c_intervention_map_2026-05-30.md`.
     prompt_version: Annotated[str, Field(pattern=r"^v\d+(\.\d+)*$")]        # version of the rank prompt that produced this (e.g. "v1.2"); supports A/B + audit
 ```
 
 **Notes on choices.** `breakdown` keys are not pinned in the model — they
 follow `config/rubric.yaml`. Eval Engineer's harness validates that the keys
 match the rubric at runtime; that lets the rubric evolve without a pydantic
-churn each time. `tier` is the bridge between rank and summarise: `rank.py`
-assigns it, `summarise.py` reads it to pick the section, Editor can override
-with a label. `prompt_version` is mandatory so the eval harness can correlate
-score movement against prompt revisions (risk-register item #6).
+churn each time. `tier` is the **authority for section routing**: `rank.py`
+assigns it deterministically from rubric thresholds, `summarise.py` treats
+each tier as a hard pool boundary (no scavenging across tiers), Editor can
+relabel for editorial reasons. `prompt_version` is mandatory so the eval
+harness can correlate score movement against prompt revisions (risk-register
+item #6). See [Tier as authority](#tier-as-authority-rank---summarise-routing)
+below for the full routing contract.
+
+#### Tier as authority (rank -> summarise routing)
+
+Pinned 2026-05-30. Strategic fix for the "On the Radar empty" failure mode
+that ran for 5 days: `_assign_initial_tier` only emitted `cut` or
+`on_the_radar`, so `summarise.py`'s four pickers walked the same score-desc
+pool 4x and the tail section was strip-mined by the head sections. Shape A
+(tier-as-authority, deterministic) is the chosen fix.
+
+**Tier value semantics.** `RankedStory.tier` is a final routing decision
+written by `rank.py`. Summarise reads it; it does not rewrite it.
+
+| Value | Meaning | Who picks |
+|---|---|---|
+| `big_picture` | Eligible for The Big Picture section. Score >= `promote_to_section.min_score` AND `big_picture` in `audience_tags` (or routing rule below resolves it here). | `rank.py` |
+| `hands_on` | Eligible for Hands-On section. Score >= `promote_to_section.min_score` AND `hands_on` in `audience_tags` (or routing rule below resolves it here). | `rank.py` |
+| `on_the_radar` | Below the promotion threshold but above the cut. Eligible only for On the Radar. | `rank.py` |
+| `cut` | Below the cut threshold, or floored by `significance <= cut.max_significance`. Excluded from the issue but retained in `ranked.jsonl` for transparency / eval. | `rank.py` |
+
+`pulse` is **no longer a tier value**. The Pulse is a single-story pick
+made by `summarise._pick_pulse` from the union of `big_picture` and
+`hands_on` tier-pools, applying its own eligibility gate (signal
+dimensions, sourcing credibility, prior-coverage bias). Storing `pulse`
+on `RankedStory.tier` would conflate "eligible to lead the issue" with
+"actually led today's issue" — the second is an issue-level decision, not
+a story-level fact. The picked Pulse cluster's `tier` stays
+`big_picture` or `hands_on` in `ranked.jsonl`; the fact that it became
+the Pulse is recorded by its presence in `Issue.pulse`, not by mutating
+the row.
+
+**Routing rule (which section does a `score >= promote_to_section.min_score`
+cluster land in?).** Deterministic, in order:
+
+1. If `audience_tags` contains `hands_on` XOR `big_picture` -> that one.
+2. If `audience_tags` contains **both** `hands_on` and `big_picture` ->
+   resolve by sub-score: tier is `hands_on` iff
+   `breakdown["hands_on_utility"] >= breakdown["big_picture_relevance"]`,
+   else `big_picture`. Ties break to `big_picture` (preserves senior-
+   leader centre-of-gravity per the 2026-05-26 weight tune).
+3. If `audience_tags` contains **neither** (only `general` and/or
+   `finance`) -> tier is `on_the_radar` regardless of score. The story
+   has no claim to a head section; it stays in the tail. (No section
+   should accept a story whose audience-tags don't name it — that would
+   re-introduce the strip-mining bug under a different name.)
+
+The rule is `audience_tags`-primary with sub-score as a tiebreaker. We
+explicitly do **not** pick on raw sub-score alone: the LLM's
+`audience_tags` is the labelled audience signal; the sub-scores are
+calibration anchors, not routing votes.
+
+**Threshold schema (in `config/rubric.yaml`).** Thresholds live next to
+the weights so a fork operator can tune routing without code changes.
+
+```yaml
+tier_thresholds:
+  cut:
+    max_score: 39              # score < 40 => cut
+    max_significance: 25       # OR significance <= 25 => cut (editorial-focus floor)
+  on_the_radar:
+    min_score: 40              # score in [40, 69] => on_the_radar (unless cut)
+  promote_to_section:
+    min_score: 70              # score >= 70 => big_picture | hands_on per routing rule
+```
+
+**Threshold calibration history.**
+
+| Date | rubric_version | `promote_to_section.min_score` | Notes |
+|---|---|---|---|
+| 2026-05-30 | v0.3-2026-05-30 | 70 | Initial Shape A introduction. Set without distribution calibration; A2 attribution memos (stream C inputs) found 0 / 444 clusters above 70 on May 27 staging and 2 / 483 on May 29 staging. |
+| **PENDING Phase 1** | v0.4 (proposed) | **55-60** (eval-gated) | Relaxation recommended in `_scratch/c_intervention_map_2026-05-30.md` intervention I1. Final value picked by eval re-rank on May 27 + May 29. Composes with `editorial.yaml` per-source and per-category caps. |
+
+The `cut` clause is the **OR** of the two predicates — either drops the
+cluster. The `on_the_radar` band is the residue. `promote_to_section` is
+the gate into a head section; the routing rule above picks which one.
+
+Thresholds are integers in `[0, 100]`. `rank.py` loads them at startup;
+absent thresholds fall back to the values shown above (encoded as
+module constants) so an under-spec'd rubric still ships a coherent
+issue.
+
+**Picker contract (`summarise.py`).** Each picker reads from a **single
+tier pool**. No scavenging. Sections come up short rather than poach.
+
+| Picker | Pool | Cap | Floor |
+|---|---|---|---|
+| `_pick_pulse` | `tier in {big_picture, hands_on}` and not yet placed | exactly 1 | exactly 1 (publish gate fails if pool is empty) |
+| `_pick_big_picture` | `tier == big_picture` and not yet placed | `_BIG_PICTURE_HARD_CAP` (4) | none |
+| `_pick_hands_on` | `tier == hands_on` and not yet placed | `_HANDS_ON_HARD_CAP` (5) | `_HANDS_ON_MIN_COUNT` (3) — publish gate, not auto-fill |
+| `_pick_on_the_radar` | `tier == on_the_radar` and not yet placed | none | none (may be empty on a slow day) |
+
+The existing source-diversity caps (per-section, per-issue category) keep
+firing **inside** each tier pool. Degraded-mode cap relaxation in
+`_pick_hands_on` Pass 2 is preserved — it relaxes the diversity caps,
+NOT the tier boundary. If the tier=`hands_on` pool itself is thin,
+Hands-On comes up short. The publish gate (next paragraph) decides what
+that means editorially.
+
+`_pick_pulse` reads from `{big_picture, hands_on}` — not just one —
+because the Pulse is "the most important thing today," which can come
+from either editorial axis. The pre-existing pulse eligibility gate
+(signal dimensions, multi-source / canonical_id / trust>=4 sourcing,
+fresh-over-prior-coverage bias) runs on this union pool unchanged.
+After the Pulse is picked, its `cluster_id` is removed from `available`
+so the head-section picker for its tier does not re-claim it.
+
+**Publish gate behaviour.** Today's three-section integrity gate
+(`hands_on >= 3` AND `pulse present`) becomes a **post-condition**
+checked after picking, not a back-pressure that triggers cross-tier
+fill. If the gate fails:
+
+- Engine writes the thin issue to `data/staging/<date>/issue.json`.
+- `Issue.notes` records the shortfall ("hands_on_short: 2 of 3 minimum
+  -- tier pool exhausted").
+- `summarise.py` logs a loud WARNING (same shape as today's
+  cap-starvation warning) so Arman sees it at ratification.
+- Editor decides: publish thin, or `aiv release` skip the day.
+
+Rationale. Under Shape A, "Hands-On is thin" is a real editorial signal
+(few high-scoring practitioner stories landed today), not a bug to paper
+over with `big_picture` stories awkwardly relabelled. The fix for a
+chronically-thin Hands-On lives upstream (sources, prompt, weights), not
+in summarise back-pressure.
+
+**Backward compatibility.** `RankedStory.tier` value-space changes:
+adds `big_picture`, `hands_on`; removes `pulse`. This is a **breaking
+change** to the schema (the `Literal` enum changes). Bump
+`RankedStory.schema_version` from 2 -> 3 and log the migration in the
+[Schema changelog](#schema-changelog).
+
+Existing released archives (9 days under `data/released/`) have rows
+with `tier in {on_the_radar, cut}` only — never `pulse`. v3 readers
+loading these v2 rows: `on_the_radar` and `cut` remain valid values, so
+pydantic parses them transparently; the rows are semantically
+"under-promoted" relative to what Shape A would have assigned, but the
+field is in-vocabulary. v2 readers loading v3 rows: would reject
+`big_picture` / `hands_on` as unknown enum values. Mitigation: this repo
+upgrades all readers in the same PR (no external consumers). No
+on-disk migration; old archives are read-only history and are not
+re-tiered.
+
+Downstream consumer impact:
+- **Dedup (`src/cluster.py`)** — doesn't read `tier`. No impact.
+- **Evals (`evals/run_evals.py`)** — reads `tier` for distribution
+  reporting; new values are additive. Eval Engineer updates any
+  hard-coded `{"on_the_radar", "cut"}` set to include the head-tier
+  values. Eval fixtures with `tier: "on_the_radar"` rows stay valid;
+  fixtures intended to assert Shape A behaviour need re-tiering.
+- **Render (`src/render.py`)** — doesn't read `RankedStory.tier`
+  directly; renders from `Issue.sections`. No impact.
+- **`published_urls.txt`** — derived from `Issue`, not `RankedStory`.
+  No impact.
+- **Tests** — `tests/test_rank.py` cases that assert
+  `_assign_initial_tier` returns `on_the_radar` for everything above
+  cut need updating to assert the new tier distribution. Test Engineer
+  catalogues the breakage in the implementation PR.
+
+#### Pending: Currents rename (Phase 2)
+
+**Status:** drafted 2026-05-30 (stream C). **Awaiting Arman ratification.**
+Tracked in `_scratch/c_intervention_map_2026-05-30.md` (interventions I5,
+I6, I7, I8). Phase 1 (rubric calibration — threshold relax, FS anchor,
+glossary, NEITHER router fix) ships first and does NOT touch the schema.
+Phase 2 is the schema bump.
+
+**Why the rename.** "On the Radar" implies "you might act on this soon" —
+a maturity-promise the section was not actually delivering. Editor's
+stream B taxonomy critique (`_scratch/b_taxonomy_proposal_2026-05-30.md`)
+chose Alternative C: each section names ONE explicit axis. Big Picture =
+audience (leaders), Hands-On = audience (practitioners), Currents =
+maturity (early/drifting, audience-agnostic). Pulse unchanged.
+
+**Schema impact when applied.**
+
+| Model | Field | Old | New | schema_version |
+|---|---|---|---|---|
+| `RankedStory` | `tier` Literal | `{"big_picture", "hands_on", "on_the_radar", "cut"}` | `{"big_picture", "hands_on", "currents", "cut"}` | v3 → v4 |
+| `IssueSection` | `name` Literal (`SectionName`) | `{"pulse", "big_picture", "hands_on", "on_the_radar"}` | `{"pulse", "big_picture", "hands_on", "currents"}` | v1 → v2 |
+| `Issue` | (no field change; carries new section vocabulary transitively) | — | — | v5 → v6 |
+
+**Archive compatibility.** Pydantic `AliasChoices("currents", "on_the_radar")`
+on both fields. Every released v3 `RankedStory` and v1 `IssueSection` row
+parses transparently — the field shows up on the in-memory object as
+`currents` regardless of which name the JSON used. New writes use
+`currents`. No on-disk migration; old archives are read-only history.
+
+**Semantic change beyond the rename.** Phase 2 also drops the maturity
+gate from Big Picture and Hands-On in `_assign_initial_tier`. Head-section
+eligibility becomes `audience_tags`-primary; maturity is carried
+per-story by `SummaryBlock.signal` (`act` / `try` / `discuss` / `watch`)
+and rendered in the `direction_note`. Currents is the audience-agnostic
+early-signal section, not a residue tier. The routing rule above (steps
+1-3) updates accordingly: the `NEITHER` branch (step 3) is also fixed in
+Phase 1 (see intervention I4) so that stories tagged purely `finance`
+and/or `general` route by sub-score when above the promote floor, instead
+of silent-dump to Currents.
+
+**Currents cap.** New `editorial.yaml` field `currents_cap` (recommend 6)
+bounds the papers-overflow runaway. Currents may be wider than head
+sections but is not unbounded. Belongs to architect + llm-engineer.
+
+**Voice rules.** Section-specific voice rules (Pulse / Big Picture /
+Hands-On / Currents) and a mandatory `intro_lead` on Currents land
+together with the rename (editor's stream B Step 4). Currents
+`intro_lead` is the post-condition that gives the aggregate-direction
+promise of PLAN §1 ("every section says where the field moved") a place
+to live in the early-signal tail.
+
+**Tracking.** When Phase 2 ships, this subsection becomes the
+authoritative description (delete "Pending"), the changelog logs the
+schema bump per the table above, and the routing-rule prose above is
+updated to read `currents` instead of `on_the_radar`. Until then, the
+working contract remains `on_the_radar`.
 
 ### `IssueSection` — one section of the rendered issue
 
@@ -174,6 +390,8 @@ SectionName = Literal[
     "big_picture",      # The Big Picture — strategic angles
     "hands_on",         # Hands-On — enthusiasts + builders, hands-on news
     "on_the_radar",     # On the Radar — terse linked list
+                        # PENDING Phase 2 (2026-05-30 stream C, awaiting Arman ratification):
+                        # rename "on_the_radar" -> "currents". See "Pending: Currents rename (Phase 2)".
 ]
 
 
@@ -1195,4 +1413,5 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-05-23 | `Issue` | v2 | v3 | Made `issue_number` **Optional** (`int \| None`, default `None`). Introduces the [Archive: staging vs canonical](#archive-staging-vs-canonical) split: every engine run writes to `data/staging/<date>/` with `issue_number = None`; `python -m src.run --release` promotes staging to canonical (`data/<date>/`) and assigns the number at that moment (`max(canonical issue_numbers) + 1`). Numbering is now a release-time operation, not a summarise-time one. Cross-time dedup, callbacks, and `data/published_urls.txt` all read canonical only -- staging is invisible to history. | Existing archive: none in canonical yet at v0, so no on-disk migration required. v2 readers handling v3 records reject `null` `issue_number` (pydantic would refuse `None` for a required `int`); since no v2 issues exist in canonical and staging is a fresh path, no v2 reader will encounter a v3 staging record. v3 readers handling v2 records accept the integer transparently (Optional permits the integer case). The `Issue` validator no longer enforces `issue_number >= 1` as a required invariant; the `ge=1` constraint applies only when `issue_number is not None`. |
 | 2026-05-23 | Archive layout (paths, not schema) | flat `data/<date>/` | split `data/<date>/` (canonical) + `data/staging/<date>/` (working) | New parallel write path under `data/staging/`. Same five files + embeddings sidecar, same atomic-write rules, same shape. Default engine write target is now staging; canonical is written only by `--release`. See [Archive: staging vs canonical](#archive-staging-vs-canonical). | n/a — first introduction. Round B (a follow-up refactor PR) updates `src/fetch.py`, `src/cluster.py`, `src/rank.py`, `src/summarise.py`, `src/render.py`, `src/run.py` to write to staging by default and to expose `--release`. Until Round B lands, the on-disk layout still matches the pre-staging behaviour; this contract specifies the target state. |
 | 2026-05-25 | `Cluster`, `SummaryBlock` | v1 | v2 | Renamed `cross_time_ref` -> `prior_coverage_ref` on both models (task #88). The old name implied temporal progression ("continuation"); what we actually detect is topical RECURRENCE. The rename keeps the semantic honest -- the field just says "this cluster has been covered before" without implying the new article carries new information. Pydantic `validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref")` retained so already-released archive files (e.g. `data/released/2026-05-24/issue.json`) continue to parse without rewriting any on-disk bytes. Also: `_apply_continuation_penalty` -> `_apply_prior_coverage_penalty`, `_CONTINUATION_SIGNIFICANCE_CAP` -> `_PRIOR_COVERAGE_SIGNIFICANCE_CAP`, log message wording "continuation penalty applied" -> "prior-coverage penalty applied", and `RANK_PROMPT_VERSION` v0.1 -> v0.3 (prompt content unchanged; bump records the audit-tagged log wording change at the rank-output level). | No on-disk migration. The pydantic alias means every existing v1 archive file (`data/released/<date>/issue.json` and `clusters.jsonl`) loads via `Issue.model_validate_json` / `Cluster.model_validate_json` exactly as before -- the field shows up on the in-memory object as `prior_coverage_ref` regardless of which name the JSON used. New writes use the new name (because `extra="forbid"` and pydantic serialises by the field-declaration name by default), so future archives will only contain `prior_coverage_ref`; mixed-vintage corpora remain parseable. Tested by `tests/test_models.py::TestCluster::test_prior_coverage_ref_alias_accepts_old_field_name` and by parsing `data/released/2026-05-24/issue.json` end-to-end. |
+| 2026-05-30 | `RankedStory` | v2 | v3 | `tier` literal value-space changed from `{"pulse", "on_the_radar", "cut"}` to `{"big_picture", "hands_on", "on_the_radar", "cut"}`. `pulse` removed (Pulse is now picked by `summarise._pick_pulse` from the union of `big_picture` and `hands_on` pools — see [Tier as authority](#tier-as-authority-rank---summarise-routing)). `big_picture` and `hands_on` added as deterministic outputs of `rank._assign_initial_tier`, driven by `config/rubric.yaml -> tier_thresholds` and the `audience_tags`-primary routing rule. Tier is now a HARD section boundary in `summarise.py`: each `_pick_*` reads from a single tier pool with no cross-tier scavenging. The three-section integrity gate (`hands_on >= 3`, `pulse present`) becomes a post-condition the Editor judges, not back-pressure that pulls from neighbouring tiers. Also: `config/rubric.yaml` gains a `tier_thresholds` block (additive); `rubric_version` bumps to v0.3-2026-05-30. | Existing released archive: 9 days of `data/released/<date>/ranked.jsonl` carry v2 rows with `tier in {on_the_radar, cut}` only (the pre-fix bug). These values remain valid under v3, so the rows parse transparently — they are semantically under-promoted relative to what Shape A would have assigned, but the field is in-vocabulary. We do NOT re-tier history. v2 readers loading a v3 row would reject `big_picture` / `hands_on` as unknown enum values; mitigation is that all in-repo readers upgrade in the same PR (no external consumers). Tests that asserted `_assign_initial_tier` returns `on_the_radar` for everything above the cut need updating in the implementation PR; Test Engineer catalogues the breakage there. Eval fixtures: existing rows remain valid; fixtures intended to exercise Shape A picker behaviour need re-tiering. |
 | 2026-05-24 | `Issue` | v4 | v5 | Added `revision: int = 0` (`ge=0`). Same-date re-release (opt-in via `aiv release --revise`) preserves `issue_number` and bumps `revision` instead of consuming a new integer in the registry. Display identifier is now `Issue.display_number` -> `"{issue_number}"` when `revision == 0`, else `"{issue_number}.{revision}"` (`#2`, `#2.1`, `#2.2`). The integer registry semantics are unchanged: uniqueness, monotonic-increase, and `paths.all_released_dates()` all still operate on the integer base; `revision` is a per-date secondary counter. Templates render `issue.display_number`; landing-page archive entries carry `display_number` alongside `issue_number`. See [Issue Number Registry -> Same-date re-release (revision bump)](#issue-number-registry). Motivating case: prompt drift fix on issue #2 (2026-05-24) re-shipped as #2.1 instead of burning #3. | Existing canonical archive (issues #1, #2 on disk) loads transparently: missing `revision` field defaults to 0 via pydantic; `display_number` returns `"1"`, `"2"`. v4 readers handling v5 records: pydantic `extra="forbid"` on `Issue` means a v4 reader of a v5 record would reject the unknown `revision` field. **Mitigation:** this repo upgrades all readers in the same PR (one binary, no external consumers). v5 readers handling v4 records: `revision` defaults to 0, display behaviour is identical to v4. No on-disk migration script is required. |

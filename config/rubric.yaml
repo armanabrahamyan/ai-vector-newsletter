@@ -19,12 +19,38 @@
 # tool stories. Eval Engineer ratification pending.
 
 schema_version: 2
-rubric_version: "v0.2-2026-05-24"
+rubric_version: "v0.3-2026-05-30"
+# v0.3 (2026-05-30): add tier_thresholds block -- tier is now load-bearing
+# in summarise.py's section routing (the picker gates by tier instead of
+# scavenging audience_tags + score). The thresholds below pin the exact
+# cut / radar / promote bands so the rubric ratifies what rank.py decides.
 # v0.2: criterion + audience-tag rename to match v0.8 section vocabulary.
 #   builder_utility       -> hands_on_utility
 #   leadership_relevance  -> big_picture_relevance
 #   audience tag builder  -> hands_on
 #   audience tag leader   -> big_picture
+
+# ---------------------------------------------------------------------------
+# Tier thresholds. Read by src/rank.py at module init -- govern the
+# coarse-grained editorial slot assigned in _assign_initial_tier. The
+# thresholds matter because tier is now the AUTHORITY in summarise.py:
+# pickers gate strictly on tier, with no cross-tier scavenging. Misset
+# thresholds -> sections starve or balloon.
+#
+#   cut.max_score         -- below this, a story is cut regardless of fit.
+#   cut.max_significance  -- significance <= this also cuts (the editorial-
+#                            focus skill's Tier-3 trap door).
+#   on_the_radar.min_score          -- floor for surfacing at all.
+#   promote_to_section.min_score    -- floor for landing in Big Picture or
+#                                      Hands-On (anything between
+#                                      on_the_radar.min and promote.min
+#                                      stays as on_the_radar).
+# ---------------------------------------------------------------------------
+
+tier_thresholds:
+  cut: { max_score: 39, max_significance: 25 }
+  on_the_radar: { min_score: 40 }
+  promote_to_section: { min_score: 70 }
 
 # ---------------------------------------------------------------------------
 # Criteria. Each is scored 0--100. Final score = weighted sum, weights sum

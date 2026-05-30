@@ -18,13 +18,14 @@ import datetime as _dt
 
 import pytest
 
-from src.models import Cluster, Item, RankedStory, SummaryBlock
+from src.models import Cluster, IssueSection, Item, RankedStory, SummaryBlock
 from src.summarise import (
     DEFAULT_PER_SOURCE_PER_SECTION,
     EditorialConfig,
     PULSE_ELIGIBILITY_TRUST_FLOOR,
     _assemble_sections,
     _cluster_category,
+    _compute_issue_shape,
     _pick_big_picture,
     _pick_hands_on,
     _pick_on_the_radar,
@@ -846,9 +847,17 @@ def _cluster_with_source(
 
 def _ranked_tagged(
     cluster_id: str, *, score: int, tags: list[str], hands_on_score: int = 75,
+    tier: str | None = None,
 ) -> RankedStory:
     """A ranked story with chosen audience tags. Score chosen against the
-    rubric weights so RankedStory validates."""
+    rubric weights so RankedStory validates.
+
+    Schema v3 (2026-05-30): ``tier`` defaults to one derived from ``tags``
+    (big_picture / hands_on / on_the_radar) so callers asking for
+    ``tags=["big_picture"]`` see a story that the picker will accept under
+    the tier-pool gate. Explicit ``tier=`` overrides -- callers that want
+    to test the gate REJECTING a story (e.g. wrong tier) pass it directly.
+    """
     big_picture = 50
     fs = 25
     significance = 60
@@ -864,13 +873,20 @@ def _ranked_tagged(
         "financial_services_impact": fs,
         "freshness_momentum": freshness,
     }
+    if tier is None:
+        if "big_picture" in tags:
+            tier = "big_picture"
+        elif "hands_on" in tags:
+            tier = "hands_on"
+        else:
+            tier = "on_the_radar"
     return RankedStory(
         cluster_id=cluster_id,
         score=round(weighted),
         breakdown=breakdown,
         audience_tags=tags,  # type: ignore[arg-type]
         rationale="t",
-        tier="on_the_radar",
+        tier=tier,  # type: ignore[arg-type]
         prompt_version="v0.2",
     )
 
@@ -981,7 +997,13 @@ class TestCategoryCapPerIssue:
 
     def test_category_cap_filters_across_sections(self) -> None:
         """Six paper candidates across big_picture + hands_on, cap=4. Only
-        4 papers land in the whole issue; the remaining 2 are dropped."""
+        4 papers land in the whole issue; the remaining 2 are dropped.
+
+        Schema v3 (2026-05-30): Hands-On's degraded-mode Pass 2 is gone,
+        so the per-issue category cap is now a hard ceiling -- Hands-On
+        cannot scavenge past it to hit a minimum. The shape post-condition
+        surfaces the under-fill as amber instead.
+        """
         from collections import Counter
         cfg = _papers_cfg(per_source=10, papers_cap=4)  # high per-source so only category binds
         # Three big_picture papers + three hands_on papers; cap=4.
@@ -1020,17 +1042,12 @@ class TestCategoryCapPerIssue:
             categories_used_this_issue=categories_used,
         )
         # Big Picture takes 3 (its hard cap is 4, all 3 are eligible).
-        # Hands-On then sees 1 paper slot left in the issue-wide cap.
-        # But Hands-On has a minimum of 3, so degraded mode fires and
-        # fills past the cap to reach 3. Crucially, the cap WAS the active
-        # gate in Pass 1 -- the test asserts that.
+        # Hands-On then sees 1 paper slot left in the issue-wide cap and
+        # accepts exactly one -- no degraded-mode scavenge under v3.
         assert len(bp_picked) == 3
-        # Hands-On gets 3 via degraded mode (one in cap, two over cap).
-        assert len(ho_picked) == 3
-        # The category counter ends at the actually-accepted count
-        # (including degraded-mode fills, which still update the counter
-        # so On the Radar sees an honest picture).
-        assert categories_used["papers"] == 6
+        assert len(ho_picked) == 1
+        # 3 (bp) + 1 (ho) = 4 papers consumed; cap was the gate.
+        assert categories_used["papers"] == 4
 
     def test_pulse_category_counts_toward_per_category_cap(self) -> None:
         """When the Pulse is itself a paper, the per-issue category counter
@@ -1062,15 +1079,20 @@ class TestCategoryCapPerIssue:
         assert categories_used["papers"] == 4
 
 
-class TestCapDegradedMode:
-    """When source-diversity caps would starve Hands-On below the minimum
-    of 3, the picker logs WARNING and fills from over-cap candidates."""
+class TestCapHardCeiling:
+    """Schema v3 (2026-05-30): Hands-On's degraded-mode Pass 2 is GONE.
+    Source-diversity caps are now a hard ceiling -- the picker does not
+    scavenge past the per-issue category cap to chase a minimum. The
+    under-fill is surfaced by the shape post-condition (Issue.notes), not
+    masked by quietly relaxing the cap."""
 
-    def test_degraded_mode_fills_to_minimum_with_warning(self, caplog) -> None:
+    def test_caps_starve_hands_on_no_degraded_mode_no_warning(
+        self, caplog,
+    ) -> None:
         """Cap=4 papers; Pulse + Big Picture have already consumed 4.
-        Hands-On then sees 5 paper candidates with cap exhausted. Pass 1
-        accepts 0; Pass 2 (degraded mode) accepts 3 (the minimum), logs
-        WARNING."""
+        Hands-On then sees 5 paper candidates with cap exhausted. The
+        picker accepts ZERO (cap is binding) and emits NO warning about
+        relaxing caps. Under-fill is the shape post-condition's job."""
         from collections import Counter
         import logging as _logging
         cfg = _papers_cfg(per_source=10, papers_cap=4)
@@ -1092,13 +1114,13 @@ class TestCapDegradedMode:
                 blocks, available, clusters_by_id=clusters, cfg=cfg,
                 categories_used_this_issue=categories_used,
             )
-        # Minimum 3 hit via degraded mode.
-        assert len(picked) == 3
-        # WARNING was logged with the cap-starved Hands-On message.
-        assert any("SOURCE-DIVERSITY CAPS STARVED HANDS-ON" in r.message
-                   for r in caplog.records)
-        # Category counter reflects the degraded fills too.
-        assert categories_used["papers"] == 7
+        # Cap is the hard ceiling: zero accepted.
+        assert picked == []
+        # No degraded-mode warning fires -- the old Pass 2 is gone.
+        assert not any("SOURCE-DIVERSITY CAPS STARVED HANDS-ON" in r.message
+                       for r in caplog.records)
+        # Category counter is unchanged from the pre-fill (cap held).
+        assert categories_used["papers"] == 4
 
 
 class TestUnknownCategoryUncapped:
@@ -1231,11 +1253,20 @@ class TestAssembleSectionsIntegration:
 
     def test_caps_propagate_pulse_to_subsequent_sections(self) -> None:
         """Pulse picks a paper. The per-category counter sees it before
-        Big Picture runs; Big Picture's paper budget is therefore reduced."""
-        # Build 7 paper candidates: top one becomes Pulse, rest go through
-        # picker chain. Cap=4 papers per issue.
-        ids = [f"c_aaaaaaaaaaaa40{i:02x}" for i in (1, 2, 3, 4, 5, 6, 7)]
-        # All have hands_on + big_picture so they're eligible for either.
+        Big Picture runs; Big Picture's paper budget is therefore reduced.
+
+        Schema v3 (2026-05-30): tier is the routing authority. We split
+        the 7 candidates across big_picture / hands_on tiers explicitly so
+        the picker chain has stories to find in each tier pool. Degraded-
+        mode Pass 2 is gone; the cap is a hard ceiling and under-fill
+        surfaces via the shape post-condition.
+        """
+        # 4 big_picture-tier + 3 hands_on-tier paper candidates. Cap=4
+        # papers per issue. Top story becomes Pulse from the head-tier
+        # union (eligibility gate passes via size>1 in clusters below).
+        bp_ids = [f"c_aaaaaaaaaaaa40{i:02x}" for i in (1, 2, 3, 4)]
+        ho_ids = [f"c_aaaaaaaaaaaa40{i:02x}" for i in (5, 6, 7)]
+        ids = bp_ids + ho_ids
         # significance/hands_on_utility/freshness >= 70 so they're pulse-class.
         breakdown = {
             "significance": 80, "hands_on_utility": 80,
@@ -1249,7 +1280,9 @@ class TestAssembleSectionsIntegration:
             RankedStory(
                 cluster_id=cid, score=weighted, breakdown=breakdown,
                 audience_tags=["big_picture", "hands_on"],
-                rationale="t", tier="pulse", prompt_version="v0.2",
+                rationale="t",
+                tier="big_picture" if cid in bp_ids else "hands_on",
+                prompt_version="v0.2",
             )
             for cid in ids
         ]
@@ -1285,15 +1318,13 @@ class TestAssembleSectionsIntegration:
             editorial_config=cfg,
         )
         # Pulse always carries 1 paper. Remaining cap budget: 3 papers.
-        # Big Picture has hard cap 4 but only 3 paper slots remain -> 3.
-        # Hands-On: has 0 paper slots left under cap; minimum 3 forces
-        # degraded mode -> 3.
-        # On the Radar gets whatever's left; cap is exhausted so all
-        # remaining papers are dropped from the issue.
+        # Pulse picks the first head-tier candidate (a big_picture). Big
+        # Picture's pool then has 3 left (the other big_picture-tier
+        # stories); cap=4 - 1 (pulse) = 3 slots remain -> all 3 land.
+        # Hands-On's pool has 3 hands_on-tier candidates and 0 paper slots
+        # under cap; degraded-mode fill is GONE -> 0 accepted.
+        # On the Radar is empty (no on_the_radar-tier stories in the input).
         assert len(pulse.stories) == 1
-        assert len(bp.stories) == 3  # paper cap exhausts at 4 total used
-        assert len(ho.stories) == 3  # degraded-mode fill to minimum
-        # 7 candidates - 1 (pulse) - 3 (bp) - 3 (ho) = 0 remaining; the
-        # category cap has been exhausted plus degraded-mode-pulled, so
-        # On the Radar has nothing eligible left.
+        assert len(bp.stories) == 3
+        assert len(ho.stories) == 0
         assert len(rad.stories) == 0

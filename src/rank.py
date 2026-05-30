@@ -169,6 +169,26 @@ _LOG = logging.getLogger("ai_vector.rank")
 
 
 # ---------------------------------------------------------------------------
+# Tier-threshold defaults. Mirrors config/rubric.yaml ``tier_thresholds`` for
+# the fallback path when the YAML is unreadable. Keep in lockstep with the
+# YAML or _assign_initial_tier silently drifts -- the eval-harness module-
+# integrity check should flag drift, but defaults here matter when the
+# YAML round-trips through a corrupt edit.
+#
+# Schema (mirrors the YAML):
+#   cut: {max_score: int, max_significance: int}
+#   on_the_radar: {min_score: int}
+#   promote_to_section: {min_score: int}
+# ---------------------------------------------------------------------------
+
+_DEFAULT_TIER_THRESHOLDS: dict[str, dict[str, int]] = {
+    "cut": {"max_score": 39, "max_significance": 25},
+    "on_the_radar": {"min_score": 40},
+    "promote_to_section": {"min_score": 70},
+}
+
+
+# ---------------------------------------------------------------------------
 # Editorial-focus filter -- INLINED into the prompt per the LLM Engineer
 # spec. Pasted (not linked) so the prompt is self-contained for audit and
 # offline review. Source of truth: .claude/skills/editorial-focus.md.
@@ -282,6 +302,7 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
         )
 
     rubric_block = _build_rubric_block(_DEFAULT_RUBRIC_PATH)
+    tier_thresholds = _load_tier_thresholds(_DEFAULT_RUBRIC_PATH)
 
     # --- Step 3+4: LLM scoring ---------------------------------------------
     # Fan out per-cluster LLM calls across a thread pool. The calls are fully
@@ -304,6 +325,7 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
                 items_by_id=items_by_id,
                 rubric_block=rubric_block,
                 trust_weights=trust_weights,
+                tier_thresholds=tier_thresholds,
                 today=run_date,
             ): cluster
             for cluster in survivors
@@ -667,6 +689,44 @@ def _minimal_rubric_block() -> str:
     )
 
 
+def _load_tier_thresholds(
+    rubric_path: Path = _DEFAULT_RUBRIC_PATH,
+) -> dict[str, dict[str, int]]:
+    """Load the ``tier_thresholds`` block from config/rubric.yaml.
+
+    Returns the in-code ``_DEFAULT_TIER_THRESHOLDS`` (copied) when the YAML
+    is unreadable or missing the block -- keeps rank.py runnable in
+    degraded-config conditions. We only copy fields we recognise; unknown
+    keys are ignored to keep the schema additive-only.
+    """
+    fallback = {k: dict(v) for k, v in _DEFAULT_TIER_THRESHOLDS.items()}
+    try:
+        data = yaml.safe_load(rubric_path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        _LOG.exception(
+            "rank: could not load rubric at %s for tier_thresholds -- "
+            "using in-code defaults", rubric_path,
+        )
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    block = data.get("tier_thresholds") or {}
+    if not isinstance(block, dict):
+        _LOG.warning(
+            "rank: tier_thresholds in %s is not a mapping; using defaults",
+            rubric_path,
+        )
+        return fallback
+    out = fallback
+    for top_key in ("cut", "on_the_radar", "promote_to_section"):
+        section = block.get(top_key)
+        if isinstance(section, dict):
+            for sub_key, value in section.items():
+                if isinstance(value, int) and sub_key in out[top_key]:
+                    out[top_key][sub_key] = value
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Per-cluster ranking call.
 # ---------------------------------------------------------------------------
@@ -693,6 +753,7 @@ def _rank_one(
     rubric_block: str,
     trust_weights: dict[str, int],
     *,
+    tier_thresholds: dict[str, dict[str, int]] | None = None,
     today: _dt.date | None = None,
 ) -> RankedStory | None:
     """Score one cluster with the LLM. Returns ``None`` on parse/validation
@@ -702,6 +763,14 @@ def _rank_one(
         cluster, items_by_id, rubric_block, trust_weights, today=today,
     )
     temperature = float(os.getenv("LLM_TEMPERATURE_RANK", "0.2"))
+    # Default to the in-code constants when no thresholds were threaded
+    # through (older test paths). Mirrors _load_tier_thresholds's
+    # fallback shape so _assign_initial_tier's contract is uniform.
+    thresholds = (
+        tier_thresholds
+        if tier_thresholds is not None
+        else {k: dict(v) for k, v in _DEFAULT_TIER_THRESHOLDS.items()}
+    )
 
     def _build_story_from_parsed(parsed: _ParsedScore) -> RankedStory:
         """Apply deterministic post-LLM penalties + tier assignment, then
@@ -741,11 +810,14 @@ def _rank_one(
         # above) before pydantic raises.
         score = _weighted_score(parsed.breakdown)
 
-        # The LLM picks audience tags; tier is the editorial slot. rank.py's
-        # job is to assign an initial tier -- summarise.py and the Editor
-        # may relabel. Below-threshold -> "cut"; everything else starts as
-        # "on_the_radar" and summarise.py promotes by section logic.
-        tier = _assign_initial_tier(score, parsed.breakdown)
+        # The LLM picks audience tags; tier is the editorial slot. rank.py
+        # now writes the FULL slot (schema v3, 2026-05-30): cut, on_the_radar,
+        # hands_on, or big_picture. summarise.py gates its pickers strictly
+        # on this -- no scavenging across tiers. Pulse is picked downstream
+        # from the union of the two head-section tiers.
+        tier = _assign_initial_tier(
+            score, parsed.breakdown, parsed.audience_tags, thresholds,
+        )
 
         return RankedStory(
             cluster_id=cluster.cluster_id,
@@ -1233,24 +1305,72 @@ def _apply_freshness_inferred_penalty(
 
 
 def _assign_initial_tier(
-    score: int, breakdown: dict[str, int]
+    score: int,
+    breakdown: dict[str, int],
+    audience_tags: list[str],
+    thresholds: dict[str, dict[str, int]],
 ) -> str:
     """Initial tier assignment per DESIGN.md note that tier is "the bridge
-    between rank and summarise." rank.py applies a coarse first-pass; the
-    Editor and ``summarise.py`` may relabel.
+    between rank and summarise." Schema v3 (2026-05-30): rank.py now writes
+    the FULL editorial slot, not just a floor. summarise.py gates its
+    pickers strictly on tier -- no cross-tier scavenging -- so the routing
+    decision lives here, where breakdown + audience_tags + thresholds are
+    co-located.
 
-    Heuristic (intentionally conservative):
-      - score < 35 or significance <= 25 -> "cut"
-      - otherwise -> "on_the_radar" (summarise.py promotes to pulse /
-        big_picture / hands_on based on its own routing logic; v0.8 sections)
+    Logic (in order):
+      1. Cut: score < cut.max_score OR significance <= cut.max_significance.
+         The significance trapdoor is the editorial-focus skill's Tier-3
+         rule -- vendor fluff and AI-tangential hype get floored at
+         significance <= 25 by the prompt and cut here even if their other
+         dimensions inflate the weighted score.
+      2. On the Radar: score < promote_to_section.min_score. The
+         middle band -- surfaced but not promoted.
+      3. Promoted (score >= promote threshold) -- route by audience_tags:
+         * has_hands_on XOR has_big_picture -> the matching tier.
+         * BOTH -> tiebreak: pick hands_on iff
+           breakdown[hands_on_utility] >= breakdown[big_picture_relevance];
+           ties go to big_picture (the more strategic surface).
+         * NEITHER (only general / finance) -> on_the_radar regardless of
+           score. The head sections require an explicit audience match;
+           a high-scoring general-interest story still belongs in the
+           terse linked list, not Big Picture / Hands-On.
 
-    DESIGN.md ambiguity: the spec leaves "where exactly tier is decided"
-    split across rank and summarise. We resolve it by having rank set a
-    floor (drop the truly-cut) and let summarise route everything else.
+    Pulse is NOT a stored tier -- summarise.py picks the Pulse from the
+    union of big_picture + hands_on stories.
     """
     sig = breakdown.get("significance", 0)
-    if score < 35 or sig <= 25:
+    cut = thresholds.get("cut", _DEFAULT_TIER_THRESHOLDS["cut"])
+    radar = thresholds.get(
+        "on_the_radar", _DEFAULT_TIER_THRESHOLDS["on_the_radar"]
+    )
+    promote = thresholds.get(
+        "promote_to_section", _DEFAULT_TIER_THRESHOLDS["promote_to_section"]
+    )
+    # `radar` is intentionally unused in the conditions below -- it serves
+    # as the documented floor between cut and the promote band, equivalent
+    # to (cut.max_score + 1). Read on rubric reload to validate via the
+    # schema; the routing itself is driven by cut.* and promote.min_score.
+    _ = radar
+
+    if score < cut["max_score"] or sig <= cut["max_significance"]:
         return "cut"
+    if score < promote["min_score"]:
+        return "on_the_radar"
+
+    tag_set = set(audience_tags)
+    has_hands_on = "hands_on" in tag_set
+    has_big_picture = "big_picture" in tag_set
+
+    if has_hands_on and not has_big_picture:
+        return "hands_on"
+    if has_big_picture and not has_hands_on:
+        return "big_picture"
+    if has_hands_on and has_big_picture:
+        ho = breakdown.get("hands_on_utility", 0)
+        bp = breakdown.get("big_picture_relevance", 0)
+        # Strict >= so ties (ho == bp) flow to big_picture per spec.
+        return "hands_on" if ho > bp else "big_picture"
+    # Neither head-section tag -> general / finance only -> on_the_radar.
     return "on_the_radar"
 
 

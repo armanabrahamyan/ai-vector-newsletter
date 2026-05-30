@@ -835,6 +835,22 @@ def summarise(date: _dt.date | None = None) -> Issue:
     _populate_section_intro(hands_on_section)
     _populate_section_intro(on_the_radar_section)
 
+    # --- Shape post-condition (schema v3, 2026-05-30) -------------------
+    # With tier as authority in section routing, an under-fed section is
+    # an upstream signal -- either rank.py didn't promote enough stories,
+    # or the rubric thresholds are misset for today's input. We compute
+    # the issue shape here and stamp it (plus a one-line reason) into
+    # Issue.notes so the editor / Arman / release banner see it without
+    # re-deriving from section counts. Does NOT block on red; that's a
+    # render-side editorial banner concern.
+    shape, shape_reason = _compute_issue_shape(
+        pulse_section, big_picture_section, hands_on_section, on_the_radar_section,
+    )
+    if shape in {"amber", "red"}:
+        _LOG.warning(
+            "summarise: issue shape %s -- %s", shape, shape_reason,
+        )
+
     # --- Construct + validate -------------------------------------------
     # issue_number is intentionally None in staging output. Numbering is a
     # release-time operation; see DESIGN.md "Issue Number Registry" +
@@ -850,6 +866,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
             "summarise": SUMMARISE_PROMPT_VERSION,
             "pulse": PULSE_PROMPT_VERSION,
         },
+        notes=f"shape: {shape} -- {shape_reason}",
     )
 
     _write_issue_json(issue_out, issue)
@@ -1750,6 +1767,78 @@ def _assemble_sections(
     return (pulse_section, big_picture_section, hands_on_section, on_the_radar_section)
 
 
+def _compute_issue_shape(
+    pulse_section: IssueSection,
+    big_picture_section: IssueSection,
+    hands_on_section: IssueSection,
+    on_the_radar_section: IssueSection,
+) -> tuple[str, str]:
+    """Compute the issue's "shape" (green / amber / red) + a one-line reason.
+
+    Schema v3 (2026-05-30): the publish gate becomes a post-condition. Under
+    the tier-as-authority routing, an under-fed section is a real editorial
+    signal -- rank.py either didn't promote enough head-section stories OR
+    the rubric thresholds are misset for today's input. This function
+    surfaces that signal via ``Issue.notes`` (not blocking) so the editor
+    and Arman see it at ratification.
+
+    Bands:
+      green  -- pulse present AND hands_on >= 3 AND on_the_radar >= 3
+      amber  -- pulse present AND (
+                  hands_on in {1, 2} OR on_the_radar in {1, 2} OR
+                  big_picture < 2
+                )
+      red    -- pulse missing OR (hands_on == 0 AND big_picture == 0)
+
+    The bands are precedence-ordered: red overrides amber overrides green.
+    A reason string names the binding constraint (e.g. "hands_on: 2 (tier
+    pool exhausted)") so the post-condition is auditable.
+    """
+    pulse_count = len(pulse_section.stories)
+    bp_count = len(big_picture_section.stories)
+    ho_count = len(hands_on_section.stories)
+    rad_count = len(on_the_radar_section.stories)
+
+    # Red is the hard floor. Pulse missing is a contract violation upstream
+    # (Issue.pulse mandates exactly one block), so this branch fires only
+    # in narrow unit-test paths -- but the shape post-condition models it.
+    if pulse_count == 0:
+        return "red", "pulse missing"
+    if ho_count == 0 and bp_count == 0:
+        return (
+            "red",
+            f"hands_on: 0 AND big_picture: 0 (radar: {rad_count}, "
+            "tier pool exhausted)",
+        )
+
+    # Amber bands. Order matters only for the reason string -- the band
+    # itself is one bucket; we pick the most-binding constraint as reason.
+    if ho_count in (1, 2):
+        return (
+            "amber",
+            f"hands_on: {ho_count} (tier pool exhausted)",
+        )
+    if rad_count in (1, 2):
+        return (
+            "amber",
+            f"on_the_radar: {rad_count} (tier pool exhausted)",
+        )
+    if bp_count < 2:
+        return (
+            "amber",
+            f"big_picture: {bp_count} (tier pool exhausted)",
+        )
+
+    # Green path: pulse present, hands_on >= 3, on_the_radar >= 3,
+    # big_picture >= 2. Reason names the counts so the audit trail is
+    # uniform across bands.
+    return (
+        "green",
+        f"pulse: 1, big_picture: {bp_count}, "
+        f"hands_on: {ho_count}, on_the_radar: {rad_count}",
+    )
+
+
 def _accept_into_counters(
     cluster_id: str,
     clusters_by_id: dict[str, Cluster] | None,
@@ -1909,6 +1998,27 @@ def _pick_pulse(
     if not blocks:
         return None
 
+    # --- Tier-pool gate (schema v3, 2026-05-30) -------------------------
+    # Pulse is picked from the union of the two head-section tiers
+    # (big_picture + hands_on). rank.py writes these tiers when a story
+    # clears the promote threshold; on_the_radar / cut stories are not
+    # Pulse-eligible. When the pool is empty (no head-section tiers today),
+    # fall back to the unfiltered set with a WARNING -- Issue.pulse
+    # requires exactly one story, so we ship the smell rather than crash.
+    head_tier_blocks = [
+        (s, b) for s, b in blocks if s.tier in {"big_picture", "hands_on"}
+    ]
+    if head_tier_blocks:
+        tier_pool = head_tier_blocks
+    else:
+        _LOG.warning(
+            "summarise: NO HEAD-SECTION TIER FOR PULSE -- zero stories tiered "
+            "big_picture or hands_on today (%d candidates). Falling back to "
+            "the full block list; Pulse will pick from on_the_radar / cut.",
+            len(blocks),
+        )
+        tier_pool = list(blocks)
+
     # --- v0.10 eligibility gate ----------------------------------------
     # Partition into eligible / ineligible *before* the fresh/recurring
     # partition. Ineligible candidates are excluded from the normal pool;
@@ -1916,7 +2026,7 @@ def _pick_pulse(
     # unfiltered set (with a WARNING).
     eligible_blocks: list[tuple[RankedStory, SummaryBlock]] = []
     ineligible_blocks: list[tuple[RankedStory, SummaryBlock]] = []
-    for story, block in blocks:
+    for story, block in tier_pool:
         cluster = (
             clusters_by_id.get(story.cluster_id)
             if clusters_by_id is not None
@@ -1936,12 +2046,12 @@ def _pick_pulse(
     using_fallback = False
     if eligible_blocks:
         gate_blocks = eligible_blocks
-    else:
+    elif tier_pool:
         # Hard fallback. Every candidate failed the gate. Pick from the
-        # full set anyway so the issue still ships, but log loudly --
+        # tier pool anyway so the issue still ships, but log loudly --
         # Arman sees this at ratification and decides whether to ship.
         using_fallback = True
-        top = blocks[0][0]  # blocks are score-desc; top is the chosen-anyway
+        top = tier_pool[0][0]  # tier_pool is score-desc; top is the chosen-anyway
         _LOG.warning(
             "summarise: PULSE ELIGIBILITY GATE FOUND NO ELIGIBLE CANDIDATES "
             "(%d candidates, all failed sourcing-credibility test). "
@@ -1950,9 +2060,15 @@ def _pick_pulse(
             "ship at all -- no story carries multi-source, a canonical "
             "artefact, or a trust>=%d source.",
             len(ineligible_blocks), top.cluster_id, top.score,
-            blocks[0][1].headline, PULSE_ELIGIBILITY_TRUST_FLOOR,
+            tier_pool[0][1].headline, PULSE_ELIGIBILITY_TRUST_FLOOR,
         )
-        gate_blocks = blocks
+        gate_blocks = tier_pool
+    else:
+        # No tier_pool AND no eligible (shouldn't happen given the guard
+        # above sets tier_pool = blocks when head-tier is empty, but the
+        # `blocks` list itself could conceivably be empty in a unit-test
+        # path that bypasses the entry check; signal it loudly and bail).
+        return None
 
     # Partition by prior-coverage status. prior_coverage_ref lives on the
     # SummaryBlock (mirrored from Cluster at construction time in
@@ -2006,9 +2122,9 @@ def _pick_pulse(
     # v0.10: when the eligibility gate fires and the unfiltered top
     # candidate is NOT what we chose, log INFO with both ids. (Skip in
     # fallback mode -- the WARNING above already says everything.)
-    if (not using_fallback and ineligible_blocks
-            and blocks[0][0].cluster_id != chosen[0].cluster_id):
-        top_overall = blocks[0][0]
+    if (not using_fallback and ineligible_blocks and tier_pool
+            and tier_pool[0][0].cluster_id != chosen[0].cluster_id):
+        top_overall = tier_pool[0][0]
         _LOG.info(
             "summarise: Pulse eligibility gate demoted top-scored "
             "ineligible story %s (score=%d) in favour of eligible story "
@@ -2038,8 +2154,14 @@ def _pick_big_picture(
     cfg: EditorialConfig | None = None,
     categories_used_this_issue: Counter[str] | None = None,
 ) -> list[str]:
-    """Tagged 'big_picture' and not yet placed. Hard cap at 4. The Big
-    Picture is the first section after Pulse, per editorial direction.
+    """Stories tiered 'big_picture' and not yet placed. Hard cap at 4. The
+    Big Picture is the first section after Pulse, per editorial direction.
+
+    Schema v3 (2026-05-30): pool is strictly ``tier == "big_picture"``. No
+    audience_tags scavenging, no cross-tier fallback. rank.py routes via
+    `_assign_initial_tier` -- if the section is short, the upstream signal
+    is "not enough promoted big_picture stories today," not "the picker
+    is starving."
 
     Source-diversity caps (2026-05-27): when ``cfg`` is provided, accept
     only stories that don't push any of their sources over the per-section
@@ -2051,7 +2173,7 @@ def _pick_big_picture(
     for story, _block in blocks:
         if story.cluster_id not in available:
             continue
-        if "big_picture" not in set(story.audience_tags):
+        if story.tier != "big_picture":
             continue
         if cfg is not None:
             cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
@@ -2081,49 +2203,36 @@ def _pick_hands_on(
     cfg: EditorialConfig | None = None,
     categories_used_this_issue: Counter[str] | None = None,
 ) -> list[str]:
-    """Tagged 'hands_on', OR tagged 'general' with hands_on_utility >= 70.
-    Hard cap at 5.
+    """Stories tiered 'hands_on' and not yet placed. Hard cap at 5.
 
-    Source-diversity caps (2026-05-27) plus degraded-mode safety net. Two
-    passes:
+    Schema v3 (2026-05-30): pool is strictly ``tier == "hands_on"``. The
+    audience_tags / hands_on_utility-fallback heuristic is gone -- rank.py
+    routes via `_assign_initial_tier`. The degraded-mode Pass 2 (relax
+    caps when the section is below minimum) is gone too: cross-tier
+    scavenging is what was producing empty On-the-Radar sections, and the
+    shape post-condition in summarise.py now surfaces under-fill instead.
 
-      Pass 1: cap-aware fill in score-desc order. Skip any candidate that
-      would push a source over the per-section cap or a category over the
-      per-issue cap.
-
-      Pass 2 (degraded mode): if the section has fewer than
-      ``_HANDS_ON_MIN_COUNT`` stories after Pass 1, log a loud WARNING
-      and fill from the remaining cap-eligible pool ignoring caps until
-      the minimum is hit or the pool is exhausted. Mirrors the
-      ``_pick_pulse`` fallback log shape.
+    Source-diversity caps (2026-05-27) still apply within the tier pool:
+    skip a candidate that would push a source over the per-section cap or
+    a category over the per-issue cap. No minimum enforced here; the issue
+    shape post-condition logs a WARNING if Hands-On comes out short.
     """
     out: list[str] = []
     sources_in_section: Counter[str] = Counter()
 
-    # Build the candidate pool once (preserves score-desc order). Pool
-    # holds (story, cluster) tuples so Pass 2 can iterate without
-    # re-scanning blocks.
-    candidates: list[tuple[RankedStory, Cluster | None, str]] = []
     for story, _block in blocks:
         if story.cluster_id not in available:
             continue
-        tags = set(story.audience_tags)
-        if not (
-            "hands_on" in tags or (
-                "general" in tags and story.breakdown.get("hands_on_utility", 0) >= 70
-            )
-        ):
+        if story.tier != "hands_on":
             continue
-        cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
-        cat = _cluster_category(cluster, cfg) if (cluster is not None and cfg is not None) else _UNKNOWN_CATEGORY
-        candidates.append((story, cluster, cat))
-
-    accepted: set[str] = set()
-
-    # --- Pass 1: cap-aware ---
-    for story, cluster, cat in candidates:
         if len(out) >= _HANDS_ON_HARD_CAP:
             break
+        cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
+        cat = (
+            _cluster_category(cluster, cfg)
+            if (cluster is not None and cfg is not None)
+            else _UNKNOWN_CATEGORY
+        )
         if cfg is not None:
             if _would_exceed_section_cap(cluster, sources_in_section, cfg):
                 continue
@@ -2137,35 +2246,6 @@ def _pick_hands_on(
         if categories_used_this_issue is not None:
             categories_used_this_issue[cat] += 1
         out.append(story.cluster_id)
-        accepted.add(story.cluster_id)
-
-    # --- Pass 2: degraded-mode fill if below minimum ---
-    if cfg is not None and len(out) < _HANDS_ON_MIN_COUNT:
-        remaining = [c for c in candidates if c[0].cluster_id not in accepted]
-        if remaining:
-            _LOG.warning(
-                "summarise: SOURCE-DIVERSITY CAPS STARVED HANDS-ON -- "
-                "section has %d stories under cap (minimum %d). Relaxing "
-                "caps and filling from %d over-cap candidates. "
-                "per_source_per_section=%d, per_category_per_issue=%s, "
-                "categories_used_so_far=%s. Ship the smell loud so Arman "
-                "sees it at ratification.",
-                len(out), _HANDS_ON_MIN_COUNT, len(remaining),
-                cfg.per_source_per_section,
-                dict(cfg.per_category_per_issue),
-                dict(categories_used_this_issue) if categories_used_this_issue else {},
-            )
-            for story, cluster, cat in remaining:
-                if len(out) >= _HANDS_ON_MIN_COUNT or len(out) >= _HANDS_ON_HARD_CAP:
-                    break
-                # Still update counters so On the Radar sees an honest
-                # picture (the cap was relaxed, not ignored everywhere).
-                if cluster is not None:
-                    for src in cluster.sources:
-                        sources_in_section[src] += 1
-                if categories_used_this_issue is not None:
-                    categories_used_this_issue[cat] += 1
-                out.append(story.cluster_id)
 
     return out
 
@@ -2178,20 +2258,31 @@ def _pick_on_the_radar(
     cfg: EditorialConfig | None = None,
     categories_used_this_issue: Counter[str] | None = None,
 ) -> list[str]:
-    """Everything left in score-desc order. Source-diversity caps still
-    apply: the per-issue category cap is a HARD ceiling -- a paper that
-    would push us over the cap is dropped from the issue entirely rather
-    than landing here. The per-section cap (Layer 1) gates this section
-    independently. No minimum, no degraded-mode fill -- if everything
-    remaining is over-cap, On the Radar can be empty.
+    """Stories tiered 'on_the_radar' and not yet placed, in score-desc order.
 
-    Falls back to the pre-cap behaviour (accept everything left) when no
-    ``cfg`` is passed -- preserves old test paths that built sections
-    without threading a config."""
+    Schema v3 (2026-05-30): pool is strictly ``tier == "on_the_radar"``.
+    Previously this picker was a catch-all that scavenged every unplaced
+    story; that masked the empty-radar shape signal whenever a head-section
+    starved (Big Picture / Hands-On would pull from the catch-all pool,
+    leaving On the Radar empty). With tier as authority, an empty On the
+    Radar means rank.py wrote zero on_the_radar stories today -- a real
+    editorial signal, not a routing bug.
+
+    Source-diversity caps (2026-05-27) still apply: the per-issue category
+    cap is a HARD ceiling -- a paper that would push us over the cap is
+    dropped from the issue entirely rather than landing here. The
+    per-section cap (Layer 1) gates this section independently. No minimum,
+    no degraded-mode fill.
+
+    Falls back to the pre-cap behaviour (accept everything left in the
+    tier pool) when no ``cfg`` is passed -- preserves old test paths that
+    built sections without threading a config."""
     out: list[str] = []
     sources_in_section: Counter[str] = Counter()
     for story, _block in blocks:
         if story.cluster_id not in available:
+            continue
+        if story.tier != "on_the_radar":
             continue
         if cfg is not None:
             cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
