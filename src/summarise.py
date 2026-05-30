@@ -125,9 +125,18 @@ authors. Reddit subs (trust 2) and similar community sources require
 multi-source corroboration or a canonical artefact instead. Tunable in
 one place so eval-engineer can calibrate against labels."""
 
-TOP_N_STORIES = 12
-"""How many ranked stories to summarise. PLAN §8 open question -- 12 sits
-in the middle of the 8-12 range Architect recommended."""
+HEAD_TIER_SUMMARISE_BUDGET = 12
+"""How many head-tier (`big_picture` + `hands_on`) stories to summarise.
+Covers Pulse (1) + Big Picture (cap 4) + Hands-On (cap 5) with buffer.
+Tier-aware truncation introduced 2026-05-30 alongside Shape A: the picker
+honours tier as a hard boundary, so the upstream summarise budget must
+honour it too -- otherwise a head-tier-heavy day starves the radar pool
+even though radar candidates exist in `ranked.jsonl`."""
+
+RADAR_TIER_SUMMARISE_BUDGET = 8
+"""How many `on_the_radar` tier stories to summarise. Covers the Currents
+section (no hard cap yet; editor's Phase 2 proposes one). Independent of
+the head-tier budget so a head-heavy day doesn't squeeze radar out."""
 
 CALLBACK_LOOKBACK_DAYS = 14
 """How many days of past ``issue.json`` to scan for callback context. Matches
@@ -753,7 +762,16 @@ def summarise(date: _dt.date | None = None) -> Issue:
             "qualify for the issue"
         )
 
-    top = ranked[:TOP_N_STORIES]
+    # Tier-aware truncation: split the summarise budget by tier so a
+    # head-tier-heavy day doesn't starve On the Radar. Ranked.jsonl
+    # arrives in score-desc order; partition then take per-tier budgets.
+    head_top = [r for r in ranked if r.tier in ("big_picture", "hands_on")][
+        :HEAD_TIER_SUMMARISE_BUDGET
+    ]
+    radar_top = [r for r in ranked if r.tier == "on_the_radar"][
+        :RADAR_TIER_SUMMARISE_BUDGET
+    ]
+    top = head_top + radar_top
     clusters_by_id = _load_clusters_index(clusters_in)
     items_by_id = _load_items_index(items_in)
 
