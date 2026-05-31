@@ -1,0 +1,192 @@
+{
+  "schema_version": 5,
+  "issue_number": 7,
+  "revision": 0,
+  "date": "2026-05-29",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_807cc5039ad97b0c",
+        "headline": "A new compliance guard reads financial regulations directly, not general harm lists",
+        "summary": "General-purpose safety filters don't know what a financial regulator cares about. FinGuard, trained directly on regulatory documents, outperforms much larger general-purpose models on the first expert-annotated financial compliance benchmark. Code and prompts are promised on GitHub but not yet released. Domain-specific compliance filtering is now the credible baseline for regulated AI deployments.",
+        "source_urls": [
+          "https://arxiv.org/abs/2605.29427"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "watch"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_6830490c1b6fb884",
+          "headline": "European banks may replace alert-overloaded analysts with specialist agent teams",
+          "summary": "European security teams miss roughly 79% of known attack techniques, and two-thirds can't keep pace with their own alerts. CyberAId's position paper proposes federating specialist agents over existing bank tools rather than bolting one large language model onto a security console. Single-source, no code or benchmarks yet; raise the architecture question before your next security-vendor renewal.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/when-the-alerts-outrun-the-analysts"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_491e0b408f3bab95",
+          "headline": "Europe's AI rules are delayed, simplified, and unprepared for agents",
+          "summary": "The EU's Digital Omnibus deal pushes high-risk AI compliance to December 2027, but transparency obligations for AI disclosure still land August 2026. Thirty MEPs have separately warned the Act is ill-equipped for autonomous agents and AI-enabled cyberattacks. If your agentic deployment touches EU users, which deadline actually governs it?",
+          "source_urls": [
+            "https://artificialintelligenceact.substack.com/p/the-eu-ai-act-newsletter-102-pressure"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_8be86445942c6dab",
+          "headline": "Coding agents now handle 80% of commits without a developer watching",
+          "summary": "Cognition's Devin now handles roughly 80% of commits autonomously, running in full virtual machines with persistent memory and spec-to-pull-request pipelines. The source is a single vendor-side podcast with no independent benchmarks. When 80% of commits ship without a human watching, what does your review process actually catch, and is it designed for that?",
+          "source_urls": [
+            "https://www.latent.space/p/cognition"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_2cb4f01a31d0a6c9",
+          "headline": "Agent performance is now a system score, not a model score",
+          "summary": "UC Berkeley researcher Shangding Gu argues that once a model clears a capability threshold, long-horizon performance turns on five surrounding components (memory, context, tool selection, verification, tracing), not the model itself. Anthropic data supports the frame: system design explained 95% of variance on one benchmark. Single source, no code yet. Does your agent evaluation separate model gains from harness gains?",
+          "source_urls": [
+            "https://alphasignalai.substack.com/p/the-model-isnt-the-agent-anymore"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Systems beat models.",
+      "intro_body": "Across security, regulation, and software delivery, the emerging pattern is the same: autonomous agent performance depends on how the surrounding system is designed, governed, and overseen, not on any single capability claim."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_9ad31fb99f12b56b",
+          "headline": "Open inference server ships a 29% latency cut this week",
+          "summary": "vLLM v0.22.0 lands 459 commits across inference, speculative decoding, and multi-tier memory offloading. The headline figure is a 28.9% end-to-end latency improvement for batch-invariant inference, from vendor benchmarks. Weights and code are public. If you're running DeepSeek V4 or Qwen3 in production, pull v0.22.0 and measure against your own latency baseline before trusting that number.",
+          "source_urls": [
+            "https://github.com/vllm-project/vllm/releases/tag/v0.22.0"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_0ae88f40a64b0072",
+          "headline": "Listed prices mislead in nearly a third of reasoning-model comparisons",
+          "summary": "A systematic study of eight frontier reasoning models across 12 tasks finds that in 32% of model-pair comparisons, the cheaper-listed model costs more to run; reversals reach 28x. Wild variation in thinking-token consumption per query drives it. Paper only, no tooling released. Before committing to a reasoning-model contract, run your actual workload through both candidates and measure real spend.",
+          "source_urls": [
+            "https://arxiv.org/abs/2603.23971"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_f1e8a7a98d1076be",
+          "headline": "Anthropic ships a modest Opus upgrade and admits it openly",
+          "summary": "Claude Opus 4.8 is live at the same price as 4.7, with Anthropic's own release notes calling it 'a modest but tangible improvement.' The standout mechanism: it is four times less likely to let code flaws pass unremarked. Benchmarks are vendor-supplied. Swap one agentic coding loop to Opus 4.8 and measure the unflagged-flaw rate against your current baseline.",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-anthropic-raises-965b-series",
+            "https://simonwillison.net/2026/May/28/claude-opus-4-8/#atom-everything",
+            "https://vercel.com/changelog/opus-4-8-on-ai-gateway"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_9e6329cfd57b7732",
+          "headline": "A developer planted a file-deleting trap in an open-source testing library",
+          "summary": "The jqwik Java testing library (version 1.10.0) shipped a hidden instruction telling AI coding agents to delete all tests and generated code. The payload included ANSI escape codes to hide itself from human reviewers. Claude flagged it; less-cautious agents would not. Audit every open-source dependency your AI coding agent reads before the next build.",
+          "source_urls": [
+            "https://arstechnica.com/security/2026/05/fed-up-with-vibe-coders-dev-sneaks-data-nuking-prompt-injection-into-their-code/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_3c2f6e4c53c3cfc9",
+          "headline": "Bigger safety filters miss more harmful content, a new benchmark finds",
+          "summary": "A benchmark of 14 open-source safety guard models across 79,331 samples finds model size predicts nothing: a 4-billion-parameter model (Qwen Guard) caught 84% of harmful content, while a 20-billion-parameter rival missed 75%. Preprint only, no code released. Before locking your content moderation stack, run these models against your own harm categories.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.28830"
+          ],
+          "prior_coverage_ref": "c_da2a0f910999da60",
+          "signal": "read"
+        }
+      ],
+      "intro_lead": "Verify before you trust.",
+      "intro_body": "Today's releases and findings share one thread: the number on the label (price, size, safety score) predicts less than you'd expect. Independent validation is the real deliverable this week."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_1a328aeb60e8cfbe",
+          "headline": "A specialist quant-finance AI letter worth tracking this cycle",
+          "summary": "Early signal only: Derek Snow's ML Quant Finance newsletter (121st edition, May 2026) is a recurring reference for quant and data-science practitioners, but this issue sits behind a paywall with no extractable findings. Thin sourcing means no mechanism to evaluate. If the content matches its reputation, it earns a read; if not, the signal stays noise.",
+          "source_urls": [
+            "https://blog.ml-quant.com/p/quant-letter-may-2026-week-3"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_b16eca3be12f29af",
+          "headline": "A simple forecasting model just beat transformers on every benchmark tested",
+          "summary": "Early signal: ITS-Mina, a multilayer perceptron framework with no self-attention, claims the best error score across 24 out of 24 time-series datasets tested. Single-source (LLMQuant newsletter), no public code or independent replication yet. If the results hold, transformer-based forecasting stacks deserve re-evaluation; if they don't, the benchmark suite itself is the story worth auditing.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/when-less-architecture-beats-more"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_3b90cf14f1a7aafc",
+          "headline": "A new method spots benchmark cheating inside a model's layers",
+          "summary": "Existing contamination checks read a model's outputs; LaRA reads internal geometry across layers, measuring how representations shift under perturbation. It outperforms output-level baselines on reinforcement-learning-trained reasoning models. No code or repo confirmed yet. If the detection rate holds under independent replication, eval integrity gets a sharper tool; if it doesn't, the benchmarks themselves become the story.",
+          "source_urls": [
+            "https://huggingface.co/papers/2605.29888"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        }
+      ],
+      "intro_lead": "Benchmarks are under pressure.",
+      "intro_body": "Today's signals cluster around measurement: whether model results can be trusted, replicated, or gamed. Each item is single-source and unverified, but the pattern matters more than any one claim."
+    }
+  ],
+  "generated_at": "2026-05-31T06:40:07.684699Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.12",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 5, currents: 3"
+}
