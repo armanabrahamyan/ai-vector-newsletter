@@ -42,6 +42,7 @@ from src.summarise import (
     EditorialConfig,
     PULSE_ELIGIBILITY_TRUST_FLOOR,
     _assemble_sections,
+    _build_summary_prompt,
     _cluster_category,
     _compute_issue_shape,
     _pick_big_picture,
@@ -1837,3 +1838,298 @@ class TestSectionScoreOrdering:
             items_by_id=items_by_id,
         )
         assert pulse_id == story_a.cluster_id
+
+
+# ===========================================================================
+# Per-section closing-shape prompt content (v0.11, 2026-05-31).
+#
+# The closing-shape strings are load-bearing for the editorial voice change;
+# pin that they actually reach the prompt for each tier. We assert prompt-
+# template containment only -- LLM-output assertions live in evals.
+# ===========================================================================
+
+
+class TestClosingShapePromptContent:
+    """The v0.11 prompt branches per tier to inject a section-specific
+    CLOSING SHAPE. Each tier must carry its frame name in the assembled
+    prompt; head-tier stories must also carry the Pulse plain-take shape
+    in case the picker elevates them."""
+
+    def _prompt_for_tier(self, tier: str) -> str:
+        breakdown = {
+            "significance": 60,
+            "hands_on_utility": 60,
+            "big_picture_relevance": 60,
+            "financial_services_impact": 25,
+            "freshness_momentum": 60,
+        }
+        story = RankedStory(
+            cluster_id="c_0123456789abcdef",
+            score=55,
+            breakdown=breakdown,
+            audience_tags=["general"],  # type: ignore[arg-type]
+            rationale="test",
+            tier=tier,  # type: ignore[arg-type]
+            prompt_version="v0.2",
+        )
+        cluster = Cluster(
+            cluster_id=story.cluster_id,
+            item_ids=["i_x"],
+            canonical_title="t",
+            sources=["src_a"],
+            earliest_published=FIXED_EARLIER,
+            size=1,
+        )
+        item = Item(
+            id="i_x", source="src_a", source_type="rss",
+            url="https://example.com/x",  # type: ignore[arg-type]
+            title="t", published_at=FIXED_EARLIER,
+            raw_summary="", fetched_at=FIXED_NOW, trust_weight=2,
+        )
+        return _build_summary_prompt(story, cluster, [item], callbacks=[])
+
+    def test_big_picture_carries_strategic_question_closing(self) -> None:
+        prompt = self._prompt_for_tier("big_picture")
+        assert "CLOSING SHAPE -- STRATEGIC QUESTION" in prompt
+        # Head-tier story must also carry the Pulse plain-take closing
+        # because the picker may elevate it to The Pulse.
+        assert "PULSE CLOSING SHAPE -- PLAIN TAKE" in prompt
+
+    def test_hands_on_carries_imperative_action_closing(self) -> None:
+        prompt = self._prompt_for_tier("hands_on")
+        assert "CLOSING SHAPE -- IMPERATIVE ACTION (SHARPENED)" in prompt
+        assert "PULSE CLOSING SHAPE -- PLAIN TAKE" in prompt
+
+    def test_currents_carries_calibrated_stake_closing(self) -> None:
+        prompt = self._prompt_for_tier("currents")
+        assert "CLOSING SHAPE -- CALIBRATED STAKE" in prompt
+        # Currents is not Pulse-eligible; the Pulse closing must NOT be
+        # attached. Avoids cross-shape leakage into early-signal stories.
+        assert "PULSE CLOSING SHAPE -- PLAIN TAKE" not in prompt
+
+
+# ===========================================================================
+# Pulse re-summarise (v0.12, 2026-05-31).
+#
+# After ``_pick_pulse`` chooses the head-tier winner, the summary that was
+# written during the head-tier pass carries the wrong closing shape
+# (Big Picture's STRATEGIC QUESTION or Hands-On's IMPERATIVE ACTION). The
+# Pulse needs a PLAIN TAKE close instead. ``_maybe_resummarise_pulse``
+# re-runs the per-story prompt under ``section_override="pulse"`` and
+# replaces the original SummaryBlock in place. Failure (LLM error, parse
+# fail) falls back to the original block + logs a WARNING.
+# ===========================================================================
+
+class TestPulseResummarise:
+    """The v0.12 Pulse re-summarise pass. Three load-bearing properties:
+    (1) the call fires exactly once per issue, on the picked Pulse story;
+    (2) on success the replacement block lands in by_id under the same
+        cluster_id; (3) on failure the original block stands and a
+        WARNING is logged."""
+
+    def _make_fixtures(self, cluster_id: str = "c_ffffffffffffeeee"):
+        """Build the minimal cluster + items + ranked + summary needed to
+        exercise ``_maybe_resummarise_pulse``. Keeps the test bodies tight
+        and the inputs uniform across the three cases."""
+        cluster = Cluster(
+            cluster_id=cluster_id,
+            item_ids=["i_p_01"],
+            canonical_title="Pulse story canonical title",
+            sources=["openai_blog"],
+            earliest_published=FIXED_EARLIER,
+            size=1,
+            canonical_id="arxiv:2605.99999",
+        )
+        item = Item(
+            id="i_p_01",
+            source="openai_blog",
+            source_type="rss",
+            url="https://example.com/pulse-story",  # type: ignore[arg-type]
+            title="Pulse item title",
+            published_at=FIXED_EARLIER,
+            raw_summary="A short raw summary for the fixture.",
+            fetched_at=FIXED_NOW,
+            trust_weight=5,
+        )
+        story = RankedStory(
+            cluster_id=cluster_id,
+            score=70,
+            breakdown={
+                "significance": 80,
+                "hands_on_utility": 70,
+                "big_picture_relevance": 70,
+                "financial_services_impact": 40,
+                "freshness_momentum": 80,
+            },
+            audience_tags=["big_picture"],  # type: ignore[arg-type]
+            rationale="test",
+            tier="big_picture",
+            prompt_version="v0.2",
+        )
+        original_block = SummaryBlock(
+            story_id=cluster_id,
+            headline="Head-tier headline with strategic question shape",
+            summary=(
+                "Head-tier body written under Big Picture STRATEGIC QUESTION "
+                "shape. Who owns the next decision when the agent ships "
+                "unsupervised, and is that role staffed in your org today?"
+            ),
+            source_urls=["https://example.com/pulse-story"],  # type: ignore[list-item]
+            signal="act",
+        )
+        return cluster, item, story, original_block
+
+    def test_resummarise_invoked_exactly_once_on_picked_pulse(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The re-summarise helper must fire exactly once per issue, on the
+        cluster_id returned by ``_pick_pulse``. Counter pinned via a
+        monkeypatched ``_resummarise_as_pulse`` -- we don't want to mount
+        a live LLM, and the count is the contract."""
+        from src import summarise as summarise_mod
+
+        cluster, item, story, original_block = self._make_fixtures()
+        # Also build a second head-tier story so the picker has a choice
+        # but the re-summarise still fires only once (on the chosen one).
+        other_cluster, other_item, other_story, other_block = self._make_fixtures(
+            "c_ffffffffffffeeef",
+        )
+        # Replacement SummaryBlock the mocked re-summarise returns. The
+        # plain-take landing is the load-bearing rhetorical difference.
+        replacement = SummaryBlock(
+            story_id=story.cluster_id,
+            headline="Pulse-shaped headline opens on a verb",
+            summary=(
+                "Re-summarised body landing on a PLAIN TAKE close. The day's "
+                "shift named in editorial prose. That's the news today."
+            ),
+            source_urls=["https://example.com/pulse-story"],  # type: ignore[list-item]
+            signal="act",
+        )
+        calls: list[str] = []
+
+        def fake_resummarise(*, story, cluster, items, callbacks, original_block):
+            calls.append(cluster.cluster_id)
+            return replacement
+
+        monkeypatch.setattr(
+            summarise_mod, "_resummarise_as_pulse", fake_resummarise,
+        )
+
+        by_id = {
+            story.cluster_id: (story, original_block),
+            other_story.cluster_id: (other_story, other_block),
+        }
+        clusters_by_id = {
+            cluster.cluster_id: cluster,
+            other_cluster.cluster_id: other_cluster,
+        }
+        items_by_id = {item.id: item, other_item.id: other_item}
+
+        summarise_mod._maybe_resummarise_pulse(
+            pulse_id=story.cluster_id,
+            by_id=by_id,
+            clusters_by_id=clusters_by_id,
+            items_by_id=items_by_id,
+            callbacks_by_root=None,
+        )
+
+        # Exactly once, on the picked cluster_id.
+        assert calls == [story.cluster_id]
+
+    def test_resummarise_replaces_original_block_for_picked_cluster(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """On success the new SummaryBlock replaces the original in
+        ``by_id[pulse_id]``. Other entries (head-tier stories the picker
+        DIDN'T elevate) must NOT be touched."""
+        from src import summarise as summarise_mod
+
+        cluster, item, story, original_block = self._make_fixtures()
+        # A second story whose block must remain untouched.
+        other_cluster, other_item, other_story, other_block = self._make_fixtures(
+            "c_ffffffffffffeef0",
+        )
+        replacement = SummaryBlock(
+            story_id=story.cluster_id,
+            headline="Pulse plain-take headline replacement",
+            summary=(
+                "Replacement body that lands on a PLAIN TAKE close. Names "
+                "what is true now given the day's shift. That's the take."
+            ),
+            source_urls=["https://example.com/pulse-story"],  # type: ignore[list-item]
+            signal="act",
+        )
+
+        def fake_resummarise(*, story, cluster, items, callbacks, original_block):
+            return replacement
+
+        monkeypatch.setattr(
+            summarise_mod, "_resummarise_as_pulse", fake_resummarise,
+        )
+
+        by_id = {
+            story.cluster_id: (story, original_block),
+            other_story.cluster_id: (other_story, other_block),
+        }
+
+        summarise_mod._maybe_resummarise_pulse(
+            pulse_id=story.cluster_id,
+            by_id=by_id,
+            clusters_by_id={
+                cluster.cluster_id: cluster,
+                other_cluster.cluster_id: other_cluster,
+            },
+            items_by_id={item.id: item, other_item.id: other_item},
+            callbacks_by_root=None,
+        )
+
+        # Picked block was REPLACED.
+        assert by_id[story.cluster_id][1] is replacement
+        assert by_id[story.cluster_id][1].headline == replacement.headline
+        # RankedStory is preserved (we only swap the SummaryBlock side).
+        assert by_id[story.cluster_id][0] is story
+        # Other story's block was NOT touched -- only the Pulse-elected
+        # cluster is re-summarised.
+        assert by_id[other_story.cluster_id][1] is other_block
+
+    def test_resummarise_failure_preserves_original_and_logs_warning(
+        self, monkeypatch: pytest.MonkeyPatch, caplog,
+    ) -> None:
+        """When the re-summarise LLM call raises, the original SummaryBlock
+        must be preserved and a WARNING logged. The publication still
+        ships -- one off-shape Pulse beats a failed issue."""
+        from src import summarise as summarise_mod
+        import logging as _logging
+
+        cluster, item, story, original_block = self._make_fixtures()
+
+        def raising_resummarise(*, story, cluster, items, callbacks, original_block):
+            raise RuntimeError("simulated LLM timeout")
+
+        monkeypatch.setattr(
+            summarise_mod, "_resummarise_as_pulse", raising_resummarise,
+        )
+
+        by_id = {story.cluster_id: (story, original_block)}
+
+        with caplog.at_level(_logging.WARNING, logger="ai_vector.summarise"):
+            summarise_mod._maybe_resummarise_pulse(
+                pulse_id=story.cluster_id,
+                by_id=by_id,
+                clusters_by_id={cluster.cluster_id: cluster},
+                items_by_id={item.id: item},
+                callbacks_by_root=None,
+            )
+
+        # Original block preserved.
+        assert by_id[story.cluster_id][1] is original_block
+        # WARNING (or higher) was logged naming the cluster id.
+        assert any(
+            r.levelno >= _logging.WARNING and story.cluster_id in r.message
+            for r in caplog.records
+        ), (
+            "expected a WARNING-level log naming the Pulse cluster_id "
+            "after re-summarise failure; saw: "
+            + repr([(r.levelname, r.message) for r in caplog.records])
+        )

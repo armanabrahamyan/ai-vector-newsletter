@@ -91,9 +91,30 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.10"
+SUMMARISE_PROMPT_VERSION = "v0.12"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.10-2026-05-30``. v0.10 (Phase 2 section taxonomy + voice):
+``summarise-v0.12-2026-05-31``. v0.12 (Pulse re-summarise):
+  - After ``_pick_pulse`` chooses the winning cluster_id, the head-tier
+    summary for that cluster is DISCARDED and the story is re-summarised
+    under a Pulse-specific prompt variant (``section_override="pulse"``).
+    The head-tier draft was written under either the Big-Picture STRATEGIC
+    QUESTION or the Hands-On IMPERATIVE ACTION closing shape; the Pulse
+    needs the PLAIN TAKE landing instead. Carrying both shapes in one
+    head-tier prompt didn't work in v0.11 (the concrete section shape
+    always won the LLM's attention); the cleaner fix is one extra LLM call
+    on the chosen cluster. Failure (parse, validation, LLM error) falls
+    back to the original head-tier SummaryBlock and logs a WARNING.
+v0.11 (per-section closing shapes):
+  - Each section now gets a distinct closing rhythm so the last sentence
+    itself signals the section. Pulse closes on a PLAIN TAKE (sharp
+    editorial judgement); Big Picture closes on a STRATEGIC QUESTION the
+    news raises but does not answer; Hands-On closes on a SHARPENED
+    IMPERATIVE ACTION (specific verb on a specific artefact with a
+    trigger or condition); Currents closes on a CALIBRATED STAKE ("if X,
+    Y; if not, Z"). Frames documented at
+    ``_scratch/2026-05-31-closing-frames.md`` and EDITORIAL.md "Closing
+    shape" rules per section. Existing voice + length rules unchanged.
+v0.10 (Phase 2 section taxonomy + voice):
   - Section value ``on_the_radar`` renamed to ``currents``; per-story
     prompt now branches on the destination section and injects 3-5 lines
     of section-specific voice guidance from EDITORIAL.md "Voice rules per
@@ -781,6 +802,123 @@ _PULSE_HINT_FOR_HEAD_TIER = (
 )
 
 
+# Phase v0.11 (2026-05-31): per-section CLOSING SHAPES. Each section ends
+# with a distinct rhythm so the final sentence itself signals the section
+# without the reader needing the section header. The frames are documented
+# at _scratch/2026-05-31-closing-frames.md and mirrored in EDITORIAL.md
+# "Closing shape" rules per section. Voice + length rules above are
+# unchanged; closing-shape sits at the END of the section-voice block as
+# the final instruction for how the summary LANDS.
+_CLOSING_SHAPE_PER_SECTION: dict[str, str] = {
+    "big_picture": (
+        "CLOSING SHAPE -- STRATEGIC QUESTION\n"
+        "End on the sharp unresolved QUESTION the news raises but doesn't\n"
+        "answer. The reader carries it into their next strategy review and\n"
+        "has to take a position. This OVERRIDES the generic body-close\n"
+        "rule above (\"close with a judgement tied to a specific decision\")\n"
+        "for Big Picture stories: the question IS the decision-tied close.\n"
+        "Do NOT also append an imperative (\"Raise this at your next\n"
+        "review\") -- the question alone is the landing. NOT a rhetorical\n"
+        "question with an obvious answer; NOT a prescription dressed as a\n"
+        "question (\"shouldn't you test X?\"); NOT a vague \"what does\n"
+        "this mean?\". Anchor the question to a specific role, decision,\n"
+        "or constraint in the reader's org.\n"
+        "Examples (use as calibration, not templates):\n"
+        "  - \"When the agent ships 80% of commits unsupervised, what does\n"
+        "    the human reviewer still own -- and is that role staffed in\n"
+        "    your org?\"\n"
+        "  - \"When the safety filter and the regulator's rulebook\n"
+        "    disagree, which one governs your customer-facing deployment?\""
+    ),
+    "hands_on": (
+        "CLOSING SHAPE -- IMPERATIVE ACTION (SHARPENED)\n"
+        "End on a SPECIFIC prescription with a trigger or condition, on a\n"
+        "SPECIFIC artefact. A practitioner can copy the closing into team\n"
+        "chat. Generic verbs without specific targets FAIL this shape\n"
+        "(\"just test it\", \"bench it before you trust it\", \"run it\n"
+        "against your eval\" -- all too vague). Name what to do, on what\n"
+        "object, with what trigger.\n"
+        "Examples (use as calibration, not templates):\n"
+        "  - \"Swap one production agentic-coding loop to Opus 4.8 this\n"
+        "    week and measure the unflagged-flaw rate against your\n"
+        "    incident baseline.\"\n"
+        "  - \"Run v0.22.0 against your own latency baseline this week;\n"
+        "    if you confirm even half the 28.9% claim, ship the upgrade --\n"
+        "    the cost-per-token math justifies the migration.\""
+    ),
+    "currents": (
+        "CLOSING SHAPE -- CALIBRATED STAKE\n"
+        "End on a two-sided watch-condition with stakes on BOTH branches.\n"
+        "Structure: \"If X holds, Y; if not, Z.\" Both branches must carry\n"
+        "REAL stakes -- one-sided \"if X, Y\" without an inverse FAILS;\n"
+        "false-binaries where one branch is impossible FAIL; placebo\n"
+        "stakes (\"if not, we'll know more next quarter\") FAIL. The\n"
+        "reader should know what to watch for AND what it will matter for\n"
+        "on either outcome.\n"
+        "Examples (use as calibration, not templates):\n"
+        "  - \"If ITS-Mina replicates, attention-free forecasting is a\n"
+        "    real architecture line and your shortlist needs revisiting.\n"
+        "    If it doesn't, the benchmark suite itself becomes the story\n"
+        "    -- and that matters more than any single model claim.\"\n"
+        "  - \"If the FinGuard claim holds under audit, every customer-\n"
+        "    facing deployment without a regulation-grounded check is a\n"
+        "    compliance gap waiting to be found. If it doesn't, the gap\n"
+        "    is the audit.\""
+    ),
+}
+
+# v0.12 (2026-05-31): Pulse-specific voice block, used by the Pulse
+# re-summarise pass (``_resummarise_as_pulse``). When a story is elevated
+# to The Pulse, the head-tier voice (Big Picture: named actors + strategic
+# question; Hands-On: artefact-in-noun-phrase + imperative action) is the
+# WRONG framing -- the Pulse is the day's editorial anchor, not a section
+# entry. This block reads as the PRIMARY voice rule with the
+# ``_PULSE_CLOSING_SHAPE`` (plain take) as the landing. The head-tier
+# voice + closing shape are NOT attached when ``section_override="pulse"``.
+_PULSE_VOICE_BLOCK = (
+    "PULSE VOICE (HIGHEST PRECEDENCE) -- this story has been elevated to\n"
+    "The Pulse, today's editorial anchor. The previous head-tier framing\n"
+    "(Big Picture strategic question, Hands-On imperative action) does NOT\n"
+    "apply here. Rewrite under these rules instead:\n"
+    "  - HEADLINE: open on the VERB where possible. Imperative shape lands\n"
+    "    The Pulse cleanly (\"Run autonomous coding agents safely.\" /\n"
+    "    \"Stop defaulting to frontier models.\"). Stake or consequence-led\n"
+    "    declaratives are also fine; the verb-first opener is the strong\n"
+    "    default, not a hard rule.\n"
+    "  - BODY: the day's direction in plain editorial prose. Open on the\n"
+    "    verb where possible. Direction-note is MANDATORY and lives in the\n"
+    "    body, not the headline. NO section-trope opening (\"Researchers\n"
+    "    found...\"; \"A new paper shows...\"; \"X is moving;...\"). The\n"
+    "    Pulse is a single editorial position, not a paper summary or a\n"
+    "    section-pattern summary."
+)
+
+
+# Pulse closing shape (Plain take) -- attached to head-tier stories so a
+# story the picker might elevate to The Pulse already reads with the right
+# landing. Paired with _PULSE_HINT_FOR_HEAD_TIER above. v0.12: also used as
+# the PRIMARY closing shape inside the Pulse re-summarise prompt
+# (``section_override="pulse"`` in ``_build_summary_prompt``).
+_PULSE_CLOSING_SHAPE = (
+    "PULSE CLOSING SHAPE -- PLAIN TAKE (HIGHEST PRECEDENCE)\n"
+    "If this story is elevated to The Pulse, the close is a short editorial\n"
+    "JUDGEMENT (1-2 declarative sentences) -- the publication's position on\n"
+    "this story today. This OVERRIDES BOTH the generic body-close rule and\n"
+    "the Big-Picture STRATEGIC QUESTION shape above. NEVER a question\n"
+    "(\"Who owns...?\"); NEVER a prescription (\"Test this against X\");\n"
+    "the last character must be a FULL STOP. A plain take NAMES WHAT'S\n"
+    "TRUE NOW given this story -- the shift and what it means -- not what\n"
+    "the reader should do about it.\n"
+    "Examples (use as calibration, not templates):\n"
+    "  - \"General safety filters built for the open web are reaching the\n"
+    "    limits of their fit for regulated work. Domain-grounded\n"
+    "    filtering is where the credible safety story starts now.\"\n"
+    "  - \"Anthropic just told you the truth about a release. That's the\n"
+    "    news. Whether to swap is a procurement question; whether the lab\n"
+    "    is honest is the strategic one.\""
+)
+
+
 _FINANCE_LENS_BLOCK = """\
 FINANCE-SERVICES LENS -- a SUBJECT filter, not a reader pitch
 
@@ -955,6 +1093,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
             clusters_by_id=clusters_by_id,
             items_by_id=items_by_id,
             editorial_config=editorial_config,
+            callbacks_by_root=callbacks_by_root,
         )
 
     # --- Section intros (Phase B) ---------------------------------------
@@ -1241,6 +1380,78 @@ def _summarise_one(
     return block
 
 
+def _resummarise_as_pulse(
+    story: RankedStory,
+    cluster: Cluster,
+    items: list[Item],
+    callbacks: list[_CallbackRef],
+    original_block: SummaryBlock,
+) -> SummaryBlock | None:
+    """Re-run the per-story summarise prompt under the Pulse-specific
+    voice + closing shape (v0.12, 2026-05-31).
+
+    Why this exists. ``_summarise_one`` runs once per top-N story, BEFORE
+    ``_pick_pulse`` chooses the Pulse. The head-tier prompt has to carry
+    both the section's closing shape (Big Picture strategic question OR
+    Hands-On imperative action) AND the Pulse plain-take shape, because
+    any head-tier story might become the Pulse. The LLM writes ONE
+    ending; the concrete section shape always wins, the Pulse plain-take
+    loses. Re-summarising the chosen Pulse cluster under a Pulse-only
+    prompt fixes the landing without churning the rest of the pipeline.
+
+    One extra LLM call per day (~5c). The replacement happens before the
+    four section ``IssueSection`` objects are built so the Pulse section's
+    ``stories[0]`` carries the re-summarised content.
+
+    Failure handling. If the LLM call fails (timeout, parse, validation),
+    return ``None``. The caller falls back to ``original_block`` and logs
+    a WARNING. The publication still ships, with the original head-tier
+    closing rhythm -- one off-shape Pulse is better than a missed issue.
+    """
+    temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
+
+    # Reuse the per-process excerpt cache populated by ``_summarise_one``
+    # -- the head-tier pass already fetched the source bodies for this
+    # cluster's top-3 items. No second HTTP round-trip; the cache is the
+    # whole point. Falls back to a fresh fetch if (somehow) we got here
+    # without the head-tier pass running.
+    excerpts: dict[str, str] = {}
+    for it in items[:3]:
+        url = str(it.url)
+        excerpts[url] = _fetch_source_excerpt(url)
+
+    prompt = _build_summary_prompt(
+        story, cluster, items, callbacks, excerpts,
+        section_override="pulse",
+    )
+
+    draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
+    if draft is None:
+        return None
+
+    # Reuse the source_urls + prior_coverage_ref from the original block.
+    # These are deterministic (URL-trust ordering + cluster metadata); the
+    # re-summarise pass only changes the prose. Re-deriving from items
+    # would be equivalent but wasteful and adds a divergence surface.
+    try:
+        block = SummaryBlock(
+            story_id=cluster.cluster_id,
+            headline=draft.headline,
+            summary=draft.summary,
+            source_urls=list(original_block.source_urls),  # type: ignore[arg-type]
+            prior_coverage_ref=original_block.prior_coverage_ref,
+            signal=draft.signal,  # type: ignore[arg-type]
+        )
+    except Exception:  # noqa: BLE001
+        _LOG.exception(
+            "summarise: Pulse-resummarise SummaryBlock validation failed "
+            "for cluster_id=%s -- falling back to original. draft=%s",
+            cluster.cluster_id, draft,
+        )
+        return None
+    return block
+
+
 _SOURCE_EXCERPT_CACHE: dict[str, str] = {}
 """Per-process cache: URL -> extracted body. A run never refetches the same
 URL twice (rare across clusters but possible). Trafilatura extraction is
@@ -1312,6 +1523,7 @@ def _build_summary_prompt(
     items: list[Item],
     callbacks: list[_CallbackRef],
     excerpts: dict[str, str] | None = None,
+    section_override: str | None = None,
 ) -> str:
     """Assemble the per-story summarisation prompt with voice + skills
     inlined and callback context attached when present.
@@ -1320,6 +1532,19 @@ def _build_summary_prompt(
     ``_summarise_one`` for the top items in the cluster). When provided,
     each item line carries a ``source_excerpt`` block so the LLM writes
     from real source text instead of an empty raw_summary.
+
+    ``section_override`` (v0.12, 2026-05-31): when set, overrides the tier-
+    derived voice routing. Today only ``"pulse"`` is supported -- used by
+    ``_resummarise_as_pulse`` after the picker fires. The Pulse-override
+    branch:
+      - drops the head-tier voice (Big Picture / Hands-On) and the head-
+        tier closing shape (strategic question / imperative action);
+      - injects ``_PULSE_VOICE_BLOCK`` as the PRIMARY section voice;
+      - injects ``_PULSE_CLOSING_SHAPE`` (plain take) as the PRIMARY
+        closing rhythm -- not appended after another shape that would win
+        the LLM's attention.
+    Anything other than ``"pulse"`` is ignored (degrades to tier-derived
+    routing) so a stray override value can't silently disable voice.
     """
     excerpts = excerpts or {}
     item_lines: list[str] = []
@@ -1376,14 +1601,65 @@ def _build_summary_prompt(
     # Tier is a 1:1 proxy for destination section (big_picture / hands_on
     # / currents). For head-tier stories we also include the Pulse-shape
     # hint so a story the picker might elevate already reads in voice.
-    section_voice = _VOICE_PER_SECTION.get(story.tier, "")
-    if story.tier in ("big_picture", "hands_on"):
-        section_voice = section_voice + "\n\n" + _PULSE_HINT_FOR_HEAD_TIER
+    #
+    # v0.11 (2026-05-31): each section's voice block is followed by the
+    # section's CLOSING SHAPE -- the distinct rhythm the summary must land
+    # on. The Pulse PLAIN TAKE shape is appended LAST for head-tier stories
+    # (the picker may elevate to The Pulse) so its highest-precedence
+    # framing is the final landing rule the LLM sees.
+    #
+    # v0.12 (2026-05-31): when ``section_override == "pulse"`` we drop the
+    # head-tier voice + head-tier closing shape entirely and use the Pulse
+    # voice + Pulse closing shape as the PRIMARY framing. The head-tier
+    # framings were the rule the LLM kept honouring (concrete shape wins);
+    # giving Pulse exclusive precedence is the fix.
+    if section_override == "pulse":
+        section_voice = _PULSE_VOICE_BLOCK + "\n\n" + _PULSE_CLOSING_SHAPE
+        voice_header = (
+            "SECTION VOICE (override=pulse; this story has been elevated\n"
+            "to The Pulse and is being re-summarised under Pulse rules):"
+        )
+    else:
+        section_voice = _VOICE_PER_SECTION.get(story.tier, "")
+        closing_shape = _CLOSING_SHAPE_PER_SECTION.get(story.tier, "")
+        if closing_shape:
+            section_voice = section_voice + "\n\n" + closing_shape
+        if story.tier in ("big_picture", "hands_on"):
+            section_voice = (
+                section_voice
+                + "\n\n" + _PULSE_HINT_FOR_HEAD_TIER
+                + "\n\n" + _PULSE_CLOSING_SHAPE
+            )
+        voice_header = (
+            f"SECTION VOICE (tier={story.tier}; this story will land in the\n"
+            f"matching section unless the editor relabels):"
+        )
     section_voice_block = (
-        f"\nSECTION VOICE (tier={story.tier}; this story will land in the\n"
-        f"matching section unless the editor relabels):\n{section_voice}\n"
+        f"\n{voice_header}\n{section_voice}\n"
         if section_voice else ""
     )
+
+    # v0.12 (2026-05-31): when re-summarising under the Pulse override, we
+    # repeat the plain-take rule as the LAST instruction the LLM sees --
+    # right before the JSON schema. LLM attention skews to the most recent
+    # instruction; the first Pulse re-summarise pass (May 27 fixture) still
+    # produced a prescriptive close ("raise this taxonomy at your next
+    # pipeline review.") because the body-rules block earlier in the prompt
+    # said "close tied to a SPECIFIC DECISION." This terse final reminder
+    # makes the override stick.
+    if section_override == "pulse":
+        pulse_override_tail = (
+            "\n- PULSE OVERRIDE (FINAL REMINDER): this is The Pulse. The "
+            "close MUST be a PLAIN TAKE -- a short editorial JUDGEMENT "
+            "(1-2 declarative sentences) naming what is TRUE NOW given "
+            "the day's shift. NOT a question. NOT a prescription "
+            "(\"raise this at...\", \"test against...\", \"audit your...\"). "
+            "NOT an imperative verb at the end. The Pulse names where "
+            "the field moved today; the rest of the issue is for "
+            "decisions to make about it.\n"
+        )
+    else:
+        pulse_override_tail = ""
 
     return f"""\
 You are writing one story for AI Vector -- a daily newsletter about
@@ -1455,7 +1731,7 @@ ITEMS:
                    without code / benchmarks.
   Choose by what the body actually argues. If the body says "raise this
   at your next architecture review", that's "discuss", not "act".
-
+{pulse_override_tail}
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
@@ -1796,6 +2072,99 @@ def _reconcile_signal_with_audience_tags(
 
 
 # ---------------------------------------------------------------------------
+# Pulse re-summarise (v0.12, 2026-05-31).
+# ---------------------------------------------------------------------------
+
+def _maybe_resummarise_pulse(
+    *,
+    pulse_id: str,
+    by_id: dict[str, tuple[RankedStory, SummaryBlock]],
+    clusters_by_id: dict[str, Cluster] | None,
+    items_by_id: dict[str, Item] | None,
+    callbacks_by_root: dict[str, list[_CallbackRef]] | None,
+) -> None:
+    """Re-summarise the Pulse-elected cluster under the Pulse-specific
+    prompt and replace its entry in ``by_id`` in place.
+
+    Why a separate helper. Keeping the orchestration outside
+    ``_assemble_sections`` proper makes the call site read as a single
+    discrete step (and matches the structure of
+    ``_reconcile_signal_with_audience_tags`` upstream). Pure side-effect:
+    mutates ``by_id[pulse_id]`` on success, no-ops on failure (the
+    original head-tier SummaryBlock stands).
+
+    Operator log line. On success: ``INFO`` with the message
+    ``"pulse re-summarise: <cluster_id> rewritten under pulse-specific
+    prompt (was <section>-shaped)"`` so the daily run log shows the extra
+    call fired. On failure: ``WARNING`` naming the cluster id so the
+    operator sees which Pulse fell back at ratification.
+    """
+    entry = by_id.get(pulse_id)
+    if entry is None:
+        # Defensive: the picker returned a cluster_id outside the by_id
+        # index. Shouldn't happen given _pick_pulse picks from blocks; if
+        # it does, skipping the re-summarise is the safe degrade (the
+        # surrounding code will still raise on missing by_id[pulse_id]).
+        _LOG.warning(
+            "summarise: pulse re-summarise skipped -- cluster_id=%s not in "
+            "by_id index (unexpected; head-tier block stands)",
+            pulse_id,
+        )
+        return
+    story, original_block = entry
+
+    cluster = clusters_by_id.get(pulse_id) if clusters_by_id is not None else None
+    if cluster is None:
+        _LOG.warning(
+            "summarise: pulse re-summarise skipped -- cluster_id=%s missing "
+            "from clusters_by_id (head-tier block stands)",
+            pulse_id,
+        )
+        return
+
+    items = (
+        _items_for_cluster(cluster, items_by_id)
+        if items_by_id is not None else []
+    )
+    callbacks: list[_CallbackRef] = []
+    if cluster.prior_coverage_ref and callbacks_by_root is not None:
+        callbacks = callbacks_by_root.get(cluster.prior_coverage_ref, [])
+
+    original_section = story.tier  # "big_picture" / "hands_on" / "currents"
+    try:
+        new_block = _resummarise_as_pulse(
+            story=story,
+            cluster=cluster,
+            items=items,
+            callbacks=callbacks,
+            original_block=original_block,
+        )
+    except Exception:  # noqa: BLE001 -- never crash the issue on the re-summarise
+        _LOG.exception(
+            "summarise: pulse re-summarise raised for cluster_id=%s -- "
+            "falling back to original head-tier summary",
+            pulse_id,
+        )
+        return
+
+    if new_block is None:
+        _LOG.warning(
+            "summarise: pulse re-summarise failed for cluster_id=%s "
+            "(LLM error, parse fail, or validation) -- falling back to "
+            "original head-tier summary",
+            pulse_id,
+        )
+        return
+
+    by_id[pulse_id] = (story, new_block)
+    _LOG.info(
+        "pulse re-summarise: %s rewritten under pulse-specific prompt "
+        "(was %s-shaped)",
+        pulse_id, original_section,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Section assembly.
 # ---------------------------------------------------------------------------
 
@@ -1804,6 +2173,7 @@ def _assemble_sections(
     clusters_by_id: dict[str, Cluster] | None = None,
     items_by_id: dict[str, Item] | None = None,
     editorial_config: EditorialConfig | None = None,
+    callbacks_by_root: dict[str, list[_CallbackRef]] | None = None,
 ) -> tuple[IssueSection, IssueSection, IssueSection, IssueSection]:
     """Place every summarised story into exactly one section. Returns the
     four sections in display order: pulse, big_picture, hands_on, currents.
@@ -1862,6 +2232,24 @@ def _assemble_sections(
             "summarise: cannot select a Pulse story -- no surviving stories."
         )
     unplaced.discard(pulse_id)
+
+    # --- Pulse re-summarise (v0.12, 2026-05-31) -------------------------
+    # The head-tier summary for the picked Pulse story was written under
+    # the wrong closing shape (Big Picture's STRATEGIC QUESTION or
+    # Hands-On's IMPERATIVE ACTION won the LLM's attention over the Pulse
+    # plain-take rule co-attached for the elevation case). Re-summarise
+    # the chosen cluster under a Pulse-only prompt and REPLACE the entry
+    # in ``by_id`` before the sections are built. On any failure (LLM
+    # error, parse fail, validation), keep the original head-tier
+    # SummaryBlock and log a WARNING -- the issue still ships.
+    _maybe_resummarise_pulse(
+        pulse_id=pulse_id,
+        by_id=by_id,
+        clusters_by_id=clusters_by_id,
+        items_by_id=items_by_id,
+        callbacks_by_root=callbacks_by_root,
+    )
+
     # Pulse's category counts toward the per-issue cap. Pulse is a single
     # story so Layer 1 (per-section cap, n<2) never binds; Layer 2 must
     # see it.
