@@ -221,3 +221,38 @@ appear:
 - **Pulse picks where direction is invisible in 3 sentences.** When the
   direction-note has to do all the lifting because the headline didn't,
   the Pulse is mis-picked. Propose an alternative inline.
+
+---
+
+## Pre-release review checklist
+
+The editor runs a structured pass over every staged issue before Arman
+ratifies. `src/review.py` paraphrases this list into its prompt; this
+section is the canonical reference. Verdict is `green` (ratify) / `amber`
+(ratify with notes) / `red` (hold).
+
+- **Shape integrity.** Counts within caps (1 Pulse / 4 Big Picture / 5
+  Hands-On / 8 Currents). If amber or red, is the cause a genuinely thin
+  tier pool or a routing failure upstream?
+- **Pulse pick.** Carries the day's editorial position. Closing shape is
+  a plain take — no question, no prescription. Sourcing credible
+  (multi-source, canonical_id, or trust-3+). Freshness vs recurrence
+  earned.
+- **Big Picture.** Named actors + first-order consequence framing.
+  Closing shape on each story is a strategic question. Section intro
+  frames a leader-orienting pattern across the four stories.
+- **Hands-On.** Tool / repo / version in the headline noun phrase.
+  Closing shape is an imperative action sharpened to a specific artefact
+  + trigger — generic verbs without targets fail. Section intro carries a
+  practitioner posture.
+- **Currents.** Conditional or hedged opening. Closing shape is a
+  calibrated stake ("If X, Y; if not, Z") with real stakes on both
+  branches. Section `intro_lead` is mandatory and names aggregate
+  motion direction.
+- **Drift watch.** Recurring themes covered the same way without
+  progression. Source repetition (same source 3+ days running on the
+  same topic). Missing callbacks. Voice drift across section intros.
+- **Finance angle.** Lands where it appears, or forced? Any story
+  surfaced only because of a weak FS angle?
+- **Section misroutes.** Any story reading more like a different
+  section's voice than its assigned one.

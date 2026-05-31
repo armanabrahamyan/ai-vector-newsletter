@@ -713,6 +713,32 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   `issue.json` is the labelled corpus** — over months, the most valuable
   artifact in the repo. Staging issues are draft material, not corpus.
 
+### `review.md` — LLM Engineer writes (pre-release editorial pass)
+
+- **Path:** `data/staging/<date>/review.md`. Staging-only — the artifact
+  feeds Arman's ratification call; it is not promoted to released on
+  `aiv release`. Staging-resident by design (a record of what the editor
+  flagged on the *staged* draft; if Arman re-runs the pipeline, the
+  review is regenerated against the new staging issue).
+- **Writer:** `src/review.py` (`run_review(date)`), invoked either as
+  the final stage in `aiv run` (auto-fires after `render` unless
+  `--no-review` is passed) or standalone via `aiv review --date`.
+- **Schema:** Markdown with a YAML frontmatter block. Frontmatter keys:
+  `verdict` (`green | amber | red | unavailable`), `one_line` (30-60
+  char editorial summary), `issue_date`, `issue_shape`, `generated_at`,
+  `prompt_version` (`REVIEW_PROMPT_VERSION` constant in
+  `src/review.py`), `llm_model`. Body is the editor's structured pass
+  (Shape / Pulse / Big Picture / Hands-On / Currents / Drift watch /
+  Recommendations / Ratification call).
+- **Failure-soft:** if the LLM call cannot complete (timeout, auth,
+  parse error, missing env vars), `review.md` is written with
+  `verdict: unavailable` and the error reason in the body. The
+  publication still ships; the review just doesn't run for that day.
+  This contract is non-negotiable — review must never block release.
+- **Readers:** Arman (manual review before `aiv release`). The
+  frontmatter is machine-parseable so downstream tooling can correlate
+  verdict shifts against prompt revisions without re-LLM.
+
 ### `data/published_urls.txt` — Release Engineer writes (cumulative, not per-day)
 
 - **Path:** `data/published_urls.txt`. **Note: this file lives at the
