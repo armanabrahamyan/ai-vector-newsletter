@@ -429,6 +429,152 @@ _RE_DOI_URL = re.compile(
     re.IGNORECASE,
 )
 
+# ---------------------------------------------------------------------------
+# Model-version canonical-ID patterns (task: Problem 1)
+#
+# Items mentioning the same released model token (e.g. "claude-opus-4-8",
+# "GPT-5", "gemini-2-0-flash") are force-grouped under rule A.  Items
+# mentioning *different* model tokens are forbidden from merging under rule B.
+#
+# Design decisions:
+#   - URL path match first (highest precision: anthropic.com/news/claude-opus-4-8,
+#     simonwillison.net/.../claude-opus-4-8/).  The URL path is a deliberate slug
+#     chosen by the author, not incidental body text.
+#   - Title match second (Latent Space "[AINews] ... Opus 4.8", Vercel "Opus 4.8
+#     on AI Gateway").  Prose form ("Claude Opus 4.8", "GPT 5") normalised to the
+#     API slug form.
+#   - Body match is NOT performed for model tokens.  Body text is noisy ("we
+#     benchmarked against Opus 4.6 too") and URL+title precision is sufficient.
+#     This is the same signal-hierarchy choice as _RE_HF_PAPERS_URL.
+#   - Multi-model titles (Latent Space "[AINews] ... Opus 4.8 and ultracode")
+#     produce exactly ONE token if only one model-version appears; they join the
+#     Opus 4.8 cluster correctly.  If two distinct model tokens appeared in the
+#     same title, we'd return the first match (caller takes the first hit from
+#     _extract_model_version_id, which processes URL then title in order).
+#
+# Canonical form: "model:<normalised-slug>", e.g. "model:claude-opus-4-8".
+# Normalisation: lowercase, spaces and dots -> hyphens, strip leading "claude-"
+#   prefix from Anthropic prose forms that don't start with "claude-".
+#
+# Vendor coverage (initial list — extend as new families appear):
+#   Anthropic:  claude-(opus|sonnet|haiku)-\d(-\d+)?
+#   OpenAI:     gpt-\d(\.\d+)?  (and prose "GPT 5", "GPT-5")
+#   Google:     gemini-\d(-\d+)?-(pro|flash|nano|ultra)
+#   Meta:       llama-\d(\.\d+)?  (and prose "Llama 4", "Llama-4")
+# ---------------------------------------------------------------------------
+
+# URL-path model slug: matches the hyphenated API slug form embedded in a URL path.
+# Examples: /news/claude-opus-4-8, /claude-sonnet-4-5, /claude-haiku-4, /claude-opus-4
+_RE_MODEL_URL_ANTHROPIC = re.compile(
+    r"/claude-(opus|sonnet|haiku)-(\d+(?:-\d+)?)(?:[/?#\s]|$)",
+    re.IGNORECASE,
+)
+_RE_MODEL_URL_OPENAI = re.compile(
+    r"/gpt-(\d+(?:\.\d+)?)(?:[/?#\s]|$)",
+    re.IGNORECASE,
+)
+_RE_MODEL_URL_GOOGLE = re.compile(
+    r"/gemini-(\d+(?:-\d+)?)-?(pro|flash|nano|ultra)?(?:[/?#\s]|$)",
+    re.IGNORECASE,
+)
+_RE_MODEL_URL_META = re.compile(
+    r"/llama-?(\d+(?:\.\d+)?)(?:[/?#\s]|$)",
+    re.IGNORECASE,
+)
+
+# Title/prose model patterns — normalised prose to API slug.
+# These must be anchored on word boundaries to avoid false-positive substring matches.
+_RE_MODEL_TITLE_ANTHROPIC = re.compile(
+    r"\b(?:claude\s+)?(opus|sonnet|haiku)\s+(\d+(?:[.\-]\d+)?)(?:\b|$)",
+    re.IGNORECASE,
+)
+_RE_MODEL_TITLE_OPENAI = re.compile(
+    r"\bGPT[\s\-](\d+(?:\.\d+)?)\b",
+    re.IGNORECASE,
+)
+_RE_MODEL_TITLE_GOOGLE = re.compile(
+    r"\bGemini[\s\-](\d+(?:[.\-]\d+)?)[\s\-]?(Pro|Flash|Nano|Ultra)?\b",
+    re.IGNORECASE,
+)
+_RE_MODEL_TITLE_META = re.compile(
+    r"\bLlama[\s\-]?(\d+(?:\.\d+)?)\b",
+    re.IGNORECASE,
+)
+
+
+def _normalise_version(v: str) -> str:
+    """Normalise a version string: spaces and dots become hyphens, lowercase."""
+    return re.sub(r"[\s.]+", "-", v.strip()).lower()
+
+
+def _extract_model_version_id(url_str: str, title: str) -> Optional[str]:
+    """Return a ``model:<slug>`` canonical ID for a model-version token, or None.
+
+    Search order:
+      1. URL path (highest precision — author chose the slug deliberately).
+      2. Item title (covers prose announcements like "Opus 4.8 on AI Gateway").
+
+    Returns the FIRST match found.  If the title mentions two model families
+    (e.g. "GPT-5 vs Gemini 2.0 Flash benchmark"), only the first hit is
+    returned.  This is intentional: multi-model comparison posts should not
+    be force-grouped with either model's announcement cluster.  (In practice,
+    such posts don't match rule A because neither side matches a single model
+    token strongly enough — they fall through to embedding clustering.)
+
+    Normalised slug examples:
+      "claude-opus-4-8"   <- Anthropic API slug form (URL or title)
+      "gpt-5"             <- OpenAI
+      "gemini-2-0-flash"  <- Google
+      "llama-4"           <- Meta
+    """
+    # --- URL path matches ---
+    m = _RE_MODEL_URL_ANTHROPIC.search(url_str)
+    if m:
+        family = m.group(1).lower()
+        version = _normalise_version(m.group(2))
+        return f"model:claude-{family}-{version}"
+
+    m = _RE_MODEL_URL_OPENAI.search(url_str)
+    if m:
+        version = _normalise_version(m.group(1))
+        return f"model:gpt-{version}"
+
+    m = _RE_MODEL_URL_GOOGLE.search(url_str)
+    if m:
+        version = _normalise_version(m.group(1))
+        suffix = ("-" + m.group(2).lower()) if m.group(2) else ""
+        return f"model:gemini-{version}{suffix}"
+
+    m = _RE_MODEL_URL_META.search(url_str)
+    if m:
+        version = _normalise_version(m.group(1))
+        return f"model:llama-{version}"
+
+    # --- Title matches ---
+    m = _RE_MODEL_TITLE_ANTHROPIC.search(title)
+    if m:
+        family = m.group(1).lower()
+        version = _normalise_version(m.group(2))
+        return f"model:claude-{family}-{version}"
+
+    m = _RE_MODEL_TITLE_OPENAI.search(title)
+    if m:
+        version = _normalise_version(m.group(1))
+        return f"model:gpt-{version}"
+
+    m = _RE_MODEL_TITLE_GOOGLE.search(title)
+    if m:
+        version = _normalise_version(m.group(1))
+        suffix = ("-" + m.group(2).lower()) if m.group(2) else ""
+        return f"model:gemini-{version}{suffix}"
+
+    m = _RE_MODEL_TITLE_META.search(title)
+    if m:
+        version = _normalise_version(m.group(1))
+        return f"model:llama-{version}"
+
+    return None
+
 
 def _extract_canonical_id_from_url(url_str: str) -> Optional[str]:
     """Return a canonical identity string from a single URL string, or None.
@@ -472,7 +618,17 @@ def _extract_canonical_id_from_url(url_str: str) -> Optional[str]:
 def _canonical_id(item: Item) -> Optional[str]:
     """Return a stable canonical identity string for an item, or None.
 
-    Step 1: check the item's primary URL against known canonical patterns.
+    Step 0: model-version token extraction (title + URL slug).  Items about
+            the same released model version (e.g. "claude-opus-4-8") are
+            force-grouped under rule A; items about different model versions
+            are forbidden from merging under rule B.  This runs before URL
+            pattern matching because many model-release items (blog posts,
+            changelogs, commentary) have no canonical arxiv/GitHub/DOI URL
+            but DO carry a distinctive model slug in their URL path or title.
+
+    Step 1: check the item's primary URL against known canonical patterns
+            (arxiv, HF Papers, GitHub releases, DOI).
+
     Step 2: if no match (free-text item — blog, news, Reddit), scan
             item.raw_summary for the FIRST occurrence of a canonical URL.
             If exactly one canonical URL is found, return its ID.
@@ -484,6 +640,12 @@ def _canonical_id(item: Item) -> Optional[str]:
     but its raw_summary contains the release URL.
     """
     primary_url = str(item.url)
+
+    # Step 0: model-version token (URL slug first, then title).
+    model_cid = _extract_model_version_id(primary_url, item.title)
+    if model_cid is not None:
+        return model_cid
+
     cid = _extract_canonical_id_from_url(primary_url)
     if cid is not None:
         return cid
@@ -968,7 +1130,31 @@ def _link_cross_time(
         best_sim = float(sims[best_idx])
         if best_sim >= CROSS_TIME_COSINE_THRESHOLD:
             matched_id = prior_ids[best_idx]
-            root_id = _resolve_chain_root(matched_id, prior_clusters)
+
+            # Self-match guard: a slow-cadence feed item that recurs with the
+            # same item_id across consecutive days produces an identical
+            # cluster_id (deterministic SHA of item_ids) and therefore matches
+            # itself in prior_centroids with cosine=1.0.  Without this guard,
+            # _resolve_chain_root follows the self-referencing chain, hits the
+            # cycle detector, and returns cluster_id — producing a useless
+            # self-ref (prior_coverage_ref == cluster_id).  The fix: if the
+            # best match IS the cluster itself, resolve the chain of THAT prior
+            # node's own prior_coverage_ref, skipping the self-hop.  If no
+            # non-self ancestor exists (first day the item appeared), leave
+            # prior_coverage_ref as None (correct: no real predecessor).
+            if matched_id == cluster.cluster_id:
+                prior_node = prior_clusters.get(matched_id)
+                if prior_node is None or prior_node.prior_coverage_ref is None:
+                    # No ancestor — this IS the root; nothing to link to.
+                    continue
+                if prior_node.prior_coverage_ref == matched_id:
+                    # Self-loop on the prior node too — skip.
+                    continue
+                # Follow the chain from the prior node's ancestor.
+                root_id = _resolve_chain_root(prior_node.prior_coverage_ref, prior_clusters)
+            else:
+                root_id = _resolve_chain_root(matched_id, prior_clusters)
+
             # Direct attribute mutation is fine: prior_coverage_ref is a
             # declared field on Cluster. extra="forbid" only blocks undeclared
             # fields.

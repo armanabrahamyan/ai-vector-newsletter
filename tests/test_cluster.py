@@ -1961,3 +1961,467 @@ class TestIntentCollisionRegression:
             f"Intent-collision pair must be split — {description} "
             f"(model_score={model_score:.4f} < VERIFICATION_THRESHOLD=0.5)"
         )
+
+
+# ===========================================================================
+# TestModelVersionCanonicalId
+# ===========================================================================
+
+class TestModelVersionCanonicalId:
+    """Unit tests for the model-version canonical-ID extractor.
+
+    Covers _extract_model_version_id() directly and the integration path through
+    _canonical_id() and cluster_day() (rule A force-grouping).
+    """
+
+    # --- Direct extractor tests: URL slug ---
+
+    def test_anthropic_url_slug_claude_opus_4_8(self) -> None:
+        """Anthropic blog URL slug produces model:claude-opus-4-8."""
+        assert cluster_mod._extract_model_version_id(
+            "https://www.anthropic.com/news/claude-opus-4-8", ""
+        ) == "model:claude-opus-4-8"
+
+    def test_anthropic_url_slug_simon_willison(self) -> None:
+        """Simon Willison post URL slug."""
+        assert cluster_mod._extract_model_version_id(
+            "https://simonwillison.net/2026/May/28/claude-opus-4-8/", ""
+        ) == "model:claude-opus-4-8"
+
+    def test_openai_url_slug_gpt_5(self) -> None:
+        assert cluster_mod._extract_model_version_id(
+            "https://openai.com/blog/gpt-5", ""
+        ) == "model:gpt-5"
+
+    def test_meta_url_slug_llama_4(self) -> None:
+        assert cluster_mod._extract_model_version_id(
+            "https://ai.meta.com/blog/llama-4", ""
+        ) == "model:llama-4"
+
+    # --- Direct extractor tests: title prose ---
+
+    def test_anthropic_title_opus_4_8_with_prefix(self) -> None:
+        """'Claude Opus 4.8' in title produces model:claude-opus-4-8."""
+        assert cluster_mod._extract_model_version_id(
+            "https://example.com/post", "Claude Opus 4.8: a modest but tangible improvement"
+        ) == "model:claude-opus-4-8"
+
+    def test_anthropic_title_opus_4_8_without_claude_prefix(self) -> None:
+        """'Opus 4.8' without 'Claude' prefix in title."""
+        assert cluster_mod._extract_model_version_id(
+            "https://vercel.com/changelog/opus-4-8-on-ai-gateway",
+            "Opus 4.8 on AI Gateway",
+        ) == "model:claude-opus-4-8"
+
+    def test_openai_title_gpt_5(self) -> None:
+        assert cluster_mod._extract_model_version_id(
+            "https://example.com/post", "OpenAI launches GPT-5"
+        ) == "model:gpt-5"
+
+    def test_openai_title_gpt_5_prose_space(self) -> None:
+        """'GPT 5' (space-separated) normalises to gpt-5."""
+        assert cluster_mod._extract_model_version_id(
+            "https://example.com/post", "GPT 5 is here"
+        ) == "model:gpt-5"
+
+    def test_meta_title_llama_4(self) -> None:
+        assert cluster_mod._extract_model_version_id(
+            "https://example.com/post", "Meta releases Llama 4"
+        ) == "model:llama-4"
+
+    def test_google_title_gemini_2_0_flash(self) -> None:
+        assert cluster_mod._extract_model_version_id(
+            "https://example.com/post", "Google Gemini 2.0 Flash is fastest"
+        ) == "model:gemini-2-0-flash"
+
+    def test_unrelated_url_and_title_returns_none(self) -> None:
+        """Item with no model token returns None."""
+        assert cluster_mod._extract_model_version_id(
+            "https://arxiv.org/abs/2605.23904",
+            "SkillOpt: Executive Strategy for Self-Evolving Agent Skills",
+        ) is None
+
+    def test_url_slug_takes_priority_over_title(self) -> None:
+        """URL slug match fires before title match, returning the URL-derived token."""
+        # URL says claude-sonnet-4-5, title says nothing about a model.
+        result = cluster_mod._extract_model_version_id(
+            "https://www.anthropic.com/news/claude-sonnet-4-5",
+            "A new Anthropic model release",
+        )
+        assert result == "model:claude-sonnet-4-5"
+
+    def test_different_model_versions_produce_different_ids(self) -> None:
+        """claude-opus-4-8 and claude-opus-4-6 must NOT share a canonical ID."""
+        id_48 = cluster_mod._extract_model_version_id(
+            "https://www.anthropic.com/news/claude-opus-4-8", ""
+        )
+        id_46 = cluster_mod._extract_model_version_id(
+            "https://www.anthropic.com/news/claude-opus-4-6", ""
+        )
+        assert id_48 is not None
+        assert id_46 is not None
+        assert id_48 != id_46
+
+    # --- Integration tests via _canonical_id() ---
+
+    def test_canonical_id_anthropic_blog_model_slug(self) -> None:
+        """Anthropic blog post gets model:claude-opus-4-8 canonical ID."""
+        item = Item(
+            id="anthropic-1",
+            source="Anthropic",
+            source_type="rss",
+            url="https://www.anthropic.com/news/claude-opus-4-8",
+            title="Introducing Claude Opus 4.8",
+            published_at=_T0,
+            raw_summary="Introducing Claude Opus 4.8",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "model:claude-opus-4-8"
+
+    def test_canonical_id_vercel_changelog_title_slug(self) -> None:
+        """Vercel Changelog post title 'Opus 4.8 on AI Gateway' -> model:claude-opus-4-8."""
+        item = Item(
+            id="vercel-1",
+            source="Vercel Changelog",
+            source_type="rss",
+            url="https://vercel.com/changelog/opus-4-8-on-ai-gateway",
+            title="Opus 4.8 on AI Gateway",
+            published_at=_T0,
+            raw_summary="Claude Opus 4.8 is now available on Vercel AI Gateway.",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "model:claude-opus-4-8"
+
+    def test_canonical_id_simon_willison_title(self) -> None:
+        """Simon Willison blog post with Opus 4.8 in title."""
+        item = Item(
+            id="sw-1",
+            source="Simon Willison's Blog",
+            source_type="atom",
+            url="https://simonwillison.net/2026/May/28/claude-opus-4-8/",
+            title='Claude Opus 4.8: "a modest but tangible improvement"',
+            published_at=_T0,
+            raw_summary="Anthropic shipped Claude Opus 4.8 today.",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "model:claude-opus-4-8"
+
+    def test_canonical_id_latent_space_digest_title(self) -> None:
+        """Latent Space AINews digest with Opus 4.8 in multi-topic title."""
+        item = Item(
+            id="ls-1",
+            source="Latent Space",
+            source_type="rss",
+            url="https://www.latent.space/p/ainews-anthropic-raises-965b-series",
+            title="[AINews] Anthropic raises $965B Series H, releases Opus 4.8 and Dynamic Workflows/ultracode",
+            published_at=_T0,
+            raw_summary="Total Anthropic victory!",
+            fetched_at=FIXED_NOW,
+        )
+        assert cluster_mod._canonical_id(item) == "model:claude-opus-4-8"
+
+    # --- Integration test via cluster_day() (rule A force-grouping) ---
+
+    def test_rule_a_model_version_force_groups_six_items(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+    ) -> None:
+        """All items mentioning the same model version are force-grouped (rule A).
+
+        Simulates the May-29 Opus 4.8 scenario: Anthropic blog, Vercel changelog,
+        Simon Willison commentary, and Latent Space digest must land in ONE cluster.
+        Embeddings are deliberately orthogonal so embedding clustering would keep
+        them separate — only rule A can merge them.
+        """
+        items = [
+            Item(
+                id="anthro-blog",
+                source="Anthropic",
+                source_type="rss",
+                url="https://www.anthropic.com/news/claude-opus-4-8",
+                title="Introducing Claude Opus 4.8",
+                published_at=_T0,
+                raw_summary="Introducing Claude Opus 4.8",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="vercel-clog",
+                source="Vercel Changelog",
+                source_type="rss",
+                url="https://vercel.com/changelog/opus-4-8-on-ai-gateway",
+                title="Opus 4.8 on AI Gateway",
+                published_at=_T0,
+                raw_summary="Claude Opus 4.8 is now available on Vercel AI Gateway.",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="simon-post",
+                source="Simon Willison's Blog",
+                source_type="atom",
+                url="https://simonwillison.net/2026/May/28/claude-opus-4-8/",
+                title='Claude Opus 4.8: "a modest but tangible improvement"',
+                published_at=_T0,
+                raw_summary="Anthropic shipped Claude Opus 4.8 today.",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="latent-digest",
+                source="Latent Space",
+                source_type="rss",
+                url="https://www.latent.space/p/ainews-anthropic-raises-series-h",
+                title="[AINews] Anthropic raises $965B Series H, releases Opus 4.8 and Dynamic Workflows/ultracode",
+                published_at=_T0,
+                raw_summary="Total Anthropic victory!",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="unrelated-1",
+                source="arXiv cs.CL",
+                source_type="rss",
+                url="https://arxiv.org/abs/2605.99999",
+                title="A completely unrelated paper about something else",
+                published_at=_T0,
+                raw_summary="abstract",
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # All orthogonal embeddings: embedding clustering would keep everything separate.
+        n = len(items)
+        vecs = []
+        for i in range(n):
+            v = [0.0] * n
+            v[i] = 1.0
+            vecs.append(_unit(v))
+        embeddings = np.stack(vecs)
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        # 4 model-version items -> 1 cluster; 1 arxiv item -> 1 cluster = 2 total
+        assert len(clusters) == 2, (
+            f"Expected 2 clusters (1 Opus-4.8 + 1 arxiv), got {len(clusters)}: "
+            + str([(c.canonical_title, c.size) for c in clusters])
+        )
+        opus_cluster = next(
+            (c for c in clusters if c.canonical_id == "model:claude-opus-4-8"), None
+        )
+        assert opus_cluster is not None, "No cluster with canonical_id=model:claude-opus-4-8"
+        assert opus_cluster.size == 4, f"Expected 4 items in Opus 4.8 cluster, got {opus_cluster.size}"
+        assert set(opus_cluster.item_ids) == {"anthro-blog", "vercel-clog", "simon-post", "latent-digest"}
+
+    def test_rule_b_different_model_versions_do_not_merge(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_data_root: Path,
+        fixed_date: datetime.date,
+    ) -> None:
+        """Items about different model versions must NOT merge (rule B).
+
+        claude-opus-4-8 and claude-opus-4-6 are different canonical IDs.
+        Even with identical embeddings, rule B must keep them separate.
+        """
+        items = [
+            Item(
+                id="opus-48",
+                source="Anthropic",
+                source_type="rss",
+                url="https://www.anthropic.com/news/claude-opus-4-8",
+                title="Introducing Claude Opus 4.8",
+                published_at=_T0,
+                raw_summary="",
+                fetched_at=FIXED_NOW,
+            ),
+            Item(
+                id="opus-46",
+                source="SomeSource",
+                source_type="rss",
+                url="https://example.com/claude-opus-4-6-review",
+                title="Claude Opus 4.6: the previous generation",
+                published_at=_T0,
+                raw_summary="",
+                fetched_at=FIXED_NOW,
+            ),
+        ]
+        # Identical embeddings — without rule B they would merge.
+        base = _unit([1.0] + [0.0] * (DIM - 1))
+        embeddings = np.stack([base, base.copy()])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2, (
+            "Items about different model versions (4.8 vs 4.6) must NOT merge (rule B)"
+        )
+
+
+# ===========================================================================
+# TestCrossTimeSelfRefFix
+# ===========================================================================
+
+class TestCrossTimeSelfRefFix:
+    """Regression tests for the cross-time self-reference bug.
+
+    Root cause: a slow-cadence feed item that recurs across consecutive days
+    with the same item_id produces an identical cluster_id each day (the
+    cluster_id is a deterministic SHA of item_ids).  In _link_cross_time, this
+    cluster matches itself in prior_centroids with cosine=1.0, causing
+    _resolve_chain_root to return the cluster_id itself, which then becomes
+    the prior_coverage_ref — a useless self-link.
+
+    The fix: when the best-match prior cluster_id == today's cluster_id, skip
+    the self-hop and look for a real ancestor.  If none exists, leave
+    prior_coverage_ref as None (correct: this IS the root).
+    """
+
+    def _plant_prior(
+        self,
+        tmp_data_root: Path,
+        prior_date: datetime.date,
+        cluster: Cluster,
+        centroid: np.ndarray,
+    ) -> None:
+        from src import paths
+        npz_path = paths.centroids_path(prior_date, canonical=True)
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(npz_path, "wb") as fh:
+            np.savez(fh, **{cluster.cluster_id: centroid})
+        clusters_path = paths.clusters_path(prior_date, canonical=True)
+        clusters_path.parent.mkdir(parents=True, exist_ok=True)
+        with clusters_path.open("w", encoding="utf-8") as fh:
+            fh.write(cluster.model_dump_json() + "\n")
+
+    def test_recurring_item_no_self_ref(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """A recurring single-item cluster must NOT set prior_coverage_ref=self.
+
+        Simulates: item 'slow-item' appears on day N-1 (released) and day N
+        (staging).  Both days produce cluster_id=c_X because item_id is
+        identical.  The fix must leave prior_coverage_ref=None (no real
+        ancestor) rather than c_X pointing at itself.
+        """
+        shared_item_id = "slow-item"
+        shared_vec = _unit([1.0] + [0.0] * (DIM - 1))
+
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        prior_cid = _expected_cluster_id([shared_item_id])
+
+        prior_cluster_obj = Cluster(
+            cluster_id=prior_cid,
+            item_ids=[shared_item_id],
+            canonical_title="Slow feed story",
+            sources=["LLMQuant Newsletter"],
+            earliest_published=_T0,
+            size=1,
+            prior_coverage_ref=None,  # first day: no ancestor
+        )
+        self._plant_prior(tmp_data_root, prior_date, prior_cluster_obj, shared_vec)
+
+        # Today: same item recurs
+        today_item = Item(
+            id=shared_item_id,
+            source="LLMQuant Newsletter",
+            source_type="rss",
+            url="https://llmquant.substack.com/p/some-article",
+            title="Slow feed story",
+            published_at=_T0,
+            raw_summary="content",
+            fetched_at=FIXED_NOW,
+        )
+        embeddings = np.stack([shared_vec])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(cluster_mod, "CROSS_TIME_COSINE_THRESHOLD", 0.82)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, [today_item])
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1
+        assert clusters[0].prior_coverage_ref is None, (
+            "Recurring single-item cluster must NOT self-reference; "
+            f"got prior_coverage_ref={clusters[0].prior_coverage_ref!r}"
+        )
+
+    def test_recurring_item_with_ancestor_links_to_root(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """A recurring item whose prior cluster has a real ancestor links to that root.
+
+        Day N-2: c_root (no prior ref) — first appearance, different cluster/items
+        Day N-1: c_X (same item_id as today, prior_coverage_ref=c_root)
+        Day N: same item_id -> cluster c_X; self-match fires; ancestor = c_root
+
+        Expected: prior_coverage_ref = c_root (not c_X, not None).
+        """
+        shared_item_id = "recur-item"
+        shared_vec = _unit([1.0] + [0.0] * (DIM - 1))
+
+        root_date = fixed_date - datetime.timedelta(days=2)
+        mid_date = fixed_date - datetime.timedelta(days=1)
+
+        root_cid = _expected_cluster_id(["root-anchor"])
+        recur_cid = _expected_cluster_id([shared_item_id])
+
+        root_cluster_obj = Cluster(
+            cluster_id=root_cid,
+            item_ids=["root-anchor"],
+            canonical_title="Original story",
+            sources=["SomeSource"],
+            earliest_published=_T1,
+            size=1,
+            prior_coverage_ref=None,
+        )
+        mid_cluster_obj = Cluster(
+            cluster_id=recur_cid,
+            item_ids=[shared_item_id],
+            canonical_title="Slow feed story",
+            sources=["LLMQuant Newsletter"],
+            earliest_published=_T0,
+            size=1,
+            prior_coverage_ref=root_cid,  # linked to root on day N-1
+        )
+
+        self._plant_prior(tmp_data_root, root_date, root_cluster_obj, _unit([0.9, 0.1] + [0.0] * (DIM - 2)))
+        self._plant_prior(tmp_data_root, mid_date, mid_cluster_obj, shared_vec)
+
+        today_item = Item(
+            id=shared_item_id,
+            source="LLMQuant Newsletter",
+            source_type="rss",
+            url="https://llmquant.substack.com/p/some-article",
+            title="Slow feed story",
+            published_at=_T0,
+            raw_summary="content",
+            fetched_at=FIXED_NOW,
+        )
+        embeddings = np.stack([shared_vec])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(cluster_mod, "CROSS_TIME_COSINE_THRESHOLD", 0.82)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, [today_item])
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1
+        assert clusters[0].prior_coverage_ref == root_cid, (
+            f"Expected prior_coverage_ref={root_cid!r}, "
+            f"got {clusters[0].prior_coverage_ref!r}"
+        )
