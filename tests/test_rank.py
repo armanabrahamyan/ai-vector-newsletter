@@ -1245,188 +1245,325 @@ class TestParallelRank:
 
 
 # ===========================================================================
-# _assign_initial_tier -- schema v3 (2026-05-30) tier routing.
+# _assign_initial_tier -- schema v0.7 (2026-05-31) per-section routing.
 #
-# Tier is now the AUTHORITY for summarise.py's section routing -- rank.py
-# writes the full editorial slot here (no scavenging downstream). The four
-# outcomes (Phase 2 rename, 2026-05-30: on_the_radar -> currents):
-#   cut             -- below thresholds.cut.max_score OR sig <= max_significance
-#   currents        -- in middle band OR promoted but no head-section tag
-#   big_picture     -- promoted AND big_picture tag (with tiebreak vs hands_on)
-#   hands_on        -- promoted AND hands_on tag (with tiebreak vs big_picture)
+# Tier is the AUTHORITY for summarise.py's section routing. v0.7 replaces
+# the single-aggregate ``score`` + audience-tag-XOR routing with an argmax
+# over the three tier-section weighted scores (big_picture / hands_on /
+# currents). Audience tags are now a TIEBREAK signal only.
+# Outcomes:
+#   cut             -- max section score < cut_floor (currents.min_score)
+#   big_picture     -- argmax of {bp, ho, currents} == big_picture
+#   hands_on        -- argmax == hands_on
+#   currents        -- argmax == currents
+# When two section scores tie, audience_tags resolves the tie per the
+# rules in _assign_initial_tier's docstring.
 # ===========================================================================
 
 class TestAssignInitialTier:
-    """Schema v3 (2026-05-30): tier-as-authority routing in rank.py."""
+    """Schema v0.7 (2026-05-31): argmax-on-section-scores tier routing."""
 
-    def _base_breakdown(
+    def _scores(
         self,
         *,
-        significance: int = 70,
-        hands_on_utility: int = 70,
-        big_picture_relevance: int = 70,
+        big_picture: int = 60,
+        hands_on: int = 60,
+        currents: int = 60,
+        pulse: int = 60,
     ) -> dict[str, int]:
-        """A breakdown the tier function reads. Other dimensions don't
-        affect routing; we set them to a neutral 50."""
+        """A score_by_section dict for the tier function. Pulse never
+        drives tier routing (Pulse is downstream from the head-tier
+        union); included for completeness so callers exercise the same
+        shape rank.py writes."""
         return {
-            "significance": significance,
-            "hands_on_utility": hands_on_utility,
-            "big_picture_relevance": big_picture_relevance,
-            "financial_services_impact": 50,
-            "freshness_momentum": 50,
+            "pulse": pulse,
+            "big_picture": big_picture,
+            "hands_on": hands_on,
+            "currents": currents,
         }
 
-    def test_cut_when_score_below_cut_max_score(self) -> None:
-        """score < cut.max_score -> cut, regardless of other dimensions."""
+    def test_cut_when_max_section_score_below_cut_floor(self) -> None:
+        """If max(bp, ho, currents) < cut_floor (currents.min_score, 40),
+        the story is cut regardless of any other signal."""
         tier = _assign_initial_tier(
-            score=30,
-            breakdown=self._base_breakdown(significance=70),
+            score_by_section=self._scores(big_picture=30, hands_on=35, currents=39),
             audience_tags=["hands_on", "big_picture"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
         assert tier == "cut"
 
-    def test_cut_when_significance_at_or_below_cut_max(self) -> None:
-        """significance <= cut.max_significance is the Tier-3 trapdoor --
-        the editorial-focus skill's pre-filter rule. A vendor announcement
-        scoring high on hands_on_utility but flat on significance gets
-        cut even if the weighted score clears the floor."""
+    def test_cut_at_exact_floor_boundary_not_cut(self) -> None:
+        """head_max == cut_floor (40) is NOT cut. The cut condition is
+        strict less-than -- a story sitting exactly at the floor still
+        lands in the section that hit it."""
         tier = _assign_initial_tier(
-            score=80,  # high enough that the score gate alone wouldn't cut
-            breakdown=self._base_breakdown(significance=25),
-            audience_tags=["hands_on"],
-            thresholds=_DEFAULT_TIER_THRESHOLDS,
-        )
-        assert tier == "cut"
-
-    def test_currents_when_between_cut_and_promote(self) -> None:
-        """Score in the middle band -> currents regardless of tags.
-
-        v0.4 (2026-05-30): promote_to_section.min_score is 55, so 45 is
-        the middle-band test point (40 <= score < 55). Phase 2
-        (2026-05-30): tier value renamed on_the_radar -> currents.
-        """
-        tier = _assign_initial_tier(
-            score=45,
-            breakdown=self._base_breakdown(significance=60),
-            audience_tags=["hands_on", "big_picture"],
+            score_by_section=self._scores(big_picture=20, hands_on=20, currents=40),
+            audience_tags=["general"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
         assert tier == "currents"
 
-    def test_neither_head_tag_routes_by_subscore_to_hands_on(self) -> None:
-        """v0.4 (2026-05-30) NEITHER-branch fix: promoted with only
-        general / finance tags -> route by sub-score, not currents.
-
-        hands_on_utility > big_picture_relevance -> hands_on. Anchor case:
-        a finance-tagged practitioner story that clears the promote floor
-        but the LLM didn't apply the hands_on tag explicitly.
-        """
+    def test_tier_assigned_to_highest_section(self) -> None:
+        """The smoking gun: argmax of the three section scores drives
+        the tier. big_picture wins when its section score is the highest."""
         tier = _assign_initial_tier(
-            score=70,
-            breakdown=self._base_breakdown(
-                significance=70, hands_on_utility=80, big_picture_relevance=50,
-            ),
-            audience_tags=["finance", "general"],
+            score_by_section=self._scores(big_picture=85, hands_on=60, currents=50),
+            audience_tags=["hands_on"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        # bp is highest -- routes there even though the LLM tagged the
+        # story hands_on (audience_tags are a tiebreak signal only, not
+        # a primary routing driver).
+        assert tier == "big_picture"
+
+    def test_hands_on_wins_when_hands_on_section_score_highest(self) -> None:
+        """Smoking gun for the spec example: a story strong on
+        hands_on_utility but weak on significance lands in Hands-On --
+        what the old single-aggregate flow would have ranked low."""
+        tier = _assign_initial_tier(
+            score_by_section=self._scores(big_picture=45, hands_on=75, currents=55),
+            audience_tags=["big_picture"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
         assert tier == "hands_on"
 
-    def test_neither_head_tag_routes_by_subscore_to_big_picture(self) -> None:
-        """v0.4 (2026-05-30) NEITHER-branch fix: bp > ho -> big_picture.
-        Anchor case: c_491e0b408f3bab95-style regulatory finance content
-        promoted at 60+ with strong big_picture_relevance.
-        """
+    def test_currents_wins_when_currents_section_score_highest(self) -> None:
+        """Currents claims the slot when its weighted sum is the largest --
+        a story whose freshness + breadth lift it above the head-tier
+        bars but not into the strategic / hands-on attention bands."""
         tier = _assign_initial_tier(
-            score=65,
-            breakdown=self._base_breakdown(
-                significance=65, hands_on_utility=30, big_picture_relevance=75,
-            ),
-            audience_tags=["finance"],
-            thresholds=_DEFAULT_TIER_THRESHOLDS,
-        )
-        assert tier == "big_picture"
-
-    def test_neither_head_tag_subscore_tie_goes_to_big_picture(self) -> None:
-        """v0.4 NEITHER-branch fix: ho == bp -> big_picture (same tiebreak
-        rule as the BOTH branch). Keeps tiebreak symmetry between the two
-        branches so the more strategic surface wins ties everywhere."""
-        tier = _assign_initial_tier(
-            score=60,
-            breakdown=self._base_breakdown(
-                significance=60, hands_on_utility=60, big_picture_relevance=60,
-            ),
+            score_by_section=self._scores(big_picture=50, hands_on=45, currents=70),
             audience_tags=["general"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
-        assert tier == "big_picture"
+        assert tier == "currents"
 
-    def test_big_picture_when_promoted_and_only_big_picture_tag(self) -> None:
-        """XOR routing -- big_picture tag only -> big_picture tier."""
+    def test_bp_ho_tie_with_hands_on_tag_wins_hands_on(self) -> None:
+        """bp == ho tie; audience_tags contains hands_on but NOT
+        big_picture -> hands_on wins. The XOR rule means the LLM's
+        editorial-slot intent breaks the tie."""
         tier = _assign_initial_tier(
-            score=75,
-            breakdown=self._base_breakdown(significance=70),
-            audience_tags=["big_picture", "finance"],
-            thresholds=_DEFAULT_TIER_THRESHOLDS,
-        )
-        assert tier == "big_picture"
-
-    def test_hands_on_when_promoted_and_only_hands_on_tag(self) -> None:
-        """XOR routing -- hands_on tag only -> hands_on tier."""
-        tier = _assign_initial_tier(
-            score=75,
-            breakdown=self._base_breakdown(significance=70),
+            score_by_section=self._scores(big_picture=75, hands_on=75, currents=50),
             audience_tags=["hands_on", "general"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
         assert tier == "hands_on"
 
-    def test_both_tags_tiebreak_hands_on_when_ho_strictly_greater(self) -> None:
-        """BOTH head-section tags -> tiebreak on breakdown. ho > bp -> hands_on."""
+    def test_bp_ho_tie_with_big_picture_tag_wins_big_picture(self) -> None:
+        """bp == ho tie; XOR the other way: only big_picture tag set."""
         tier = _assign_initial_tier(
-            score=75,
-            breakdown=self._base_breakdown(
-                significance=70, hands_on_utility=85, big_picture_relevance=60,
-            ),
+            score_by_section=self._scores(big_picture=75, hands_on=75, currents=50),
+            audience_tags=["big_picture", "finance"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_bp_ho_tie_with_both_tags_defaults_big_picture(self) -> None:
+        """bp == ho tie; BOTH head-section tags set -> default to
+        big_picture (preserves the historical BOTH-branch default to
+        the more strategic surface)."""
+        tier = _assign_initial_tier(
+            score_by_section=self._scores(big_picture=75, hands_on=75, currents=50),
             audience_tags=["hands_on", "big_picture"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_bp_ho_tie_with_neither_tag_defaults_big_picture(self) -> None:
+        """bp == ho tie; NEITHER head-section tag set -> still default to
+        big_picture (the same strategic-surface default)."""
+        tier = _assign_initial_tier(
+            score_by_section=self._scores(big_picture=75, hands_on=75, currents=50),
+            audience_tags=["general", "finance"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_currents_tied_with_bp_no_head_tag_prefers_currents(self) -> None:
+        """currents == big_picture; audience_tags has neither head-section
+        tag -> currents wins (the LLM signalled no head-section intent)."""
+        tier = _assign_initial_tier(
+            score_by_section=self._scores(big_picture=70, hands_on=40, currents=70),
+            audience_tags=["general"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "currents"
+
+    def test_currents_tied_with_bp_with_bp_tag_prefers_bp(self) -> None:
+        """currents == big_picture; audience_tags has big_picture ->
+        the head-tier section wins."""
+        tier = _assign_initial_tier(
+            score_by_section=self._scores(big_picture=70, hands_on=40, currents=70),
+            audience_tags=["big_picture", "finance"],
+            thresholds=_DEFAULT_TIER_THRESHOLDS,
+        )
+        assert tier == "big_picture"
+
+    def test_currents_tied_with_ho_with_ho_tag_prefers_ho(self) -> None:
+        """currents == hands_on; audience_tags has hands_on ->
+        the head-tier section wins."""
+        tier = _assign_initial_tier(
+            score_by_section=self._scores(big_picture=40, hands_on=65, currents=65),
+            audience_tags=["hands_on"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
         assert tier == "hands_on"
 
-    def test_both_tags_tiebreak_big_picture_when_bp_strictly_greater(self) -> None:
-        """BOTH head-section tags -> tiebreak on breakdown. bp > ho -> big_picture."""
+    def test_audience_tags_do_not_override_argmax(self) -> None:
+        """A story tagged hands_on but whose hands_on section score is
+        NOT the max routes to whichever section IS the max. The audience
+        tag is a tiebreak signal, not a primary override."""
         tier = _assign_initial_tier(
-            score=75,
-            breakdown=self._base_breakdown(
-                significance=70, hands_on_utility=60, big_picture_relevance=85,
-            ),
-            audience_tags=["hands_on", "big_picture"],
+            score_by_section=self._scores(big_picture=80, hands_on=55, currents=50),
+            audience_tags=["hands_on"],
             thresholds=_DEFAULT_TIER_THRESHOLDS,
         )
         assert tier == "big_picture"
 
-    def test_both_tags_tie_goes_to_big_picture(self) -> None:
-        """BOTH head-section tags AND ho == bp -> big_picture (the more
-        strategic surface; spec: 'ties go to big_picture')."""
-        tier = _assign_initial_tier(
-            score=75,
-            breakdown=self._base_breakdown(
-                significance=70, hands_on_utility=75, big_picture_relevance=75,
-            ),
-            audience_tags=["hands_on", "big_picture"],
-            thresholds=_DEFAULT_TIER_THRESHOLDS,
-        )
-        assert tier == "big_picture"
 
-    def test_cut_trumps_promote_when_significance_floors(self) -> None:
-        """A story with very high weighted score but significance <= 25
-        (Tier-3 vendor fluff) must cut before the promote routing fires."""
-        tier = _assign_initial_tier(
-            score=90,
-            breakdown=self._base_breakdown(
-                significance=25, hands_on_utility=100, big_picture_relevance=100,
-            ),
-            audience_tags=["hands_on", "big_picture"],
-            thresholds=_DEFAULT_TIER_THRESHOLDS,
+class TestWeightedSectionScores:
+    """``_weighted_section_scores`` -- the helper that produces the four
+    section weighted sums from a single breakdown. The shape pinned here
+    is what rank.py persists on ``RankedStory.score_by_section``."""
+
+    def _bd(self, **kwargs) -> dict[str, int]:
+        base = {
+            "significance": 60,
+            "hands_on_utility": 60,
+            "big_picture_relevance": 60,
+            "financial_services_impact": 60,
+            "freshness_momentum": 60,
+        }
+        base.update(kwargs)
+        return base
+
+    def test_returns_all_four_section_keys(self) -> None:
+        """The four sections (pulse, big_picture, hands_on, currents)
+        must all appear. Anything else would break the pydantic
+        validator on RankedStory.score_by_section."""
+        from src.rank import _weighted_section_scores
+        out = _weighted_section_scores(self._bd())
+        assert set(out.keys()) == {"pulse", "big_picture", "hands_on", "currents"}
+
+    def test_weighted_sums_match_section_weights_table(self) -> None:
+        """Spot-check the math against the agreed weights from the spec
+        for a strong-hands-on / weak-significance breakdown -- the case
+        the new routing is supposed to land in Hands-On."""
+        from src.models import SECTION_WEIGHTS
+        from src.rank import _weighted_section_scores
+        bd = self._bd(
+            significance=40, hands_on_utility=90, big_picture_relevance=30,
+            financial_services_impact=20, freshness_momentum=50,
         )
-        assert tier == "cut"
+        out = _weighted_section_scores(bd)
+        for section, weights in SECTION_WEIGHTS.items():
+            expected = round(sum((weights[k] / 100.0) * bd[k] for k in weights))
+            assert out[section] == expected, (
+                f"section {section} mismatch: got {out[section]} expected {expected}"
+            )
+
+    def test_high_hands_on_utility_lifts_hands_on_section_score(self) -> None:
+        """A breakdown strong on hands_on_utility but weak on
+        significance produces a Hands-On section score higher than the
+        Big Picture section score -- the routing-by-section-scores story."""
+        from src.rank import _weighted_section_scores
+        bd = self._bd(
+            significance=40, hands_on_utility=90, big_picture_relevance=30,
+        )
+        out = _weighted_section_scores(bd)
+        assert out["hands_on"] > out["big_picture"]
+        # And hands_on is the argmax of the tier sections.
+        assert max(out["big_picture"], out["hands_on"], out["currents"]) == out["hands_on"]
+
+
+class TestRankedStoryScoreBySection:
+    """v0.7 (2026-05-31) -- the RankedStory.score_by_section invariant
+    enforced by ``_section_scores_match_weighted_breakdowns``: every
+    section's persisted score must match the weighted sum under
+    SECTION_WEIGHTS."""
+
+    def _bd(self) -> dict[str, int]:
+        return {
+            "significance": 70,
+            "hands_on_utility": 60,
+            "big_picture_relevance": 50,
+            "financial_services_impact": 40,
+            "freshness_momentum": 30,
+        }
+
+    def test_score_by_section_matches_section_weighted_sum(self) -> None:
+        """Happy path: each entry equals its weighted sum -- pydantic
+        accepts."""
+        from src.models import RankedStory, SECTION_WEIGHTS
+        from src.rank import _weighted_score
+        bd = self._bd()
+        score_by_section = {
+            section: round(
+                sum((weights[k] / 100.0) * bd[k] for k in weights)
+            )
+            for section, weights in SECTION_WEIGHTS.items()
+        }
+        rs = RankedStory(
+            cluster_id="c_" + "a" * 14,
+            score=_weighted_score(bd),
+            score_by_section=score_by_section,
+            breakdown=bd,
+            audience_tags=["hands_on"],
+            rationale="r",
+            tier="hands_on",
+            prompt_version="v0.6",
+        )
+        assert rs.score_by_section == score_by_section
+
+    def test_score_by_section_off_by_one_rejected(self) -> None:
+        """If any section score drifts by even 1 from its weighted sum,
+        pydantic rejects -- mirrors the legacy aggregate-score invariant."""
+        from pydantic import ValidationError
+        from src.models import RankedStory, SECTION_WEIGHTS
+        from src.rank import _weighted_score
+        bd = self._bd()
+        score_by_section = {
+            section: round(
+                sum((weights[k] / 100.0) * bd[k] for k in weights)
+            )
+            for section, weights in SECTION_WEIGHTS.items()
+        }
+        # Drift the hands_on section score by 1.
+        score_by_section["hands_on"] += 1
+        with pytest.raises(ValidationError, match="score_by_section"):
+            RankedStory(
+                cluster_id="c_" + "b" * 14,
+                score=_weighted_score(bd),
+                score_by_section=score_by_section,
+                breakdown=bd,
+                audience_tags=["hands_on"],
+                rationale="r",
+                tier="hands_on",
+                prompt_version="v0.6",
+            )
+
+    def test_score_by_section_missing_key_rejected(self) -> None:
+        """All four section keys must be present when score_by_section
+        is supplied. A missing 'pulse' key (or any other) fails."""
+        from pydantic import ValidationError
+        from src.models import RankedStory, SECTION_WEIGHTS
+        from src.rank import _weighted_score
+        bd = self._bd()
+        score_by_section = {
+            section: round(
+                sum((weights[k] / 100.0) * bd[k] for k in weights)
+            )
+            for section, weights in SECTION_WEIGHTS.items()
+        }
+        del score_by_section["pulse"]
+        with pytest.raises(ValidationError, match="score_by_section"):
+            RankedStory(
+                cluster_id="c_" + "c" * 14,
+                score=_weighted_score(bd),
+                score_by_section=score_by_section,
+                breakdown=bd,
+                audience_tags=["hands_on"],
+                rationale="r",
+                tier="hands_on",
+                prompt_version="v0.6",
+            )

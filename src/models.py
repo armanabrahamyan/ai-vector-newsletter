@@ -190,7 +190,63 @@ leadership_relevance -> big_picture_relevance, to align with section names.
 Rebalanced v0.6 (2026-05-30): significance 30 -> 40, big_picture_relevance
 20 -> 30, hands_on_utility 25 -> 10, freshness_momentum 10 -> 5. Editorial
 shift: prioritise field-shifting stories and senior-leader strategic
-framing over practitioner-actionability and pure recency."""
+framing over practitioner-actionability and pure recency.
+
+LEGACY role (v0.7, 2026-05-31): these weights remain as the FALLBACK
+single-aggregate score used by the back-compat validator on archived
+ranked.jsonl rows (schema_version <= 5) and by the legacy ``score`` field
+that RankedStory continues to expose for backwards compatibility.
+SECTION_WEIGHTS (below) is the new routing authority for schema_version
+>= 6 rows -- the per-section weighted sums on
+``RankedStory.score_by_section`` drive tier assignment, story order, and
+Pulse selection."""
+
+
+SECTION_WEIGHTS: dict[str, dict[str, int]] = {
+    "pulse": {
+        "significance": 45,
+        "big_picture_relevance": 20,
+        "hands_on_utility": 5,
+        "financial_services_impact": 20,
+        "freshness_momentum": 10,
+    },
+    "big_picture": {
+        "significance": 35,
+        "big_picture_relevance": 45,
+        "hands_on_utility": 0,
+        "financial_services_impact": 15,
+        "freshness_momentum": 5,
+    },
+    "hands_on": {
+        "significance": 25,
+        "big_picture_relevance": 10,
+        "hands_on_utility": 45,
+        "financial_services_impact": 10,
+        "freshness_momentum": 10,
+    },
+    "currents": {
+        "significance": 30,
+        "big_picture_relevance": 20,
+        "hands_on_utility": 15,
+        "financial_services_impact": 15,
+        "freshness_momentum": 20,
+    },
+}
+"""Per-section weight sets (v0.7, 2026-05-31). Mirrors
+``config/rubric.yaml:section_weights``. Each inner dict sums to 100.
+
+DESIGN.md note: like ``RUBRIC_WEIGHTS``, this constant is duplicated
+between ``config/rubric.yaml`` (source of truth, owned by LLM Engineer)
+and this module (used by ``RankedStory._section_scores_match_weighted_breakdowns``
++ ``rank.py`` to populate ``score_by_section`` without YAML I/O on every
+cluster). If the YAML changes, this constant must move in lockstep -- the
+Eval Engineer's module-integrity check should catch drift, but a TODO is
+to load both weight tables from rubric.yaml at import time in a future
+refactor.
+
+Keys MUST be exactly ``{"pulse", "big_picture", "hands_on", "currents"}`` --
+these are the four sections the rendered newsletter has. Each inner dict's
+keys MUST match the criterion names in ``RUBRIC_WEIGHTS`` exactly."""
 
 
 # ---------------------------------------------------------------------------
@@ -367,15 +423,47 @@ class RankedStory(BaseModel):
     Downstream readers preserve that order.
     """
 
-    schema_version: int = 5
+    schema_version: int = 6
     cluster_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """FK to Cluster.cluster_id."""
 
     score: Annotated[int, Field(ge=0, le=100)]
-    """Final weighted score (rubric sum); must equal the breakdown-weighted sum
-    for schema_version >= 5. Archived rows (schema_version <= 4) carry scores
-    computed under earlier RUBRIC_WEIGHTS and are not re-validated on parse
-    -- the score field is trusted as-written for legacy data."""
+    """Legacy single-aggregate weighted score (RUBRIC_WEIGHTS sum); kept
+    for backwards compatibility and audit. For schema_version >= 5 it must
+    equal the breakdown-weighted sum under ``RUBRIC_WEIGHTS``. Archived
+    rows (schema_version <= 4) carry scores computed under earlier weights
+    and are not re-validated on parse -- the score field is trusted as-
+    written for legacy data.
+
+    Schema v0.7 (2026-05-31): no longer the routing authority. Tier
+    assignment, story order, and Pulse selection now use the per-section
+    weighted sums on ``score_by_section`` (computed under SECTION_WEIGHTS)
+    instead. The aggregate ``score`` continues to be computed so existing
+    consumers (dedup, evals, render) that read it keep working unchanged,
+    and so the v5 invariant remains enforceable on existing fixtures."""
+
+    score_by_section: dict[str, Annotated[int, Field(ge=0, le=100)]] | None = None
+    """
+    Schema v0.7 (2026-05-31, schema_version=6): four per-section weighted
+    sums (one per section) computed from ``breakdown`` x ``SECTION_WEIGHTS``,
+    integer-rounded. Keys MUST be exactly
+    ``{"pulse", "big_picture", "hands_on", "currents"}``.
+
+    This field is the routing authority going forward: ``rank.py``
+    ``_assign_initial_tier`` argmaxes across the three section-tier scores
+    (big_picture / hands_on / currents) with a cut-floor; ``summarise.py``
+    pickers rank within each section by that section's score; the Pulse
+    picker uses ``score_by_section["pulse"]`` to rank the head-tier union.
+
+    Optional / nullable for backwards compatibility: archived ranked.jsonl
+    rows (schema_version <= 5) don't carry this field and parse fine as
+    ``None``. The cross-check validator below
+    (``_section_scores_match_weighted_breakdowns``) runs only when
+    ``schema_version >= 6`` AND the field is present; v6 rows that omit
+    ``score_by_section`` are tolerated for back-compat (e.g. unit-test
+    fixtures that pre-date the field) but rank.py always populates it
+    on fresh writes so production data is always consistent.
+    """
 
     breakdown: dict[str, Annotated[int, Field(ge=0, le=100)]]
     """
@@ -485,12 +573,17 @@ class RankedStory(BaseModel):
         exactly after rounding the weighted sum to the nearest int.
 
         Schema-version gate (v0.6 rebalance, 2026-05-30): the weighted-sum
-        check enforces only for schema_version == 5 (current). Archived
-        ranked.jsonl rows written before today carry scores computed under
-        earlier RUBRIC_WEIGHTS and would fail the new invariant. Trust the
-        score field as-written for legacy rows -- the dedup, eval, and
-        render paths that consume archived data should not be broken by a
-        rubric tuning.
+        check enforces only for schema_version >= 5. Archived ranked.jsonl
+        rows written before that bump carry scores computed under earlier
+        RUBRIC_WEIGHTS and would fail the invariant. Trust the score field
+        as-written for legacy rows -- the dedup, eval, and render paths
+        that consume archived data should not be broken by a rubric tuning.
+
+        Schema-version gate (v0.7, 2026-05-31): the same legacy-aggregate
+        invariant still runs for schema_version >= 5. The new
+        ``score_by_section`` invariant lives in
+        ``_section_scores_match_weighted_breakdowns`` below and gates on
+        schema_version >= 6.
         """
         if self.schema_version < 5:
             return self
@@ -504,6 +597,62 @@ class RankedStory(BaseModel):
                 f"RankedStory.score ({self.score}) must equal the weighted "
                 f"sum of breakdown ({expected_int}). breakdown={self.breakdown}"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _section_scores_match_weighted_breakdowns(self) -> "RankedStory":
+        """
+        Invariant (v0.7, schema_version >= 6): each entry in
+        ``score_by_section`` equals the corresponding weighted sum of
+        ``breakdown`` under ``SECTION_WEIGHTS[section]``, integer-rounded.
+
+        Mirrors the existing aggregate-score invariant in shape:
+        rank.py is expected to RECOMPUTE every section score from
+        ``breakdown`` x section-weights before constructing this model;
+        this validator enforces consistency rather than accepting LLM /
+        caller arithmetic.
+
+        Schema-version gate: archived rows with ``schema_version <= 5``
+        do not carry ``score_by_section`` (None) and skip this check; new
+        rows (schema_version >= 6) must carry the full four-section dict
+        with values matching the breakdown.
+
+        Tolerance: integer-rounded -- expected and provided must match
+        exactly after rounding the weighted sum to the nearest int.
+        """
+        if self.schema_version < 6:
+            return self
+        if self.score_by_section is None:
+            # Permitted at v6: legacy callers (existing tests, archived
+            # fixtures that pre-date this field) construct RankedStory
+            # without ``score_by_section``. The cross-check is enforced
+            # when the field IS present so rank.py's writes stay
+            # consistent with SECTION_WEIGHTS; absence is treated as
+            # "this caller hasn't migrated yet, skip the check".
+            return self
+        expected_keys = set(SECTION_WEIGHTS.keys())
+        got_keys = set(self.score_by_section.keys())
+        if got_keys != expected_keys:
+            missing = expected_keys - got_keys
+            extra = got_keys - expected_keys
+            raise ValueError(
+                "RankedStory.score_by_section keys must match SECTION_WEIGHTS "
+                f"(missing={sorted(missing)} extra={sorted(extra)})"
+            )
+        for section_name, section_weights in SECTION_WEIGHTS.items():
+            expected = sum(
+                (section_weights[crit] / 100.0) * self.breakdown[crit]
+                for crit in section_weights
+            )
+            expected_int = round(expected)
+            got = self.score_by_section[section_name]
+            if got != expected_int:
+                raise ValueError(
+                    f"RankedStory.score_by_section[{section_name!r}] ({got}) "
+                    f"must equal the weighted sum of breakdown "
+                    f"({expected_int}) under SECTION_WEIGHTS[{section_name!r}]. "
+                    f"breakdown={self.breakdown}"
+                )
         return self
 
 
@@ -908,6 +1057,7 @@ __all__ = [
     "MissedReason",
     # Constants
     "RUBRIC_WEIGHTS",
+    "SECTION_WEIGHTS",
     # Persisted models
     "Item",
     "Cluster",

@@ -1541,3 +1541,299 @@ class TestHeadPickersNoMaturityGate:
         # Audience-only: no signal-dimension filter applied inside the
         # head picker.
         assert picked == [story.cluster_id]
+
+
+# ===========================================================================
+# v0.7 (2026-05-31) -- per-section weighted scores drive picker ordering.
+#
+# Each picker now ranks candidates within its tier pool by the section-
+# specific weighted score (RankedStory.score_by_section[section]) rather
+# than the legacy aggregate ``score`` / file order. The spec calls out one
+# anchor case: a story strong on hands_on_utility but weak on significance
+# should land in Hands-On at a top position, where the old single-
+# aggregate flow would have ranked it low globally.
+# ===========================================================================
+
+def _ranked_with_section_scores(
+    cluster_id: str,
+    *,
+    breakdown: dict[str, int],
+    tier: str,
+    audience_tags: list[str] | None = None,
+) -> RankedStory:
+    """Build a v6 RankedStory with score_by_section populated from
+    breakdown x SECTION_WEIGHTS. Mirrors what rank.py persists. The
+    aggregate score is recomputed under RUBRIC_WEIGHTS for the legacy
+    invariant."""
+    from src.models import SECTION_WEIGHTS, RUBRIC_WEIGHTS
+    score = round(sum(
+        (RUBRIC_WEIGHTS[k] / 100.0) * v for k, v in breakdown.items()
+    ))
+    score_by_section = {
+        section: round(sum(
+            (weights[k] / 100.0) * breakdown[k] for k in weights
+        ))
+        for section, weights in SECTION_WEIGHTS.items()
+    }
+    return RankedStory(
+        cluster_id=cluster_id,
+        score=score,
+        score_by_section=score_by_section,
+        breakdown=breakdown,
+        audience_tags=audience_tags or ["hands_on"],  # type: ignore[arg-type]
+        rationale="r",
+        tier=tier,  # type: ignore[arg-type]
+        prompt_version="v0.6",
+    )
+
+
+class TestSectionScoreOrdering:
+    """v0.7: pickers rank within tier pool by the section-specific
+    weighted score, not by the aggregate score / file order."""
+
+    def test_hands_on_pool_orders_by_hands_on_section_score(self) -> None:
+        """Two hands_on-tier candidates: the one with the higher
+        hands_on section score lands first, even when its aggregate
+        ``score`` (RUBRIC_WEIGHTS sum) is lower. This is the spec
+        anchor case -- strong on hands_on_utility but weak on
+        significance lands at the TOP of Hands-On."""
+        from collections import Counter
+        cfg = EditorialConfig(
+            per_source_per_section=10,
+            per_category_per_issue={},
+            source_to_category={},
+            source_to_trust={},
+        )
+        # Story A: strong on hands_on_utility, weak on significance.
+        # Aggregate score under RUBRIC_WEIGHTS (40/10/30/15/5):
+        #   0.40*40 + 0.10*95 + 0.30*30 + 0.15*30 + 0.05*60 = 41
+        # hands_on section score under SECTION_WEIGHTS (25/45/10/10/10):
+        #   0.25*40 + 0.45*95 + 0.10*30 + 0.10*30 + 0.10*60 = 64.75 -> 65
+        story_a = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7001",
+            breakdown={
+                "significance": 40, "hands_on_utility": 95,
+                "big_picture_relevance": 30, "financial_services_impact": 30,
+                "freshness_momentum": 60,
+            },
+            tier="hands_on",
+        )
+        # Story B: stronger on significance, weaker on hands_on_utility.
+        # Aggregate: 0.40*75 + 0.10*55 + 0.30*55 + 0.15*30 + 0.05*40 = 58.5 -> 58 or 59
+        # hands_on section: 0.25*75 + 0.45*55 + 0.10*55 + 0.10*30 + 0.10*40 = 56
+        story_b = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7002",
+            breakdown={
+                "significance": 75, "hands_on_utility": 55,
+                "big_picture_relevance": 55, "financial_services_impact": 30,
+                "freshness_momentum": 40,
+            },
+            tier="hands_on",
+        )
+        # Assertions on the score model -- the v0.7 routing premise.
+        assert story_a.score_by_section is not None
+        assert story_b.score_by_section is not None
+        assert story_a.score_by_section["hands_on"] > story_b.score_by_section["hands_on"]
+        # Aggregate score goes the OTHER way (story_a < story_b).
+        assert story_a.score < story_b.score
+
+        # Now feed both to _pick_hands_on. story_a must land first --
+        # the section-specific ordering, not the aggregate.
+        blocks = [
+            (story_b, _summary_for(story_b.cluster_id)),
+            (story_a, _summary_for(story_a.cluster_id)),
+        ]
+        clusters_by_id = {
+            story_a.cluster_id: _cluster_with_source(story_a.cluster_id, "repo_a"),
+            story_b.cluster_id: _cluster_with_source(story_b.cluster_id, "repo_b"),
+        }
+        picked = _pick_hands_on(
+            blocks, {story_a.cluster_id, story_b.cluster_id},
+            clusters_by_id=clusters_by_id, cfg=cfg,
+            categories_used_this_issue=Counter(),
+        )
+        assert picked == [story_a.cluster_id, story_b.cluster_id]
+
+    def test_big_picture_pool_orders_by_big_picture_section_score(self) -> None:
+        """Mirror of the Hands-On test but for Big Picture: the
+        story with the higher big_picture section score (driven by
+        big_picture_relevance + significance) lands first in the
+        Big Picture pool, regardless of aggregate."""
+        from collections import Counter
+        cfg = EditorialConfig(
+            per_source_per_section=10,
+            per_category_per_issue={},
+            source_to_category={},
+            source_to_trust={},
+        )
+        # Strong on big_picture_relevance.
+        story_a = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7011",
+            breakdown={
+                "significance": 50, "hands_on_utility": 30,
+                "big_picture_relevance": 95, "financial_services_impact": 40,
+                "freshness_momentum": 40,
+            },
+            tier="big_picture",
+            audience_tags=["big_picture"],
+        )
+        # Strong on significance + hands_on_utility, weak on big_picture.
+        story_b = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7012",
+            breakdown={
+                "significance": 80, "hands_on_utility": 80,
+                "big_picture_relevance": 30, "financial_services_impact": 40,
+                "freshness_momentum": 40,
+            },
+            tier="big_picture",
+            audience_tags=["big_picture"],
+        )
+        assert story_a.score_by_section is not None
+        assert story_b.score_by_section is not None
+        assert story_a.score_by_section["big_picture"] > story_b.score_by_section["big_picture"]
+
+        blocks = [
+            (story_b, _summary_for(story_b.cluster_id)),
+            (story_a, _summary_for(story_a.cluster_id)),
+        ]
+        clusters_by_id = {
+            story_a.cluster_id: _cluster_with_source(story_a.cluster_id, "lab_a"),
+            story_b.cluster_id: _cluster_with_source(story_b.cluster_id, "lab_b"),
+        }
+        picked = _pick_big_picture(
+            blocks, {story_a.cluster_id, story_b.cluster_id},
+            clusters_by_id=clusters_by_id, cfg=cfg,
+            categories_used_this_issue=Counter(),
+        )
+        assert picked == [story_a.cluster_id, story_b.cluster_id]
+
+    def test_currents_pool_orders_by_currents_section_score(self) -> None:
+        """Currents now orders within its tier pool by the Currents-
+        specific weighted score. A story with high freshness_momentum
+        lands higher than one with high significance but low freshness."""
+        from collections import Counter
+        cfg = EditorialConfig(
+            per_source_per_section=10,
+            per_category_per_issue={},
+            source_to_category={},
+            source_to_trust={},
+        )
+        # High freshness lifts the Currents score (Currents weights
+        # freshness_momentum at 20, second-most among the sections).
+        story_a = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7021",
+            breakdown={
+                "significance": 50, "hands_on_utility": 50,
+                "big_picture_relevance": 40, "financial_services_impact": 40,
+                "freshness_momentum": 95,
+            },
+            tier="currents",
+            audience_tags=["general"],
+        )
+        story_b = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7022",
+            breakdown={
+                "significance": 50, "hands_on_utility": 50,
+                "big_picture_relevance": 40, "financial_services_impact": 40,
+                "freshness_momentum": 20,
+            },
+            tier="currents",
+            audience_tags=["general"],
+        )
+        assert story_a.score_by_section is not None
+        assert story_b.score_by_section is not None
+        assert story_a.score_by_section["currents"] > story_b.score_by_section["currents"]
+
+        blocks = [
+            (story_b, _summary_for(story_b.cluster_id)),
+            (story_a, _summary_for(story_a.cluster_id)),
+        ]
+        clusters_by_id = {
+            story_a.cluster_id: _cluster_with_source(story_a.cluster_id, "src_a"),
+            story_b.cluster_id: _cluster_with_source(story_b.cluster_id, "src_b"),
+        }
+        picked = _pick_currents(
+            blocks, {story_a.cluster_id, story_b.cluster_id},
+            clusters_by_id=clusters_by_id, cfg=cfg,
+            categories_used_this_issue=Counter(),
+        )
+        assert picked == [story_a.cluster_id, story_b.cluster_id]
+
+    def test_pulse_pool_ranked_by_pulse_section_score(self) -> None:
+        """Pulse picks from the union of big_picture + hands_on tier
+        candidates, ranked by ``score_by_section["pulse"]``. A story
+        that's strong on the Pulse weights (significance + big_picture
+        + finance) wins over a higher-aggregate hands_on story."""
+        # Story A: strong on significance + big_picture_relevance +
+        # finance -> high pulse weighted sum, lands in big_picture tier.
+        story_a = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7031",
+            breakdown={
+                "significance": 85, "hands_on_utility": 40,
+                "big_picture_relevance": 80, "financial_services_impact": 80,
+                "freshness_momentum": 60,
+            },
+            tier="big_picture",
+            audience_tags=["big_picture", "finance"],
+        )
+        # Story B: hands_on tier, with a high hands_on score but lower
+        # pulse score (the pulse weights are significance + bp + finance
+        # heavy; hands_on_utility weight in pulse is only 5).
+        story_b = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaa7032",
+            breakdown={
+                "significance": 65, "hands_on_utility": 95,
+                "big_picture_relevance": 40, "financial_services_impact": 30,
+                "freshness_momentum": 60,
+            },
+            tier="hands_on",
+            audience_tags=["hands_on"],
+        )
+        # Verify the premise: story_a has the higher pulse score.
+        assert story_a.score_by_section is not None
+        assert story_b.score_by_section is not None
+        assert story_a.score_by_section["pulse"] > story_b.score_by_section["pulse"]
+
+        # Both are multi-source via cluster.size=2 -> pass the
+        # eligibility gate; both fresh; both Pulse-class (>=2 of sig /
+        # ho / fm >= 70 hits). Pulse is therefore picked by the
+        # pulse-score-desc ordering inside the eligible Pulse-class pool.
+        cluster_a = Cluster(
+            cluster_id=story_a.cluster_id,
+            item_ids=[f"i_{story_a.cluster_id[2:6]}_a", f"i_{story_a.cluster_id[2:6]}_b"],
+            canonical_title="t",
+            sources=["src_a"],
+            earliest_published=FIXED_EARLIER,
+            size=2,
+        )
+        cluster_b = Cluster(
+            cluster_id=story_b.cluster_id,
+            item_ids=[f"i_{story_b.cluster_id[2:6]}_a", f"i_{story_b.cluster_id[2:6]}_b"],
+            canonical_title="t",
+            sources=["src_b"],
+            earliest_published=FIXED_EARLIER,
+            size=2,
+        )
+        clusters_by_id = {
+            cluster_a.cluster_id: cluster_a,
+            cluster_b.cluster_id: cluster_b,
+        }
+        items_by_id: dict[str, Item] = {}
+        for c in (cluster_a, cluster_b):
+            for iid in c.item_ids:
+                items_by_id[iid] = Item(
+                    id=iid, source=c.sources[0], source_type="rss",
+                    url=f"https://example.com/{iid}",  # type: ignore[arg-type]
+                    title="t", published_at=FIXED_EARLIER,
+                    raw_summary="", fetched_at=FIXED_NOW, trust_weight=2,
+                )
+        blocks = [
+            (story_a, _summary_for(story_a.cluster_id)),
+            (story_b, _summary_for(story_b.cluster_id)),
+        ]
+        pulse_id = _pick_pulse(
+            blocks,
+            clusters_by_id=clusters_by_id,
+            items_by_id=items_by_id,
+        )
+        assert pulse_id == story_a.cluster_id

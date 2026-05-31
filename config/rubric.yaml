@@ -19,7 +19,7 @@
 # tool stories. Eval Engineer ratification pending.
 
 schema_version: 2
-rubric_version: "v0.6-2026-05-30"
+rubric_version: "v0.7-2026-05-31"
 # v0.5 (2026-05-30, Phase 2 section-taxonomy rename): tier_thresholds key
 # ``on_the_radar`` renamed to ``currents`` in lockstep with the tier value-
 # space rename in src/models.py. No score / anchor changes here. The rank
@@ -70,6 +70,58 @@ tier_thresholds:
   cut: { max_score: 39, max_significance: 25 }
   currents: { min_score: 40 }
   promote_to_section: { min_score: 50 }
+
+# ---------------------------------------------------------------------------
+# Per-section weights (v0.7, 2026-05-31).
+#
+# Each section (Pulse, Big Picture, Hands-On, Currents) carries its own
+# weight set over the same five dimensions the LLM scores per cluster. The
+# rank stage computes ONE weighted score per section per cluster (four
+# numbers per cluster, all over the same breakdown) and uses them as:
+#
+#   * Tier = argmax of {big_picture, hands_on, currents} section scores
+#     (with `head_max < cut_floor` -> "cut").
+#   * Section ordering = section-specific score within each section's pool.
+#   * Pulse selection = ranked by the Pulse-specific weighted score over
+#     the union of big_picture + hands_on tier pools.
+#
+# Replaces the single-aggregate (criteria[].weight) routing driver: that
+# block stays as the LEGACY / fallback weighting for the back-compat
+# validator on archived ranked.jsonl rows (schema_version <= 5) and for
+# the small set of code paths and tests that still read the global
+# RUBRIC_WEIGHTS mirror. Going forward (schema_version >= 6), the per-
+# section weighted sums on RankedStory.score_by_section are the source
+# of truth for routing.
+#
+# Each column sums to 100. Don't rebalance lightly -- these are the
+# agreed numbers (see _scratch/2026-05-31-per-section-weights.md).
+# ---------------------------------------------------------------------------
+
+section_weights:
+  pulse:
+    significance: 45
+    big_picture_relevance: 20
+    hands_on_utility: 5
+    financial_services_impact: 20
+    freshness_momentum: 10
+  big_picture:
+    significance: 35
+    big_picture_relevance: 45
+    hands_on_utility: 0
+    financial_services_impact: 15
+    freshness_momentum: 5
+  hands_on:
+    significance: 25
+    big_picture_relevance: 10
+    hands_on_utility: 45
+    financial_services_impact: 10
+    freshness_momentum: 10
+  currents:
+    significance: 30
+    big_picture_relevance: 20
+    hands_on_utility: 15
+    financial_services_impact: 15
+    freshness_momentum: 20
 
 # ---------------------------------------------------------------------------
 # Criteria. Each is scored 0--100. Final score = weighted sum, weights sum
@@ -335,6 +387,24 @@ calibration_notes: |
       against.
   Per design-first-eval-first: optimise against the rubric and the
   labels, not against vibes.
+
+  Per-section weights (v0.7, 2026-05-31)
+  --------------------------------------
+  The ``section_weights`` block at the top of this file replaces the
+  single-aggregate ``criteria[].weight`` ladder as the ROUTING DRIVER. The
+  LLM still produces ONE breakdown per cluster (five dimension scores);
+  rank.py now computes FOUR weighted sums per cluster -- one for each
+  section -- and routes by them. Tier becomes argmax across the three
+  section tiers (big_picture / hands_on / currents); the Pulse picker
+  ranks the head-tier union by the Pulse-specific weighted score; story
+  order within each section uses that section's score.
+  The legacy per-criterion ``weight:`` block stays below as the FALLBACK
+  weighting for: (a) the back-compat ``score`` validator on archived
+  ranked.jsonl rows written before schema_version=6, and (b) any code or
+  test path that still reads the global ``RUBRIC_WEIGHTS`` mirror. Going
+  forward, ``RankedStory.score_by_section`` is the authority for
+  downstream routing; the legacy aggregate ``score`` continues to be
+  computed for backwards compatibility but is no longer load-bearing.
 
   Hands-on vs. big-picture split (v0.6, 2026-05-30)
   --------------------------------------------------

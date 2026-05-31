@@ -854,14 +854,36 @@ def summarise(date: _dt.date | None = None) -> Issue:
         )
 
     # Tier-aware truncation: split the summarise budget by tier so a
-    # head-tier-heavy day doesn't starve Currents. Ranked.jsonl arrives
-    # in score-desc order; partition then take per-tier budgets.
-    head_top = [r for r in ranked if r.tier in ("big_picture", "hands_on")][
-        :HEAD_TIER_SUMMARISE_BUDGET
-    ]
-    currents_top = [r for r in ranked if r.tier == "currents"][
-        :CURRENTS_TIER_SUMMARISE_BUDGET
-    ]
+    # head-tier-heavy day doesn't starve Currents. Schema v0.7 (2026-05-
+    # 31): within each tier pool we order by that tier's per-section
+    # weighted score (from RankedStory.score_by_section). The aggregate
+    # ``score`` is no longer the routing authority for picking which top-N
+    # to summarise -- we want the candidate ordering inside each pool to
+    # match the section the picker will route to. Falls back to the legacy
+    # ``score`` for archived rows without score_by_section.
+    #
+    # For the head-tier budget we MERGE big_picture + hands_on candidates
+    # sorted by their respective section-specific scores -- a head-tier-
+    # heavy day with 30+ big_picture-tier stories shouldn't starve the
+    # Hands-On pool. Each candidate's sort key is its OWN tier-section
+    # score (big_picture stories ranked by their big_picture score;
+    # hands_on stories ranked by their hands_on score).
+    def _section_score_or_legacy(r: RankedStory, section: str) -> int:
+        if r.score_by_section is None:
+            return r.score
+        return r.score_by_section.get(section, r.score)
+
+    head_pool = sorted(
+        (r for r in ranked if r.tier in ("big_picture", "hands_on")),
+        key=lambda r: _section_score_or_legacy(r, r.tier),
+        reverse=True,
+    )
+    head_top = head_pool[:HEAD_TIER_SUMMARISE_BUDGET]
+    currents_top = sorted(
+        (r for r in ranked if r.tier == "currents"),
+        key=lambda r: _section_score_or_legacy(r, "currents"),
+        reverse=True,
+    )[:CURRENTS_TIER_SUMMARISE_BUDGET]
     top = head_top + currents_top
     clusters_by_id = _load_clusters_index(clusters_in)
     items_by_id = _load_items_index(items_in)
@@ -1994,6 +2016,21 @@ def _accept_into_counters(
     categories_used_this_issue[_cluster_category(cluster, cfg)] += 1
 
 
+def _section_score_or_aggregate(story: RankedStory, section: str) -> int:
+    """Return the per-section weighted score for ``story``, falling back
+    to the legacy aggregate ``score`` when ``score_by_section`` is absent
+    (archived rows written before schema_version=6).
+
+    Used by the section pickers (v0.7, 2026-05-31) to rank candidates
+    within each section's tier pool. Single seam for the fallback rule
+    so all pickers behave identically when an old row is mixed with new
+    ones (in practice that won't happen within a single ranked.jsonl;
+    the helper exists so cross-day eval / debug paths don't crash)."""
+    if story.score_by_section is None:
+        return story.score
+    return story.score_by_section.get(section, story.score)
+
+
 def _signal_dimensions_hit(story: RankedStory) -> int:
     """Approximate "signal-filter dimensions hit" from the rank breakdown.
     The editorial-focus skill names three dimensions: today / tomorrow /
@@ -2134,9 +2171,22 @@ def _pick_pulse(
     # Pulse-eligible. When the pool is empty (no head-section tiers today),
     # fall back to the unfiltered set with a WARNING -- Issue.pulse
     # requires exactly one story, so we ship the smell rather than crash.
-    head_tier_blocks = [
-        (s, b) for s, b in blocks if s.tier in {"big_picture", "hands_on"}
-    ]
+    #
+    # Schema v0.7 (2026-05-31): within the head-tier pool, candidates are
+    # ranked by the Pulse-specific weighted score
+    # (score_by_section["pulse"]) rather than the aggregate ``score``. The
+    # aggregate is still fallback-only for any archived row that doesn't
+    # carry score_by_section.
+    def _pulse_score(story: RankedStory) -> int:
+        if story.score_by_section is None:
+            return story.score
+        return story.score_by_section.get("pulse", story.score)
+
+    head_tier_blocks = sorted(
+        ((s, b) for s, b in blocks if s.tier in {"big_picture", "hands_on"}),
+        key=lambda sb: _pulse_score(sb[0]),
+        reverse=True,
+    )
     if head_tier_blocks:
         tier_pool = head_tier_blocks
     else:
@@ -2219,15 +2269,20 @@ def _pick_pulse(
         )
         pool = recurring
 
-    # Within the pool: Pulse-class quality bar first, then score order.
+    # Within the pool: Pulse-class quality bar first, then pulse-score order.
+    # pool inherits the score_by_section["pulse"]-desc order from the
+    # tier-pool sort above; so taking the head of pulse_class lands the
+    # highest-pulse-scored Pulse-class story.
     pulse_class = [sb for sb in pool if _signal_dimensions_hit(sb[0]) >= 2]
     if pulse_class:
-        chosen = pulse_class[0]  # pool preserves score-desc order
+        chosen = pulse_class[0]  # pool preserves pulse-score-desc order
     else:
-        # Fallback within the pool: highest breakdown.significance, then score.
+        # Fallback within the pool: highest breakdown.significance, then
+        # the Pulse-specific weighted score (v0.7).
         chosen = max(
             pool,
-            key=lambda sb: (sb[0].breakdown.get("significance", 0), sb[0].score),
+            key=lambda sb: (sb[0].breakdown.get("significance", 0),
+                            _pulse_score(sb[0])),
         )
         if fresh:
             _LOG.warning(
@@ -2237,29 +2292,34 @@ def _pick_pulse(
 
     # Operator visibility: log when we demoted a higher-scored prior-coverage
     # story for a lower-scored fresh story. This is the rule firing.
+    # v0.7: compare on the Pulse-specific weighted score (the score the
+    # picker actually used to rank candidates).
     if fresh and recurring:
-        top_recurring = recurring[0][0]  # blocks were score-desc
-        if top_recurring.score > chosen[0].score:
+        top_recurring = recurring[0][0]  # pool was pulse-score-desc
+        if _pulse_score(top_recurring) > _pulse_score(chosen[0]):
             _LOG.info(
                 "summarise: Pulse fresh-over-prior-coverage bias fired -- "
-                "demoted prior-coverage story %s (score=%d) in favour of "
-                "fresh story %s (score=%d). #82.",
-                top_recurring.cluster_id, top_recurring.score,
-                chosen[0].cluster_id, chosen[0].score,
+                "demoted prior-coverage story %s (pulse_score=%d) in favour "
+                "of fresh story %s (pulse_score=%d). #82.",
+                top_recurring.cluster_id, _pulse_score(top_recurring),
+                chosen[0].cluster_id, _pulse_score(chosen[0]),
             )
 
     # v0.10: when the eligibility gate fires and the unfiltered top
     # candidate is NOT what we chose, log INFO with both ids. (Skip in
     # fallback mode -- the WARNING above already says everything.)
+    # v0.7: compare on the Pulse-specific weighted score (the score the
+    # picker used to rank); fall back to aggregate ``score`` for archived
+    # rows without ``score_by_section``.
     if (not using_fallback and ineligible_blocks and tier_pool
             and tier_pool[0][0].cluster_id != chosen[0].cluster_id):
         top_overall = tier_pool[0][0]
         _LOG.info(
             "summarise: Pulse eligibility gate demoted top-scored "
-            "ineligible story %s (score=%d) in favour of eligible story "
-            "%s (score=%d). v0.10.",
-            top_overall.cluster_id, top_overall.score,
-            chosen[0].cluster_id, chosen[0].score,
+            "ineligible story %s (pulse_score=%d) in favour of eligible "
+            "story %s (pulse_score=%d). v0.10.",
+            top_overall.cluster_id, _pulse_score(top_overall),
+            chosen[0].cluster_id, _pulse_score(chosen[0]),
         )
 
     return chosen[0].cluster_id
@@ -2292,6 +2352,12 @@ def _pick_big_picture(
     is "not enough promoted big_picture stories today," not "the picker
     is starving."
 
+    Schema v0.7 (2026-05-31): within the tier pool, stories are ordered
+    by the Big-Picture-specific weighted score
+    (``score_by_section["big_picture"]``) rather than by the legacy
+    aggregate ``score`` / file order. Archived rows without
+    ``score_by_section`` fall back to the aggregate.
+
     Phase 2 (2026-05-30): AUDIENCE-ONLY routing pinned. The picker does
     NOT impose a maturity gate (no freshness / novelty / signal-dimensions
     filter inside this function). Maturity is carried per-story by
@@ -2307,10 +2373,13 @@ def _pick_big_picture(
     """
     out: list[str] = []
     sources_in_section: Counter[str] = Counter()
-    for story, _block in blocks:
+    pool = sorted(
+        (sb for sb in blocks if sb[0].tier == "big_picture"),
+        key=lambda sb: _section_score_or_aggregate(sb[0], "big_picture"),
+        reverse=True,
+    )
+    for story, _block in pool:
         if story.cluster_id not in available:
-            continue
-        if story.tier != "big_picture":
             continue
         if cfg is not None:
             cluster = clusters_by_id.get(story.cluster_id) if clusters_by_id else None
@@ -2355,6 +2424,12 @@ def _pick_hands_on(
     promoted ``hands_on`` story lands regardless of freshness. Maturity is
     carried per-story by ``SummaryBlock.signal`` and the direction-note.
 
+    Schema v0.7 (2026-05-31): within the tier pool, stories are ordered
+    by the Hands-On-specific weighted score
+    (``score_by_section["hands_on"]``) rather than by the legacy aggregate
+    ``score`` / file order. Archived rows without ``score_by_section``
+    fall back to the aggregate.
+
     Source-diversity caps (2026-05-27) still apply within the tier pool:
     skip a candidate that would push a source over the per-section cap or
     a category over the per-issue cap. No minimum enforced here; the issue
@@ -2362,11 +2437,14 @@ def _pick_hands_on(
     """
     out: list[str] = []
     sources_in_section: Counter[str] = Counter()
+    pool = sorted(
+        (sb for sb in blocks if sb[0].tier == "hands_on"),
+        key=lambda sb: _section_score_or_aggregate(sb[0], "hands_on"),
+        reverse=True,
+    )
 
-    for story, _block in blocks:
+    for story, _block in pool:
         if story.cluster_id not in available:
-            continue
-        if story.tier != "hands_on":
             continue
         if len(out) >= _HANDS_ON_HARD_CAP:
             break
@@ -2421,6 +2499,12 @@ def _pick_currents(
     ``CURRENTS_TIER_SUMMARISE_BUDGET`` is now a safety bound on input
     volume; this cap is the editorial authority.
 
+    Schema v0.7 (2026-05-31): within the tier pool, stories are ordered
+    by the Currents-specific weighted score
+    (``score_by_section["currents"]``) rather than by the legacy aggregate
+    ``score`` / file order. Archived rows without ``score_by_section``
+    fall back to the aggregate.
+
     Source-diversity caps (2026-05-27) still apply: the per-issue category
     cap is a HARD ceiling -- a paper that would push us over the cap is
     dropped from the issue entirely rather than landing here. The
@@ -2434,10 +2518,13 @@ def _pick_currents(
         cfg.currents_max_stories if cfg is not None
         else DEFAULT_CURRENTS_MAX_STORIES
     )
-    for story, _block in blocks:
+    pool = sorted(
+        (sb for sb in blocks if sb[0].tier == "currents"),
+        key=lambda sb: _section_score_or_aggregate(sb[0], "currents"),
+        reverse=True,
+    )
+    for story, _block in pool:
         if story.cluster_id not in available:
-            continue
-        if story.tier != "currents":
             continue
         if len(out) >= max_stories:
             break

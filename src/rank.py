@@ -65,7 +65,7 @@ import yaml
 from pydantic import ValidationError
 
 from src import paths
-from src.models import RUBRIC_WEIGHTS, Cluster, Item, RankedStory
+from src.models import RUBRIC_WEIGHTS, SECTION_WEIGHTS, Cluster, Item, RankedStory
 
 
 # ---------------------------------------------------------------------------
@@ -844,22 +844,35 @@ def _rank_one(
         # Recompute score from breakdown x weights -- ignore any
         # LLM-returned `score` field. Pydantic enforces the same invariant;
         # recomputing here absorbs LLM arithmetic noise (and the penalties
-        # above) before pydantic raises.
+        # above) before pydantic raises. The legacy single-aggregate
+        # `score` is kept for backwards compatibility with archived data,
+        # the validator, and downstream consumers that haven't migrated;
+        # routing now uses the per-section scores below.
         score = _weighted_score(parsed.breakdown)
 
+        # Per-section scores (v0.7, 2026-05-31): four weighted sums under
+        # SECTION_WEIGHTS, one per section. These are the routing
+        # authority -- _assign_initial_tier argmaxes across the three
+        # tier-sections, summarise.py orders within each section by the
+        # section-specific score, and the Pulse picker uses the pulse
+        # column to rank the head-tier union.
+        section_scores = _weighted_section_scores(parsed.breakdown)
+
         # The LLM picks audience tags; tier is the editorial slot. rank.py
-        # now writes the FULL slot (schema v3, 2026-05-30; v4 renamed
-        # on_the_radar -> currents in Phase 2): cut, currents,
-        # hands_on, or big_picture. summarise.py gates its pickers strictly
-        # on this -- no scavenging across tiers. Pulse is picked downstream
-        # from the union of the two head-section tiers.
+        # writes the FULL slot (schema v3, 2026-05-30; v4 renamed
+        # on_the_radar -> currents in Phase 2; v0.7, 2026-05-31 drives
+        # the decision from section scores instead of the aggregate):
+        # cut, currents, hands_on, or big_picture. summarise.py gates its
+        # pickers strictly on this -- no scavenging across tiers. Pulse is
+        # picked downstream from the union of the two head-section tiers.
         tier = _assign_initial_tier(
-            score, parsed.breakdown, parsed.audience_tags, thresholds,
+            section_scores, parsed.audience_tags, thresholds,
         )
 
         return RankedStory(
             cluster_id=cluster.cluster_id,
             score=score,
+            score_by_section=section_scores,
             breakdown=parsed.breakdown,
             audience_tags=parsed.audience_tags,  # type: ignore[arg-type]
             rationale=parsed.rationale,
@@ -1208,6 +1221,26 @@ def _weighted_score(breakdown: dict[str, int]) -> int:
     return max(0, min(100, round(raw)))
 
 
+def _weighted_section_scores(breakdown: dict[str, int]) -> dict[str, int]:
+    """Compute the four per-section weighted sums (v0.7, 2026-05-31).
+
+    Mirrors the invariant in
+    ``RankedStory._section_scores_match_weighted_breakdowns``: each section
+    score is the integer-rounded weighted sum of ``breakdown`` under
+    ``SECTION_WEIGHTS[section]``. Clamped to [0, 100] just like
+    ``_weighted_score`` so a malformed breakdown can't produce out-of-range
+    section scores that would later fail pydantic's ``Field(ge=0, le=100)``.
+    """
+    out: dict[str, int] = {}
+    for section_name, section_weights in SECTION_WEIGHTS.items():
+        raw = sum(
+            (section_weights[crit] / 100.0) * breakdown.get(crit, 0)
+            for crit in section_weights
+        )
+        out[section_name] = max(0, min(100, round(raw)))
+    return out
+
+
 _PRIOR_COVERAGE_SIGNIFICANCE_CAP = 50
 """Default significance ceiling for stories with ``cluster.prior_coverage_ref``
 set -- rubric anchor 50 = "single signal-filter dimension hit". Used when the
@@ -1343,93 +1376,121 @@ def _apply_freshness_inferred_penalty(
 
 
 def _assign_initial_tier(
-    score: int,
-    breakdown: dict[str, int],
+    score_by_section: dict[str, int],
     audience_tags: list[str],
     thresholds: dict[str, dict[str, int]],
 ) -> str:
     """Initial tier assignment per DESIGN.md note that tier is "the bridge
-    between rank and summarise." Schema v3 (2026-05-30): rank.py now writes
-    the FULL editorial slot, not just a floor. summarise.py gates its
-    pickers strictly on tier -- no cross-tier scavenging -- so the routing
-    decision lives here, where breakdown + audience_tags + thresholds are
-    co-located.
+    between rank and summarise."
+
+    Schema v0.7 (2026-05-31): tier is driven by the per-section weighted
+    scores rather than the legacy single-aggregate ``score`` + audience-
+    tag-XOR routing. The decision is an argmax over the three tier
+    sections (big_picture / hands_on / currents), with a cut floor and an
+    audience-tag-informed tiebreak when section scores are equal.
 
     Logic (in order):
-      1. Cut: score < cut.max_score OR significance <= cut.max_significance.
-         The significance trapdoor is the editorial-focus skill's Tier-3
-         rule -- vendor fluff and AI-tangential hype get floored at
-         significance <= 25 by the prompt and cut here even if their other
-         dimensions inflate the weighted score.
-      2. Currents: score < promote_to_section.min_score. The middle band
-         -- surfaced but not promoted to a head section. Renamed from
-         ``on_the_radar`` in Phase 2 (2026-05-30).
-      3. Promoted (score >= promote threshold) -- route by audience_tags:
-         * has_hands_on XOR has_big_picture -> the matching tier.
-         * BOTH -> tiebreak: pick hands_on iff
-           breakdown[hands_on_utility] > breakdown[big_picture_relevance];
-           ties go to big_picture (the more strategic surface).
-         * NEITHER (only general / finance) -- v0.4 (2026-05-30): route by
-           SUB-SCORE instead of forcing the middle band. A high-scoring
-           finance-only or general-only story has earned a head section;
-           the LLM merely didn't apply hands_on / big_picture explicitly.
-           Pick whichever of hands_on_utility / big_picture_relevance is
-           larger; ties go to big_picture (same tiebreak rule as BOTH).
-           Anchor case: c_491e0b408f3bab95 / c_6830490c1b6fb884
-           (FS-specialist clusters tagged [big_picture, finance] route
-           via big_picture; finance-only clusters with strong practitioner
-           angle route via sub-score).
-
-    Phase-4 hand-off: when audience-tag taxonomy gains
-    `finance_practitioner` / `finance_leader` (third routing axis), the
-    NEITHER branch below collapses -- the new tags route directly and
-    sub-score fallback becomes vestigial. Update _assign_initial_tier as
-    part of that PR.
+      1. ``head_max = max(score_by_section[big_picture],
+                          score_by_section[hands_on],
+                          score_by_section[currents])``.
+         If ``head_max < cut_floor`` (rubric.yaml tier_thresholds.currents.
+         min_score, currently 40), return ``"cut"``.
+      2. Otherwise: tier = argmax of those three section scores. When
+         section scores tie, ``audience_tags`` informs the tiebreak (the
+         editorial slot the LLM thought the story belonged in is the
+         right tie-breaker):
+           - big_picture == hands_on AND exactly one of {"big_picture",
+             "hands_on"} is in audience_tags -> that tag wins.
+           - big_picture == hands_on AND audience_tags has both or
+             neither -> big_picture (preserves the existing BOTH-branch
+             behaviour: ties to the more strategic surface).
+           - When currents ties with one of big_picture / hands_on: prefer
+             currents only if neither head-section tag is in
+             audience_tags; otherwise prefer the head-tier section that
+             matches the audience tag.
 
     Pulse is NOT a stored tier -- summarise.py picks the Pulse from the
     union of big_picture + hands_on stories.
+
+    Phase-4 hand-off: when audience-tag taxonomy gains
+    ``finance_practitioner`` / ``finance_leader`` (third routing axis),
+    the tiebreak rules below should grow to consume those tags as well --
+    e.g. finance_leader breaks a bp/ho tie toward big_picture. Out of
+    scope for v0.7.
     """
-    sig = breakdown.get("significance", 0)
-    cut = thresholds.get("cut", _DEFAULT_TIER_THRESHOLDS["cut"])
-    currents = thresholds.get(
+    # Cut-floor from ``currents.min_score`` -- this is the editorial
+    # floor for a story surfacing at all. Below this, every section's
+    # weighted sum is too low to land.
+    currents_block = thresholds.get(
         "currents", _DEFAULT_TIER_THRESHOLDS["currents"]
     )
-    promote = thresholds.get(
-        "promote_to_section", _DEFAULT_TIER_THRESHOLDS["promote_to_section"]
-    )
-    # `currents` is intentionally unused in the conditions below -- it
-    # serves as the documented floor between cut and the promote band,
-    # equivalent to (cut.max_score + 1). Read on rubric reload to validate
-    # via the schema; the routing itself is driven by cut.* and
-    # promote.min_score.
-    _ = currents
+    cut_floor = currents_block["min_score"]
 
-    if score < cut["max_score"] or sig <= cut["max_significance"]:
+    bp_score = score_by_section.get("big_picture", 0)
+    ho_score = score_by_section.get("hands_on", 0)
+    cur_score = score_by_section.get("currents", 0)
+    head_max = max(bp_score, ho_score, cur_score)
+
+    if head_max < cut_floor:
         return "cut"
-    if score < promote["min_score"]:
-        return "currents"
 
+    # Argmax across the three tier sections. We resolve ties with the
+    # audience tags rather than a fixed-priority default so that the LLM's
+    # editorial-slot intent informs the close calls.
     tag_set = set(audience_tags)
     has_hands_on = "hands_on" in tag_set
     has_big_picture = "big_picture" in tag_set
 
+    # Find the set of sections that share the max.
+    winners = {
+        name for name, value in (
+            ("big_picture", bp_score),
+            ("hands_on", ho_score),
+            ("currents", cur_score),
+        ) if value == head_max
+    }
+
+    if len(winners) == 1:
+        return next(iter(winners))
+
+    # Tied: apply audience-tag tiebreak rules in spec order.
+    bp_ho_tied = ("big_picture" in winners) and ("hands_on" in winners)
+    cur_tied = "currents" in winners
+
+    if bp_ho_tied and not cur_tied:
+        # big_picture == hands_on exclusively. Tag XOR wins; else
+        # big_picture (the more strategic surface, preserves the
+        # historical BOTH-branch default).
+        if has_hands_on and not has_big_picture:
+            return "hands_on"
+        if has_big_picture and not has_hands_on:
+            return "big_picture"
+        return "big_picture"
+
+    if cur_tied and not bp_ho_tied:
+        # currents tied with exactly one of big_picture / hands_on.
+        head_winner = "big_picture" if "big_picture" in winners else "hands_on"
+        if not has_hands_on and not has_big_picture:
+            return "currents"
+        # At least one head-section tag is in audience_tags: prefer the
+        # head-tier winner when it matches a tag.
+        if head_winner == "big_picture" and has_big_picture:
+            return "big_picture"
+        if head_winner == "hands_on" and has_hands_on:
+            return "hands_on"
+        # Otherwise the head-tier winner doesn't match the tag, but a
+        # head tag is set; still prefer the head-tier section over
+        # currents -- the LLM signalled head-section intent.
+        return head_winner
+
+    # All three tied. Apply the same tag-XOR rule as the BP/HO branch;
+    # if no head-section tag is set, fall through to big_picture to
+    # match the historical default-to-strategic-surface behaviour.
     if has_hands_on and not has_big_picture:
         return "hands_on"
     if has_big_picture and not has_hands_on:
         return "big_picture"
-    if has_hands_on and has_big_picture:
-        ho = breakdown.get("hands_on_utility", 0)
-        bp = breakdown.get("big_picture_relevance", 0)
-        # Strict > so ties (ho == bp) flow to big_picture per spec.
-        return "hands_on" if ho > bp else "big_picture"
-    # NEITHER head-section tag -- v0.4 (2026-05-30): route by sub-score.
-    # Phase-4 will replace this once finance_practitioner / finance_leader
-    # land as routed tags; for now sub-score gives finance- and general-
-    # only stories a head-section path when they've cleared the promote
-    # floor. Same tiebreak as BOTH: ties go to big_picture.
-    ho = breakdown.get("hands_on_utility", 0)
-    bp = breakdown.get("big_picture_relevance", 0)
-    return "hands_on" if ho > bp else "big_picture"
+    return "big_picture"
 
 
 # ---------------------------------------------------------------------------
