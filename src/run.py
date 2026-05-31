@@ -41,10 +41,15 @@ STAGE_ORDER: tuple[str, ...] = (
     "rank",
     "summarise",
     "render",
+    "review",
 )
 
 # Stages that require the LLM env vars to be valid before they can run.
-LLM_STAGES: frozenset[str] = frozenset({"rank", "summarise"})
+# ``review`` calls the LLM but is failure-soft: a misconfigured env produces
+# an ``unavailable`` review.md, not a crash. We still want the validator to
+# fire when ``review`` is the only stage requested standalone so the
+# operator sees a clear error instead of a silent ``unavailable``.
+LLM_STAGES: frozenset[str] = frozenset({"rank", "summarise", "review"})
 
 # Providers we ship with. anthropic + bedrock have native clients;
 # openai/litellm/ollama share the OpenAI-compatible Chat Completions path
@@ -79,7 +84,9 @@ def _resolve_date(arg_value: str | None) -> _dt.date:
         )
 
 
-def _resolve_stages(stage: str | None, stages: str | None) -> list[str]:
+def _resolve_stages(
+    stage: str | None, stages: str | None, *, no_review: bool = False,
+) -> list[str]:
     """Resolve the requested stage list for the STAGING pipeline mode.
 
     Precedence:
@@ -88,11 +95,21 @@ def _resolve_stages(stage: str | None, stages: str | None) -> list[str]:
       3. Default -> full pipeline order.
 
     Returns the list in pipeline execution order.
+
+    Auto-review contract: ``review`` runs automatically whenever ``render``
+    runs, unless ``no_review=True``. So a default run, ``--stages render``,
+    and ``--stages summarise,render`` all gain ``review`` at the tail.
+    A subset that excludes ``render`` (``--stages summarise``,
+    ``--stages fetch,cluster``) does NOT pull review in -- the editorial
+    pass is meaningful only against a freshly rendered staging draft.
+    ``--stages review`` is the explicit-standalone path and is honoured
+    verbatim. The ``--stage review`` single-stage form is likewise
+    honoured. ``--no-review`` strips review from the resolved list, which
+    is the escape hatch for full runs and render-only runs alike.
     """
     if stage is not None:
-        return [stage]
-
-    if stages is not None:
+        resolved = [stage]
+    elif stages is not None:
         requested = [s.strip() for s in stages.split(",") if s.strip()]
         unknown = [s for s in requested if s not in STAGE_ORDER]
         if unknown:
@@ -101,9 +118,17 @@ def _resolve_stages(stage: str | None, stages: str | None) -> list[str]:
                 f"Valid stages: {list(STAGE_ORDER)}"
             )
         requested_set = set(requested)
-        return [s for s in STAGE_ORDER if s in requested_set]
+        resolved = [s for s in STAGE_ORDER if s in requested_set]
+        # Auto-fire review whenever render runs (unless --no-review).
+        if "render" in requested_set and "review" not in requested_set:
+            resolved.append("review")
+    else:
+        resolved = list(STAGE_ORDER)
 
-    return list(STAGE_ORDER)
+    if no_review:
+        resolved = [s for s in resolved if s != "review"]
+
+    return resolved
 
 
 # ---------------------------------------------------------------------------
@@ -264,6 +289,20 @@ def _run_render_preview(run_date: _dt.date) -> str:
     return f"preview -> {out_path}"
 
 
+def _run_review(run_date: _dt.date) -> str:
+    """Invoke src.review.run_review(date) and summarise the result.
+
+    ``review`` is failure-soft by contract -- the underlying module catches
+    LLM/transport errors and writes a ``verdict: unavailable`` review.md
+    rather than raising. This handler just returns the verdict + one_line
+    so the pipeline summary can surface them.
+    """
+    from src import review as review_mod
+
+    artifact = review_mod.run_review(date=run_date)
+    return f"{artifact.verdict.upper()} -- {artifact.one_line}"
+
+
 # Map stage name -> callable. ``render`` always runs in preview mode under
 # the staging pipeline; release-mode rendering happens inside release_promote.
 _STAGE_HANDLERS: dict[str, Callable[[_dt.date], str]] = {
@@ -272,6 +311,7 @@ _STAGE_HANDLERS: dict[str, Callable[[_dt.date], str]] = {
     "rank": _run_rank,
     "summarise": _run_summarise,
     "render": _run_render_preview,
+    "review": _run_review,
 }
 
 
@@ -340,6 +380,7 @@ _STAGE_ARTIFACTS: dict[str, str] = {
     "rank":      "data/staging/{date}/ranked.jsonl",
     "summarise": "data/staging/{date}/issue.json (issue_number=None)",
     "render":    "docs/staging/{date}.html",
+    "review":    "data/staging/{date}/review.md (editorial verdict)",
 }
 
 
@@ -405,7 +446,15 @@ def _run_pipeline(
         _dry_run_staging(run_date, stages)
         return 0
 
-    _validate_env_for_stages(stages)
+    # The env validator hard-fails when LLM stages can't run. Review is
+    # failure-soft -- a misconfigured env should still let render+release
+    # ship -- so we skip the strict check when review is the only LLM
+    # stage in scope and there's another non-LLM stage running too.
+    # When review is the SOLE stage (standalone), we let it fail soft on
+    # its own (writes verdict: unavailable) rather than crashing the CLI.
+    stages_for_validation = [s for s in stages if s != "review"]
+    if stages_for_validation:
+        _validate_env_for_stages(stages_for_validation)
 
     if not skip_preflight:
         from src import preflight
@@ -426,6 +475,7 @@ def _run_pipeline(
     stages_succeeded: list[str] = []
     failed_stage: str | None = None
     failure_reason: str | None = None
+    review_summary: str | None = None
 
     for name in stages:
         ok, message = _run_stage(name, run_date)
@@ -440,11 +490,20 @@ def _run_pipeline(
                 )
             break
         stages_succeeded.append(name)
+        if name == "review":
+            review_summary = message
 
     elapsed = time.monotonic() - wall_t0
     _print_staging_summary(
         run_date, stages_succeeded, failed_stage, failure_reason, elapsed,
+        review_summary=review_summary,
     )
+    # Duplicate-risk guard: fires when this run (re)built the issue and
+    # earlier issues are staged-but-unreleased -- dedup was blind to them,
+    # so the fresh issue may repeat their stories. Printed AFTER the summary
+    # so it is the last thing on screen.
+    if failed_stage is None and ({"summarise", "render"} & set(stages_succeeded)):
+        _warn_unreleased_predecessors(run_date)
     # Council Phase-1: append a metrics line for trend observation. Best-
     # effort -- never fails the run on logging error.
     try:
@@ -649,6 +708,8 @@ def _print_staging_summary(
     failed_stage: str | None,
     failure_reason: str | None,
     elapsed_seconds: float,
+    *,
+    review_summary: str | None = None,
 ) -> None:
     mm = int(elapsed_seconds // 60)
     ss = int(elapsed_seconds % 60)
@@ -676,6 +737,48 @@ def _print_staging_summary(
         _LOG.info(" stages run: %s", run_part)
         _LOG.info(" elapsed: %s", elapsed_str)
     _LOG.info(_BANNER_RULE)
+    # The review verdict surfaces AFTER the closing banner so it sits as a
+    # single, scannable last line for Arman. Format mirrors the spec:
+    # ``review: GREEN -- "<one_line>"``.
+    if review_summary is not None:
+        _LOG.info("review: %s", review_summary)
+
+
+_WARN_RULE = "!" * 60
+
+
+def _warn_unreleased_predecessors(run_date: _dt.date) -> None:
+    """Print a loud, unmissable warning when earlier issues are staged but
+    not yet released.
+
+    Cross-time dedup (``cluster.py``) reads the released archive only, so any
+    issue still sitting in staging is invisible to it. When a later issue is
+    built while earlier ones remain unreleased, the later issue can silently
+    repeat stories already covered -- the exact "same story three days
+    running" failure dedup exists to prevent. The remedy is to release the
+    earlier issues oldest-first (so dedup can see them) and then re-run this
+    date. Pure file/date check -- No Token Wasted.
+    """
+    preds = paths.unreleased_predecessors(run_date)
+    if not preds:
+        return
+    pred_strs = [d.isoformat() for d in preds]
+    plural = "s" if len(preds) != 1 else ""
+    _LOG.warning(_WARN_RULE)
+    _LOG.warning(
+        "  ⚠  DUPLICATE RISK -- %d earlier issue%s staged but NOT released.",
+        len(preds), plural,
+    )
+    _LOG.warning("     Cross-time dedup could not see %s, so %s may",
+                 "them" if plural else "it", run_date.isoformat())
+    _LOG.warning("     repeat stories already covered in:")
+    for s in pred_strs:
+        _LOG.warning("       • %s", s)
+    _LOG.warning("  REMEDY: release them oldest-first, then re-run this date:")
+    for s in pred_strs:
+        _LOG.warning("       aiv release --date %s", s)
+    _LOG.warning("       aiv run --date %s", run_date.isoformat())
+    _LOG.warning(_WARN_RULE)
 
 
 def _count_published_urls() -> int:
@@ -722,14 +825,77 @@ def run(
         False, "--skip-preflight",
         help="Skip embedding + LLM pre-flight checks.",
     ),
+    no_review: bool = typer.Option(
+        False, "--no-review",
+        help="Skip the post-render editorial review pass. Review auto-fires "
+             "whenever 'render' runs; use this flag to suppress it.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
 ) -> None:
-    """Fetch, cluster, rank, summarise and render a staging draft."""
+    """Fetch, cluster, rank, summarise, render, and review a staging draft.
+
+    The editor's pre-release review auto-fires after ``render`` runs (full
+    pipeline or any stage subset that includes ``render``). Pass
+    ``--no-review`` to skip it.
+    """
     _setup_logging(verbose)
     _load_env()
     run_date = _resolve_date(date)
-    stage_list = _resolve_stages(stage, stages)
+    stage_list = _resolve_stages(stage, stages, no_review=no_review)
     sys.exit(_run_pipeline(run_date, stage_list, dry_run, skip_preflight=skip_preflight))
+
+
+@app.command()
+def review(
+    date: Optional[str] = typer.Option(None, metavar="YYYY-MM-DD", help=_DATE_HELP),
+    dry_run: bool = typer.Option(False, "--dry-run", help=_DRY_HELP),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Run the editor's pre-release review against a staged issue.
+
+    Reads ``data/staging/<date>/issue.json``, runs one LLM call against the
+    review prompt (drawing on EDITORIAL.md), writes
+    ``data/staging/<date>/review.md`` with a YAML frontmatter verdict, and
+    prints the verdict + one-line summary.
+
+    The review never publishes; it just surfaces concerns to Arman before
+    he runs ``aiv release``. Useful when Arman wants a second editorial
+    pass after his own edit, without re-rendering.
+
+    Failure-soft: if the LLM call cannot complete, ``review.md`` is
+    written with ``verdict: unavailable`` and the command exits 0 -- the
+    review never blocks publication.
+    """
+    _setup_logging(verbose)
+    _load_env()
+    run_date = _resolve_date(date)
+    _banner_review(run_date)
+    if dry_run:
+        date_str = run_date.isoformat()
+        print(f"[dry-run] REVIEW for date={date_str}:")
+        print(f"  1. read data/staging/{date_str}/issue.json")
+        print(f"  2. read last {3} released issues for drift-watch context")
+        print(f"  3. call LLM with review prompt (REVIEW_PROMPT_VERSION)")
+        print(f"  4. write data/staging/{date_str}/review.md")
+        sys.exit(0)
+    from src import review as review_mod
+
+    artifact = review_mod.run_review(date=run_date)
+    _LOG.info(_BANNER_RULE)
+    _LOG.info(
+        " review: %s -- %s -> %s",
+        artifact.verdict.upper(), artifact.one_line, artifact.path,
+    )
+    _LOG.info(_BANNER_RULE)
+    print(f"review: {artifact.verdict.upper()} -- \"{artifact.one_line}\"")
+    sys.exit(0)
+
+
+def _banner_review(run_date: _dt.date) -> None:
+    _LOG.info(_BANNER_RULE)
+    _LOG.info(" AI Vector -- EDITORIAL REVIEW")
+    _LOG.info(" date:    %s", run_date.isoformat())
+    _LOG.info(_BANNER_RULE)
 
 
 @app.command()

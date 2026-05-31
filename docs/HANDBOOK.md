@@ -296,6 +296,38 @@ The audit trail is `git log data/released/<date>/issue.json`.
 
 ---
 
+## 7c. "⚠ DUPLICATE RISK — earlier issues are staged but not released"
+
+You staged several days in a row without releasing them, and now the
+pipeline prints a loud `DUPLICATE RISK` banner (and the staging preview
+HTML shows a red banner at the top). Here's what it means and how to fix it.
+
+**Why it happens.** Cross-time dedup — the thing that stops "OpenAI launches
+GPT-X" running three days straight — reads the **released** archive only.
+A draft still sitting in `data/staging/` is invisible to it. So if you build
+May 31 while May 29 and May 30 are staged-but-unreleased, May 31's dedup
+never saw them and can repeat their stories verbatim.
+
+**The fix — release oldest-first, then re-run the later day:**
+
+```bash
+aiv release --date 2026-05-29     # now dedup can see it
+aiv release --date 2026-05-30     # now dedup can see this too
+aiv run     --date 2026-05-31     # rebuild — dedup now catches the repeats
+```
+
+The banner lists the exact dates and the exact commands; copy them straight
+out. After the re-run, the banner disappears (nothing earlier is unreleased)
+and the repeated stories will carry a `prior_coverage_ref` callback instead
+of appearing fresh.
+
+**It's a warning, not a block.** Releasing out of order is legitimate, so
+nothing is gated — `aiv release` still works. The guard just makes sure you
+*know* before you publish. The window it checks matches the dedup lookback
+(14 days), so a long-abandoned staging dir from a month ago won't trip it.
+
+---
+
 ## 8. "I released something bad. How do I undo?"
 
 ```bash

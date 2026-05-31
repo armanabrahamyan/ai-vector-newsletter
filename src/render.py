@@ -498,9 +498,28 @@ def render(
         len(s.stories) for s in issue.sections
     )
 
+    # Duplicate-risk gate: only meaningful for the staging preview. If
+    # earlier issues are staged but not yet released, cross-time dedup was
+    # blind to them and this issue may repeat their stories. Released pages
+    # are canonical and never carry the banner.
+    dup_risk_dates = (
+        [d.isoformat() for d in paths.unreleased_predecessors(date)]
+        if mode == "preview" else []
+    )
+    if dup_risk_dates:
+        log.warning(
+            "render preview for %s: %d unreleased predecessor(s) in the dedup "
+            "window (%s) -- staging may contain duplicates; banner added to HTML.",
+            date.isoformat(), len(dup_risk_dates), ", ".join(dup_risk_dates),
+        )
+
     env = _build_env()
     template = env.get_template(TEMPLATE_NAME)
-    html = template.render(issue=issue, read_minutes=_read_minutes(issue))
+    html = template.render(
+        issue=issue,
+        read_minutes=_read_minutes(issue),
+        dup_risk_dates=dup_risk_dates,
+    )
     issue_label = (
         f"#{issue.display_number}" if issue.display_number is not None
         else "(staging -- not yet numbered)"

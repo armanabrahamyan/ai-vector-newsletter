@@ -127,6 +127,14 @@ def released_html_path(date: datetime.date) -> Path:
 # and for the unrelease URL-rebuild walk.
 # ---------------------------------------------------------------------------
 
+# Window of prior days that cross-time dedup consults. SINGLE SOURCE OF
+# TRUTH for the dedup window: ``cluster.CROSS_TIME_LOOKBACK_DAYS`` aliases
+# this constant so the dedup window and the duplicate-risk warning window
+# can never drift apart. If they diverged, the warning would either miss
+# real duplicate risk (window too small) or cry wolf (window too big).
+DEDUP_LOOKBACK_DAYS = 14
+
+
 def all_released_dates() -> list[datetime.date]:
     """Return every date that has a released issue.json (sorted ascending).
 
@@ -152,5 +160,57 @@ def all_released_dates() -> list[datetime.date]:
         if (child / "issue.json").exists():
             out.append(d)
     return out
+
+
+def all_staging_dates() -> list[datetime.date]:
+    """Return every date that has a staged issue.json (sorted ascending).
+
+    Mirror of ``all_released_dates`` for the staging tree. Used by the
+    duplicate-risk guard to find issues that exist in staging but have not
+    yet been promoted to released -- and were therefore invisible to
+    cross-time dedup when later issues were built.
+
+    Directories whose name does not parse as an ISO date are ignored;
+    directories without an ``issue.json`` are excluded (a date with only
+    partial pipeline artifacts has no issue to duplicate).
+    """
+    out: list[datetime.date] = []
+    if not STAGING_ROOT.exists():
+        return out
+    for child in sorted(STAGING_ROOT.iterdir()):
+        if not child.is_dir():
+            continue
+        try:
+            d = datetime.date.fromisoformat(child.name)
+        except ValueError:
+            continue
+        if (child / "issue.json").exists():
+            out.append(d)
+    return out
+
+
+def unreleased_predecessors(
+    date: datetime.date,
+    *,
+    lookback_days: int = DEDUP_LOOKBACK_DAYS,
+) -> list[datetime.date]:
+    """Staged-but-unreleased issues dated within the dedup lookback window
+    BEFORE ``date`` (sorted ascending).
+
+    These are exactly the issues cross-time dedup could not see when it ran
+    for ``date``: they live in staging (so they carry real, deduped content)
+    but were never promoted to released, and dedup's lookback reads the
+    canonical/released archive only. If any exist, ``date`` may repeat their
+    stories -- the "same story three days running" failure dedup is meant to
+    prevent, leaking through because the prior days were never released.
+
+    Pure filesystem + date math -- No Token Wasted.
+    """
+    window_start = date - datetime.timedelta(days=lookback_days)
+    released = set(all_released_dates())
+    return [
+        d for d in all_staging_dates()
+        if window_start <= d < date and d not in released
+    ]
 
 

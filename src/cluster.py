@@ -93,7 +93,7 @@ EMBEDDING_MODEL_REVISION = "a5beb1e3e68b9ab74eb54cfd186867f64f240e1a"
 EMBEDDING_DIM = 768                              # output dimension of bge-base-en-v1.5
 WITHIN_DAY_COSINE_THRESHOLD = 0.78              # two items share a cluster when cosine >= this
 CROSS_TIME_COSINE_THRESHOLD = 0.82              # higher bar: cross-day similarity to set prior_coverage_ref
-CROSS_TIME_LOOKBACK_DAYS = 14                   # days of history to consult for cross-time dedup
+CROSS_TIME_LOOKBACK_DAYS = paths.DEDUP_LOOKBACK_DAYS  # days of history for cross-time dedup (single source of truth: paths.DEDUP_LOOKBACK_DAYS)
 MAX_CHAIN_DEPTH = 30                             # cycle-guard: max hops when resolving chain root
 BATCH_SIZE = 32                                  # sentence-transformers encode batch size
 

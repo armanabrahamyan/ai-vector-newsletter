@@ -135,6 +135,83 @@ class TestAllReleasedDates:
 
 
 # ---------------------------------------------------------------------------
+# all_staging_dates + unreleased_predecessors — the duplicate-risk guard.
+# Cross-time dedup reads released-only, so a staged-but-unreleased earlier
+# issue is invisible to it; a later issue may silently repeat its stories.
+# ---------------------------------------------------------------------------
+
+def _seed(root: Path, sub: str, date: str) -> None:
+    """Create data/<sub>/<date>/issue.json under the tmp data root."""
+    d = root / sub / date
+    d.mkdir(parents=True)
+    (d / "issue.json").write_text("{}")
+
+
+class TestAllStagingDates:
+    def test_empty_when_staging_root_missing(self, tmp_data_root: Path) -> None:
+        assert paths.all_staging_dates() == []
+
+    def test_returns_only_dirs_with_issue_json(self, tmp_data_root: Path) -> None:
+        _seed(tmp_data_root, "staging", "2026-05-23")
+        partial = tmp_data_root / "staging" / "2026-05-24"
+        partial.mkdir(parents=True)  # no issue.json
+        assert paths.all_staging_dates() == [_dt.date(2026, 5, 23)]
+
+    def test_returns_sorted_ascending(self, tmp_data_root: Path) -> None:
+        for d in ("2026-05-23", "2026-05-21", "2026-05-22"):
+            _seed(tmp_data_root, "staging", d)
+        assert paths.all_staging_dates() == [
+            _dt.date(2026, 5, 21),
+            _dt.date(2026, 5, 22),
+            _dt.date(2026, 5, 23),
+        ]
+
+
+class TestUnreleasedPredecessors:
+    def test_none_when_all_earlier_staging_is_released(
+        self, tmp_data_root: Path
+    ) -> None:
+        # Earlier days exist in BOTH staging and released -> dedup saw them.
+        for d in ("2026-05-29", "2026-05-30"):
+            _seed(tmp_data_root, "staging", d)
+            _seed(tmp_data_root, "released", d)
+        _seed(tmp_data_root, "staging", "2026-05-31")
+        assert paths.unreleased_predecessors(_dt.date(2026, 5, 31)) == []
+
+    def test_flags_earlier_staged_but_unreleased(self, tmp_data_root: Path) -> None:
+        # The real May-31 case: May 29 + 30 staged, none released.
+        for d in ("2026-05-29", "2026-05-30", "2026-05-31"):
+            _seed(tmp_data_root, "staging", d)
+        assert paths.unreleased_predecessors(_dt.date(2026, 5, 31)) == [
+            _dt.date(2026, 5, 29),
+            _dt.date(2026, 5, 30),
+        ]
+
+    def test_excludes_the_date_itself_and_later(self, tmp_data_root: Path) -> None:
+        for d in ("2026-05-30", "2026-05-31", "2026-06-01"):
+            _seed(tmp_data_root, "staging", d)
+        # Only strictly-earlier unreleased days count.
+        assert paths.unreleased_predecessors(_dt.date(2026, 5, 31)) == [
+            _dt.date(2026, 5, 30),
+        ]
+
+    def test_respects_lookback_window(self, tmp_data_root: Path) -> None:
+        # 20 days before is outside the 14-day dedup window -> not flagged.
+        _seed(tmp_data_root, "staging", "2026-05-11")
+        _seed(tmp_data_root, "staging", "2026-05-31")
+        assert paths.unreleased_predecessors(_dt.date(2026, 5, 31)) == []
+        # ...but a wider explicit window includes it.
+        assert paths.unreleased_predecessors(
+            _dt.date(2026, 5, 31), lookback_days=30
+        ) == [_dt.date(2026, 5, 11)]
+
+    def test_window_matches_dedup_constant(self) -> None:
+        # Guard against drift: the warning window MUST equal the dedup window.
+        from src import cluster
+        assert cluster.CROSS_TIME_LOOKBACK_DAYS == paths.DEDUP_LOOKBACK_DAYS
+
+
+# ---------------------------------------------------------------------------
 # Roots and constants — the things every other helper composes from.
 # ---------------------------------------------------------------------------
 
