@@ -367,3 +367,195 @@ def test_resolve_dataset_dir_fixtures():
     result = _resolve_dataset_dir("_synthetic", "fixtures", staging=True)
     assert result is not None
     assert result == FIXTURES_DIR / "_synthetic"
+
+
+# ---------------------------------------------------------------------------
+# check_integrity() — D3 score-vs-tier check, schema-version branching
+# ---------------------------------------------------------------------------
+
+def _make_ranked_record(
+    cid: str,
+    tier: str,
+    novelty: str | None,
+    schema_version: int,
+    score: int = 30,
+    score_by_section: dict | None = None,
+) -> dict:
+    """Build a minimal ranked.jsonl record for D3 check tests."""
+    rec: dict = {
+        "schema_version": schema_version,
+        "cluster_id": cid,
+        "score": score,
+        "breakdown": {
+            "significance": score,
+            "hands_on_utility": score,
+            "big_picture_relevance": score,
+            "financial_services_impact": score,
+            "freshness_momentum": score,
+        },
+        "audience_tags": ["hands_on"],
+        "rationale": "Test",
+        "tier": tier,
+        "prompt_version": "v1",
+    }
+    if novelty is not None:
+        rec["novelty"] = novelty
+    if score_by_section is not None:
+        rec["score_by_section"] = score_by_section
+    return rec
+
+
+def _build_minimal_dataset(tmp_path: Path, ranked_records: list[dict]) -> Path:
+    """Write a minimal dataset directory containing only ranked.jsonl.
+
+    The other files (items, clusters, issue, source_health) are omitted
+    intentionally — check_integrity treats missing files as soft gaps and
+    continues to evaluate the checks that *can* run. The D3 check only
+    reads raw_ranked, which is populated from ranked.jsonl alone.
+    """
+    released_dir = tmp_path / "released" / "2026-06-15"
+    released_dir.mkdir(parents=True)
+    lines = "\n".join(json.dumps(r) for r in ranked_records)
+    (released_dir / "ranked.jsonl").write_text(lines + "\n", encoding="utf-8")
+    return released_dir
+
+
+def _run_d3(tmp_path, monkeypatch, ranked_records: list[dict]):
+    """Helper: run check_integrity against a synthetic dataset, return failures."""
+    from evals import run_evals as _eh
+    monkeypatch.setattr(_eh, "DATA_DIR", tmp_path)
+    _build_minimal_dataset(tmp_path, ranked_records)
+    failures, _ = check_integrity(datetime.date(2026, 6, 15), staging=False)
+    return failures
+
+
+def test_d3_v6_high_section_score_cut_fails(tmp_path, monkeypatch):
+    """v6 row: max section score >= 40 (cut_floor) and tier=cut → D3 failure."""
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty=None,
+        schema_version=6,
+        score=30,  # aggregate below threshold — old check would pass
+        score_by_section={"big_picture": 40, "hands_on": 20, "currents": 15},
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert d3_failures, f"Expected D3 failure but got: {failures}"
+    assert "max_section_score=40" in d3_failures[0]
+
+
+def test_d3_v6_near_miss_section_score_passes(tmp_path, monkeypatch):
+    """v6 row: max section score=39 (below cut_floor of 40) and tier=cut → D3 passes.
+
+    This is the legitimate near-miss class: 39 < cut_floor, so tier=cut is
+    correct routing. The old ceiling of 35 would have false-positived here.
+    """
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty=None,
+        schema_version=6,
+        score=30,
+        score_by_section={"big_picture": 39, "hands_on": 20, "currents": 15},
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert not d3_failures, f"Expected no D3 failure for near-miss (score=39) but got: {d3_failures}"
+
+
+def test_d3_v6_low_section_score_high_aggregate_passes(tmp_path, monkeypatch):
+    """v6 row: aggregate score=40 but max section score < 35 → D3 passes.
+
+    This is the May 29 false-positive class: old check would flag this,
+    new check correctly ignores the aggregate field for v6+ rows.
+    """
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty=None,
+        schema_version=6,
+        score=40,  # high aggregate — old check would false-positive here
+        score_by_section={"big_picture": 20, "hands_on": 15, "currents": 10},
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert not d3_failures, f"Expected no D3 failure but got: {d3_failures}"
+
+
+def test_d3_v6_novelty_none_exempt(tmp_path, monkeypatch):
+    """v6 row: high section score but novelty='none' → D3 passes (novelty exception)."""
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty="none",
+        schema_version=6,
+        score=30,
+        score_by_section={"big_picture": 40, "hands_on": 20, "currents": 15},
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert not d3_failures, f"Expected no D3 failure but got: {d3_failures}"
+
+
+def test_d3_v6_missing_score_by_section_warns_and_skips(tmp_path, monkeypatch):
+    """v6 row missing score_by_section → WARNING logged, check skipped (no crash)."""
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty=None,
+        schema_version=6,
+        score=40,
+        # score_by_section deliberately absent
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    warnings = [f for f in failures if f.startswith("WARNING") and "score_by_section" in f]
+    assert warnings, f"Expected WARNING about missing score_by_section but got: {failures}"
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert not d3_failures, f"Should not produce D3 failure for missing field, got: {d3_failures}"
+
+
+def test_d3_v5_high_aggregate_score_cut_fails(tmp_path, monkeypatch):
+    """v5 row: aggregate score >= 40 (cut_floor) and tier=cut → D3 failure (legacy path)."""
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty=None,
+        schema_version=5,
+        score=40,
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert d3_failures, f"Expected D3 failure on v5 row but got: {failures}"
+    assert "score=40" in d3_failures[0]
+
+
+def test_d3_v5_near_miss_aggregate_score_passes(tmp_path, monkeypatch):
+    """v5 row: aggregate score=39 (below cut_floor of 40) and tier=cut → D3 passes.
+
+    Legitimate near-miss: 39 < cut_floor, so tier=cut is correct routing.
+    """
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty=None,
+        schema_version=5,
+        score=39,
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert not d3_failures, f"Expected no D3 failure for near-miss (score=39) but got: {d3_failures}"
+
+
+def test_d3_v5_low_aggregate_score_passes(tmp_path, monkeypatch):
+    """v5 row: aggregate score < 39 and tier=cut → D3 passes."""
+    rec = _make_ranked_record(
+        cid="c_aabbccddeeff",
+        tier="cut",
+        novelty=None,
+        schema_version=5,
+        score=30,
+    )
+    failures = _run_d3(tmp_path, monkeypatch, [rec])
+    d3_failures = [f for f in failures if "rank.py inconsistency" in f]
+    assert not d3_failures, f"Expected no D3 failure but got: {d3_failures}"

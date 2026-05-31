@@ -1403,31 +1403,66 @@ def check_integrity(
                 f"(minimum 3 required)"
             )
 
-    # (D3) No cluster with score >= 35 tiered 'cut' in ranked.jsonl.
+    # (D3) No cluster with score >= cut_floor was tagged 'cut' in ranked.jsonl
+    # (routing inconsistency guard).
+    #
+    # CUT_SCORE_CEILING == cut_floor (40): matches the floor exactly, no margin.
+    # A cluster at or above this threshold should have been promoted, not cut.
+    #
+    # Schema-version split:
+    #   schema_version >= 6: per-section weights drive routing. The ceiling
+    #     applies to max(score_by_section[big_picture, hands_on, currents]) >= 40.
+    #     The aggregate `score` field (global RUBRIC_WEIGHTS) is populated for
+    #     backwards compat but no longer drives tier assignment, so comparing it
+    #     to the cut_floor would produce false positives (May 29 incident).
+    #   schema_version <= 5: aggregate `score` field drives tier. Fall back to
+    #     the original check.
+    #
     # novelty="none" cuts are a legitimate prior-coverage dedup outcome
-    # (rank.py caps significance at 25 to trip the cut, but the aggregated
-    # score can still exceed 35 when other dimensions are high), so they
-    # are excluded from the inconsistency check.
-    CUT_SCORE_CEILING = 35
+    # (rank.py caps significance at 25 to trip the cut), so they are excluded.
+    CUT_SCORE_CEILING = 40
     high_score_cuts: list[dict] = []
     for record in raw_ranked:
-        score = record.get("score")
         tier = record.get("tier")
         novelty = record.get("novelty")
         cid = record.get("cluster_id", "<unknown>")
-        if (
-            tier == "cut"
-            and novelty != "none"
-            and score is not None
-            and score >= CUT_SCORE_CEILING
-        ):
-            high_score_cuts.append({"cluster_id": cid, "score": score})
+        if tier != "cut" or novelty == "none":
+            continue
+
+        schema_version = record.get("schema_version", 1)
+        if schema_version >= 6:
+            score_by_section = record.get("score_by_section")
+            if score_by_section is None:
+                failures.append(
+                    f"WARNING: ranked cluster {cid} is schema_version={schema_version} "
+                    f"but missing score_by_section — skipping D3 check for this cluster"
+                )
+                continue
+            effective_score = max(
+                score_by_section.get("big_picture", 0),
+                score_by_section.get("hands_on", 0),
+                score_by_section.get("currents", 0),
+            )
+            if effective_score >= CUT_SCORE_CEILING:
+                high_score_cuts.append(
+                    {"cluster_id": cid, "max_section_score": effective_score}
+                )
+        else:
+            score = record.get("score")
+            if score is not None and score >= CUT_SCORE_CEILING:
+                high_score_cuts.append({"cluster_id": cid, "score": score})
 
     if high_score_cuts:
+        def _fmt(r: dict) -> str:
+            if "max_section_score" in r:
+                return f"{r['cluster_id']}(max_section_score={r['max_section_score']})"
+            return f"{r['cluster_id']}(score={r['score']})"
+
         failures.append(
-            f"PIPELINE HEALTH: {len(high_score_cuts)} cluster(s) with score >= "
-            f"{CUT_SCORE_CEILING} were tiered 'cut' — rank.py inconsistency: "
-            + ", ".join(f"{r['cluster_id']}(score={r['score']})" for r in high_score_cuts)
+            f"PIPELINE HEALTH: {len(high_score_cuts)} cluster(s) within reach of "
+            f"promote threshold (>= {CUT_SCORE_CEILING}) were tiered 'cut' — "
+            f"rank.py inconsistency: "
+            + ", ".join(_fmt(r) for r in high_score_cuts)
         )
 
     # Warnings don't count as hard failures for the pass/fail gate
