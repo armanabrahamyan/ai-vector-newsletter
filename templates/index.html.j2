@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Vector &mdash; Today&rsquo;s AI, with a heading.</title>
-  <meta name="description" content="Today's AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <title>{{ brand.name }} &mdash; {{ brand.tagline }}</title>
+  <meta name="description" content="{{ brand.tagline }} {{ brand.description }}">
   <meta name="theme-color" content="#0c0c0c">
   <link rel="stylesheet" href="fonts/fonts.css">
   <style>
@@ -378,18 +378,18 @@
 <main class="page">
 
   <header class="masthead">
-    <h1 class="brand">AI<span class="slash">/</span>Vector</h1>
+    <h1 class="brand">{{ brand.wordmark.lead }}<span class="slash">/</span>{{ brand.wordmark.tail }}</h1>
     <div class="mast-meta">
-      <div>The daily AI digest</div>
+      <div>{{ brand.landing_subtitle }}</div>
     </div>
   </header>
 
   <p class="tagline">
-    <span class="mark">&mdash;</span>Today&rsquo;s AI, with a heading.
+    <span class="mark">&mdash;</span>{{ brand.tagline }}
   </p>
 
   <p class="about">
-    A daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+    {{ brand.description }} {{ brand.ethos }}
   </p>
 
   {% if latest %}
@@ -549,7 +549,7 @@
   {% endif %}
 
   <footer>
-    <span>AI Vector &middot; Arman Abrahamyan</span>
+    <span>{{ brand.name }} &middot; {{ brand.author }}</span>
     <span>Page generated {{ generated_at | aest }}</span>
   </footer>
 

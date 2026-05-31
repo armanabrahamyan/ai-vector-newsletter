@@ -1,0 +1,44 @@
+# config/brand.yaml — AI Vector brand identity (reader-facing surfaces only)
+#
+# Owner: Release Engineer (render surface).
+#
+# This is the ONE place the published brand name and copy live. render.py
+# reads this file and feeds it to the templates, so a downstream copy
+# rebrands by editing THIS FILE ALONE — no template or src/ edits. That keeps
+# engine syncs from upstream conflict-free on branding. See SYNCING.md.
+#
+# SCOPE — what this file controls (all reader-facing HTML output):
+#   • the <title> and <meta description>
+#   • the masthead wordmark (AI/Vector) on issue + landing pages
+#   • the tagline, the landing "about" blurb, the footer by-line
+#
+# SCOPE — what this file deliberately does NOT control:
+#   • LLM voice prompts in rank.py / summarise.py / review.py. Those say
+#     "AI Vector" as a VOICE descriptor ("AI Vector is heavier on Agentic
+#     AI…"), not a swappable name token. A fork rewrites them as CONTENT
+#     alongside EDITORIAL.md — see SYNCING.md "diverge by hand".
+#   • operator/dev strings (CLI banners, docstrings, comments). Those keep
+#     the engine's origin name; they are not published.
+#
+# Omitting this file is safe: render.py bakes in the AI Vector defaults
+# below, mirroring the forker-friendly contract of config/editorial.yaml.
+
+# Full plain-text name — used in <title> and the footer by-line.
+name: "AI Vector"
+
+# Styled masthead wordmark, rendered as <lead><slash/><tail> → "AI/Vector".
+wordmark:
+  lead: "AI"
+  tail: "Vector"
+
+# One-line tagline under the masthead and in the <title>.
+tagline: "Today's AI, with a heading."
+
+# Landing-page positioning blurb (the <p class="about"> line) and the short
+# mast subtitle on the index hero.
+description: "A daily AI newsletter with a financial-services lens."
+ethos: "Curated, not aggregated. AI-drafted, human-ratified."
+landing_subtitle: "The daily AI digest"
+
+# Default by-line author. Issues may still override per-issue via Issue.author.
+author: "Arman Abrahamyan"

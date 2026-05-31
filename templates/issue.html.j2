@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Vector {% if issue.display_number %}&middot; Issue No. {{ issue.display_number }} {% else %}(preview) {% endif %}&middot; {{ issue.date.strftime('%d %B %Y') }}</title>
-  <meta name="description" content="Today's AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <title>{{ brand.name }} {% if issue.display_number %}&middot; Issue No. {{ issue.display_number }} {% else %}(preview) {% endif %}&middot; {{ issue.date.strftime('%d %B %Y') }}</title>
+  <meta name="description" content="{{ brand.tagline }} {{ brand.description }}">
   <meta name="theme-color" content="#0c0c0c">
   <link rel="stylesheet" href="../fonts/fonts.css">
   <style>
@@ -360,7 +360,7 @@
     </aside>
     {% endif %}
     <header class="av-masthead">
-      <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
+      <h1 class="av-brand">{{ brand.wordmark.lead }}<span class="av-brand-slash">/</span>{{ brand.wordmark.tail }}</h1>
       <div class="av-mast-meta">
         <div>{{ issue.date.strftime('%A, %d %B %Y') }}</div>
         <div>
@@ -377,7 +377,7 @@
 
     <p class="av-tagline">
       <span class="av-tagline-mark">&mdash;</span>
-      Today&rsquo;s AI, with a heading.
+      {{ brand.tagline }}
     </p>
 
     {# ── Pulse ───────────────────────────────────────────── #}
@@ -431,7 +431,7 @@
     {% endfor %}
 
     <footer class="av-footer">
-      <span>AI Vector &middot; {{ issue.author if issue.author is defined else 'Arman Abrahamyan' }} &middot; {{ issue.date.strftime('%d %B %Y') }} &middot; <a class="av-archive-link" href="../index.html">all issues &rarr;</a></span>
+      <span>{{ brand.name }} &middot; {{ issue.author if issue.author is defined else brand.author }} &middot; {{ issue.date.strftime('%d %B %Y') }} &middot; <a class="av-archive-link" href="../index.html">all issues &rarr;</a></span>
       <span class="av-footer-build">Compiled {{ issue.generated_at | aest }}</span>
     </footer>
     <p class="av-about">

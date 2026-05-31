@@ -48,6 +48,7 @@ from typing import Literal
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
+import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src import paths
@@ -60,6 +61,20 @@ from src.models import Issue
 TEMPLATE_NAME = "issue.html.j2"
 INDEX_TEMPLATE_NAME = "index.html.j2"
 TEMPLATE_DIR = Path("templates")
+
+# Brand config -- the one file a fork edits to rebrand. See config/brand.yaml
+# and SYNCING.md. Reader-facing copy only; absent file -> these defaults, so
+# engine-only forks need not carry the file.
+_BRAND_PATH = Path("config/brand.yaml")
+_DEFAULT_BRAND: dict = {
+    "name": "AI Vector",
+    "wordmark": {"lead": "AI", "tail": "Vector"},
+    "tagline": "Today's AI, with a heading.",
+    "description": "A daily AI newsletter with a financial-services lens.",
+    "ethos": "Curated, not aggregated. AI-drafted, human-ratified.",
+    "landing_subtitle": "The daily AI digest",
+    "author": "Arman Abrahamyan",
+}
 
 # Peripheral files copied from staging -> canonical during release_promote
 # (and removed during unrelease, in reverse). Order is for log readability
@@ -222,12 +237,35 @@ def _read_minutes(issue: Issue) -> int:
     return max(1, math.ceil(words / 200))
 
 
+def _load_brand() -> dict:
+    """Load reader-facing brand copy from ``config/brand.yaml``.
+
+    Missing file or missing keys fall back to ``_DEFAULT_BRAND`` (AI Vector),
+    so an engine-only fork that never copies the file still renders. Forks
+    rebrand by editing the YAML alone -- no template or src/ edits -- which
+    keeps upstream engine syncs conflict-free on branding (see SYNCING.md).
+    Shallow-merges top-level keys; ``wordmark`` is replaced wholesale when
+    present so a fork sets lead+tail together.
+    """
+    brand = dict(_DEFAULT_BRAND)
+    if _BRAND_PATH.exists():
+        try:
+            loaded = yaml.safe_load(_BRAND_PATH.read_text(encoding="utf-8")) or {}
+            if isinstance(loaded, dict):
+                brand.update({k: v for k, v in loaded.items() if v is not None})
+        except yaml.YAMLError as exc:
+            log.warning("brand: failed to parse %s (%s); using defaults",
+                        _BRAND_PATH, exc)
+    return brand
+
+
 def _build_env() -> Environment:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         autoescape=select_autoescape(["html", "j2"]),
     )
     env.globals["section_title"] = _section_title
+    env.globals["brand"] = _load_brand()
     env.filters["aest"] = _aest
     env.filters["source_label"] = _source_label
     return env
