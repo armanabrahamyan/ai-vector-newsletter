@@ -66,6 +66,15 @@
       text-align: right;
       line-height: 1.7;
     }
+    .av-mast-archive {
+      display: inline-block;
+      margin-top: 4px;
+      color: #e6452f;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(230,69,47,0.35);
+    }
+    .av-mast-archive:hover { border-bottom-color: #e6452f; }
 
     /* ── tagline ───────────────────────────────────────────── */
     .av-tagline {
@@ -259,12 +268,17 @@
       text-transform: uppercase;
       color: #6a6a64;
     }
+    .av-footer-build {
+      color: #a5a5a0;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
     .av-about {
-      margin-top: 20px;
+      margin-top: 12px;
       font-size: 13px;
       color: #8a8a85;
       line-height: 1.6;
-      max-width: 50em;
+      max-width: 60em;
     }
     .av-archive-link {
       color: #6a6a64;
@@ -303,6 +317,7 @@
           {%- endif -%}
           {%- if read_minutes %} &middot; ~{{ read_minutes }} min read{% endif -%}
         </div>
+        <div><a class="av-mast-archive" href="../index.html">All Issues &rarr;</a></div>
       </div>
     </header>
 
@@ -362,11 +377,11 @@
     {% endfor %}
 
     <footer class="av-footer">
-      <span>AI Vector &middot; {{ issue.author if issue.author is defined else 'Arman Abrahamyan' }}</span>
-      <span>{{ issue.date.isoformat() }} &middot; Compiled {{ issue.generated_at | aest }} &middot; <a class="av-archive-link" href="../index.html">all issues</a></span>
+      <span>AI Vector &middot; {{ issue.author if issue.author is defined else 'Arman Abrahamyan' }} &middot; {{ issue.date.strftime('%d %B %Y') }} &middot; <a class="av-archive-link" href="../index.html">all issues &rarr;</a></span>
+      <span class="av-footer-build">Compiled {{ issue.generated_at | aest }}</span>
     </footer>
     <p class="av-about">
-      AI Vector is a daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+      A daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
     </p>
   </article>
 </body>
