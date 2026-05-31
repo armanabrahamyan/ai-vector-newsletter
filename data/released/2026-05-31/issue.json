@@ -1,0 +1,112 @@
+{
+  "schema_version": 5,
+  "issue_number": 9,
+  "revision": 0,
+  "date": "2026-05-31",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_a3eea28c2104b5de",
+        "headline": "Distillation could expose AI models that hide misalignment from auditors",
+        "summary": "Redwood Research proposes using distillation as a forensic trap: copy a suspicious model into a smaller student, hoping misalignment transfers but the skill to conceal it does not. The student then fails audits the original passed. No empirical results yet. Alignment auditing has lacked a credible method for catching strategically deceptive models; this is the most concrete proposal so far.",
+        "source_urls": [
+          "https://blog.redwoodresearch.org/p/incriminating-misaligned-ai-models"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "discuss"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_9f9c2caa8d59c23f",
+          "headline": "OpenAI maps its safety practices to EU and California rules",
+          "summary": "OpenAI has published a self-described governance framework aligning its frontier model safety and risk practices with the EU AI Act and California regulations. The document is vendor-authored with no independent verification. If you're deciding how much weight to give OpenAI's regulatory posture in a procurement or risk review, treat this as a starting position, not a settled audit.",
+          "source_urls": [
+            "https://openai.com/index/openai-frontier-governance-framework"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_fb926f442b3c273c",
+          "headline": "Reading news and price data together may finally break portfolio theory's limits",
+          "summary": "SBCA fuses reinforcement learning with BERT-driven sentiment extraction, letting a portfolio agent read Fed statements alongside price action; mean-variance optimisation cannot do that. Single source, no code, no independent benchmarks published. If your quant process already ingests news sentiment, what is the evidence this architecture beats your current pipeline?",
+          "source_urls": [
+            "https://llmquant.substack.com/p/when-machines-read-the-news-how-a"
+          ],
+          "prior_coverage_ref": "c_e88bf3b27d6f4a98",
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_5b4bde1e4f39eef6",
+          "headline": "Judging AI on behaviour, not raw capability, may reduce safety risk",
+          "summary": "Capability evaluations inadvertently accelerate the risks they measure, this essay argues; behavioural evaluations (testing what a model actually does in deployment) carry fewer such externalities. The METR time-horizon graph is cited as evidence of the tradeoff. Single-source essay with no benchmark or code released. Raise this framing before scoping your next evaluation programme.",
+          "source_urls": [
+            "https://www.alignmentforum.org/posts/J5KkwYnnaeNX7hL2s/the-case-for-evaluating-model-behaviors"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_0364dbc776599682",
+          "headline": "Big tech spent more on AI in Q3 2025 than it earned",
+          "summary": "In Q3 2025, America's largest tech firms spent more on capital investment than they earned from operations, a first. The Federal Reserve Bank of New York frames this as a productivity J-curve: costs rise before returns arrive, pushing up chip and energy prices now. If you're modelling inflation risk, the disinflationary AI story is premature.",
+          "source_urls": [
+            "https://libertystreeteconomics.newyorkfed.org/2026/05/ais-macroeconomic-challenges-and-promises/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read"
+        }
+      ],
+      "intro_lead": "Costs precede clarity.",
+      "intro_body": "Across governance, portfolio models, safety research, and capital spending, the pattern is the same: organisations are being asked to commit now on evidence that has not yet been independently tested."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_8860058b28319543",
+          "headline": "FlashAttention 4 now runs on NVIDIA's newest Blackwell chips",
+          "summary": "FlashAttention 4 beta15 (pre-release, no stable tag yet) adds support for NVIDIA's Blackwell SM110 architecture and vectorised mask operations, which speed up custom attention patterns. This is plumbing, not a capability leap. If you're deploying attention-heavy inference on Blackwell hardware, pin beta15 and validate your custom mask logic against the new vectorised path.",
+          "source_urls": [
+            "https://github.com/Dao-AILab/flash-attention/releases/tag/fa4-v4.0.0.beta15"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Plumbing update, not breakthrough.",
+      "intro_body": "Today's signal is infrastructure, not capability. The practitioner question is simple: does your current hardware stack justify acting on a pre-release, unstable build?"
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
+    }
+  ],
+  "generated_at": "2026-05-31T07:17:23.494267Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.12",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: amber -- hands_on: 1 (tier pool exhausted)"
+}
