@@ -1,0 +1,123 @@
+{
+  "schema_version": 5,
+  "issue_number": 10,
+  "revision": 0,
+  "date": "2026-06-01",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_9e68ad8a123f466b",
+        "headline": "Europe's AI enforcement clock runs out in nine weeks",
+        "summary": "The EU AI Act's 2 August enforcement deadline is nine weeks out, and national implementation is still patchy. Poland just adopted a draft oversight bill; most member states haven't. The EU's AI Office confirms formal powers activate then. Single-source reporting from a Future of Life Institute newsletter, but the direction is clear even so.",
+        "source_urls": [
+          "https://artificialintelligenceact.substack.com/p/the-eu-ai-act-newsletter-103-the"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_ce5c3a2cc7f27728",
+          "headline": "Deep research agents leak private data through their own web searches",
+          "summary": "When an agent searches the web using private documents as context, the queries themselves become the leak. MosaicLeaks (1,001 tasks, arXiv preprint) found leakage in over a third of cases; a privacy-aware training approach cut that to under 10%. No code yet. If your agents mix client documents with external calls, query logs are a confidentiality exposure.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.30727"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_adaa1bbb1b1eff11",
+          "headline": "A blueprint for auditable AI agents in regulated security operations",
+          "summary": "Security operations analysts using AI agents can bind their organisation legally with a single tool call, yet no standard runtime enforces scope across retrieval, memory, and audit. This paper proposes a typed Security Context enforced at every component boundary, with append-only audit logs and tiered human approval gates. No code released; raise it before your next agentic architecture decision.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.30604"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_6937dda77278c37f",
+          "headline": "AI cracked a geometry problem that defeated mathematicians for 80 years",
+          "summary": "OpenAI's model disproved the Erdős unit distance conjecture, a discrete geometry problem open since 1946, by assembling existing ideas across mathematical subfields rather than inventing new ones. Fields Medal winner Tim Gowers called it 'a milestone.' The result has since been extended by human mathematicians. When does AI stop synthesising known mathematics and start generating new frameworks?",
+          "source_urls": [
+            "https://arstechnica.com/ai/2026/06/openais-math-breakthrough-played-to-ais-strengths/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        }
+      ],
+      "intro_lead": "Capability outruns control.",
+      "intro_body": "AI systems are proving they can do more than anyone expected, yet the governance structures needed to bound their behaviour, and their data exposure, are still catching up."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_80c89e461cf9ca68",
+          "headline": "One open model now handles robotics reasoning and video generation together",
+          "summary": "Cosmos 3 (two sizes, weights on Hugging Face) unifies video generation, physical reasoning, and robot-policy output in a single architecture, replacing four separate prior models. Post-training scripts and synthetic datasets ship on GitHub. Benchmarks come from NVIDIA's own materials only. Clone the Nano variant against your simulation pipeline before committing to the larger Super model.",
+          "source_urls": [
+            "https://huggingface.co/blog/nvidia/cosmos-3-for-physical-ai"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_ea2a4b96fb915667",
+          "headline": "Every frontier model scores below 50% on this financial spreadsheet test",
+          "summary": "BlueFin (arXiv:2605.30907) is an open-source benchmark of 131 finance-specific spreadsheet tasks, validated by human annotators; its judge reaches near-expert agreement (Krippendorff's alpha of 0.826). Every frontier model tested scored below 50%. Before deploying a language model agent on financial analysis workflows, run it against BlueFin's harness to expose dynamic-correctness gaps first.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.30907"
+          ],
+          "prior_coverage_ref": "c_dd414e1ba21d0eb0",
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_755364cabe72f485",
+          "headline": "JetBrains open-sources a coding model that runs on 2.5B active parameters",
+          "summary": "Mellum 2 is JetBrains' open-weight coding and agentic model: 12B total parameters but only 2.5B active per token, keeping inference cheap on commodity GPUs. Weights, an instruct variant, and a reasoning variant are all Apache 2.0. Benchmarks come from the authors' own report, so run it against your current coding-agent eval before trusting the claims.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.31268"
+          ],
+          "prior_coverage_ref": "c_9c401d51bca8d747",
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Verify before you deploy.",
+      "intro_body": "Today's releases are genuinely capable, but every benchmark here comes from the team that built the tool. Independent validation is the missing step before any of this reaches production."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
+    }
+  ],
+  "generated_at": "2026-06-01T12:23:59.495224Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.12",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 3, hands_on: 3, currents: 0"
+}
