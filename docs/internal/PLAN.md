@@ -194,6 +194,22 @@ If egress is blocked → fetch may need to run from an approved network.
 - [ ] Finance-AI sources: which specific feeds? (need your input)
 - [ ] Post-Phase A ratification: (a) implement `empty_feed_expected` MissedReason per architect design (needs eval-engineer co-review for `evals/` filter updates; arXiv weekend skipDays currently flagged as `empty_feed`); (b) trial-enable arXiv `cs.LG` with follow-up eval to test the "signal gap" gate from `config/sources.yaml`.
 
+- [ ] **Voice drift in section intros and closings** (flagged across issues #8 – #11, 2026-05-30 to 2026-06-02): the editor's pre-release reviews caught a recurring pattern across four consecutive issues. Two layers:
+
+  - **Symptom layer**: the LLM repeats constructions across days because it has no memory of what it just wrote. Examples: "X outruns Y" appearing in three consecutive Big Picture intros; "Verify before you [X]" recurring as Hands-On opener; on June 2 the Big Picture and Currents intros shared the same thesis statement in one issue.
+
+  - **Root layer**: when the editorial position is under-specified, the LLM falls back on its training default — balanced, hedged, cautious. That register reads as voice drift because it is voice absence, not voice presence.
+
+  **Proposed fix (two parts):**
+
+  1. **Voice-diversity prompt injection in `src/summarise.py`**: pass the last 3 – 5 published issues' intros and closings into the per-story and section-intro prompts with an explicit instruction to vary the register from these. Maintain a growing anti-pattern list seeded from editor reviews. Owner: llm-engineer. Effort: ~2 hrs. Cost: a few hundred extra input tokens per call (≈ free at scale).
+
+  2. **`EDITORIAL.md` strengthening**: shift framing from "be in voice" to "AI Vector holds positions; hedge-y register is voice absence." Add positive examples per section that exemplify *strong* register, not just *competent* register. Owner: editor. Effort: ~1 hr.
+
+  **Verification**: after the fix lands, the next issue's editor review should not flag the same constructions. Voice-similarity check against the last 5 issues' intros could be added later as a register-drift eval signal.
+
+  Reference: structured discussion in conversation on 2026-06-02 ("what are ways to fix the voice drift"). Anti-patterns to seed the prompt with are catalogued across `data/released/2026-05-{29,30,31}/review.md` and `data/released/2026-06-{01,02}/review.md`.
+
 ---
 
 ## 9. Definition of done (v0.1)
