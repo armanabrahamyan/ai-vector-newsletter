@@ -17,9 +17,16 @@ Frames at `_scratch/2026-05-31-closing-frames.md`.
 
 ## What the publication sounds like
 
-Five rules that should be enforceable by the summarise prompt and checkable
-by the voice rubric:
+Six rules that should be enforceable by the summarise prompt and checkable
+by the voice rubric. Rule 0 is **the** principle; the rest are how it
+manifests.
 
+0. **AI Vector has takes.** Voice is not balance. Voice is not hedge.
+   Voice is not "trust but verify." Voice is naming what's true now and
+   where the field is moving, with the confidence of an editor who picked
+   this story for a reason. If the closing reads as "be cautious about
+   this," the voice is absent. If it reads as "this is the news; here's
+   what shifts," the voice is present.
 1. **Warm, not chummy.** Trust the reader; don't perform for them. Cut
    adjectives that don't earn their place. "Major," "powerful,"
    "groundbreaking" are almost always cuttable.
@@ -35,6 +42,116 @@ by the voice rubric:
 
 Quiet nod to the vector → direction → pulse lineage in the section names.
 Never explain the joke.
+
+### Strong vs hedge — what rule 0 looks like on the page
+
+The same story, edited two ways. The hedge version sounds careful; the
+strong version sounds like a publication. AI Vector is in the position
+business. Three pairs per section so the contrast is unmistakable.
+
+**The Pulse**
+
+*Strong (in voice):* "The IDE plug-in era is over. The vendors who win the
+next round own the runtime — the VM, the spec, the PR — not just the
+autocomplete."
+*Hedge (off voice):* "Coding tools may be evolving toward more autonomous
+agents, though the timeline remains uncertain."
+The difference: the strong version takes a position about where the
+frontier is. The hedge describes a trend.
+
+*Strong:* "Anthropic just told you the truth about a release. That's the
+news. Whether to swap is procurement; whether the lab is honest is
+strategy."
+*Hedge:* "Anthropic's disclosure is a notable development that some
+observers may find reassuring."
+The difference: the strong version names what changed and separates the
+two decisions. The hedge gestures at significance without claiming any.
+
+*Strong:* "Domain-grounded safety filtering is where the credible
+regulated-AI story starts now. Open-web filters have hit their fit limit."
+*Hedge:* "There are growing questions about whether general-purpose safety
+filters meet the needs of regulated industries."
+The difference: the strong version says *what comes next*. The hedge
+raises a question and walks away from it.
+
+**The Big Picture**
+
+*Strong (in voice):* "A runtime compliance score could replace the
+once-a-year AI audit — and the firms that build the score win the next
+governance cycle."
+*Hedge (off voice):* "Runtime monitoring approaches are emerging as a
+possible complement to traditional audit processes."
+The difference: the strong version names a first-order consequence and a
+winner. The hedge names a category.
+
+*Strong:* "When the safety filter and the regulator's rulebook disagree,
+the rulebook governs — and your customer-facing stack now has a procurement
+question that wasn't on last quarter's roadmap."
+*Hedge:* "There may be tensions between AI safety mechanisms and
+regulatory frameworks that organisations will need to consider."
+The difference: the strong version sends the reader to a specific decision.
+The hedge sends them to a meeting.
+
+*Strong:* "Pre-deployment governance is losing ground to runtime
+governance. Boards that haven't reorganised the AI-risk committee around
+that shift are reviewing last year's risk model."
+*Hedge:* "Governance models are evolving and organisations should remain
+attentive to changes in best practice."
+The difference: the strong version names the loser. The hedge names
+nothing.
+
+**Hands-On**
+
+*Strong (in voice):* "Swap one production agentic-coding loop to Opus 4.8
+this week and measure the unflagged-flaw rate against your incident
+baseline. If it holds, the migration math justifies itself."
+*Hedge (off voice):* "Teams may want to evaluate Opus 4.8 against their
+existing tooling to determine whether adoption is appropriate."
+The difference: the strong version names the artefact, the trigger, and
+the decision criterion. The hedge names none of them.
+
+*Strong:* "Run v0.22.0 against your own latency baseline this week; if you
+confirm even half the 28.9% claim, ship the upgrade."
+*Hedge:* "Verify before you adopt this new release."
+The difference: the strong version specifies *what to run*, *against
+what*, *with what threshold*. The hedge is a slogan.
+
+*Strong:* "Pin the canary to gpt-5.2-mini for the agent-eval suite and
+re-run your regression set tonight — the routing change broke our
+multi-turn fixture and yours probably has the same shape."
+*Hedge:* "It's worth testing the new model carefully before deploying it
+to production."
+The difference: the strong version names the artefact and the failure
+mode. The hedge names neither.
+
+**Currents**
+
+*Strong (in voice):* "Three jurisdictions are circling the same
+agentic-payments question and none has acted. If one moves first the
+others copy the shape; if none moves the question stays open for another
+quarter and the early-mover advantage compounds."
+*Hedge (off voice):* "Regulators around the world are increasingly
+focused on questions related to autonomous AI agents in financial
+services."
+The difference: the strong version has two branches with stakes on both.
+The hedge has neither branches nor stakes.
+
+*Strong:* "If ITS-Mina replicates, attention-free forecasting is a real
+architecture line and your shortlist needs revisiting. If it doesn't, the
+benchmark suite itself becomes the story — and that matters more than any
+single model claim."
+*Hedge:* "ITS-Mina is an interesting new approach worth keeping an eye on
+as more results emerge."
+The difference: the strong version pre-commits to what each outcome means.
+The hedge defers to "more results."
+
+*Strong:* "Open-weights agent frameworks are converging on the same tool
+interface. If that holds another quarter, the moat moves to evals and
+data; if it fragments, the moat stays in the framework."
+*Hedge:* "The open-weights agent space continues to develop in
+interesting directions worth monitoring."
+The difference: the strong version names two futures and where the moat
+lives in each. The hedge names neither.
 
 ---
 
@@ -256,3 +373,38 @@ section is the canonical reference. Verdict is `green` (ratify) / `amber`
   surfaced only because of a weak FS angle?
 - **Section misroutes.** Any story reading more like a different
   section's voice than its assigned one.
+
+---
+
+## Anti-patterns the editor will flag
+
+Specific phrases and constructions that, when repeated across issues or
+used as a default register, signal voice absence rather than voice
+presence. The summarise prompt reads this catalogue at run time; the LLM
+is instructed to avoid these constructions today. New entries are added
+by the editor when reviews catch them.
+
+- "X outruns Y" / "X is outpacing Y" / "X precedes Y" — same shape across days (Big Picture intros: "Costs precede clarity", "Capability outruns control", "Speed is outrunning safety")
+- "Verify before you [verb]" — Hands-On opener tic ("Verify before you deploy", "Verify before you adopt")
+- "Trust, but verify." — Big Picture intro cliché; verbatim repeat across issues
+- "treat this as a starting position, not a settled audit" — closing-shape repeat across days
+- Two sections of one issue sharing the same thesis statement (#11: Big Picture "Speed is outrunning safety" + Currents "Capability races ahead of control")
+- "Capability races ahead of control" / "Speed is outrunning safety" — register synonyms used in same issue
+- Generic verify/audit/test imperatives without specific artefact + trigger (Hands-On closings: "just test it", "bench before you trust")
+- Imperative actions dressed as strategic questions (Big Picture closings: "Which review gates survive in your org?" is an imperative in question clothing)
+- One-sided "If X holds, Y" Currents closings (no inverse branch — calibrated stake needs both sides)
+- "Worth subscribing to" / "Watch for X" — defensive Currents endings
+- "may", "could", "potentially", "appears to" stacked in a single sentence — hedge accumulation
+- "It remains to be seen whether..." — defers the take the publication exists to make
+- "Time will tell" / "Only time will tell" — same deferral, shorter form
+- "An interesting development" / "A notable development" — adjective doing the work of an editorial position
+- "Some observers believe..." / "Critics argue..." without naming the position the publication holds
+- "On the one hand... on the other hand..." structures that don't resolve to a take
+- Closings that re-summarise the body instead of advancing the position
+- "This space is evolving rapidly" — true of everything, says nothing
+
+**Adding new entries**: when an editor review flags a construction that's
+recurring, paraphrase it as a one-line entry here. Specific phrases
+("Trust, but verify") are stronger anti-patterns than abstract shapes
+("X outruns Y") — both belong in the list, but the specifics are what
+stop verbatim repeats.

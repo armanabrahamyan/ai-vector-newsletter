@@ -91,9 +91,22 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.12"
+SUMMARISE_PROMPT_VERSION = "v0.13"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.12-2026-05-31``. v0.12 (Pulse re-summarise):
+``summarise-v0.13-2026-06-03``. v0.13 (voice diversity injection):
+  - Two new pieces of context inlined into the per-story prompt and the
+    section-intro prompt. (A) Intros + first-story closings from the last
+    ``VOICE_DIVERSITY_LOOKBACK`` released issues, framed as RECENTLY USED
+    CONSTRUCTIONS - do not repeat. (B) Anti-patterns parsed from
+    EDITORIAL.md's "Anti-patterns the editor will flag" section, framed
+    as ANTI-PATTERNS - do not use today. Both blocks degrade gracefully:
+    missing past issues skip with INFO, missing anti-patterns section
+    falls back to no injection with INFO. Fixes the recurring drift
+    pattern caught by editor reviews on issues #8-#11 (May 30 - Jun 2)
+    where Big Picture / Hands-On intros and closings collapsed into
+    repeated constructions ("X outruns Y", "Verify before you X") across
+    consecutive issues.
+v0.12 (Pulse re-summarise):
   - After ``_pick_pulse`` chooses the winning cluster_id, the head-tier
     summary for that cluster is DISCARDED and the story is re-summarised
     under a Pulse-specific prompt variant (``section_override="pulse"``).
@@ -181,6 +194,24 @@ the cross-time-dedup lookback Retrieval Engineer uses."""
 MAX_CALLBACK_REFERENCES = 3
 """At most this many prior appearances are inlined per cluster -- keeps the
 prompt focused and prevents the model getting lost in history."""
+
+VOICE_DIVERSITY_LOOKBACK = 5
+"""How many recently-released issues to scan for intros/closings to inject
+as 'do not repeat' context. 5 matches the editor's review window."""
+
+EDITORIAL_ANTI_PATTERNS_HEADING = "## Anti-patterns the editor will flag"
+"""The exact heading in EDITORIAL.md that the summarise prompt parses for
+anti-pattern constructions. If editor renames the section, this constant
+moves in lockstep."""
+
+_EDITORIAL_MD_PATH = Path("EDITORIAL.md")
+"""Source of the anti-patterns catalogue. Repo-root markdown that the
+editor owns; we read it best-effort (missing file = no injection)."""
+
+_VOICE_DIVERSITY_CLOSING_TRUNC = 80
+"""Recent-issues closings are truncated to this character count before
+inlining. Keeps the do-not-repeat block compact -- the LLM only needs the
+construction's SHAPE, not the full sentence."""
 
 JSON_RETRY_BUDGET = 1
 """Mirrors rank.py: one retry on JSON parse failure; second failure -> the
@@ -1035,6 +1066,23 @@ def summarise(date: _dt.date | None = None) -> Issue:
                if c.prior_coverage_ref},
     )
 
+    # v0.13 (2026-06-03): voice-diversity context loaded ONCE per run and
+    # threaded through both the per-story summarise prompt and the
+    # section-intro prompt. Empty string when the released archive and
+    # EDITORIAL.md have nothing to contribute (forker day-one, test paths
+    # that don't seed history).
+    recent_voices = _load_recent_intros_and_closings(run_date)
+    anti_patterns = _load_editorial_anti_patterns()
+    voice_diversity_block = _render_voice_diversity_block(
+        recent_voices, anti_patterns,
+    )
+    if recent_voices or anti_patterns:
+        _LOG.info(
+            "summarise: voice-diversity injection active "
+            "(recent_issues=%d, anti_patterns=%d)",
+            len(recent_voices), len(anti_patterns),
+        )
+
     # --- Per-story summarisation -----------------------------------------
     blocks: list[tuple[RankedStory, SummaryBlock]] = []
     for story in top:
@@ -1051,7 +1099,8 @@ def summarise(date: _dt.date | None = None) -> Issue:
             callbacks = callbacks_by_root.get(cluster.prior_coverage_ref, [])
         try:
             block = _summarise_one(
-                story=story, cluster=cluster, items=items, callbacks=callbacks
+                story=story, cluster=cluster, items=items, callbacks=callbacks,
+                voice_diversity_block=voice_diversity_block,
             )
         except Exception:  # noqa: BLE001 -- never crash the issue on one bad story
             _LOG.exception(
@@ -1094,6 +1143,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
             items_by_id=items_by_id,
             editorial_config=editorial_config,
             callbacks_by_root=callbacks_by_root,
+            voice_diversity_block=voice_diversity_block,
         )
 
     # --- Section intros (Phase B) ---------------------------------------
@@ -1104,9 +1154,9 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # still ships. For Currents (Phase 2): the aggregate-direction lead
     # is editorially mandatory per EDITORIAL.md -- ``_populate_section_intro``
     # retries once on failure and logs a WARNING when both attempts miss.
-    _populate_section_intro(big_picture_section)
-    _populate_section_intro(hands_on_section)
-    _populate_section_intro(currents_section)
+    _populate_section_intro(big_picture_section, voice_diversity_block)
+    _populate_section_intro(hands_on_section, voice_diversity_block)
+    _populate_section_intro(currents_section, voice_diversity_block)
 
     # --- Shape post-condition (schema v3, 2026-05-30) -------------------
     # With tier as authority in section routing, an under-fed section is
@@ -1313,6 +1363,312 @@ def _iter_blocks(issue_payload: dict[str, Any]) -> Iterable[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
+# Voice diversity injection (v0.13, 2026-06-03).
+#
+# Two pieces of context inlined into BOTH the per-story summarise prompt
+# AND the section-intro prompt so the LLM does not slip into the recurring
+# default constructions the editor caught on issues #8-#11.
+#
+# (A) RECENTLY USED CONSTRUCTIONS -- pulled from the last
+#     ``VOICE_DIVERSITY_LOOKBACK`` RELEASED issues. For each past issue
+#     we extract the four section intro leads + the closing sentence of
+#     the Pulse story + the closing sentence of each section's first
+#     story. The prompt instructs the LLM not to reuse these
+#     constructions today.
+#
+# (B) ANTI-PATTERNS -- a parsed list from EDITORIAL.md's
+#     ``EDITORIAL_ANTI_PATTERNS_HEADING`` section. Editor-owned catalogue
+#     of constructions the LLM keeps falling into ("X outruns Y",
+#     "Verify before you X", etc).
+#
+# Both pieces are best-effort: a missing past issue is skipped with
+# INFO, an unparseable JSON is skipped with INFO, and the anti-patterns
+# section being absent (not yet added by editor, or rolled back) falls
+# back to no injection with a single INFO log. Nothing in this block
+# can crash the issue.
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class _PastIssueVoice:
+    """One past issue's intros + closings, in the shape the prompt needs.
+    ``intro_leads`` maps section name -> the LEAD phrase used that day
+    (None when the section had no intro -- Pulse always; older issues
+    occasionally for the others). ``first_story_closings`` maps section
+    name (including ``pulse``) -> the closing sentence of that section's
+    first story, truncated to ``_VOICE_DIVERSITY_CLOSING_TRUNC`` chars."""
+    issue_date: _dt.date
+    intro_leads: dict[str, str]
+    first_story_closings: dict[str, str]
+
+
+def _closing_sentence(summary: str) -> str:
+    """Pull the last sentence-shaped fragment from a summary body, truncated
+    to ``_VOICE_DIVERSITY_CLOSING_TRUNC`` chars. We split on full stops
+    (the body rule mandates a full-stop close), keep the last non-empty
+    fragment, and strip whitespace. Empty input -> empty string."""
+    s = (summary or "").strip()
+    if not s:
+        return ""
+    # Split on full stop; drop trailing empties from "...sentence." -> ["...sentence", ""].
+    parts = [p.strip() for p in s.split(".") if p.strip()]
+    if not parts:
+        return ""
+    last = parts[-1]
+    if len(last) > _VOICE_DIVERSITY_CLOSING_TRUNC:
+        last = last[:_VOICE_DIVERSITY_CLOSING_TRUNC].rstrip() + "..."
+    return last
+
+
+def _load_recent_intros_and_closings(
+    today: _dt.date,
+    lookback: int = VOICE_DIVERSITY_LOOKBACK,
+) -> list[_PastIssueVoice]:
+    """Walk back from ``today`` (exclusive) up to ``CALLBACK_LOOKBACK_DAYS``
+    calendar days and collect the first ``lookback`` released issues'
+    intro leads + first-story closings.
+
+    Returns newest-first. Tolerates missing or unparseable issues (skipped
+    with INFO log). When the released archive is empty -- a forker on day
+    one, or eval / test paths that don't seed history -- returns an empty
+    list and the caller renders no recent-issue context.
+
+    We walk by calendar day rather than directory listing because
+    ``paths.issue_path`` is the single source of truth for archive layout
+    (staging vs released split landed in Round B). A directory-listing
+    approach would couple the helper to the on-disk shape and break in
+    tests that monkeypatch ``RELEASED_ROOT``.
+    """
+    if lookback <= 0:
+        return []
+    out: list[_PastIssueVoice] = []
+    # Calendar window: scan back as far as the callback window so a slow
+    # weekend doesn't starve the injection. We stop as soon as we have
+    # ``lookback`` issues, so the worst-case cost is one stat per missing
+    # day up to the callback lookback (cheap).
+    max_days_back = max(lookback * 3, CALLBACK_LOOKBACK_DAYS)
+    for delta in range(1, max_days_back + 1):
+        if len(out) >= lookback:
+            break
+        day = today - _dt.timedelta(days=delta)
+        canonical_issue = paths.issue_path(day, canonical=True)
+        if not canonical_issue.exists():
+            continue
+        try:
+            payload = json.loads(canonical_issue.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 -- never crash the issue on a bad past file
+            _LOG.info(
+                "summarise: voice-diversity loader could not parse %s -- "
+                "skipping that day",
+                canonical_issue,
+            )
+            continue
+        if not isinstance(payload, dict):
+            _LOG.info(
+                "summarise: voice-diversity loader saw non-object payload "
+                "at %s -- skipping that day",
+                canonical_issue,
+            )
+            continue
+
+        intro_leads: dict[str, str] = {}
+        closings: dict[str, str] = {}
+
+        # Pulse: no intro_lead (the Pulse IS the framing); only the closing.
+        pulse = payload.get("pulse") or {}
+        if isinstance(pulse, dict):
+            stories = pulse.get("stories") or []
+            if isinstance(stories, list) and stories:
+                first = stories[0]
+                if isinstance(first, dict):
+                    closing = _closing_sentence(first.get("summary") or "")
+                    if closing:
+                        closings["pulse"] = closing
+
+        # The other three sections: each may carry an intro_lead and a
+        # first-story closing. Currents legacy alias on_the_radar also
+        # captured -- some archived issues used the old name and we still
+        # want to know the construction was used recently.
+        for section in payload.get("sections") or []:
+            if not isinstance(section, dict):
+                continue
+            name = section.get("name")
+            if not isinstance(name, str):
+                continue
+            # Normalise legacy ``on_the_radar`` -> ``currents`` so the prompt
+            # block reads with a single section vocabulary.
+            section_key = "currents" if name == "on_the_radar" else name
+            lead = section.get("intro_lead")
+            if isinstance(lead, str) and lead.strip():
+                intro_leads[section_key] = lead.strip()
+            stories = section.get("stories") or []
+            if isinstance(stories, list) and stories:
+                first = stories[0]
+                if isinstance(first, dict):
+                    closing = _closing_sentence(first.get("summary") or "")
+                    if closing:
+                        closings[section_key] = closing
+
+        out.append(_PastIssueVoice(
+            issue_date=day,
+            intro_leads=intro_leads,
+            first_story_closings=closings,
+        ))
+    return out
+
+
+def _load_editorial_anti_patterns(
+    editorial_md_path: Path = _EDITORIAL_MD_PATH,
+) -> list[str]:
+    """Parse the ``EDITORIAL_ANTI_PATTERNS_HEADING`` section of EDITORIAL.md
+    into a list of bullet contents (the text after the leading ``- ``).
+
+    Defensive: skip blank lines, skip lines that don't start with ``- ``,
+    stop at the next ``## `` heading or EOF. If the section is missing
+    entirely (editor hasn't authored it yet, or rolled back), log a single
+    INFO line and return an empty list. The summarise prompt then falls
+    back to no anti-pattern injection -- the recent-issues block still
+    fires.
+
+    The heading match is exact (case-sensitive, including the leading
+    ``## ``). The editor and LLM Engineer move ``EDITORIAL_ANTI_PATTERNS_HEADING``
+    in lockstep if the section is renamed.
+    """
+    if not editorial_md_path.exists():
+        _LOG.info(
+            "summarise: voice-diversity anti-patterns -- %s not found, "
+            "skipping anti-pattern injection",
+            editorial_md_path,
+        )
+        return []
+    try:
+        text = editorial_md_path.read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        _LOG.info(
+            "summarise: voice-diversity anti-patterns -- could not read %s, "
+            "skipping anti-pattern injection",
+            editorial_md_path,
+        )
+        return []
+
+    target = EDITORIAL_ANTI_PATTERNS_HEADING
+    lines = text.splitlines()
+    # Find the heading line. Match the trimmed line for robustness against
+    # trailing whitespace; the rest of the parse uses the original line.
+    start_idx: int | None = None
+    for i, line in enumerate(lines):
+        if line.strip() == target:
+            start_idx = i + 1
+            break
+    if start_idx is None:
+        _LOG.info(
+            "summarise: voice-diversity anti-patterns -- heading %r not "
+            "found in %s, skipping anti-pattern injection",
+            target, editorial_md_path,
+        )
+        return []
+
+    out: list[str] = []
+    for line in lines[start_idx:]:
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            # Next ## heading -- end of our section.
+            break
+        if not stripped:
+            continue
+        if not stripped.startswith("- "):
+            # Body prose inside the section -- skip without aborting.
+            continue
+        content = stripped[2:].strip()
+        if content:
+            out.append(content)
+    return out
+
+
+def _render_voice_diversity_block(
+    recent: list[_PastIssueVoice],
+    anti_patterns: list[str],
+) -> str:
+    """Format the two pieces into the prompt segment. Returns an empty
+    string when both pieces are empty -- the caller then injects nothing
+    (no header for an empty constraint).
+
+    Layout (compact, low token cost):
+
+        VOICE DIVERSITY -- the editor will flag repeats from recent issues
+
+        RECENTLY USED CONSTRUCTIONS -- do not repeat:
+          [pulse]
+            - 2026-06-02 close: "..."
+          [big_picture]
+            - 2026-06-02 lead: "..."
+            - 2026-06-02 close: "..."
+            ...
+          ...
+
+        Today's intros and closings must NOT reuse the constructions above.
+        Vary the sentence shape AND the underlying epistemic posture. Two
+        sections of today's issue cannot share a thesis statement. If
+        today's news genuinely is similar to a recent issue's, the
+        editorial POSITION may recur -- but the PROSE must not.
+
+        ANTI-PATTERNS -- do not use these constructions today (editor will
+        flag them in review):
+          - "X outruns Y" / "X is outpacing Y" / ...
+          - "Verify before you [verb]" / ...
+    """
+    if not recent and not anti_patterns:
+        return ""
+
+    parts: list[str] = [
+        "VOICE DIVERSITY -- the editor will flag repeats from recent issues",
+    ]
+
+    if recent:
+        parts.append("")
+        parts.append("RECENTLY USED CONSTRUCTIONS -- do not repeat:")
+        # Group by section so the LLM can see "lead" vs "close" cleanly.
+        section_order = ("pulse", "big_picture", "hands_on", "currents")
+        for section_name in section_order:
+            section_lines: list[str] = []
+            for past in recent:
+                date_iso = past.issue_date.isoformat()
+                lead = past.intro_leads.get(section_name)
+                if lead:
+                    section_lines.append(
+                        f"    - {date_iso} lead: {lead!r}"
+                    )
+                close = past.first_story_closings.get(section_name)
+                if close:
+                    section_lines.append(
+                        f"    - {date_iso} close: {close!r}"
+                    )
+            if section_lines:
+                parts.append(f"  [{section_name}]")
+                parts.extend(section_lines)
+
+        parts.append("")
+        parts.append(
+            "Today's intros and closings must NOT reuse the constructions "
+            "above. Vary the sentence shape AND the underlying epistemic "
+            "posture. Two sections of today's issue cannot share a thesis "
+            "statement. If today's news genuinely is similar to a recent "
+            "issue's, the editorial POSITION may recur -- but the PROSE "
+            "must not."
+        )
+
+    if anti_patterns:
+        parts.append("")
+        parts.append(
+            "ANTI-PATTERNS -- do not use these constructions today (editor "
+            "will flag them in review):"
+        )
+        for ap in anti_patterns:
+            parts.append(f"  - {ap}")
+
+    return "\n".join(parts) + "\n"
+
+
+# ---------------------------------------------------------------------------
 # Per-story summarisation.
 # ---------------------------------------------------------------------------
 
@@ -1332,6 +1688,7 @@ def _summarise_one(
     cluster: Cluster,
     items: list[Item],
     callbacks: list[_CallbackRef],
+    voice_diversity_block: str = "",
 ) -> SummaryBlock | None:
     """One LLM call. Returns a validated ``SummaryBlock`` or ``None`` if
     the call / parse / validation failed after the retry budget."""
@@ -1346,7 +1703,10 @@ def _summarise_one(
         url = str(it.url)
         excerpts[url] = _fetch_source_excerpt(url)
 
-    prompt = _build_summary_prompt(story, cluster, items, callbacks, excerpts)
+    prompt = _build_summary_prompt(
+        story, cluster, items, callbacks, excerpts,
+        voice_diversity_block=voice_diversity_block,
+    )
 
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
     if draft is None:
@@ -1386,6 +1746,7 @@ def _resummarise_as_pulse(
     items: list[Item],
     callbacks: list[_CallbackRef],
     original_block: SummaryBlock,
+    voice_diversity_block: str = "",
 ) -> SummaryBlock | None:
     """Re-run the per-story summarise prompt under the Pulse-specific
     voice + closing shape (v0.12, 2026-05-31).
@@ -1423,6 +1784,7 @@ def _resummarise_as_pulse(
     prompt = _build_summary_prompt(
         story, cluster, items, callbacks, excerpts,
         section_override="pulse",
+        voice_diversity_block=voice_diversity_block,
     )
 
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
@@ -1524,6 +1886,7 @@ def _build_summary_prompt(
     callbacks: list[_CallbackRef],
     excerpts: dict[str, str] | None = None,
     section_override: str | None = None,
+    voice_diversity_block: str = "",
 ) -> str:
     """Assemble the per-story summarisation prompt with voice + skills
     inlined and callback context attached when present.
@@ -1639,6 +2002,14 @@ def _build_summary_prompt(
         if section_voice else ""
     )
 
+    # v0.13 (2026-06-03): voice-diversity injection sits AFTER section voice
+    # so the LLM reads the section's rules first, then the "do not reuse
+    # these recent constructions" guard. Empty string when the loader has
+    # nothing to report (empty archive, missing EDITORIAL.md section).
+    voice_diversity_segment = (
+        f"\n{voice_diversity_block}\n" if voice_diversity_block else ""
+    )
+
     # v0.12 (2026-05-31): when re-summarising under the Pulse override, we
     # repeat the plain-take rule as the LAST instruction the LLM sees --
     # right before the JSON schema. LLM attention skews to the most recent
@@ -1668,7 +2039,7 @@ selected for the issue; your job is to write it well.
 
 {_VOICE_BLOCK}
 {_EDITORIAL_FOCUS_BLOCK}
-{_FINANCE_LENS_BLOCK}{section_voice_block}
+{_FINANCE_LENS_BLOCK}{section_voice_block}{voice_diversity_segment}
 RANKER NOTES (from the rank stage, for context only -- not for echoing):
   score: {story.score} / 100
   breakdown: {breakdown_str}
@@ -2082,6 +2453,7 @@ def _maybe_resummarise_pulse(
     clusters_by_id: dict[str, Cluster] | None,
     items_by_id: dict[str, Item] | None,
     callbacks_by_root: dict[str, list[_CallbackRef]] | None,
+    voice_diversity_block: str = "",
 ) -> None:
     """Re-summarise the Pulse-elected cluster under the Pulse-specific
     prompt and replace its entry in ``by_id`` in place.
@@ -2138,6 +2510,7 @@ def _maybe_resummarise_pulse(
             items=items,
             callbacks=callbacks,
             original_block=original_block,
+            voice_diversity_block=voice_diversity_block,
         )
     except Exception:  # noqa: BLE001 -- never crash the issue on the re-summarise
         _LOG.exception(
@@ -2174,6 +2547,7 @@ def _assemble_sections(
     items_by_id: dict[str, Item] | None = None,
     editorial_config: EditorialConfig | None = None,
     callbacks_by_root: dict[str, list[_CallbackRef]] | None = None,
+    voice_diversity_block: str = "",
 ) -> tuple[IssueSection, IssueSection, IssueSection, IssueSection]:
     """Place every summarised story into exactly one section. Returns the
     four sections in display order: pulse, big_picture, hands_on, currents.
@@ -2248,6 +2622,7 @@ def _assemble_sections(
         clusters_by_id=clusters_by_id,
         items_by_id=items_by_id,
         callbacks_by_root=callbacks_by_root,
+        voice_diversity_block=voice_diversity_block,
     )
 
     # Pulse's category counts toward the per-issue cap. Pulse is a single
@@ -2979,7 +3354,10 @@ _SECTION_INTRO_HINTS: dict[str, str] = {
 _SECTIONS_WITH_MANDATORY_INTRO: set[str] = {"currents"}
 
 
-def _populate_section_intro(section: IssueSection) -> None:
+def _populate_section_intro(
+    section: IssueSection,
+    voice_diversity_block: str = "",
+) -> None:
     """Generate {intro_lead, intro_body} for a section via one LLM call.
     Mutates the section in place.
 
@@ -3018,6 +3396,15 @@ def _populate_section_intro(section: IssueSection) -> None:
             "claim the reader can hold in their head."
         )
 
+    # v0.13 (2026-06-03): voice-diversity injection sits right above the
+    # INSTRUCTIONS block so the LLM reads the section context, the recent
+    # constructions to avoid, then the writing rules. Empty string when
+    # the caller has nothing to inject -- the prompt collapses to the
+    # pre-v0.13 shape.
+    voice_diversity_segment = (
+        f"\n{voice_diversity_block}\n" if voice_diversity_block else ""
+    )
+
     prompt = f"""\
 You are writing the section intro for the "{section.name}" section of
 today's AI Vector issue -- a daily AI newsletter with a financial-services
@@ -3028,7 +3415,7 @@ SECTION CONTEXT
 
 STORIES IN THIS SECTION
 {stories_block}
-
+{voice_diversity_segment}
 INSTRUCTIONS
 - LEAD: a tight bold phrase (2-5 words, full-stop at the end). It IS
   the section's editorial posture for today.{currents_lead_addendum}

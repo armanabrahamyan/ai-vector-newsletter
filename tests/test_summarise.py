@@ -2008,7 +2008,7 @@ class TestPulseResummarise:
         )
         calls: list[str] = []
 
-        def fake_resummarise(*, story, cluster, items, callbacks, original_block):
+        def fake_resummarise(*, story, cluster, items, callbacks, original_block, **_kwargs):
             calls.append(cluster.cluster_id)
             return replacement
 
@@ -2061,7 +2061,7 @@ class TestPulseResummarise:
             signal="act",
         )
 
-        def fake_resummarise(*, story, cluster, items, callbacks, original_block):
+        def fake_resummarise(*, story, cluster, items, callbacks, original_block, **_kwargs):
             return replacement
 
         monkeypatch.setattr(
@@ -2104,7 +2104,7 @@ class TestPulseResummarise:
 
         cluster, item, story, original_block = self._make_fixtures()
 
-        def raising_resummarise(*, story, cluster, items, callbacks, original_block):
+        def raising_resummarise(*, story, cluster, items, callbacks, original_block, **_kwargs):
             raise RuntimeError("simulated LLM timeout")
 
         monkeypatch.setattr(
@@ -2133,3 +2133,493 @@ class TestPulseResummarise:
             "after re-summarise failure; saw: "
             + repr([(r.levelname, r.message) for r in caplog.records])
         )
+
+
+# ===========================================================================
+# Voice diversity injection (v0.13, 2026-06-03).
+#
+# Two pieces of context inlined into BOTH the per-story summarise prompt
+# AND the section-intro prompt so the LLM stops repeating constructions
+# the editor caught on issues #8-#11 (e.g. "X outruns Y", "Verify before
+# you X"). The tests cover the three loaders + the prompt rendering +
+# the version bump, mocking the filesystem so we don't touch
+# ``data/released/`` or the live ``EDITORIAL.md``.
+# ===========================================================================
+
+class TestVoiceDiversityVersionBump:
+    """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
+    must move with it so the audit trail picks up the shift."""
+
+    def test_summarise_prompt_version_is_v0_13(self) -> None:
+        from src.summarise import SUMMARISE_PROMPT_VERSION
+        assert SUMMARISE_PROMPT_VERSION == "v0.13"
+
+
+class TestVoiceDiversityConstants:
+    """The two new module constants must be present + carry the documented
+    defaults so the editor / eval engineer can grep for them without
+    chasing the import."""
+
+    def test_lookback_default_matches_editor_review_window(self) -> None:
+        from src.summarise import VOICE_DIVERSITY_LOOKBACK
+        assert VOICE_DIVERSITY_LOOKBACK == 5
+
+    def test_anti_patterns_heading_matches_editorial_md_contract(self) -> None:
+        from src.summarise import EDITORIAL_ANTI_PATTERNS_HEADING
+        assert EDITORIAL_ANTI_PATTERNS_HEADING == (
+            "## Anti-patterns the editor will flag"
+        )
+
+
+class TestLoadEditorialAntiPatterns:
+    """Parse the catalogue section from EDITORIAL.md. Defensive on
+    formatting variations, falls back to empty list on missing section /
+    missing file."""
+
+    def test_parses_bullets_under_anti_patterns_heading(
+        self, tmp_path,
+    ) -> None:
+        from src.summarise import _load_editorial_anti_patterns
+        md = tmp_path / "EDITORIAL.md"
+        md.write_text(
+            "# EDITORIAL.md\n"
+            "\n"
+            "Some prose at the top.\n"
+            "\n"
+            "## Anti-patterns the editor will flag\n"
+            "\n"
+            "Quick framing prose that should NOT be picked up.\n"
+            "\n"
+            '- "X outruns Y" / "X is outpacing Y" / "X is outrunning Y"\n'
+            '- "Verify before you [verb]" / "Verify before you adopt"\n'
+            "- Two sections sharing one thesis statement\n"
+            "\n"
+            "## Next section\n"
+            "\n"
+            "- This bullet must NOT be picked up.\n",
+            encoding="utf-8",
+        )
+        out = _load_editorial_anti_patterns(md)
+        assert out == [
+            '"X outruns Y" / "X is outpacing Y" / "X is outrunning Y"',
+            '"Verify before you [verb]" / "Verify before you adopt"',
+            "Two sections sharing one thesis statement",
+        ]
+
+    def test_section_missing_returns_empty_and_logs_info(
+        self, tmp_path, caplog,
+    ) -> None:
+        import logging as _logging
+        from src.summarise import _load_editorial_anti_patterns
+        md = tmp_path / "EDITORIAL.md"
+        md.write_text(
+            "# EDITORIAL.md\n\n"
+            "## A different heading\n\n"
+            "- This bullet belongs to no anti-pattern catalogue.\n",
+            encoding="utf-8",
+        )
+        with caplog.at_level(_logging.INFO, logger="ai_vector.summarise"):
+            out = _load_editorial_anti_patterns(md)
+        assert out == []
+        # INFO log (not WARNING -- the section is optional).
+        assert any(
+            r.levelno == _logging.INFO
+            and "anti-pattern" in r.message.lower()
+            for r in caplog.records
+        )
+
+    def test_missing_file_returns_empty(self, tmp_path) -> None:
+        from src.summarise import _load_editorial_anti_patterns
+        out = _load_editorial_anti_patterns(tmp_path / "nope.md")
+        assert out == []
+
+    def test_skips_blank_lines_and_non_bullets_inside_section(
+        self, tmp_path,
+    ) -> None:
+        """Defensive parsing: a paragraph or stray blank line inside the
+        anti-patterns section should not crash or absorb-as-bullet."""
+        from src.summarise import _load_editorial_anti_patterns
+        md = tmp_path / "EDITORIAL.md"
+        md.write_text(
+            "## Anti-patterns the editor will flag\n"
+            "\n"
+            "Editor's note: these are the recurring constructions.\n"
+            "\n"
+            "- first anti-pattern\n"
+            "\n"
+            "Inline reminder.\n"
+            "\n"
+            "- second anti-pattern\n",
+            encoding="utf-8",
+        )
+        assert _load_editorial_anti_patterns(md) == [
+            "first anti-pattern",
+            "second anti-pattern",
+        ]
+
+
+class TestLoadRecentIntrosAndClosings:
+    """The recent-issues loader walks the released archive newest-first
+    and gathers each issue's section intros + first-story closings. It
+    must tolerate missing days, malformed files, and the legacy
+    ``on_the_radar`` -> ``currents`` rename."""
+
+    @staticmethod
+    def _write_issue(
+        root, day, *,
+        pulse_closing="A short Pulse take.",
+        big_lead="Trust the system.",
+        big_closing="Audit the architecture today.",
+        hands_lead="Bench before you budget.",
+        hands_closing="Clone v1 and measure.",
+        currents_lead="Models are getting faster.",
+        currents_closing="If it holds, ship; if not, watch.",
+    ):
+        """Write a minimal released issue.json fixture for one date."""
+        import datetime as _dt
+        import json as _json
+        from src import paths as _paths
+        issue_path = _paths.issue_path(day, canonical=True)
+        issue_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "issue_number": 1,
+            "date": day.isoformat(),
+            "pulse": {
+                "name": "pulse",
+                "stories": [
+                    {
+                        "headline": "p",
+                        "summary": f"Lead. Middle. {pulse_closing}",
+                    }
+                ],
+                "intro_lead": None,
+            },
+            "sections": [
+                {
+                    "name": "big_picture",
+                    "stories": [
+                        {
+                            "headline": "b",
+                            "summary": f"Lead. Middle. {big_closing}",
+                        }
+                    ],
+                    "intro_lead": big_lead,
+                },
+                {
+                    "name": "hands_on",
+                    "stories": [
+                        {
+                            "headline": "h",
+                            "summary": f"Lead. Middle. {hands_closing}",
+                        }
+                    ],
+                    "intro_lead": hands_lead,
+                },
+                {
+                    "name": "currents",
+                    "stories": [
+                        {
+                            "headline": "c",
+                            "summary": f"Lead. Middle. {currents_closing}",
+                        }
+                    ],
+                    "intro_lead": currents_lead,
+                },
+            ],
+        }
+        issue_path.write_text(_json.dumps(payload), encoding="utf-8")
+
+    def test_no_prior_issues_returns_empty(
+        self, tmp_data_root,
+    ) -> None:
+        from src.summarise import _load_recent_intros_and_closings
+        today = _dt.date(2026, 6, 3)
+        out = _load_recent_intros_and_closings(today)
+        assert out == []
+
+    def test_single_prior_issue_picked_up(
+        self, tmp_data_root,
+    ) -> None:
+        from src.summarise import _load_recent_intros_and_closings
+        today = _dt.date(2026, 6, 3)
+        self._write_issue(tmp_data_root, _dt.date(2026, 6, 2))
+        out = _load_recent_intros_and_closings(today)
+        assert len(out) == 1
+        past = out[0]
+        assert past.issue_date == _dt.date(2026, 6, 2)
+        assert past.intro_leads["big_picture"] == "Trust the system."
+        assert past.intro_leads["hands_on"] == "Bench before you budget."
+        assert past.intro_leads["currents"] == "Models are getting faster."
+        # Pulse never has an intro_lead.
+        assert "pulse" not in past.intro_leads
+        # Closings populated for all four section keys.
+        assert past.first_story_closings["pulse"] == "A short Pulse take"
+        assert past.first_story_closings["big_picture"] == (
+            "Audit the architecture today"
+        )
+
+    def test_lookback_caps_to_five_with_seven_prior_issues(
+        self, tmp_data_root,
+    ) -> None:
+        from src.summarise import _load_recent_intros_and_closings
+        today = _dt.date(2026, 6, 10)
+        # Seven prior days, each with a unique big_lead so we can verify
+        # the FIVE newest were taken.
+        for delta in range(1, 8):
+            d = today - _dt.timedelta(days=delta)
+            self._write_issue(
+                tmp_data_root, d,
+                big_lead=f"Lead {d.isoformat()}.",
+            )
+        out = _load_recent_intros_and_closings(today)
+        # Five newest, in newest-first order.
+        assert [p.issue_date for p in out] == [
+            today - _dt.timedelta(days=k) for k in range(1, 6)
+        ]
+        assert out[0].intro_leads["big_picture"] == (
+            f"Lead {(today - _dt.timedelta(days=1)).isoformat()}."
+        )
+
+    def test_unparseable_issue_json_skipped_with_info_log(
+        self, tmp_data_root, caplog,
+    ) -> None:
+        import logging as _logging
+        from src import paths as _paths
+        from src.summarise import _load_recent_intros_and_closings
+        today = _dt.date(2026, 6, 3)
+        # Write a malformed JSON issue file on day -1 + a valid one on -2.
+        bad_day = today - _dt.timedelta(days=1)
+        bad_path = _paths.issue_path(bad_day, canonical=True)
+        bad_path.parent.mkdir(parents=True, exist_ok=True)
+        bad_path.write_text("{ not valid json", encoding="utf-8")
+        self._write_issue(tmp_data_root, today - _dt.timedelta(days=2))
+        with caplog.at_level(_logging.INFO, logger="ai_vector.summarise"):
+            out = _load_recent_intros_and_closings(today)
+        # Bad file skipped; the good one still surfaced.
+        assert [p.issue_date for p in out] == [today - _dt.timedelta(days=2)]
+        # INFO log fired naming the unparseable file.
+        assert any(
+            r.levelno == _logging.INFO
+            and "could not parse" in r.message
+            for r in caplog.records
+        )
+
+    def test_legacy_on_the_radar_normalised_to_currents(
+        self, tmp_data_root,
+    ) -> None:
+        """Archived issues used ``on_the_radar`` before the v0.10 rename;
+        the loader must surface that lead under the ``currents`` key so
+        the diversity block reads with a single section vocabulary."""
+        import datetime as _dt
+        import json as _json
+        from src import paths as _paths
+        from src.summarise import _load_recent_intros_and_closings
+        today = _dt.date(2026, 6, 3)
+        day = today - _dt.timedelta(days=1)
+        issue_path = _paths.issue_path(day, canonical=True)
+        issue_path.parent.mkdir(parents=True, exist_ok=True)
+        issue_path.write_text(
+            _json.dumps({
+                "issue_number": 1,
+                "date": day.isoformat(),
+                "pulse": {"name": "pulse", "stories": []},
+                "sections": [
+                    {
+                        "name": "on_the_radar",
+                        "stories": [
+                            {
+                                "headline": "x",
+                                "summary": "Lead. Mid. Legacy close.",
+                            }
+                        ],
+                        "intro_lead": "Legacy radar posture.",
+                    },
+                ],
+            }),
+            encoding="utf-8",
+        )
+        out = _load_recent_intros_and_closings(today)
+        assert out[0].intro_leads["currents"] == "Legacy radar posture."
+        assert out[0].first_story_closings["currents"] == "Legacy close"
+
+
+class TestRenderVoiceDiversityBlock:
+    """The rendered prompt segment must group constructions by section,
+    quote them so the LLM can match exact phrasing, and include the
+    'do not repeat' instruction + the anti-pattern list when supplied."""
+
+    def _past_issues(self):
+        import datetime as _dt
+        from src.summarise import _PastIssueVoice
+        return [
+            _PastIssueVoice(
+                issue_date=_dt.date(2026, 6, 2),
+                intro_leads={
+                    "big_picture": "Speed is outrunning safety.",
+                    "hands_on": "Verify before you adopt.",
+                    "currents": "Capability races ahead of control.",
+                },
+                first_story_closings={
+                    "pulse": "On-device agentic AI is no longer a research promise",
+                    "big_picture": "When agent commit volume doubles again, which part",
+                    "hands_on": "Try the pattern via the public Hermes Agent walkthrough",
+                    "currents": "ask vendors whether their models handle non-stationary",
+                },
+            ),
+            _PastIssueVoice(
+                issue_date=_dt.date(2026, 6, 1),
+                intro_leads={
+                    "big_picture": "Capability outruns control.",
+                    "hands_on": "Verify before you deploy.",
+                },
+                first_story_closings={
+                    "pulse": "Single-source reporting from a Future of Life newsletter",
+                    "big_picture": "If your agents mix client documents with external calls",
+                    "hands_on": "Clone the Nano variant against your simulation pipeline",
+                },
+            ),
+        ]
+
+    def test_renders_recent_constructions_grouped_by_section(self) -> None:
+        from src.summarise import _render_voice_diversity_block
+        out = _render_voice_diversity_block(self._past_issues(), [])
+        # Section headers present.
+        assert "[pulse]" in out
+        assert "[big_picture]" in out
+        assert "[hands_on]" in out
+        assert "[currents]" in out
+        # Specific constructions quoted (matches the editor's flagged set).
+        assert "'Speed is outrunning safety.'" in out
+        assert "'Verify before you adopt.'" in out
+        assert "'Capability outruns control.'" in out
+        assert "'Verify before you deploy.'" in out
+        # Dates are tagged so the LLM sees recency.
+        assert "2026-06-02 lead" in out
+        assert "2026-06-01 lead" in out
+        # Do-not-repeat instruction present.
+        assert "do not repeat" in out.lower()
+        assert "thesis statement" in out.lower()
+
+    def test_renders_anti_patterns_when_supplied(self) -> None:
+        from src.summarise import _render_voice_diversity_block
+        anti = [
+            '"X outruns Y" / "X is outpacing Y"',
+            '"Verify before you [verb]"',
+        ]
+        out = _render_voice_diversity_block([], anti)
+        assert "ANTI-PATTERNS" in out
+        assert '"X outruns Y" / "X is outpacing Y"' in out
+        assert '"Verify before you [verb]"' in out
+
+    def test_empty_inputs_render_empty_block(self) -> None:
+        from src.summarise import _render_voice_diversity_block
+        assert _render_voice_diversity_block([], []) == ""
+
+
+class TestVoiceDiversityBlockReachesPromptBuilders:
+    """The block must arrive in BOTH the per-story summarise prompt and
+    the section-intro prompt so neither writing surface drifts back into
+    the recent constructions."""
+
+    def test_per_story_prompt_contains_block(self) -> None:
+        from src.summarise import _build_summary_prompt
+        breakdown = {
+            "significance": 60, "hands_on_utility": 60,
+            "big_picture_relevance": 60, "financial_services_impact": 25,
+            "freshness_momentum": 60,
+        }
+        story = RankedStory(
+            cluster_id="c_0123456789abcdef",
+            score=55, breakdown=breakdown,
+            audience_tags=["general"],  # type: ignore[arg-type]
+            rationale="t", tier="big_picture", prompt_version="v0.2",
+        )
+        cluster = Cluster(
+            cluster_id=story.cluster_id, item_ids=["i_x"],
+            canonical_title="t", sources=["src_a"],
+            earliest_published=FIXED_EARLIER, size=1,
+        )
+        item = Item(
+            id="i_x", source="src_a", source_type="rss",
+            url="https://example.com/x",  # type: ignore[arg-type]
+            title="t", published_at=FIXED_EARLIER, raw_summary="",
+            fetched_at=FIXED_NOW, trust_weight=2,
+        )
+        block = (
+            "VOICE DIVERSITY -- the editor will flag repeats from recent issues\n"
+            "RECENTLY USED CONSTRUCTIONS -- do not repeat:\n"
+            "  [big_picture]\n"
+            "    - 2026-06-02 lead: 'Speed is outrunning safety.'\n"
+        )
+        prompt = _build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            voice_diversity_block=block,
+        )
+        assert "VOICE DIVERSITY" in prompt
+        assert "Speed is outrunning safety." in prompt
+
+    def test_per_story_prompt_omits_block_when_empty(self) -> None:
+        from src.summarise import _build_summary_prompt
+        breakdown = {
+            "significance": 60, "hands_on_utility": 60,
+            "big_picture_relevance": 60, "financial_services_impact": 25,
+            "freshness_momentum": 60,
+        }
+        story = RankedStory(
+            cluster_id="c_0123456789abcdef",
+            score=55, breakdown=breakdown,
+            audience_tags=["general"],  # type: ignore[arg-type]
+            rationale="t", tier="big_picture", prompt_version="v0.2",
+        )
+        cluster = Cluster(
+            cluster_id=story.cluster_id, item_ids=["i_x"],
+            canonical_title="t", sources=["src_a"],
+            earliest_published=FIXED_EARLIER, size=1,
+        )
+        item = Item(
+            id="i_x", source="src_a", source_type="rss",
+            url="https://example.com/x",  # type: ignore[arg-type]
+            title="t", published_at=FIXED_EARLIER, raw_summary="",
+            fetched_at=FIXED_NOW, trust_weight=2,
+        )
+        prompt = _build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            voice_diversity_block="",
+        )
+        assert "VOICE DIVERSITY" not in prompt
+
+    def test_section_intro_prompt_includes_block(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """``_populate_section_intro`` builds its own prompt; it must
+        thread the diversity block in too. Mock the LLM call and capture
+        the prompt it was handed."""
+        from src import summarise as summarise_mod
+        section = IssueSection(
+            name="big_picture",
+            stories=[
+                SummaryBlock(
+                    story_id="c_0123456789abcdef",
+                    headline="h1",
+                    summary="A body that satisfies the validator threshold "
+                            "for word count and lands cleanly somewhere.",
+                    source_urls=["https://example.com/x"],  # type: ignore[list-item]
+                )
+            ],
+        )
+        captured: dict[str, str] = {}
+
+        def fake_llm_call(prompt, **_kwargs):
+            captured["prompt"] = prompt
+            return '{"lead": "Fresh lead.", "body": "Body with twenty plus words for the test framing across these one stories."}'
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm_call)
+        block = (
+            "VOICE DIVERSITY -- the editor will flag repeats from recent issues\n"
+            "RECENTLY USED CONSTRUCTIONS -- do not repeat:\n"
+            "  [big_picture]\n"
+            "    - 2026-06-02 lead: 'Speed is outrunning safety.'\n"
+        )
+        summarise_mod._populate_section_intro(section, block)
+        assert "VOICE DIVERSITY" in captured["prompt"]
+        assert "Speed is outrunning safety." in captured["prompt"]
