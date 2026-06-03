@@ -1,0 +1,113 @@
+{
+  "schema_version": 5,
+  "issue_number": 12,
+  "revision": 0,
+  "date": "2026-06-03",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_0c7fbc4090dbebbe",
+        "headline": "Smarter AI agents can't yet be read by cheaper oversight models",
+        "summary": "Multi-agent pipelines assume a capable model's reasoning can be checked by a cheaper one. A revised paper formalises 'weak-to-strong legibility' as a measurable property of those reasoning traces, arguing existing metrics miss thoroughness entirely. No code or benchmarks are public yet. The gap between what powerful models reason and what cheaper monitors can follow is now a named problem.",
+        "source_urls": [
+          "https://arxiv.org/abs/2603.20508"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "discuss"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_9cf85c5c8b8547b8",
+          "headline": "Microsoft builds frontier AI models from scratch, challenging OpenAI",
+          "summary": "Microsoft used Build to announce seven MAI models, led by MAI-Thinking-1, a reasoning model trained on 30 trillion tokens with no distillation from third-party models. It claims 97% on AIME 2025 and 53% on SWE-Bench Pro. Benchmarks are vendor-supplied. If you're on Azure renegotiating model contracts, does this change what you'd pay OpenAI for?",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-microsoft-build-mai-thinking"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_32683090478a8c5d",
+          "headline": "Language models are unreliable safety judges for financial advice",
+          "summary": "Language models used as automated safety judges disagree with each other and themselves on financial-advice harm, missing subtle violations while flagging obvious violence reliably. Inconsistency also shifts by writing style and language. Single paper, no accompanying code. Measure inter-judge disagreement before treating any one model's safety verdict as authoritative in a regulated eval pipeline.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.31381"
+          ],
+          "prior_coverage_ref": "c_411000827997d8a3",
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_dd75aed25b3d184c",
+          "headline": "Multi-agent AI systems reach consensus by forgetting the facts",
+          "summary": "When multiple language models deliberate, they tend to agree more while knowing less. A new diagnostic framework, DelibTrace, tracked issue-critical facts across discussion rounds and found up to 72% were lost before consensus formed. No code is confirmed available yet. If you're designing multi-agent systems for research, analysis, or decisions, consensus is not a reliability signal.",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.03032"
+          ],
+          "prior_coverage_ref": "c_3e0670e5d0f175be",
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Reliability gaps compound.",
+      "intro_body": "Vendor benchmarks, safety evaluations, and multi-agent reasoning all show the same structural weakness this week: the outputs look confident while the foundations underneath them remain unverified."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_ebb753a94eefd561",
+          "headline": "New legal benchmark finds pairwise scoring beats rubrics for AI evaluation",
+          "summary": "JudgmentBench pairs 1,539 rubric scores with 1,530 pairwise preference judgements from practising attorneys across 30 legal tasks. Pairwise scoring recovered the intended quality ranking with a Spearman correlation of 0.908; rubrics managed just 0.150. Dataset is public; no code repo yet. Switch your language-model judge pipeline to pairwise comparisons before your next evaluation design.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.25240"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Methodology before metric.",
+      "intro_body": "Today's signal is a single public dataset, no code attached. The practitioner takeaway is structural: how you score AI outputs matters more than which model you score."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_67cb9d87ae28a02f",
+          "headline": "The next video AI leap is agents, not better video models",
+          "summary": "Early signal from a practitioner who built Grok Imagine in three months: video's next leap comes from language-model-driven agents that plan, edit, and iterate, not from training on more video data. Single-source podcast, no benchmarks or code. If this holds, your video tooling shortlist needs an agentic evaluation column; if not, diffusion scaling remains the dominant bet.",
+          "source_urls": [
+            "https://www.latent.space/p/video-agents"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        }
+      ],
+      "intro_lead": "Architecture is the next battleground.",
+      "intro_body": "A single practitioner view, unverified by benchmarks or code. Worth noting because if the thesis holds, the competitive lever in video AI shifts from data scale to system design."
+    }
+  ],
+  "generated_at": "2026-06-03T13:53:49.745823Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.16",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: amber -- hands_on: 1 (tier pool exhausted)"
+}
