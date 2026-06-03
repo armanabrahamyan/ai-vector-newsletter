@@ -1,0 +1,181 @@
+{
+  "schema_version": 5,
+  "issue_number": 11,
+  "revision": 0,
+  "date": "2026-06-02",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_646e7b9b18a8ab09",
+        "headline": "Computer-use agents can now run locally, fast enough for production",
+        "summary": "Holo3.1 ships quantised weights that run a computer-use agent entirely on local hardware, hitting 79.3% on AndroidWorld's mobile benchmark, up from 67% in the prior version. Benchmarks are vendor-supplied, so treat the numbers as directional. On-device agentic AI is no longer a research promise; the deployment calculus for privacy-sensitive workflows just shifted.",
+        "source_urls": [
+          "https://huggingface.co/blog/Hcompany/holo31"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_d276f23542836947",
+          "headline": "AI code volume grew 1,400% in 2026; GitHub's infrastructure is cracking",
+          "summary": "AI-generated code on GitHub grew 1,400% in 2026, straining infrastructure built for human-paced development. COO Kyle Daigle's response: atomic micro-skills over monolithic agents, Copilot embedded in existing workflows rather than new tools. Single-source interview, no public architecture docs yet. When agent commit volume doubles again, which part of your delivery pipeline breaks first?",
+          "source_urls": [
+            "https://www.latent.space/p/github"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_9606ebbfc5a462e8",
+          "headline": "AI agents leak user intent to outside services before they act",
+          "summary": "Agents fire speculative tool calls to cut latency, leaking inferred user intent to external services before committing. Access controls cannot unsend what an observer already holds; only suppressing the call before dispatch works. Single arXiv paper, prototype runtime, no public code. Which third-party APIs in your agent pipeline are authorised to hold that inference before your agent decides?",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.02483"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_1fcfe0c488eeba30",
+          "headline": "AI agents leak sensitive conclusions by combining harmless tool outputs",
+          "summary": "A new 1,000-case benchmark found that agents combining individually harmless tool outputs leaked sensitive conclusions 88.6% of the time across six models; prompt-only safeguards gained barely 3 points. The work is preprint-only, no production code. If your agents query multiple data sources, is your architecture reviewed for this failure mode?",
+          "source_urls": [
+            "https://arxiv.org/abs/2512.16310"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_a8de9ce8952725b2",
+          "headline": "Microsoft's next platform builds interfaces on the fly for AI agents",
+          "summary": "At Build 2026, Microsoft unveiled Project Solara, an Android-based operating system designed to run AI agents rather than apps. Its core idea is just-in-time UI: agents generate interfaces on the spot for each device. No code or hardware is publicly available; this is concept-stage. If the OS layer becomes agent-native, where does your app-centric mobile strategy sit?",
+          "source_urls": [
+            "https://arstechnica.com/gadgets/2026/06/microsofts-project-solara-is-an-android-os-designed-for-agents-instead-of-apps/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Speed is outrunning safety.",
+      "intro_body": "Across infrastructure, platform design, and agent behaviour, the pattern is the same: systems built for pace are creating exposure that controls added afterward cannot fully close."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_77ab725b7ae4dcca",
+          "headline": "Replace looping search calls with model-written code to cut tokens 85%",
+          "summary": "Perplexity's 'Search as Code' pattern has the agent write Python to compose each retrieval pipeline on the fly, rather than firing repeated fixed search calls. On a 200-CVE task it cut token use 85% at full accuracy. Benchmarks are vendor-supplied; the SDK is private. Try the pattern via the public Hermes Agent walkthrough before your next agentic retrieval build.",
+          "source_urls": [
+            "https://alphasignalai.substack.com/p/stop-looping-tool-calls-search-as"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_ad20ca0bcdf288ce",
+          "headline": "The benchmark reproducibility guide that most language model evals quietly violate",
+          "summary": "The lm-eval Harness team updated their three-year reproducibility guide (v3, 31 May 2026), codifying tacit knowledge about eval sensitivity, comparison traps, and setup drift. These are peer-reviewed findings, not vendor claims. If you run internal model benchmarks, read this before your next evaluation cycle and audit whether your setup documents prompt format and sampling config explicitly.",
+          "source_urls": [
+            "https://arxiv.org/abs/2405.14782"
+          ],
+          "prior_coverage_ref": "c_411000827997d8a3",
+          "signal": "read"
+        }
+      ],
+      "intro_lead": "Verify before you adopt.",
+      "intro_body": "Today's tools come with compelling numbers and a caveat: one set is vendor-supplied, the other shows how easily any benchmark misleads. The pattern is trust, not capability."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_f144a631bea4b4db",
+          "headline": "Telling your forecasting model a regime shift is coming cuts error 25%",
+          "summary": "Early signal from University of Michigan research: transformers can detect mid-sequence regime shifts in-context, and prompting them with an explicit change-signal cuts forecasting error by 25%. Single study, no public code yet. If you're evaluating AI forecasting tools for trading or macro signals, ask vendors whether their models handle non-stationary data, or this gap is yours to own.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/your-ai-forecaster-is-flying-blind"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_c4b7cc769541d8cd",
+          "headline": "Meta's AI support bot handed over accounts to anyone who asked",
+          "summary": "Meta's Instagram support chatbot let attackers seize accounts by asking it to swap the linked email address, bypassing identity checks entirely. Handles worth over $500,000 were resold before Meta patched it on 29 May. If this generalises, any AI agent with write-access is a social-engineering target; if not, the design flaw was Meta's alone.",
+          "source_urls": [
+            "https://simonwillison.net/2026/Jun/1/hackers-simply-asked-meta-ai/#atom-everything",
+            "https://arstechnica.com/ai/2026/06/meta-ai-support-chatbot-gave-hackers-access-to-notable-instagram-accounts/",
+            "https://krebsonsecurity.com/2026/06/hackers-used-metas-ai-support-bot-to-seize-instagram-accounts/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_492e3a8830b15ae7",
+          "headline": "New benchmark reveals AI agents still struggle to pass human verification",
+          "summary": "HLL, a new benchmark, tested eight frontier multimodal agents against CAPTCHA-style verification and found them brittle: performance drops sharply under realistic conditions and further when action traces are checked. Single arXiv paper, no independent replication yet. If the results hold, they redefine where autonomous workflows can legally operate; if they don't, the benchmark design is the story.",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.02449"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_7615a261fc5e5d30",
+          "headline": "NVIDIA open-sources its most capable reasoning and world models yet",
+          "summary": "NVIDIA released Cosmos 3, unifying language, image, video, and action in one architecture, plus Nemotron 3 Ultra, a 550-billion-parameter open-weight model reportedly topping US open evals at over 300 tokens per second. Benchmarks are vendor-reported; no independent audit yet. If the speed claims hold, revisit your open-model shortlist. If they don't, the audit gap is the story.",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-nvidia-cosmos-3-nemotron-3"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_d65bf21f0e406662",
+          "headline": "Microsoft's compact reasoning model claims parity with Anthropic's best",
+          "summary": "Microsoft released two models: a 35B reasoning model claiming parity with Anthropic's Claude Sonnet 4.6, and a 5B coding model rolling out to GitHub Copilot users. Both are vendor-benchmarked only; neither is broadly accessible yet. If the parity claim holds under independent testing, the case for smaller reasoning models strengthens. If not, the benchmark is the story.",
+          "source_urls": [
+            "https://simonwillison.net/2026/Jun/2/microsofts-new-models/#atom-everything"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        }
+      ],
+      "intro_lead": "Capability races ahead of control.",
+      "intro_body": "This week's early signals share a common tension: models are getting faster, cheaper, and more open, while the guardrails that govern what they can do in the world remain unbuilt or unverified."
+    }
+  ],
+  "generated_at": "2026-06-03T00:38:42.360582Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.12",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: amber -- hands_on: 2 (tier pool exhausted)"
+}
