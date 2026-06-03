@@ -91,9 +91,34 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.13"
+SUMMARISE_PROMPT_VERSION = "v0.16"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.13-2026-06-03``. v0.13 (voice diversity injection):
+``summarise-v0.15-2026-06-03``. v0.15 (Headlines that land + wider excerpt
+cap):
+  - Three new HEADLINE RULES inlined into every per-story summarise prompt
+    (head-tier and currents-tier alike; not Pulse-specific). (1) Name the
+    artifact when the source names one; do not invent one when it doesn't.
+    (2) Preserve distinctions the source makes (existing repo vs new
+    paper that reinterprets it; existing benchmark vs new technique
+    tested against it). (3) Headlines land in one beat -- concrete
+    subject in the first three words, specific objects not abstract
+    nouns, one core idea (no colons or em-dashes joining two), no jargon
+    that needs a dictionary lookup, imperative only when the artifact is
+    already named. Fixes the 2026-06-02 colleague.skill story where the
+    headline "Capture a departing engineer's judgment as a versioned,
+    editable file" dropped both the COLLEAGUE.SKILL and dot-skill names
+    and read as a puzzle. EDITORIAL.md "Headlines that land" subsection
+    is the prose source of truth; this prompt is the operational mirror.
+  - _SOURCE_EXCERPT_MAX_WORDS raised from 500 to 1000. Substantive
+    articles (formal contracts, install steps, gallery numbers, key
+    distinctions between an existing tool and a new paper) often sit
+    deeper than 500 words; the headline rules need that material to be
+    in the prompt window. Cost impact: ~37,500 extra input tokens per
+    issue at top-3 items x ~25 clusters x 500 extra words; roughly 5c
+    per issue at current Bedrock pricing.
+v0.14 was never shipped externally (skipped to keep the version-bump
+audit trail aligned with the externally-visible feature shift).
+v0.13 (voice diversity injection):
   - Two new pieces of context inlined into the per-story prompt and the
     section-intro prompt. (A) Intros + first-story closings from the last
     ``VOICE_DIVERSITY_LOOKBACK`` released issues, framed as RECENTLY USED
@@ -760,6 +785,96 @@ BEFORE FINALISING, CHECK (mandatory -- run these counts before returning)
     Trust flag if warranted? Close tied to a SPECIFIC DECISION (not a
     group or department)? Acronyms spelled out or replaced?
 """
+
+# v0.15 (2026-06-03): HEADLINE RULES that apply to EVERY story (head-tier
+# AND currents-tier; not Pulse-specific). Source of truth is EDITORIAL.md
+# "Headlines that land" subsection; this block is the operational mirror
+# the LLM reads. The three rules correspond 1:1 with the three editorial
+# rules in that subsection. Triggered by a 2026-06-02 reader-decode
+# failure on the colleague.skill story where the headline dropped both
+# the COLLEAGUE.SKILL paper name and the existing dot-skill repo name.
+_HEADLINE_RULES_BLOCK = """\
+HEADLINE RULES (apply to every story -- head-tier and currents-tier alike)
+
+1. RECOGNITION DECIDES NAMING. Names belong in the headline ONLY when a
+   senior practitioner reads them and immediately connects to a mental
+   model they already have. Widely-recognised names earn the headline:
+   OpenAI, Anthropic, Claude, GPT-5, Llama, vLLM, EU AI Act, Nvidia,
+   PyTorch, etc. New tools, new papers, new benchmarks, new methods, new
+   datasets do NOT earn the headline -- their names do not yet trigger
+   recognition. Examples that should be DESCRIBED in the headline (with
+   the name appearing in the first one or two sentences of the summary):
+   JudgmentBench, COLLEAGUE.SKILL, dot-skill, ITS-Mina, FinGuard.
+
+   The test: would a senior AI practitioner reading the headline alone
+   recognise this name without further context? If no, the name does not
+   belong in the headline -- describe the artifact instead.
+
+   Why: a name in a headline that does not trigger recognition is noise.
+   It is a string of letters the reader has to mentally park while they
+   figure out what the headline is about. The summary is where new names
+   earn their place -- by then the reader has the mental model to attach
+   the name to.
+
+   Examples:
+   - In voice (known name): "Anthropic ships a more honest flagship model"
+   - In voice (unknown name, described not named): "A Shanghai AI Lab
+     paper turns a departing engineer's traces into an editable skill
+     file"
+   - In voice (unknown name, described not named): "A new benchmark finds
+     pairwise scoring beats rubrics for judging language-model output"
+   - Off voice: "COLLEAGUE.SKILL packages a departing engineer's judgment
+     as a skill file" -- reader does not know what COLLEAGUE.SKILL is
+
+   If the source does not name a thing at all, do NOT invent one. "A new
+   tool" or "a new paper" is acceptable when there is no name available.
+
+2. PRESERVE DISTINCTIONS IN THE SOURCE. If the source distinguishes
+   between an existing artifact and a new one (an existing repo vs a new
+   paper that reinterprets it; an existing benchmark vs a new technique
+   tested against it; an existing model vs a fine-tune of it), the
+   summary preserves that distinction. Naming both is fine; using them
+   interchangeably is not -- the reader loses what is new.
+
+3. HEADLINES LAND IN ONE BEAT, NOT TWO. A reader should not have to back
+   up and re-read.
+     - Concrete subject in the first three words (actor, vendor, paper,
+       lab, or artifact).
+     - Specific objects, not abstract nouns ("an editable file format
+       for engineer expertise" beats "a versioned, editable container
+       for tacit knowledge").
+     - One core idea. If the headline needs a colon, semicolon, or
+       em-dash to hold two ideas together, it is two headlines -- pick
+       the more important one.
+     - No words that need an editorial dictionary lookup. "Versioned"
+       -> "tracked"; "operationalise" -> "make routine"; "primitives"
+       -> "building blocks"; "instrumentation" -> "monitoring".
+     - Imperative voice ("Do X") is allowed ONLY when the artifact is
+       already named OR widely known. For a newly-introduced artifact,
+       declarative is clearer: "A new tool packages X as Y" lands; "Do X
+       as Y" obscures.
+
+4. NO INLINE VENUE CITATIONS IN THE BODY. Attribution is the source URL's
+   job, not the prose's. Do NOT include parenthetical venue citations
+   like "(arXiv, updated 2 June 2026)", "(per arXiv 2603.12345)",
+   "(Substack post, 29 May)", "(via AlphaSignal)", or "(MIT Tech Review)"
+   in the summary body. The reader can see where the link goes from the
+   source URL at the bottom of the story. Inline citations sound
+   bureaucratic, cost signal density (a 60-word summary cannot spare
+   three words on a venue tag), and read as hedge-y academic register
+   that does not match AI Vector's voice.
+
+   Exceptions (rare, judge carefully):
+     - The venue IS the news. "The FDA approved X" -- FDA naming matters.
+     - The venue's recency IS the news. "A paper updated last week
+       reverses an earlier claim" -- the update is the editorial point.
+     - The channel itself is editorial signal. "Posted to an internal
+       engineering blog rather than published" -- the channel choice is
+       part of the story.
+
+   Otherwise, drop the citation. Trust the source URL to do the work.
+"""
+
 
 _EDITORIAL_FOCUS_BLOCK = """\
 EDITORIAL FOCUS -- a reminder while writing
@@ -1823,9 +1938,17 @@ _SOURCE_EXCERPT_TIMEOUT_S = 12.0
 """Per-fetch hard timeout. Whole-issue source-fetch budget is ~12 items x
 this = ~144s worst case, usually 20-40s in practice."""
 
-_SOURCE_EXCERPT_MAX_WORDS = 500
-"""Soft cap on the excerpt the prompt sees. Beyond this, the LLM doesn't
-get more signal -- it gets more tokens to attend to."""
+_SOURCE_EXCERPT_MAX_WORDS = 1000
+"""Soft cap on the excerpt the prompt sees. Raised from 500 to 1000 in
+v0.15 (2026-06-03): substantive articles often carry the load-bearing
+detail (named artifacts, distinctions between an existing tool and a new
+paper that reinterprets it, install steps, formal contracts) deeper than
+the first 500 words. The HEADLINE RULES added in v0.15 (name the
+artifact; preserve distinctions in the source) need that material in the
+prompt window. Cost impact: ~37,500 extra input tokens per issue (top-3
+items per cluster x ~25 clusters x extra 500 words), roughly 5c per
+issue at current Bedrock pricing -- worth it for stories where the
+distinction sits in the middle of the article."""
 
 
 def _fetch_source_excerpt(url: str) -> str:
@@ -2038,6 +2161,7 @@ Agentic AI and Generative AI. The cluster was already RANKED and
 selected for the issue; your job is to write it well.
 
 {_VOICE_BLOCK}
+{_HEADLINE_RULES_BLOCK}
 {_EDITORIAL_FOCUS_BLOCK}
 {_FINANCE_LENS_BLOCK}{section_voice_block}{voice_diversity_segment}
 RANKER NOTES (from the rank stage, for context only -- not for echoing):

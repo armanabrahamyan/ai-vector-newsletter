@@ -2150,9 +2150,73 @@ class TestVoiceDiversityVersionBump:
     """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
     must move with it so the audit trail picks up the shift."""
 
-    def test_summarise_prompt_version_is_v0_13(self) -> None:
+    def test_summarise_prompt_version_is_v0_16(self) -> None:
         from src.summarise import SUMMARISE_PROMPT_VERSION
-        assert SUMMARISE_PROMPT_VERSION == "v0.13"
+        assert SUMMARISE_PROMPT_VERSION == "v0.16"
+
+
+# ===========================================================================
+# v0.15 (2026-06-03): HEADLINE RULES + wider source-excerpt window.
+#
+# Triggered by the 2026-06-02 colleague.skill story where the headline
+# "Capture a departing engineer's judgment as a versioned, editable file"
+# dropped both the COLLEAGUE.SKILL paper name and the existing dot-skill
+# repo name and read as a puzzle.  Two assertions cover the load-bearing
+# bits: (a) the three new headline rules are inlined into every per-story
+# prompt; (b) the source-excerpt cap was raised from 500 -> 1000 words.
+# ===========================================================================
+
+class TestHeadlineRulesInPrompt:
+    """The three new HEADLINE RULES must arrive in every per-story summarise
+    prompt (head-tier AND currents-tier, not Pulse-specific)."""
+
+    def test_per_story_prompt_contains_headline_rules(self) -> None:
+        from src.summarise import _build_summary_prompt
+        breakdown = {
+            "significance": 60, "hands_on_utility": 60,
+            "big_picture_relevance": 60, "financial_services_impact": 25,
+            "freshness_momentum": 60,
+        }
+        story = RankedStory(
+            cluster_id="c_0123456789abcdef",
+            score=55, breakdown=breakdown,
+            audience_tags=["general"],  # type: ignore[arg-type]
+            rationale="t", tier="hands_on", prompt_version="v0.2",
+        )
+        cluster = Cluster(
+            cluster_id=story.cluster_id, item_ids=["i_x"],
+            canonical_title="t", sources=["src_a"],
+            earliest_published=FIXED_EARLIER, size=1,
+        )
+        item = Item(
+            id="i_x", source="src_a", source_type="rss",
+            url="https://example.com/x",  # type: ignore[arg-type]
+            title="t", published_at=FIXED_EARLIER, raw_summary="",
+            fetched_at=FIXED_NOW, trust_weight=2,
+        )
+        prompt = _build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+        )
+        # The section title is present (one line we can grep for without
+        # fragility against minor copy edits).
+        assert "HEADLINE RULES" in prompt
+        # Each of the three rule numerals is present, anchored by its
+        # rule heading -- enough that the LLM is reading three discrete
+        # instructions, not one collapsed paragraph.
+        assert "1. RECOGNITION DECIDES NAMING" in prompt
+        assert "2. PRESERVE DISTINCTIONS IN THE SOURCE" in prompt
+        assert "3. HEADLINES LAND IN ONE BEAT" in prompt
+        assert "4. NO INLINE VENUE CITATIONS IN THE BODY" in prompt
+
+
+class TestSourceExcerptCapRaised:
+    """The source-excerpt soft cap moved from 500 -> 1000 words in v0.15
+    so the HEADLINE RULES (name the artifact; preserve distinctions) have
+    the load-bearing material available."""
+
+    def test_source_excerpt_max_words_is_1000(self) -> None:
+        from src.summarise import _SOURCE_EXCERPT_MAX_WORDS
+        assert _SOURCE_EXCERPT_MAX_WORDS == 1000
 
 
 class TestVoiceDiversityConstants:

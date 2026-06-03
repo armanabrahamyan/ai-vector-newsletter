@@ -27,6 +27,99 @@ manifests.
    this story for a reason. If the closing reads as "be cautious about
    this," the voice is absent. If it reads as "this is the news; here's
    what shifts," the voice is present.
+
+### Headlines that land
+
+A headline that needs a second read is a headline that failed. The
+reader skims; the headline carries the story. Three rules for getting
+there.
+
+**Rule 1 — Name the artifact in the headline only when readers will recognise the name.**
+
+> Names belong in the headline when a senior practitioner reads them and
+> connects to a mental model they already have. OpenAI, Anthropic, Claude,
+> GPT-5, Llama, vLLM, EU AI Act, Nvidia — all earn the name in the headline
+> because recognition is immediate. New tools, new papers, new benchmarks,
+> new methods — JudgmentBench, COLLEAGUE.SKILL, dot-skill, ITS-Mina,
+> FinGuard — do NOT belong in the headline. For these, describe what the
+> thing does in the headline and let the name appear in the first one or
+> two sentences of the summary.
+>
+> Why: a name in a headline that does not trigger recognition is noise. It
+> is a string of letters the reader has to mentally park while they figure
+> out what the headline is about. The summary is where new names earn their
+> place — by then the reader knows what kind of thing they are reading
+> about and the name can attach to the mental model.
+>
+> The test: would a senior practitioner reading the headline alone
+> recognise this name without further context? If no, the name does not
+> belong in the headline.
+>
+> *In voice (known name):* "Anthropic ships a more honest flagship model"
+>
+> *In voice (unknown name, described not named):* "A Shanghai AI Lab paper
+> turns a departing engineer's traces into an editable skill file (no proof
+> yet it captures judgment)"
+>
+> *In voice (unknown name, described not named):* "A new benchmark finds
+> pairwise scoring beats rubrics for judging language-model output"
+>
+> *Off voice (unknown name in headline):* "COLLEAGUE.SKILL packages a
+> departing engineer's judgment as a skill file" — the reader does not
+> know what COLLEAGUE.SKILL is, so the name does not help.
+>
+> *Off voice (unknown name in headline):* "Capture a departing engineer's
+> judgment as a versioned, editable file" — different failure mode: no
+> name AND no description, just an instruction the reader cannot ground.
+
+**Rule 2 — Preserve distinctions the source makes.**
+
+> When the source distinguishes between an existing artifact and a new one
+> — an existing tool and a new paper that reinterprets it, an existing
+> benchmark and a new technique tested against it — the summary preserves
+> that distinction. Collapse them and the reader loses the news.
+>
+> *In voice:* "A new Shanghai AI Lab paper, COLLEAGUE.SKILL, reframes the
+> existing dot-skill repo (18,500 GitHub stars) as a portable file format
+> rather than a digital twin."
+>
+> *Off voice:* "dot-skill (titanwings/colleague-skill, MIT, 18,500 GitHub
+> stars) reads an engineer's code reviews and writes them into a Markdown
+> file." — the reader cannot tell what is new.
+
+**Rule 3 — A headline lands when it reads in one beat, not two.**
+
+> A reader should not have to back up and re-read. Tests for this:
+>
+> - **Concrete subject up front.** Name the actor, vendor, paper, lab, or
+>   artifact in the first three words. "OpenAI maps its safety practices
+>   to EU rules" — subject in the first word. "Anthropic ships a more
+>   honest flagship model" — same.
+> - **Specific objects, not abstract nouns.** "An editable file format for
+>   engineer expertise" beats "A versioned, editable container for tacit
+>   knowledge." Concrete things land. Abstract reframes stall.
+> - **One core idea.** If the headline needs a colon, semicolon, or em-dash
+>   to hold two ideas together, it is two headlines. Pick the more
+>   important one.
+> - **No editorial dictionary lookups.** Words like "versioned,"
+>   "operationalise," "primitives," "instrumentation" are jargon. Use
+>   plainer words — "tracked," "make routine," "building blocks,"
+>   "monitoring."
+> - **Imperative is allowed only when the artifact is named.** "Capture X
+>   as Y" works when "Y" is a thing the reader has already heard of. When Y
+>   is being introduced for the first time, the imperative obscures it.
+>   Use declarative instead: "A new tool packages X as Y."
+>
+> *In voice:* "A Shanghai AI Lab paper turns a departing engineer's traces
+> into an editable skill file (no proof yet it captures judgment)"
+>
+> *Off voice:* "Capture a departing engineer's judgment as a versioned,
+> editable file"
+
+When the editor's review flags a headline that did not land, add the
+specific phrase to the anti-patterns catalogue at the end of this
+document.
+
 1. **Warm, not chummy.** Trust the reader; don't perform for them. Cut
    adjectives that don't earn their place. "Major," "powerful,"
    "groundbreaking" are almost always cuttable.
@@ -402,6 +495,7 @@ by the editor when reviews catch them.
 - "On the one hand... on the other hand..." structures that don't resolve to a take
 - Closings that re-summarise the body instead of advancing the position
 - "This space is evolving rapidly" — true of everything, says nothing
+- Inline venue citations like "(arXiv, updated 2 June 2026)" / "(per arXiv 2603.12345)" / "(Substack post, 29 May)" in the body — attribution is the source URL's job, not the prose's. The reader can see where the link goes. Exceptions: when the venue IS the news (the FDA approved X), when the venue's recency is the news (a paper updated last week reverses an earlier claim), or when the channel is itself editorial signal (posted to an internal blog rather than published). Default is to drop the citation.
 
 **Adding new entries**: when an editor review flags a construction that's
 recurring, paraphrase it as a one-line entry here. Specific phrases
