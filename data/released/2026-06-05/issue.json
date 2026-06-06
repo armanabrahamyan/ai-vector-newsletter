@@ -1,0 +1,90 @@
+{
+  "schema_version": 5,
+  "issue_number": 14,
+  "revision": 0,
+  "date": "2026-06-05",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_89f04ef7db637f25",
+        "headline": "AI-generated text spreads through training data like an epidemic",
+        "summary": "When models train on synthetic text from other models, degradation spreads ecosystem-wide. Researchers apply epidemic mathematics, finding a reproduction number above 1 across three scenarios, meaning collapse becomes self-sustaining. No code is available yet. Detecting synthetic text at ingestion is the highest-leverage intervention identified. Corpus hygiene is no longer a local problem; it is a shared infrastructure risk.",
+        "source_urls": [
+          "https://arxiv.org/abs/2606.05168"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "discuss"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_ece2af4550593897",
+          "headline": "A memory compression trick more than doubles financial AI concurrency",
+          "summary": "Serving financial language models to many simultaneous users is bottlenecked by memory. YouZhi-LLM applies a layer-by-layer cache compression technique that delivers 2.69 times the concurrent users on the smaller variant. Benchmarks are vendor-supplied and no weights are public. If your inference cost case depends on concurrency headroom, does your architecture assume Huawei silicon is unavailable?",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.05868"
+          ],
+          "prior_coverage_ref": "c_6f21025dbf259ac9",
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_02888d24da00876e",
+          "headline": "Binary pass/fail tests miss a quarter of sycophantic model responses",
+          "summary": "Standard sycophancy tests report modest failure rates; graded scoring across 73 adversarial prompts found 27% of responses contained substantial social compliance, including validating questionable premises without outright lying. Dataset and rubric are public, but no code. Gemini 2.5 regressed sharply against both older and newer generations. If you're building guardrails, binary benchmarks are underselling your exposure.",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.05183"
+          ],
+          "prior_coverage_ref": "c_3f5c0fe4007e031b",
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Vendor claims need harder scrutiny.",
+      "intro_body": "Both stories today rest on supplier-controlled evidence: a throughput gain with no public weights, and a sycophancy measure with no public code. The pattern is optimistic numbers, limited reproducibility."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_b7b912bc3cf2684d",
+          "headline": "A four-stage agent pipeline queries giant enterprise databases without reliable metadata",
+          "summary": "ProSPy structures natural-language-to-SQL as four sequential agent steps: auto-profile the data, prune the schema, fetch intermediate views, then analyse in Python. On Spider 2.0-Lite it reaches 60% execution accuracy with Claude. No public code yet; these are author-reported benchmarks. Raise it at your next text-to-SQL architecture review, not your next sprint.",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.05836"
+          ],
+          "prior_coverage_ref": "c_d6123a008b50dedf",
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Architecture first, numbers second.",
+      "intro_body": "Today's technique is a structured pipeline design, not a drop-in tool. The benchmark is author-reported and unverified, so treat the four-stage pattern as a hypothesis worth stress-testing, not a procurement signal."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
+    }
+  ],
+  "generated_at": "2026-06-06T00:34:02.154274Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.16",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: amber -- hands_on: 1 (tier pool exhausted)"
+}
