@@ -1,0 +1,145 @@
+{
+  "schema_version": 5,
+  "issue_number": 16,
+  "revision": 0,
+  "date": "2026-06-07",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_4b7f11d142babc90",
+        "headline": "ChatGPT now blocks the final step in prompt-injection data theft",
+        "summary": "Prompt injection attacks follow a three-step pattern: reach private data, manipulate the model, exfiltrate the result. OpenAI's Lockdown Mode cuts the third leg by blocking outbound network requests deterministically, without relying on AI judgement that can itself be subverted. It doesn't stop injections entering; it stops data leaving. Default ChatGPT settings offer no such guarantee.",
+        "source_urls": [
+          "https://simonwillison.net/2026/Jun/5/openai-help-lockdown-mode/#atom-everything"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_6f59026637ded719",
+          "headline": "Structured agent logic cuts token use 30-fold, IBM tests show",
+          "summary": "IBM Research argues that layering structured logic beneath a language model slashes costs and errors. Their legacy-code agent consumed 30 times fewer tokens than a frontier-only baseline; a test-generation tool hit 20-45% better code coverage. All benchmarks are vendor-supplied. Ask for independent replication before committing your agent architecture.",
+          "source_urls": [
+            "https://huggingface.co/blog/ibm-research/agent-logic-and-scalable-ai-adoption"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_569fd49abc96bd13",
+          "headline": "Formal proof may be the missing ingredient for AI that compounds",
+          "summary": "Axiom scored 187/189 (99%) on a code-correctness benchmark where OpenAI's leading reasoning model scored 4.9%. The argument: formal proof verification gives reinforcement learning a cleaner signal than statistical methods, letting gains compound rather than plateau. Vendor-reported, no independent replication yet. If you're setting AI research priorities for the next six months, this framing deserves a serious look.",
+          "source_urls": [
+            "https://www.latent.space/p/axiom"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_8cf2b00528107cb7",
+          "headline": "A major US insurer now handles claims around the clock via AI",
+          "summary": "Travelers has rolled out an AI claims assistant nationally, offering customers 24/7 filing support and surge capacity during peak events. This is a vendor case study with no architectural detail, benchmarks, or independent validation. Before citing this as proof that AI can handle regulated claims intake, ask the vendor what the error and escalation rates actually are.",
+          "source_urls": [
+            "https://openai.com/index/travelers"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        }
+      ],
+      "intro_lead": "Architecture is doing the heavy lifting.",
+      "intro_body": "Across claims processing, code generation, and correctness verification, the performance gains being reported trace back to structural choices beneath the model, not the model itself. That shifts the vendor conversation."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_24afed5ec4f02589",
+          "headline": "A financial data platform built for AI agents launches in beta",
+          "summary": "LLMQuant Data launches in beta as a structured financial data layer for agent workflows, exposing equities, SEC filings, macro indicators, and research papers via a model context protocol connection. A reusable skills library lives at github.com/LLMQuant/skills. Single-source launch, no independent benchmarks; clone the skills repo against a live research agent before signing a data contract.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/llmquant-data-has-arrived-the-first"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_6da931a0eb4eb139",
+          "headline": "Google's Gemma models now run locally on half the memory",
+          "summary": "Ollama v0.30.6 ships quantisation-aware training weights for the full Gemma 4 family (2B to 31B), cutting VRAM requirements enough to run larger models on Apple Silicon or modest on-prem hardware. Memory savings are vendor-reported; no independent benchmarks yet. Pull gemma4:12b-it-qat and measure against your current local inference baseline before committing to new hardware.",
+          "source_urls": [
+            "https://github.com/ollama/ollama/releases/tag/v0.30.6"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_2ab868a96219cd18",
+          "headline": "llama.cpp gains video support for running vision models locally",
+          "summary": "llama.cpp build b9543 adds video support and frame-merge for Qwen-VL-based vision-language models, runnable on CPU, Apple Silicon, Android, and Windows. No independent benchmarks accompany the release. If you're already running local multimodal inference, pull b9543 and test it against a short video clip before routing any workload through it.",
+          "source_urls": [
+            "https://github.com/ggml-org/llama.cpp/releases/tag/b9543"
+          ],
+          "prior_coverage_ref": "c_2eae46dfa55bf2a0",
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_cfe289682ab190ba",
+          "headline": "A four-model agent council reveals where multi-model orchestration actually breaks",
+          "summary": "Thousand Token Wood v2 runs four small models from different labs as competing market agents. The real lesson: serving-layer friction (a missing CUDA toolkit blocked all four models identically) dominates modelling concerns. The JSON repair layer and off-prompt secret firewall are patterns worth cloning into your next heterogeneous agent pipeline before you scale headcount.",
+          "source_urls": [
+            "https://huggingface.co/blog/build-small-hackathon/thousand-token-wood-sim-v2"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_54dc3f5383e9182a",
+          "headline": "Give a small robot web search with one command",
+          "summary": "Reachy Mini now supports remote tools via the Model Context Protocol, added with one CLI command. A tools.txt profile file gates which tools the robot can call, keeping the local core intact. Vendor-published canary tools only (weather, web search); no independent benchmarks. Clone the canary profile and measure tool-call latency before extending to any production workflow.",
+          "source_urls": [
+            "https://huggingface.co/blog/adding-mcp-tools-to-reachy-mini"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Ship first, measure later.",
+      "intro_body": "Today's releases are almost entirely vendor-reported, with independent benchmarks absent across the board. The pattern worth noting: capability is arriving faster than the tooling to evaluate it."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
+    }
+  ],
+  "generated_at": "2026-06-07T06:31:29.920645Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.16",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 3, hands_on: 5, currents: 0"
+}
