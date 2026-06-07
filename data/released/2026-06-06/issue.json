@@ -1,0 +1,145 @@
+{
+  "schema_version": 5,
+  "issue_number": 15,
+  "revision": 0,
+  "date": "2026-06-06",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_5286c17e08ed592d",
+        "headline": "Open benchmark tests voice agents across 213 realistic enterprise scenarios",
+        "summary": "ServiceNow's EVA-Bench 2.0 covers 213 voice-agent scenarios across airline, IT, and healthcare workflows, spanning 121 tools. Every scenario has exactly one correct resolution path, reducing evaluation noise. Datasets are open and downloadable today. Vendor-validated only, but a rigorous open eval for enterprise tool-use has been overdue; this is the most concrete one available.",
+        "source_urls": [
+          "https://huggingface.co/blog/ServiceNow-AI/eva-bench-data"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_3994663cee386b54",
+          "headline": "Google's enterprise agent keeps searching until it finds a complete answer",
+          "summary": "Standard retrieval-augmented generation stops at the first search; Google's new multi-agent framework on its enterprise platform keeps iterating until a \"Sufficient Context Agent\" confirms the answer is complete. Vendor-reported accuracy lift is 34% on factuality datasets, but benchmarks are Google's own. If you're designing query pipelines across siloed data sources, raise this architecture pattern at your next design review.",
+          "source_urls": [
+            "https://research.google/blog/unlocking-dependable-responses-with-gemini-enterprise-agent-platforms-agentic-rag/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_bbb30742190c36f4",
+          "headline": "A new worm carries its own AI brain onto machines it infects",
+          "summary": "Researchers have prototyped a worm that bundles a language model inside itself, running it on each compromised machine: payload and reasoning engine as one unit. Single source, no code or paper published. If you run AI workloads on internet-facing infrastructure, ask whether host-based model execution sits in your current threat model.",
+          "source_urls": [
+            "https://www.schneier.com/blog/archives/2026/06/ai-worm.html"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_576da84af55e68b6",
+          "headline": "Quality-adjusted AI output grew 2,600% last year and GDP can't see it",
+          "summary": "Economists from the University of Virginia, Anthropic, and the Bank of Canada estimate quality-adjusted AI output grew roughly 2,290% in 2024 alone, yet conventional GDP data shows a sector growing slowly. Single-source working paper, not yet peer-reviewed. If your treasury team models AI's labour-market impact off standard GDP figures, what shock are they currently failing to price?",
+          "source_urls": [
+            "https://importai.substack.com/p/import-ai-459-ai-oversight-is-difficult"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read"
+        }
+      ],
+      "intro_lead": "Measurement is breaking down.",
+      "intro_body": "Across today's stories, the tools used to count AI progress -- accuracy benchmarks, GDP statistics, threat models -- are each failing to capture what is actually changing. The gap is strategic, not technical."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_d6ffe78b936fe369",
+          "headline": "Run LLM-generated Python safely in a WebAssembly sandbox you can pip-install today",
+          "summary": "Safe code execution for AI agents is a persistent gap. Simon Willison's alpha package micropython-wasm runs Python inside a WebAssembly interpreter, enforcing memory, CPU, and network limits with no host-system access. A live Datasette Agent plugin is already using it. Alpha-stage and self-described as 'vibe-coded', so clone it against a non-production agent before trusting it with user inputs.",
+          "source_urls": [
+            "https://simonwillison.net/2026/Jun/6/micropython-in-a-sandbox/#atom-everything"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_2f3bbd6533972757",
+          "headline": "Grading your agent on its final answer hides how it actually ran",
+          "summary": "Harness-Bench ran 5,194 agent trajectories across 106 tasks and found the scaffolding wrapped around a model moves performance more than the model itself does on hard tasks. Single-source summary, no public repo yet. Before your next agent evaluation, define what your trace must log at each layer; a green result without execution telemetry is a receipt, not a review.",
+          "source_urls": [
+            "https://alphasignalai.substack.com/p/stop-asking-whether-the-agent-worked"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_237ca38425095848",
+          "headline": "One researcher's 2026 paper shortlist maps where language models are heading",
+          "summary": "Sebastian Raschka's Jan–May 2026 reading list organises notable language model papers into 10 categories, covering agent harnesses, diffusion language models, reasoning, and inference efficiency. Raschka flags it as personal and incomplete, not exhaustive. Before your next architecture planning session, use the agent systems and inference sections to pressure-test your paper backlog.",
+          "source_urls": [
+            "https://magazine.sebastianraschka.com/p/llm-research-papers-2026-part1"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_43010b170ad28657",
+          "headline": "A second training pass cuts document-reading failure loops by 59%",
+          "summary": "Direct Preference Optimisation, typically used for chat alignment, works on objective structured tasks too. DharmaOCR applied it after supervised fine-tuning on document extraction, using the model's own degenerate outputs as rejection pairs. Degeneration fell 59.4% on average across every model family tested. Single-vendor benchmark. If repetition loops are fouling your document extraction pipeline, add a DPO stage after fine-tuning.",
+          "source_urls": [
+            "https://huggingface.co/blog/Dharma-AI/direct-preference-optimization-beyond-chatbots"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_fd1c782dceb67eb9",
+          "headline": "Vercel's sandbox tool now keeps agent workspaces alive between sessions",
+          "summary": "The persistent-storage gap in disposable sandboxes was forcing agents to rebuild state from scratch on every run. Vercel Drives lets a sandbox mount a named drive at a configurable path; the drive survives when the sandbox stops. Private beta, single read-write mount per drive. Install @vercel/sandbox@beta and request access before wiring it into an agentic pipeline.",
+          "source_urls": [
+            "https://vercel.com/changelog/drives-for-vercel-sandbox-in-private-beta"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Scaffold before you score.",
+      "intro_body": "Today's pattern is infrastructure before evaluation: safe execution environments, persistent agent state, and trace-level grading are each moving from workaround to installable primitive. The benchmark gap is real, but so are the tools closing it."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
+    }
+  ],
+  "generated_at": "2026-06-06T11:39:00.197372Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.16",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 3, hands_on: 5, currents: 0"
+}
