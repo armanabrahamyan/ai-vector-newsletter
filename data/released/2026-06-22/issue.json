@@ -1,0 +1,190 @@
+{
+  "schema_version": 5,
+  "issue_number": 18,
+  "revision": 0,
+  "date": "2026-06-22",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_4dda3835f9fdee9f",
+        "headline": "EU AI Act enforcement shifts from text to real institutions",
+        "summary": "The EU has seated a 60-member Scientific Panel and a 174-member Advisory Forum to oversee AI Act enforcement, and published a labelling code covering deepfakes and AI-generated public-interest content, with transparency obligations live from 2 August 2026. The Omnibus amendments softening high-risk deadlines remain unadopted. Governance here is no longer aspirational.",
+        "source_urls": [
+          "https://artificialintelligenceact.substack.com/p/the-eu-ai-act-newsletter-104-experts"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_ca8a31561f28a9e9",
+          "headline": "UK's financial regulator will enforce existing rules on AI deployments",
+          "summary": "The FCA will not write new AI rules; Consumer Duty and the Senior Managers regime apply now. Good-and-poor-practice guidance is promised later this year, drawn from an industry survey. Single-source blog post, no binding guidance yet. Which AI deployment decisions in your firm currently sit inside a named senior manager's personal accountability perimeter?",
+          "source_urls": [
+            "https://www.fca.org.uk/news/blogs/ai-financial-services-approach"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_f06261de264f83a6",
+          "headline": "Losing real money cured a trading agent swarm of its hallucinations",
+          "summary": "A 20-month live experiment on Chinese equities replaced human graders with capital depletion as the reward signal. The swarm started at 6,700% portfolio turnover; it ended at a Sharpe ratio of 2.06. Single-source, no independent replication yet. If you're designing reward functions for trading agents, this is the methodology to pressure-test against.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/when-the-market-becomes-the-judge"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_ef2a76d560a48b01",
+          "headline": "OpenAI now tests how a model will behave before it ships",
+          "summary": "OpenAI's Deployment Simulation feeds real conversation data into a pre-release model to predict live behaviour, rather than relying solely on synthetic benchmarks. The mechanism is plausible; no public code, API, or independent validation is available yet. If you're building model-risk governance processes, this is the evaluation gap worth naming at your next review.",
+          "source_urls": [
+            "https://openai.com/index/deployment-simulation"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_2efa3b2a1d56f584",
+          "headline": "Google DeepMind maps how to contain a rogue AI agent",
+          "summary": "Google DeepMind's AI Control Roadmap (v0.1) treats internal agents as potential adversaries and proposes 15 tiered mitigations, from chain-of-thought monitoring today to real-time access controls as models grow more capable. Single-source, no independent validation yet. If your agentic deployment governance doesn't have an adversarial threat model, this roadmap is the benchmark to argue against.",
+          "source_urls": [
+            "https://www.alignmentforum.org/posts/hEtkyKGoPpFeWnKkX/gdm-ai-control-roadmap"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Control is the product.",
+      "intro_body": "Regulators, model builders, and researchers are all converging on the same problem: how do you keep an AI system inside its intended boundaries once real stakes are involved? The governance layer is now the competitive surface."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_99cf76b16c59d74e",
+          "headline": "New skills let you interrogate SEC filings inside your coding agent",
+          "summary": "LLMQuant's two new Data skills pipe SEC filing data into Codex and Claude Code, turning 10-K and 10-Q filings into structured briefings. One maps business model and margin drivers; the other diffs consecutive quarterly filings for material changes. Single-source, vendor-built demo; no independent benchmarks. Run them against a ticker you already know well before trusting the output in live research.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/structured-data-x-large-language"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_e505e9dc484788b2",
+          "headline": "AI agents collapsed 9 months of cloud classification work into 10 days",
+          "summary": "Capital One's DataAgents pattern tackled dormancy detection across 350 cloud resource types, each needing bespoke logic, compressing nine months of stalled work into ten days. No code or reusable framework has been released; this is a vendor case study. Use it as an architecture reference before scoping a similar multi-source classification pipeline.",
+          "source_urls": [
+            "https://medium.com/capital-one-tech/dataagents-how-we-turned-9-months-of-analysis-into-10-days-8d6ed482f5d7?source=rss----3db3a67cb648---4"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_fe3fe1548088a37a",
+          "headline": "Benchmark open models on your own tooling before you pick one",
+          "summary": "Hugging Face's harness measures not just whether an agent gets the right answer, but how much work it took: token cost, latency, failure rate across library revisions. A better CLI cut token usage up to 1.8 times in their own tests. Vendor-run benchmarks only; clone the harness and run it against your own tooling before you pick a model.",
+          "source_urls": [
+            "https://huggingface.co/blog/is-it-agentic-enough"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_0fd7e84857dfefb8",
+          "headline": "Research agents leak private data through their own search queries",
+          "summary": "Research agents combining private documents with web search leak sensitive facts through their query logs, even when explicitly told not to. MosaicLeaks shows training purely for accuracy nearly doubled leakage (34% to 51.7%). A privacy-aware training method cuts it to 9.9%. Single-source, vendor benchmarks; audit your agent's outbound query log before connecting it to proprietary document stores.",
+          "source_urls": [
+            "https://huggingface.co/blog/ServiceNow/mosaicleaks"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Clone first, commit later.",
+      "intro_body": "Today's wins are mostly vendor-told stories: single-source benchmarks, one architecture case study, one genuine privacy finding. The pattern worth noting is that the reusable artefacts are sparse; run what you can replicate before it shapes your roadmap."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_cd6260331ccd7af0",
+          "headline": "Five of seven AI models lost real money forecasting the future",
+          "summary": "PolyBench placed seven leading language models into live Polymarket prediction markets and tracked real dollars. Five lost money, all while expressing high confidence. Single-source, no independent replication yet. Before treating any model's probabilistic output as a reliable signal in a trading or forecasting context, demand a live-money baseline, not a leaderboard score.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/seven-frontier-models-bet-real-odds"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_d6fbfaea1de9e6d4",
+          "headline": "Google's parallel-text model is nearly as inspectable as its word-by-word predecessor",
+          "summary": "Google DeepMind audited DiffusionGemma and found its intermediate states readable enough to shrink the opaque computation gap from 28.6x to 1.1x versus a comparable standard model. Algorithmic transparency still lags. Single-source, pre-peer-review. If future latent-reasoning models hold this parity, demand the same audit from vendors; if they regress, safety cases built on monitoring model reasoning break.",
+          "source_urls": [
+            "https://www.alignmentforum.org/posts/zoYXpdaMgFT43Wc24/how-transparent-is-diffusiongemma-and-why-it-matters"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_1cec587e3a75d34c",
+          "headline": "An AI agent that spots hidden behavioural gaps between two models",
+          "summary": "Google DeepMind's interpretability team built an auditing agent that crafts its own prompts to find behavioural differences between two models, rather than testing a fixed set. Across 50 seed runs it reliably surfaces divergences static evals miss. No code yet. If it ships, fine-tune regression testing changes shape; if not, the static-eval gap it names is still yours to close.",
+          "source_urls": [
+            "https://www.alignmentforum.org/posts/qi4mNbZYAFDYwfRba/building-and-evaluating-model-diffing-agents"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_19999c1b93dea1d9",
+          "headline": "A physics tool finds hidden time bias across eighteen markets",
+          "summary": "A paper applies a thermodynamics test to price charts and finds a directional bias hidden in holding times, which the authors frame as a \"market temperature.\" They report it collapsing across 18 markets. Single-source, no code or replication; raise the diagnostic framing at your next signal-review before treating it as a trading rule.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/the-price-chart-is-lying-to-you-about"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Measurement is the missing piece.",
+      "intro_body": "Every item here surfaces a gap between what models appear to do and what they actually do. Each fix is plausible; none is independently verified yet."
+    }
+  ],
+  "generated_at": "2026-06-21T17:50:48.267006Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.16",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 4, currents: 4"
+}
