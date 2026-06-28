@@ -1,0 +1,190 @@
+{
+  "schema_version": 5,
+  "issue_number": 19,
+  "revision": 0,
+  "date": "2026-06-28",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_acfb888bfb5eeece",
+        "headline": "Google folds browser and desktop control into its fastest cheap model",
+        "summary": "Google has baked computer-use capability directly into Gemini 3.5 Flash, its cost-efficient model, making autonomous browser, mobile, and desktop control available to any developer via the standard API. Two enterprise safeguards ship with it: confirmation gates for irreversible actions, and automatic task-halting on detected prompt injection. Benchmarks are vendor-supplied. The cost-efficient tier of agentic automation just got meaningfully wider.",
+        "source_urls": [
+          "https://deepmind.google/blog/introducing-computer-use-in-gemini-3-5-flash/"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_fb9c0b73d244e03a",
+          "headline": "Agents face a security threat that cybersecurity tools cannot catch",
+          "summary": "Zico Kolter (OpenAI board) and Gray Swan CEO Matt Fredrikson argue agents introduce a genuinely new exploit class: prompt injection, where untrusted data hijacks an agent's actions. Gray Swan's automated red-teaming model already outperforms humans at breaking AI systems. Single-source podcast, no independent benchmarks. Does your red-teaming programme treat agent security as distinct from traditional software security?",
+          "source_urls": [
+            "https://www.latent.space/p/gray-swan"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_80aa54b67330ae08",
+          "headline": "Trading AI backtests collapse when market impact costs are finally counted",
+          "summary": "Most reinforcement learning trading agents backtest brilliantly because the simulation assumes a flat ten-basis-point fee regardless of trade size or speed. A new paper rebuilds the cost model with realistic market impact, and the apparent top performers fall apart. Single-source, no code released. Before trusting any backtest ranking, ask whether execution costs scale with position size.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/the-200000-question-every-trading"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_ada352e8c592e110",
+          "headline": "OpenAI's own staff grew agentic coding use 56-fold in seven months",
+          "summary": "OpenAI's internal data shows median output tokens from its agentic coding tool rose 56 times in Research and 27 times in Engineering between November 2025 and June 2026. Self-reported figures from a single vendor. If internal AI adoption in your org still looks flat, the bottleneck is probably review loops and persistent workflows, not the tools themselves.",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-openai-reports-median-internal"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_dfb4ff6b9fbaa684",
+          "headline": "The UK financial regulator admits AI has outpaced its own rulebook",
+          "summary": "FCA chief Nikhil Rathi told a London AI-in-finance event that legislation will never keep pace with AI, so the regulator is shifting toward stewardship and system-wide powers rather than detailed rules. The FCA already processes a billion rows of market data daily. Drafted speech, not final policy; if your agentic deployment relies on regulatory silence, that window is closing.",
+          "source_urls": [
+            "https://www.fca.org.uk/news/speeches/rethinking-regulation-age-ai"
+          ],
+          "prior_coverage_ref": "c_ca8a31561f28a9e9",
+          "signal": "act"
+        }
+      ],
+      "intro_lead": "Assumptions are the exposure.",
+      "intro_body": "Across security, trading, adoption, and regulation, today's stories share a common structure: the model worked until someone tested the premise it was built on. That gap is now a board-level problem."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_8cb0861c9732b749",
+          "headline": "One command now launches a hosted inference server on rented GPU",
+          "summary": "Hugging Face Jobs now lets you run a vLLM inference server with a single `hf jobs run` command, exposing an OpenAI-compatible endpoint gated by your HF token. Hardware starts at $1.50/hour for an A10G, billed per second. Run it against your next eval batch before committing to a managed endpoint contract.",
+          "source_urls": [
+            "https://huggingface.co/blog/vllm-jobs"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_0424c57d7be74858",
+          "headline": "IBM's agent harness ships two dozen clone-ready working examples",
+          "summary": "CUGA (pip install cuga), IBM's open-source agent harness, handles planning, tool calls, state tracking, and self-correction, leaving you to supply a tool list and a prompt. The cuga-apps repo ships 24 single-file FastAPI examples to clone directly. Benchmarks are vendor-reported; run one example against your own task before trusting the efficiency claims.",
+          "source_urls": [
+            "https://huggingface.co/blog/ibm-research/cuga-apps"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_324accf00f11c4d6",
+          "headline": "Run a free local coding agent instead of paying for Claude Code",
+          "summary": "Sebastian Raschka's tutorial walks through a fully local coding agent stack using open-weight models with Codex or Claude Code harnesses. Qwen3.6 35B (around 22 GB) runs well on a Mac Mini M4. Benchmarks are vendor-supplied, so test on your own codebase before cancelling a subscription you rely on daily.",
+          "source_urls": [
+            "https://magazine.sebastianraschka.com/p/using-local-coding-agents"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_56faed5e4aa9a4f3",
+          "headline": "Capital One open-sources a context framework for AI coding agents",
+          "summary": "Capital One's Context Specs treats context engineering (deciding what an agent sees and when) as the fix for AI code that misses the mark. The framework packages team knowledge into reusable \"experts\" composed across a workflow. Code is public; independent benchmarks are not yet available. Pull the repo before your next agentic coding architecture decision.",
+          "source_urls": [
+            "https://medium.com/capital-one-tech/new-open-source-context-specs-released-1f65bfa9db9f?source=rss----3db3a67cb648---4"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_4fa059a78377102d",
+          "headline": "A four-part blueprint for evaluating AI agents on real security tasks",
+          "summary": "Eugene Yan's breakdown of cybersecurity evaluation design gives engineers a scaffold: a sandboxed Docker target, difficulty-graded inputs (from zero-day to hinted exploit), agent tools, and a deterministic grader. The best current models solved only 17.5% of professional-level tasks unaided. This is a blog post, not peer-reviewed research. Use the four-component scaffold to structure your next red-team eval before commissioning one.",
+          "source_urls": [
+            "https://eugeneyan.com//writing/cybersecurity-evals/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read"
+        }
+      ],
+      "intro_lead": "Rent the stack tonight.",
+      "intro_body": "Today's releases lower the floor for experimentation: inference, agents, and local coding tools are all one command or one clone away. Vendor benchmarks dominate, so your own workload is the only honest test."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_190decdc3fe27935",
+          "headline": "Options models can now train on price and volatility targets simultaneously",
+          "summary": "Early signal from a quant ML paper sweep: PIVOT embeds a differentiable volatility-inversion step into model training, letting a network optimise against price and volatility targets jointly. Single paper, no public code mentioned, thin sourcing. If the technique replicates, it tightens options model calibration; if it doesn't, the benchmark gap between price-space and vol-space objectives stays open.",
+          "source_urls": [
+            "https://blog.ml-quant.com/p/quant-letter-june-2026-week-2"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_0dd37c02af3a5d1f",
+          "headline": "Giving a language model thinking time helps it recall facts it otherwise misses",
+          "summary": "Google Research found that reasoning traces unlock facts a model holds but cannot surface directly, via two mechanisms: extra tokens act as a compute buffer, and generating related facts primes correct recall. One hallucinated intermediate fact measurably reduces final accuracy. No code released; if this replicates, it changes how you prompt for factual retrieval. If it doesn't, the audit methodology is still the useful artefact.",
+          "source_urls": [
+            "https://research.google/blog/thinking-to-recall-how-reasoning-unlocks-parametric-knowledge-in-llms/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_3fcf574c23347489",
+          "headline": "A derivatives pricing technique now covers options it previously excluded",
+          "summary": "Differential machine learning prices derivatives fast by training on sensitivities alongside prices, but broke on discontinuous payoffs like barriers and digitals. Glasserman and Karmarkar extend it to cover those cases. No code released; paper is paywalled. If the approach replicates, exotic-desk pricing pipelines gain a faster approximation; if not, the barrier-option gap stays open.",
+          "source_urls": [
+            "https://www.risk.net/cutting-edge/7963690/differential-machine-learning-with-a-difference"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        }
+      ],
+      "intro_lead": "Quant tooling is getting sharper.",
+      "intro_body": "Three independent research threads are quietly closing gaps that kept ML out of live derivatives work. Each sits here because none has code, replication, or adoption yet."
+    }
+  ],
+  "generated_at": "2026-06-28T01:39:14.944340Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.16",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 5, currents: 3"
+}
