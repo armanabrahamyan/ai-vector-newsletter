@@ -14,12 +14,15 @@ from pydantic import ValidationError
 from src.models import (
     RUBRIC_WEIGHTS,
     Cluster,
+    ClaimVerdict,
     Issue,
     IssueSection,
     RankedStory,
     SourceHealth,
     SourceHealthReport,
+    StoryVerification,
     SummaryBlock,
+    VerificationReport,
 )
 from tests.conftest import (
     FIXED_EARLIER,
@@ -356,3 +359,180 @@ class TestIssueDisplayNumber:
         """Field(ge=0) -- pydantic enforces, but pin the contract."""
         with pytest.raises(ValidationError):
             self._issue(issue_number=1, revision=-1)
+
+
+# ===========================================================================
+# ClaimVerdict -- contradicted-requires-source_span is OUR validator.
+# ===========================================================================
+
+class TestClaimVerdict:
+    """The only custom logic on ClaimVerdict is _contradicted_requires_source_span.
+    That validator is the contract-level backstop: verify.py downgrades span-less
+    contradictions before construction, but a hand-authored or mis-serialised
+    record must not sneak through. We own this invariant; pydantic does not."""
+
+    def _valid(self, **overrides) -> dict:
+        base = dict(
+            claim="The model runs on an RTX 3090",
+            verdict="supported",
+            location="body",
+        )
+        base.update(overrides)
+        return base
+
+    def test_contradicted_with_source_span_is_accepted(self) -> None:
+        cv = ClaimVerdict(**self._valid(
+            verdict="contradicted",
+            source_span="the source says it needs a data-centre GPU",
+        ))
+        assert cv.verdict == "contradicted"
+
+    def test_contradicted_without_source_span_raises(self) -> None:
+        """No source_span on a contradicted verdict must be rejected.
+        If this validator is removed, the test fails on the validation pass."""
+        with pytest.raises(ValidationError, match="source_span"):
+            ClaimVerdict(**self._valid(
+                verdict="contradicted",
+                source_span="",  # empty -- no contradicting quote
+            ))
+
+    def test_unsupported_without_source_span_is_accepted(self) -> None:
+        """unsupported legitimately has an empty source_span -- the fact is
+        absent from the source, so there is nothing to quote. Must not raise."""
+        cv = ClaimVerdict(**self._valid(verdict="unsupported", source_span=""))
+        assert cv.verdict == "unsupported"
+
+    def test_unverifiable_without_source_span_is_accepted(self) -> None:
+        cv = ClaimVerdict(**self._valid(verdict="unverifiable", source_span=""))
+        assert cv.verdict == "unverifiable"
+
+
+# ===========================================================================
+# StoryVerification -- rollup-must-agree-with-claims is OUR validator.
+# ===========================================================================
+
+class TestStoryVerification:
+    """The _rollups_match_claims validator owns three booleans: has_contradiction,
+    has_unsupported, headline_flagged. A writer that sets any of them inconsistently
+    with the claim list must be rejected here -- the renderer trusts these flags
+    without re-scanning claims."""
+
+    _PROMPT_VERSION = "v0.4"
+    _STORY_ID = "c_aaaaaaaaaaaa"
+
+    def _make_claim(self, verdict: str, location: str = "body", source_span: str = "") -> ClaimVerdict:
+        return ClaimVerdict(
+            claim="some claim",
+            verdict=verdict,
+            location=location,
+            source_span=source_span if verdict == "contradicted" else "",
+            # contradicted needs a source_span to clear ClaimVerdict's own validator
+            **({} if verdict != "contradicted" else {"source_span": source_span or "some quote"}),
+        )
+
+    def _sv(self, claims, **overrides) -> StoryVerification:
+        defaults = dict(
+            story_id=self._STORY_ID,
+            prompt_version=self._PROMPT_VERSION,
+            claims=claims,
+            has_contradiction=any(c.verdict == "contradicted" for c in claims),
+            has_unsupported=any(c.verdict == "unsupported" for c in claims),
+            headline_flagged=any(
+                c.location == "headline" and c.verdict in {"contradicted", "unsupported"}
+                for c in claims
+            ),
+        )
+        defaults.update(overrides)
+        return StoryVerification(**defaults)
+
+    def test_consistent_rollups_accepted(self) -> None:
+        claim = ClaimVerdict(
+            claim="runs on RTX 3090", verdict="contradicted",
+            location="headline", source_span="needs a data-centre GPU",
+        )
+        sv = self._sv([claim])
+        assert sv.has_contradiction is True
+        assert sv.headline_flagged is True
+
+    def test_has_contradiction_disagrees_with_claims_raises(self) -> None:
+        """If the claim list has no contradictions but has_contradiction=True,
+        the validator must reject it."""
+        claim = ClaimVerdict(claim="ok", verdict="supported", location="body")
+        with pytest.raises(ValidationError, match="has_contradiction"):
+            self._sv([claim], has_contradiction=True)
+
+    def test_has_unsupported_disagrees_with_claims_raises(self) -> None:
+        claim = ClaimVerdict(claim="ok", verdict="supported", location="body")
+        with pytest.raises(ValidationError, match="has_unsupported"):
+            self._sv([claim], has_unsupported=True)
+
+    def test_headline_flagged_disagrees_with_claims_raises(self) -> None:
+        # A body contradiction does NOT set headline_flagged; a caller claiming
+        # otherwise must be rejected.
+        claim = ClaimVerdict(
+            claim="body contradiction", verdict="contradicted",
+            location="body", source_span="evidence",
+        )
+        with pytest.raises(ValidationError, match="headline_flagged"):
+            self._sv([claim], headline_flagged=True)
+
+    def test_empty_claims_all_rollups_false(self) -> None:
+        """An empty claim list (e.g. per-story isolation fallback) must
+        produce all-False rollups -- not a flag."""
+        sv = self._sv([])
+        assert sv.has_contradiction is False
+        assert sv.has_unsupported is False
+        assert sv.headline_flagged is False
+
+
+# ===========================================================================
+# VerificationReport -- unavailable-has-no-stories is OUR validator.
+# ===========================================================================
+
+class TestVerificationReport:
+    """_unavailable_has_no_stories: an unavailable report MUST carry an empty
+    stories list. The reader branches on verdict to decide whether to show
+    flags; a non-empty unavailable list would be an ambiguous mix of signals."""
+
+    _PROMPT_VERSION = "v0.4"
+
+    def _sv(self, story_id: str = "c_aaaaaaaaaaaa") -> StoryVerification:
+        return StoryVerification(
+            story_id=story_id,
+            prompt_version=self._PROMPT_VERSION,
+            claims=[],
+            has_contradiction=False,
+            has_unsupported=False,
+            headline_flagged=False,
+        )
+
+    def test_clean_report_with_stories_accepted(self) -> None:
+        import datetime as _dt
+        report = VerificationReport(
+            generated_at=_dt.datetime(2026, 5, 24, 12, 0, 0, tzinfo=_dt.timezone.utc),
+            prompt_version=self._PROMPT_VERSION,
+            verdict="clean",
+            stories=[self._sv()],
+        )
+        assert report.verdict == "clean"
+
+    def test_unavailable_with_stories_raises(self) -> None:
+        import datetime as _dt
+        with pytest.raises(ValidationError, match="unavailable"):
+            VerificationReport(
+                generated_at=_dt.datetime(2026, 5, 24, 12, 0, 0, tzinfo=_dt.timezone.utc),
+                prompt_version=self._PROMPT_VERSION,
+                verdict="unavailable",
+                stories=[self._sv()],   # must be empty for unavailable
+            )
+
+    def test_unavailable_with_empty_stories_accepted(self) -> None:
+        import datetime as _dt
+        report = VerificationReport(
+            generated_at=_dt.datetime(2026, 5, 24, 12, 0, 0, tzinfo=_dt.timezone.utc),
+            prompt_version=self._PROMPT_VERSION,
+            verdict="unavailable",
+            stories=[],
+        )
+        assert report.verdict == "unavailable"
+        assert report.stories == []

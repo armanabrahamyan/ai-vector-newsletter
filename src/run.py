@@ -40,16 +40,17 @@ STAGE_ORDER: tuple[str, ...] = (
     "cluster",
     "rank",
     "summarise",
+    "verify",
     "render",
     "review",
 )
 
 # Stages that require the LLM env vars to be valid before they can run.
-# ``review`` calls the LLM but is failure-soft: a misconfigured env produces
-# an ``unavailable`` review.md, not a crash. We still want the validator to
-# fire when ``review`` is the only stage requested standalone so the
-# operator sees a clear error instead of a silent ``unavailable``.
-LLM_STAGES: frozenset[str] = frozenset({"rank", "summarise", "review"})
+# ``review`` and ``verify`` call the LLM but are failure-soft: a misconfigured
+# env produces an ``unavailable`` artifact, not a crash. We still want the
+# validator to fire when one of these is the only stage requested standalone
+# so the operator sees a clear error instead of a silent ``unavailable``.
+LLM_STAGES: frozenset[str] = frozenset({"rank", "summarise", "verify", "review"})
 
 # Providers we ship with. anthropic + bedrock have native clients;
 # openai/litellm/ollama share the OpenAI-compatible Chat Completions path
@@ -85,7 +86,11 @@ def _resolve_date(arg_value: str | None) -> _dt.date:
 
 
 def _resolve_stages(
-    stage: str | None, stages: str | None, *, no_review: bool = False,
+    stage: str | None,
+    stages: str | None,
+    *,
+    no_review: bool = False,
+    no_verify: bool = False,
 ) -> list[str]:
     """Resolve the requested stage list for the STAGING pipeline mode.
 
@@ -96,6 +101,18 @@ def _resolve_stages(
 
     Returns the list in pipeline execution order.
 
+    Auto-verify contract: ``verify`` runs automatically whenever
+    ``summarise`` runs, unless ``no_verify=True``. So a default run,
+    ``--stages summarise``, and ``--stages rank,summarise`` all gain
+    ``verify`` immediately after ``summarise``. A subset that excludes
+    ``summarise`` (``--stages render``, ``--stages fetch,cluster``) does
+    NOT pull verify in -- factual-accuracy checking is meaningful only
+    against a freshly summarised staging issue.
+    ``--stages verify`` is the explicit-standalone path and is honoured
+    verbatim. The ``--stage verify`` single-stage form is likewise honoured.
+    ``--no-verify`` strips verify from the resolved list, the escape hatch
+    for full runs and summarise-only runs alike.
+
     Auto-review contract: ``review`` runs automatically whenever ``render``
     runs, unless ``no_review=True``. So a default run, ``--stages render``,
     and ``--stages summarise,render`` all gain ``review`` at the tail.
@@ -103,9 +120,9 @@ def _resolve_stages(
     ``--stages fetch,cluster``) does NOT pull review in -- the editorial
     pass is meaningful only against a freshly rendered staging draft.
     ``--stages review`` is the explicit-standalone path and is honoured
-    verbatim. The ``--stage review`` single-stage form is likewise
-    honoured. ``--no-review`` strips review from the resolved list, which
-    is the escape hatch for full runs and render-only runs alike.
+    verbatim. The ``--stage review`` single-stage form is likewise honoured.
+    ``--no-review`` strips review from the resolved list, which is the escape
+    hatch for full runs and render-only runs alike.
     """
     if stage is not None:
         resolved = [stage]
@@ -119,16 +136,37 @@ def _resolve_stages(
             )
         requested_set = set(requested)
         resolved = [s for s in STAGE_ORDER if s in requested_set]
+        # Auto-fire verify whenever summarise runs (unless --no-verify).
+        if "summarise" in requested_set and "verify" not in requested_set:
+            resolved = _insert_after(resolved, "summarise", "verify")
         # Auto-fire review whenever render runs (unless --no-review).
         if "render" in requested_set and "review" not in requested_set:
             resolved.append("review")
     else:
         resolved = list(STAGE_ORDER)
 
+    if no_verify:
+        resolved = [s for s in resolved if s != "verify"]
     if no_review:
         resolved = [s for s in resolved if s != "review"]
 
     return resolved
+
+
+def _insert_after(lst: list[str], after: str, new: str) -> list[str]:
+    """Return a copy of ``lst`` with ``new`` inserted immediately after
+    ``after``. If ``after`` is not in the list, ``new`` is appended.
+    If ``new`` is already in the list, the list is returned unchanged."""
+    if new in lst:
+        return list(lst)
+    out: list[str] = []
+    for item in lst:
+        out.append(item)
+        if item == after:
+            out.append(new)
+    if new not in out:
+        out.append(new)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +319,32 @@ def _run_summarise(run_date: _dt.date) -> str:
     )
 
 
+def _run_verify(run_date: _dt.date) -> str:
+    """Invoke src.verify.verify_day(date) and summarise the result.
+
+    ``verify`` is failure-soft by contract -- the underlying module catches
+    LLM/transport errors and returns a ``VerificationReport`` with
+    ``verdict="unavailable"`` rather than raising. This handler adds a second
+    defensive layer: even an unexpected raise (import error, missing module)
+    is caught, logged, and turned into a non-blocking warning so the pipeline
+    continues to render regardless.
+    """
+    from src import verify as verify_mod
+
+    report = verify_mod.verify_day(run_date)
+    flagged = sum(
+        1 for s in report.stories
+        if s.has_contradiction or s.has_unsupported or s.headline_flagged
+    )
+    if report.verdict == "unavailable":
+        return f"unavailable -- {report.note[:120] if report.note else '(no detail)'}"
+    return (
+        f"{report.verdict.upper()} -- "
+        f"{len(report.stories)} stories verified / "
+        f"{flagged} flagged"
+    )
+
+
 def _run_render_preview(run_date: _dt.date) -> str:
     """Invoke render.render(date, mode='preview') and summarise."""
     from src import render as render_mod
@@ -310,13 +374,28 @@ _STAGE_HANDLERS: dict[str, Callable[[_dt.date], str]] = {
     "cluster": _run_cluster,
     "rank": _run_rank,
     "summarise": _run_summarise,
+    "verify": _run_verify,
     "render": _run_render_preview,
     "review": _run_review,
 }
 
 
+# Stages that are advisory: an unexpected exception at the dispatch level
+# is caught, logged at WARNING, and treated as a non-blocking soft failure
+# so the pipeline continues (the stage's own module is expected to be
+# failure-soft internally, but this is the belt-and-suspenders guard).
+_ADVISORY_STAGES: frozenset[str] = frozenset({"verify", "review"})
+
+
 def _run_stage(name: str, run_date: _dt.date) -> tuple[bool, str]:
-    """Execute one staging-pipeline stage with structured logging."""
+    """Execute one staging-pipeline stage with structured logging.
+
+    Returns ``(ok, summary)``. For advisory stages (verify, review),
+    unexpected exceptions are caught, logged at WARNING, and returned as
+    ``(True, "<error>")`` -- they never halt the pipeline. For all other
+    stages, an unexpected exception returns ``(False, reason)`` which halts
+    the pipeline at that point.
+    """
     _LOG.info("--- stage: %s ---", name)
     handler = _STAGE_HANDLERS[name]
     t0 = time.monotonic()
@@ -326,6 +405,14 @@ def _run_stage(name: str, run_date: _dt.date) -> tuple[bool, str]:
         raise
     except Exception as exc:
         elapsed_ms = int((time.monotonic() - t0) * 1000)
+        if name in _ADVISORY_STAGES:
+            _LOG.warning(
+                "stage %s raised unexpectedly after %dms (advisory -- pipeline "
+                "continues) -- %s: %s",
+                name, elapsed_ms, type(exc).__name__, exc,
+            )
+            _LOG.warning("traceback:\n%s", traceback.format_exc())
+            return True, f"[advisory-guard] {type(exc).__name__}: {exc}"
         _LOG.error(
             "stage %s FAILED after %dms -- %s: %s",
             name, elapsed_ms, type(exc).__name__, exc,
@@ -379,6 +466,8 @@ _STAGE_ARTIFACTS: dict[str, str] = {
                   "data/staging/{date}/embeddings/centroids.npz"),
     "rank":      "data/staging/{date}/ranked.jsonl",
     "summarise": "data/staging/{date}/issue.json (issue_number=None)",
+    "verify":    ("data/staging/{date}/verify.json + "
+                  "data/staging/{date}/issue.json (verification populated)"),
     "render":    "docs/staging/{date}.html",
     "review":    "data/staging/{date}/review.md (editorial verdict)",
 }
@@ -404,7 +493,7 @@ def _dry_run_release(run_date: _dt.date) -> None:
     print( "  3. derive issue_number: max(canonical) + 1")
     print(f"  4. copy peripherals:  {staging_dir}/ -> {released_dir}/")
     print("       items.jsonl, source_health.json, clusters.jsonl, "
-          "ranked.jsonl, embeddings/centroids.npz")
+          "ranked.jsonl, embeddings/centroids.npz, verify.json (if present)")
     print(f"  5. write canonical issue.json LAST -> "
           f"{paths.issue_path(run_date, canonical=True)}")
     print(f"  6. render canonical -> {paths.DOCS_INDEX} + "
@@ -446,13 +535,14 @@ def _run_pipeline(
         _dry_run_staging(run_date, stages)
         return 0
 
-    # The env validator hard-fails when LLM stages can't run. Review is
-    # failure-soft -- a misconfigured env should still let render+release
-    # ship -- so we skip the strict check when review is the only LLM
-    # stage in scope and there's another non-LLM stage running too.
-    # When review is the SOLE stage (standalone), we let it fail soft on
-    # its own (writes verdict: unavailable) rather than crashing the CLI.
-    stages_for_validation = [s for s in stages if s != "review"]
+    # The env validator hard-fails when LLM stages can't run. Both ``review``
+    # and ``verify`` are failure-soft -- a misconfigured env should still let
+    # render+release ship -- so we skip the strict check for both when they
+    # are the only LLM stages in scope and there are other non-LLM stages
+    # running too. When either is the SOLE stage (standalone), we let it fail
+    # soft on its own (writes verdict: unavailable) rather than crashing the
+    # CLI.
+    stages_for_validation = [s for s in stages if s not in ("review", "verify")]
     if stages_for_validation:
         _validate_env_for_stages(stages_for_validation)
 
@@ -475,6 +565,7 @@ def _run_pipeline(
     stages_succeeded: list[str] = []
     failed_stage: str | None = None
     failure_reason: str | None = None
+    verify_summary: str | None = None
     review_summary: str | None = None
 
     for name in stages:
@@ -490,12 +581,15 @@ def _run_pipeline(
                 )
             break
         stages_succeeded.append(name)
+        if name == "verify":
+            verify_summary = message
         if name == "review":
             review_summary = message
 
     elapsed = time.monotonic() - wall_t0
     _print_staging_summary(
         run_date, stages_succeeded, failed_stage, failure_reason, elapsed,
+        verify_summary=verify_summary,
         review_summary=review_summary,
     )
     # Duplicate-risk guard: fires when this run (re)built the issue and
@@ -709,6 +803,7 @@ def _print_staging_summary(
     failure_reason: str | None,
     elapsed_seconds: float,
     *,
+    verify_summary: str | None = None,
     review_summary: str | None = None,
 ) -> None:
     mm = int(elapsed_seconds // 60)
@@ -737,9 +832,10 @@ def _print_staging_summary(
         _LOG.info(" stages run: %s", run_part)
         _LOG.info(" elapsed: %s", elapsed_str)
     _LOG.info(_BANNER_RULE)
-    # The review verdict surfaces AFTER the closing banner so it sits as a
-    # single, scannable last line for Arman. Format mirrors the spec:
-    # ``review: GREEN -- "<one_line>"``.
+    # Advisory verdicts surface AFTER the closing banner so they sit as
+    # scannable last lines for Arman.
+    if verify_summary is not None:
+        _LOG.info("verify: %s", verify_summary)
     if review_summary is not None:
         _LOG.info("review: %s", review_summary)
 
@@ -825,6 +921,13 @@ def run(
         False, "--skip-preflight",
         help="Skip embedding + LLM pre-flight checks.",
     ),
+    no_verify: bool = typer.Option(
+        False, "--no-verify",
+        help="Skip the advisory factual-verify pass. Verify auto-fires "
+             "whenever 'summarise' runs; use this flag to suppress it. "
+             "Verify is failure-soft and advisory -- skipping it does not "
+             "affect whether the issue can be released.",
+    ),
     no_review: bool = typer.Option(
         False, "--no-review",
         help="Skip the post-render editorial review pass. Review auto-fires "
@@ -832,7 +935,12 @@ def run(
     ),
     verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
 ) -> None:
-    """Fetch, cluster, rank, summarise, render, and review a staging draft.
+    """Fetch, cluster, rank, summarise, verify, render, and review a staging draft.
+
+    The advisory factual-verify pass auto-fires after ``summarise`` runs
+    (full pipeline or any stage subset that includes ``summarise``). Pass
+    ``--no-verify`` to skip it. Verify is failure-soft and never blocks the
+    pipeline or the release.
 
     The editor's pre-release review auto-fires after ``render`` runs (full
     pipeline or any stage subset that includes ``render``). Pass
@@ -841,7 +949,7 @@ def run(
     _setup_logging(verbose)
     _load_env()
     run_date = _resolve_date(date)
-    stage_list = _resolve_stages(stage, stages, no_review=no_review)
+    stage_list = _resolve_stages(stage, stages, no_verify=no_verify, no_review=no_review)
     sys.exit(_run_pipeline(run_date, stage_list, dry_run, skip_preflight=skip_preflight))
 
 

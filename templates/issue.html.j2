@@ -291,6 +291,29 @@
     .av-section.on_the_radar .av-story { margin: 0 0 22px; }
     .av-section.on_the_radar .av-story-body { font-size: 16px; }
 
+    /* ── verify flags (staging preview only) ──────────────── */
+    .av-verify-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: "Inter Tight", system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #7a3800;
+      background: #fff3e0;
+      border: 1px solid #f0a050;
+      white-space: nowrap;
+    }
+    .av-verify-flag--headline {
+      color: #6a0000;
+      background: #fff0f0;
+      border-color: #e07070;
+    }
+
     /* ── footer ────────────────────────────────────────────── */
     .av-footer {
       margin-top: 56px;
@@ -395,6 +418,15 @@
         {% for url in p.source_urls %}
           <a class="av-pulse-link" href="{{ url }}">{{ url | source_label }}&nbsp;&rarr;</a>
         {% endfor %}
+        {% if show_verify_flags and p.verification %}
+          {% if p.verification.headline_flagged %}
+            <span class="av-verify-flag av-verify-flag--headline" title="Headline claim flagged by advisory verifier">&#9888; headline claim flagged</span>
+          {% elif p.verification.has_contradiction %}
+            <span class="av-verify-flag av-verify-flag--headline" title="Contradicted claim detected by advisory verifier">&#9888; contradicted</span>
+          {% elif p.verification.has_unsupported %}
+            <span class="av-verify-flag" title="Unsupported claim detected by advisory verifier">&#9888; unsupported claim</span>
+          {% endif %}
+        {% endif %}
       </div>
     </section>
 
@@ -425,6 +457,15 @@
                 {% for url in story.source_urls %}
                   <a class="av-story-src" href="{{ url }}">{{ url | source_label }}&nbsp;&rarr;</a>
                 {% endfor %}
+                {% if show_verify_flags and story.verification %}
+                  {% if story.verification.headline_flagged %}
+                    <span class="av-verify-flag av-verify-flag--headline" title="Headline claim flagged by advisory verifier">&#9888; headline claim flagged</span>
+                  {% elif story.verification.has_contradiction %}
+                    <span class="av-verify-flag av-verify-flag--headline" title="Contradicted claim detected by advisory verifier">&#9888; contradicted</span>
+                  {% elif story.verification.has_unsupported %}
+                    <span class="av-verify-flag" title="Unsupported claim detected by advisory verifier">&#9888; unsupported claim</span>
+                  {% endif %}
+                {% endif %}
               </div>
             </article>
           {% endfor %}

@@ -33,7 +33,7 @@ auto-publishes, by design.
 > reliably?* If yes, code does it. The LLM is reserved for the calls
 > only judgment can make.
 
-### Why these five stages
+### Why these six stages
 
 Each stage solves a problem the others can't.
 
@@ -43,6 +43,7 @@ Each stage solves a problem the others can't.
 | `cluster`   | Ten feeds produce ten copies of the same story |
 | `rank`      | The issue is a chronological list, not an edit |
 | `summarise` | The reader gets a link dump, not a newsletter |
+| `verify`    | Factual claims go unchecked before Arman reviews (advisory; never blocks) |
 | `render`    | The output is JSON, not something a human reads |
 
 Each stage writes a typed file (`items.jsonl` → `clusters.jsonl` →
@@ -63,12 +64,14 @@ costs, and how long it takes — live in §2.
 | Roll back a bad issue | `aiv unrelease --date YYYY-MM-DD` |
 | Re-do a single stage | `aiv run --stage <stage>` |
 | Re-process an earlier day | `aiv run --date YYYY-MM-DD` |
+| Re-run just verify | `aiv run --stage verify --date YYYY-MM-DD` |
+| Skip the verify pass | add `--no-verify` to `aiv run` |
 | See what would happen | add `--dry-run` to any command |
 | Get more logging | add `--verbose` to any command |
 | Just check setup | `aiv check` |
 
 Pipeline stages, in order:
-`fetch` → `cluster` → `rank` → `summarise` → `render`
+`fetch` → `cluster` → `rank` → `summarise` → `verify` → `render`
 
 ---
 
@@ -120,6 +123,15 @@ its own — that's why you can re-run subsets cheaply.
 - **Uses LLM.** Cost ≈ $0.10-0.15 (~12 stories × larger prompt + section intros). Time ≈ 60-180 s.
 - **When it goes wrong:** voice off → prompt drift in `src/summarise.py`. Empty bodies → trafilatura blocked on the source URL.
 
+### `verify` — advisory factual check
+- **Reads:** `issue.json` + `source_excerpts.jsonl` (the exact excerpts `summarise` used)
+- **Writes:** `data/staging/<date>/verify.json` and updates `issue.json` with per-story flags
+- **What it does:** For each story, decomposes the headline and body into atomic factual claims and checks each one against the source excerpt. Each claim receives a verdict: `supported`, `unsupported`, `contradicted`, or `unverifiable`. Headline errors are flagged most prominently because readers trust the headline first. Rolls up to a per-story `has_contradiction`, `has_unsupported`, `headline_flagged`, and a report-level verdict of `clean`, `flagged`, or `unavailable`.
+- **Uses LLM.** Cost ≈ $0.02-0.05 (~12 stories × short prompt). Time ≈ 15-30 s.
+- **Advisory — never blocks.** If the LLM call fails, the network is unavailable, or `source_excerpts.jsonl` is missing, `verify` writes a `verdict: unavailable` report and the pipeline continues to render. The staging preview shows no flags; the release proceeds normally.
+- **Flags are for Arman's review only.** When flags are present, the staging HTML preview shows a small amber badge on each flagged story: "unsupported claim" or "headline claim flagged." These badges do not appear in the released reader-facing HTML.
+- **When it goes wrong:** `verify.json` will say `unavailable` with a note. To re-run it alone: `aiv run --stage verify --date <date>`. To skip it entirely: `--no-verify`.
+
 ### `render` — produce HTML
 - **Reads:** `issue.json`
 - **Writes:** `docs/staging/<date>.html`
@@ -133,13 +145,13 @@ its own — that's why you can re-run subsets cheaply.
 config/sources.yaml ──► fetch ──► items.jsonl ──► cluster ──► clusters.jsonl
                                                                      │
                                                                      ▼
-docs/staging/<date>.html ◄── render ◄── issue.json ◄── summarise ◄── ranked.jsonl
-                                                          ▲              ▲
-                                                          │              │
-                                                       rank ─────────────┘
+docs/staging/<date>.html ◄── render ◄── verify ◄── issue.json ◄── summarise ◄── ranked.jsonl
+                                          │                          ▲              ▲
+                                     verify.json                     │              │
+                                                                  rank ─────────────┘
 ```
 
-Total: 2-5 minutes end-to-end. Most of it is `summarise`.
+Total: 2-5 minutes end-to-end. Most of it is `summarise`. `verify` adds 15-30 s.
 
 ---
 
@@ -155,6 +167,7 @@ its predecessor's file and writes its own. Touch the smallest surface.
 | `config/rubric.yaml` | `rank` onwards |
 | A prompt in `src/rank.py` | `rank` onwards |
 | A prompt in `src/summarise.py` | `summarise` onwards |
+| A prompt in `src/verify.py` | `verify` only |
 | `templates/issue.html.j2` | `render` only |
 
 Examples:
@@ -162,6 +175,9 @@ Examples:
 ```bash
 # Just re-rank and re-summarise (you tweaked the rubric):
 aiv run --stages rank,summarise,render --date 2026-05-24
+
+# Just re-run the factual-verify pass:
+aiv run --stage verify --date 2026-05-24
 
 # Just the HTML (you tweaked CSS):
 aiv run --stage render --date 2026-05-24
@@ -328,6 +344,65 @@ nothing is gated — `aiv release` still works. The guard just makes sure you
 
 ---
 
+## 7d. "The staging preview shows amber flags on a story. What does that mean?"
+
+The advisory verify stage checks factual claims in each story's headline and
+body against the exact source excerpt that `summarise` used. When it finds a
+claim that appears to be unsupported or contradicted by the source, it marks
+the story with a flag. These flags are visible only in the staging preview
+(`docs/staging/<date>.html`) and are for your review before release. They do
+not appear in the published reader-facing HTML.
+
+**Flag meanings:**
+
+- **"headline claim flagged"** (red badge): a claim in the headline is either
+  unsupported by the source or directly contradicted. This is the most severe
+  finding — the headline is the first thing readers see and trust.
+- **"contradicted"** (red badge): a body claim is directly contradicted by
+  the source excerpt (the source says something incompatible with the claim).
+- **"unsupported claim"** (amber badge): a body claim is absent from the
+  source — it may be editorial framing rather than something the source
+  states. Often benign; read the note in `verify.json` to decide.
+
+**These are advisory.** The verify stage is a calibrated sanity check, not a
+gating judge. It will occasionally surface false positives (for example, when
+the claim is drawn from a secondary source or from common knowledge not
+present in the excerpt). Use your judgment.
+
+**What to do when you see a flag:**
+
+1. Open `data/staging/<date>/verify.json` and find the story. Each flagged
+   claim has a `source_span` and `note` field showing exactly what the
+   verifier saw and why it flagged.
+2. If the concern is real — edit the headline or body in
+   `data/staging/<date>/issue.json` and re-render:
+   ```bash
+   aiv run --stage render --date <date>
+   ```
+3. To re-run the verifier after editing (so the flag clears):
+   ```bash
+   aiv run --stage verify --date <date>
+   ```
+4. If the flag is a false positive — proceed with `aiv release` as normal.
+   Flags do not block release.
+
+**To skip verify entirely on a given run:**
+
+```bash
+aiv run --no-verify --date <date>
+aiv run --stages rank,summarise,render --date <date>   # verify auto-fires with summarise; this skips it
+aiv run --stages rank,summarise,render --no-verify --date <date>  # explicit
+```
+
+**To check what verify found without re-running the pipeline:**
+
+```bash
+jq '.verdict, .verdict_counts' data/staging/<date>/verify.json
+jq '.stories[] | select(.has_contradiction or .has_unsupported or .headline_flagged) | {story_id, headline_flagged, has_contradiction, has_unsupported}' data/staging/<date>/verify.json
+```
+
+---
+
 ## 8. "I released something bad. How do I undo?"
 
 ```bash
@@ -433,12 +508,16 @@ Always use `--dry-run` before:
 
 ```bash
 aiv run --skip-preflight       # skip embedding + LLM endpoint checks
+aiv run --no-verify            # skip the advisory factual-verify pass
 aiv run --stage fetch          # fetch alone — no LLM cost at all
 aiv run --stages fetch,cluster # gather + group, still no LLM
 ```
 
 A full `aiv run` is ~$0.10–0.20 of Anthropic spend (depends on item count
-and model). Skipping `rank` + `summarise` removes 100% of the LLM cost.
+and model). Skipping `rank` + `summarise` removes the bulk of the LLM cost.
+`verify` adds a small incremental cost (~$0.02-0.05); skip it with
+`--no-verify` when you just want to re-render quickly or when the LLM
+endpoint is unavailable.
 
 For iteration: do one full run to get fresh data, then loop on
 `--stages rank,summarise,render` while tweaking prompts.
@@ -450,6 +529,7 @@ For iteration: do one full run to get fresh data, then loop on
 | File | Edit by hand? | Notes |
 |---|---|---|
 | `data/staging/*/issue.json` | Yes | Re-render after with `aiv run --stage render` |
+| `data/staging/*/verify.json` | No | Auto-written by verify stage; re-run `aiv run --stage verify` |
 | `data/staging/*/ranked.jsonl` | Yes | Re-summarise after |
 | `data/staging/*/clusters.jsonl` | Cautious | Usually easier to re-cluster |
 | `data/staging/*/items.jsonl` | No | Re-run fetch instead |
@@ -552,6 +632,7 @@ or rubric changes.
 | Change type | Minimum eval to run |
 |---|---|
 | `config/rubric.yaml` or rank/summarise prompts | `aiv eval` (full, with judge) |
+| `src/verify.py` or verify prompt | `aiv eval --no-judge` (integrity check) |
 | `src/cluster.py` or clustering threshold | `aiv eval --no-judge` |
 | `src/fetch.py` or `config/sources.yaml` | `aiv eval --no-judge` |
 | Template or CSS only | skip — render has no eval gate |

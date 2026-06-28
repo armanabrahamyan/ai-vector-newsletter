@@ -43,15 +43,24 @@ Pipeline flow (producers -> consumers; full picture in `docs/internal/TEAM.md`):
     SourceHealthReport -> produced by src/fetch.py
                           consumed by evals (per-source health summary)
 
+    ClaimVerdict /  -> produced by src/verify.py (advisory verify stage)
+    StoryVerification  consumed by render (per-story factual flag), Editor
+                       loop, evals; denormalised onto SummaryBlock.verification
+
+    VerificationReport -> produced by src/verify.py (the verify.json sidecar)
+                          consumed by render, Editor, evals
+
 Schema versioning. Every persisted model carries a `schema_version: int`
 field per the DESIGN.md schema changelog. Most models are v1 today; `Issue`
-is v5 (v2 added `issue_number`; v3 made `issue_number` Optional to support
+is v6 (v2 added `issue_number`; v3 made `issue_number` Optional to support
 the staging vs canonical archive split; v4 dropped direction_note +
 finance_angle and renamed sections; v5 adds `revision: int = 0` for
-same-date re-releases that display as `#N.M` -- see "Archive: staging vs
-canonical" and "Issue Number Registry" in DESIGN.md). When you change a
-shape, bump the version on the affected model and append a row to the
-changelog in DESIGN.md in the same PR.
+same-date re-releases that display as `#N.M`; v6 tracks the SummaryBlock
+v3 change -- the additive `verification` field from the advisory verify
+stage -- see "Archive: staging vs canonical", "Issue Number Registry", and
+"verify.json" in DESIGN.md). When you change a shape, bump the version on
+the affected model and append a row to the changelog in DESIGN.md in the
+same PR.
 
 External vectors. Embeddings are not stored inline -- `Cluster.centroid_ref`
 is a plain `str` filename pointing into `data/YYYY-MM-DD/embeddings/`. See
@@ -158,6 +167,42 @@ MissedReason = Literal[
     "disabled",
 ]
 """SourceHealth.missed_reason short tokens. See DESIGN.md source_health.json."""
+
+
+ClaimLocation = Literal["headline", "body"]
+"""Where a verified claim was drawn from. Headline errors are the most severe
+-- readers trust the headline first. Mirrors `src/verify.py::_VALID_LOCATIONS`."""
+
+ClaimVerdictValue = Literal[
+    "supported",
+    "unsupported",
+    "contradicted",
+    "unverifiable",
+]
+"""Per-claim factual-accuracy verdict. Mirrors `src/verify.py::_VALID_VERDICTS`.
+
+  - ``supported``     : the source excerpt corroborates the claim.
+  - ``unsupported``   : the claim is absent from the source (not asserted).
+  - ``contradicted``  : the source asserts something incompatible. MUST carry
+                        a non-empty ``source_span`` (see the validator on
+                        ``ClaimVerdict``); the verifier downgrades a
+                        contradicted-without-span to ``unsupported`` before it
+                        ever reaches this model.
+  - ``unverifiable``  : nothing in the source to check against (empty/absent
+                        excerpt).
+"""
+
+VerificationVerdict = Literal["clean", "flagged", "unavailable"]
+"""Rollup verdict on `VerificationReport`. Mirrors the review.md tri-state +
+unavailable pattern.
+
+  - ``clean``       : ran, no claim flagged (no contradicted / unsupported).
+  - ``flagged``     : ran, at least one claim flagged for attention.
+  - ``unavailable`` : the verify stage could not run (LLM/transport failure,
+                      missing inputs). ADVISORY-soft: this is a non-blocking
+                      state, identical in spirit to review.md's
+                      ``verdict: unavailable``. See DESIGN.md "verify.json".
+"""
 
 
 # Patterns reused across models.
@@ -669,9 +714,14 @@ class SummaryBlock(BaseModel):
 
     `story_id` equals the originating `Cluster.cluster_id` -- the canonical
     handle for a story across cluster/rank/summarise/render.
+
+    Schema v3 (2026-06-29): added the optional nullable ``verification:
+    StoryVerification | None = None`` field, populated by the advisory verify
+    stage. Additive + nullable -- older issue.json files (schema_version <= 2)
+    parse cleanly with ``verification=None``.
     """
 
-    schema_version: int = 2
+    schema_version: int = 3
     story_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """= Cluster.cluster_id; the canonical handle for a story."""
 
@@ -710,6 +760,26 @@ class SummaryBlock(BaseModel):
     signal: Signal | None = None
     """Editorial verdict pill (Phase B). LLM-tagged in summarise.py.
     Optional so pre-Phase-B archive issues still parse."""
+
+    verification: "StoryVerification | None" = None
+    """
+    Denormalised factual-accuracy verdict for this story (schema v3,
+    2026-06-29). Written by the **advisory** verify stage (`src/verify.py`
+    ``verify_day``) AFTER summarise produced the block: verify reads the
+    staged ``issue.json``, runs the calibrated verifier against the exact
+    source excerpt summarise used (see DESIGN.md "source_excerpts.jsonl"),
+    and rewrites each block's ``verification`` in place. The authoritative
+    copy of the full report is the ``verify.json`` sidecar; this field is a
+    convenience denormalisation so the renderer / editor loop can show a
+    per-story flag without re-joining.
+
+    Optional / nullable for backwards compatibility: every issue.json written
+    before the verify stage existed (and any issue produced with verify
+    skipped, or with an ``unavailable`` verdict) parses cleanly with
+    ``verification=None``. ``None`` means "not verified" -- it is NOT a
+    clean bill of health. The verify stage is advisory and never blocks
+    release; absence of this field must never be read as a failure.
+    """
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
@@ -803,9 +873,17 @@ class Issue(BaseModel):
     revision > 0. See "Archive: staging vs canonical" and "Issue Number
     Registry" in DESIGN.md for derivation, idempotency, gap behaviour,
     revision semantics, and the release transition.
+
+    schema_version=6 (2026-06-29): no field change on `Issue` itself; the
+    bump tracks the SummaryBlock v2->v3 change (added the optional
+    ``verification`` field written by the advisory verify stage), since
+    SummaryBlock is a transitive child of Issue and the issue.json envelope
+    now carries the new shape. The optional ``"verify"`` key may now appear
+    in ``prompt_versions``. Older issue.json files (schema_version <= 5)
+    parse unchanged.
     """
 
-    schema_version: int = 5
+    schema_version: int = 6
     issue_number: Annotated[int, Field(ge=1)] | None = None
     """
     Sequential, 1-indexed, monotonically increasing across RELEASED
@@ -869,8 +947,11 @@ class Issue(BaseModel):
 
     prompt_versions: dict[str, Annotated[str, Field(pattern=_PROMPT_VERSION_PATTERN)]]
     """
-    Which prompt revisions produced this issue. Keys: "rank", "summarise",
-    "pulse", optionally "callback". Supports audit and A/B (risk register #6).
+    Which prompt revisions produced this issue. Required keys: "rank",
+    "summarise". Optional keys: "pulse", "callback", and "verify" (set by the
+    advisory verify stage to ``verify.VERIFY_PROMPT_VERSION`` when it runs;
+    absent when verify was skipped or unavailable). Supports audit and A/B
+    (risk register #6).
     """
 
     notes: Annotated[str, Field(max_length=2000)] = ""
@@ -918,10 +999,13 @@ class Issue(BaseModel):
     ) -> dict[str, str]:
         """
         DESIGN.md note: `prompt_versions` must record "rank" and "summarise"
-        at minimum. "pulse" and "callback" are optional (callbacks only fire
-        on continuation chains; pulse may be folded into summarise depending
-        on prompt structure). Enforcing the minimum protects the audit
-        invariant in risk-register item #6.
+        at minimum. "pulse", "callback", and "verify" are optional (callbacks
+        only fire on continuation chains; pulse may be folded into summarise
+        depending on prompt structure; "verify" is set only when the advisory
+        verify stage runs and is NOT required because verify must never block
+        and may be skipped). Enforcing the minimum protects the audit
+        invariant in risk-register item #6. Extra keys are tolerated -- this
+        check only asserts the required subset is present.
         """
         required = {"rank", "summarise"}
         missing = required - set(v.keys())
@@ -1045,6 +1129,209 @@ class SourceHealthReport(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# ClaimVerdict / StoryVerification -- the factual-accuracy verifier output.
+#
+# Promoted from the `ClaimVerdict` dataclass + the NOTE-FOR-THE-ARCHITECT
+# block in `src/verify.py` (verify-v0.x). The verifier produces these; the
+# advisory verify stage persists them. See DESIGN.md "verify.json" and the
+# `verify_day` stage contract.
+# ---------------------------------------------------------------------------
+
+class ClaimVerdict(BaseModel):
+    """One atomic factual claim drawn from a story and its verifier verdict.
+
+    Produced by `src/verify.py` (one per atomic claim a story decomposes into).
+    Consumed by render (per-story factual flag), the Editor loop, and evals.
+
+    The verifier (`verify.py`) owns the JUDGMENT; this model owns the SHAPE.
+    A ``contradicted`` verdict is only meaningful with the contradicting quote
+    attached, so the validator below rejects ``contradicted`` with an empty
+    ``source_span`` -- mirroring `verify._enforce_contradiction_discipline`,
+    which downgrades such a verdict to ``unsupported`` before construction.
+    The model is the second, hard line of defence on that invariant.
+    """
+
+    schema_version: int = 1
+    claim: Annotated[str, Field(min_length=1, max_length=1000)]
+    """The atomic factual assertion, as a near-verbatim span of the
+    headline or body."""
+
+    verdict: ClaimVerdictValue
+    """supported | unsupported | contradicted | unverifiable."""
+
+    location: ClaimLocation
+    """headline | body -- where the claim was drawn from."""
+
+    summary_span: Annotated[str, Field(max_length=1000)] = ""
+    """The exact summary (headline/body) text carrying the claim. May be
+    empty when the verifier did not anchor a verbatim span."""
+
+    source_span: Annotated[str, Field(max_length=2000)] = ""
+    """The supporting OR contradicting span quoted from the source excerpt.
+    Empty for ``unverifiable`` (nothing to quote) and may be empty for
+    ``unsupported`` (the fact is absent by definition). REQUIRED (non-empty)
+    when ``verdict == "contradicted"`` -- see the validator below."""
+
+    note: Annotated[str, Field(max_length=1000)] = ""
+    """One-line rationale -- feeds the audit trail and the eval's
+    transparency promise."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _contradicted_requires_source_span(self) -> "ClaimVerdict":
+        """Invariant: a ``contradicted`` verdict MUST carry a non-empty
+        ``source_span``. A contradiction asserts the source says something
+        incompatible -- without the quote there is no contradiction to show,
+        only an unsupported claim. `verify.py` enforces the same rule
+        deterministically (downgrading to ``unsupported``); this model is the
+        contract-level backstop so a hand-authored or mis-serialised record
+        cannot smuggle a span-less contradiction into the archive."""
+        if self.verdict == "contradicted" and not self.source_span.strip():
+            raise ValueError(
+                "ClaimVerdict with verdict='contradicted' must carry a "
+                "non-empty source_span (the contradicting quote)."
+            )
+        return self
+
+
+class StoryVerification(BaseModel):
+    """The factual-accuracy verdict for one story (one SummaryBlock).
+
+    Produced by `src/verify.py` (`verify_day`). Stored both as a member of
+    `VerificationReport.stories` (the authoritative sidecar) and denormalised
+    onto `SummaryBlock.verification` (convenience for render / editor).
+
+    The ``has_*`` / ``headline_flagged`` rollups are convenience booleans the
+    renderer and editor loop read without re-scanning ``claims``. The
+    validator keeps them honest so a writer cannot ship a rollup that
+    disagrees with the claim list.
+    """
+
+    schema_version: int = 1
+    story_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
+    """= SummaryBlock.story_id = Cluster.cluster_id; the story verified."""
+
+    prompt_version: Annotated[str, Field(pattern=_PROMPT_VERSION_PATTERN)]
+    """== `verify.VERIFY_PROMPT_VERSION` at the time of verification.
+    Lets the eval harness correlate verdict movement against prompt revisions
+    (risk-register item #6), exactly as rank/summarise prompt versions do."""
+
+    claims: list[ClaimVerdict]
+    """The per-claim verdicts. May be empty when the story decomposed into no
+    checkable atomic claims (rare)."""
+
+    has_contradiction: bool
+    """True iff any claim has ``verdict == "contradicted"``."""
+
+    has_unsupported: bool
+    """True iff any claim has ``verdict == "unsupported"``."""
+
+    headline_flagged: bool
+    """True iff any ``location == "headline"`` claim is flagged
+    (``contradicted`` or ``unsupported``). The most severe class of finding --
+    readers trust the headline first."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _rollups_match_claims(self) -> "StoryVerification":
+        """Invariant: the rollup booleans agree with ``claims``. A writer that
+        sets a rollup inconsistent with the claim list is buggy; we reject it
+        at the boundary rather than letting render/editor trust a stale flag."""
+        flagged = {"contradicted", "unsupported"}
+        has_contra = any(c.verdict == "contradicted" for c in self.claims)
+        has_unsup = any(c.verdict == "unsupported" for c in self.claims)
+        headline_flag = any(
+            c.location == "headline" and c.verdict in flagged for c in self.claims
+        )
+        if self.has_contradiction != has_contra:
+            raise ValueError(
+                f"StoryVerification.has_contradiction ({self.has_contradiction}) "
+                f"disagrees with claims ({has_contra})."
+            )
+        if self.has_unsupported != has_unsup:
+            raise ValueError(
+                f"StoryVerification.has_unsupported ({self.has_unsupported}) "
+                f"disagrees with claims ({has_unsup})."
+            )
+        if self.headline_flagged != headline_flag:
+            raise ValueError(
+                f"StoryVerification.headline_flagged ({self.headline_flagged}) "
+                f"disagrees with claims ({headline_flag})."
+            )
+        return self
+
+
+class VerificationReport(BaseModel):
+    """The top-level object serialised to `data/<date>/verify.json`.
+
+    Produced by `src/verify.py` (`verify_day`). Consumed by render (per-story
+    flags + an optional issue-level banner), the Editor loop, and evals.
+
+    Mirrors the `SourceHealthReport` envelope pattern: a versioned top-level
+    object with a generated-at timestamp and a list of per-unit records. The
+    ``verdict`` field carries the advisory tri-state + ``unavailable`` so a
+    reader can branch on "did verify run, and did it find anything" without
+    scanning every story.
+
+    ADVISORY guarantee: on any verifier/transport failure (or missing inputs),
+    `verify_day` writes this report with ``verdict="unavailable"`` and returns
+    normally. The verify stage NEVER blocks release -- identical to the
+    review.md ``verdict: unavailable`` contract. See DESIGN.md "verify.json".
+    """
+
+    schema_version: int = 1
+    generated_at: datetime
+    """UTC timestamp when the verify stage wrote this report."""
+
+    prompt_version: Annotated[str, Field(pattern=_PROMPT_VERSION_PATTERN)]
+    """== `verify.VERIFY_PROMPT_VERSION`. On an ``unavailable`` run this still
+    records the version the stage WOULD have used, for audit continuity."""
+
+    verdict: VerificationVerdict
+    """clean | flagged | unavailable -- the advisory rollup. See
+    `VerificationVerdict`. ``unavailable`` means the stage could not run; an
+    ``unavailable`` report carries an empty ``stories`` list."""
+
+    verdict_counts: dict[ClaimVerdictValue, Annotated[int, Field(ge=0)]] = Field(
+        default_factory=dict
+    )
+    """Per-verdict claim tallies across all stories (e.g.
+    ``{"supported": 31, "unsupported": 2, "contradicted": 0,
+    "unverifiable": 4}``). A cheap at-a-glance distribution for the eval
+    harness and render banner; empty on an ``unavailable`` run."""
+
+    stories: list[StoryVerification]
+    """One StoryVerification per verified SummaryBlock (Pulse + all sections).
+    Empty when ``verdict == "unavailable"`` or when the issue had no stories."""
+
+    note: Annotated[str, Field(max_length=2000)] = ""
+    """Free-text engine note. On an ``unavailable`` run this carries the
+    failure reason (transport error, missing source_excerpts sidecar, etc.),
+    mirroring the review.md unavailable-body convention."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _unavailable_has_no_stories(self) -> "VerificationReport":
+        """Invariant: an ``unavailable`` report carries no stories and no
+        verdict counts -- the stage did not run, so there is nothing to
+        report. Keeps the advisory failure state unambiguous for readers."""
+        if self.verdict == "unavailable" and self.stories:
+            raise ValueError(
+                "VerificationReport.verdict='unavailable' must carry an empty "
+                f"stories list; got {len(self.stories)}."
+            )
+        return self
+
+
+# Resolve the forward reference on SummaryBlock.verification now that
+# StoryVerification is defined.
+SummaryBlock.model_rebuild()
+
+
+# ---------------------------------------------------------------------------
 # Public re-export surface. Anything outside this module imports from here.
 # ---------------------------------------------------------------------------
 
@@ -1055,6 +1342,9 @@ __all__ = [
     "RankTier",
     "SectionName",
     "MissedReason",
+    "ClaimLocation",
+    "ClaimVerdictValue",
+    "VerificationVerdict",
     # Constants
     "RUBRIC_WEIGHTS",
     "SECTION_WEIGHTS",
@@ -1067,4 +1357,7 @@ __all__ = [
     "Issue",
     "SourceHealth",
     "SourceHealthReport",
+    "ClaimVerdict",
+    "StoryVerification",
+    "VerificationReport",
 ]

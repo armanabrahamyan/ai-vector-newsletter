@@ -425,18 +425,22 @@ class TestPipelineIntegration:
         assert resolved == ["render", "review"]
 
     def test_summarise_render_subset_appends_review(self) -> None:
+        # verify auto-fires after summarise, so the full resolved list is
+        # summarise -> verify -> render -> review.
         resolved = run_mod._resolve_stages(None, "summarise,render")
-        assert resolved == ["summarise", "render", "review"]
+        assert resolved == ["summarise", "verify", "render", "review"]
 
     def test_summarise_only_does_not_append_review(self) -> None:
+        # summarise auto-fires verify; render is not in the subset so review
+        # is NOT appended.
         resolved = run_mod._resolve_stages(None, "summarise")
-        assert resolved == ["summarise"]
+        assert resolved == ["summarise", "verify"]
 
     def test_no_review_flag_strips_review_from_full_run(self) -> None:
         resolved = run_mod._resolve_stages(None, None, no_review=True)
         assert "review" not in resolved
-        # Other stages still run in order.
-        assert resolved == ["fetch", "cluster", "rank", "summarise", "render"]
+        # Other stages still run in order (verify fires after summarise).
+        assert resolved == ["fetch", "cluster", "rank", "summarise", "verify", "render"]
 
     def test_no_review_flag_strips_review_from_render_subset(self) -> None:
         resolved = run_mod._resolve_stages(None, "render", no_review=True)
@@ -449,6 +453,82 @@ class TestPipelineIntegration:
     def test_full_default_run_includes_review_at_tail(self) -> None:
         resolved = run_mod._resolve_stages(None, None)
         assert resolved[-1] == "review"
+
+
+# ---------------------------------------------------------------------------
+# verify auto-fire and --no-verify wiring (added when verify stage shipped).
+# ---------------------------------------------------------------------------
+
+class TestResolveStagesVerify:
+    """Pin the auto-fire-after-summarise contract for verify and the
+    --no-verify escape hatch. These are the cases most likely to silently
+    regress if the STAGE_ORDER or _resolve_stages logic changes."""
+
+    def test_summarise_alone_auto_fires_verify(self) -> None:
+        resolved = run_mod._resolve_stages(None, "summarise")
+        assert resolved == ["summarise", "verify"]
+
+    def test_verify_inserted_immediately_after_summarise(self) -> None:
+        # With render also in the subset, verify must sit between summarise
+        # and render, not at the tail.
+        resolved = run_mod._resolve_stages(None, "summarise,render")
+        idx_s = resolved.index("summarise")
+        idx_v = resolved.index("verify")
+        idx_r = resolved.index("render")
+        assert idx_s < idx_v < idx_r
+
+    def test_no_verify_strips_verify_from_summarise_subset(self) -> None:
+        resolved = run_mod._resolve_stages(None, "summarise", no_verify=True)
+        assert resolved == ["summarise"]
+        assert "verify" not in resolved
+
+    def test_no_verify_strips_verify_from_full_run(self) -> None:
+        resolved = run_mod._resolve_stages(None, None, no_verify=True)
+        assert "verify" not in resolved
+
+    def test_render_only_does_not_pull_in_verify(self) -> None:
+        # verify is only auto-fired when summarise runs; render alone must not
+        # add it.
+        resolved = run_mod._resolve_stages(None, "render")
+        assert "verify" not in resolved
+
+    def test_explicit_stage_verify_runs_standalone(self) -> None:
+        resolved = run_mod._resolve_stages(None, "verify")
+        assert resolved == ["verify"]
+
+    def test_explicit_stages_verify_not_duplicated(self) -> None:
+        # When the caller names verify explicitly alongside summarise, it must
+        # not appear twice.
+        resolved = run_mod._resolve_stages(None, "summarise,verify")
+        assert resolved.count("verify") == 1
+
+
+# ---------------------------------------------------------------------------
+# _run_stage advisory guard -- verify must never halt the pipeline.
+# ---------------------------------------------------------------------------
+
+class TestAdvisoryGuardVerify:
+    """Pin the _ADVISORY_STAGES belt-and-suspenders guard at the dispatch
+    level: an unexpected exception raised by _run_verify must return
+    (True, ...) so the pipeline continues, regardless of what the inner
+    module does. This is the second defensive layer on top of verify_day's
+    own failure-soft contract."""
+
+    def test_unexpected_raise_in_verify_returns_ok_true(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import datetime as _dt
+
+        def _boom(_date: _dt.date) -> str:
+            raise RuntimeError("completely unexpected crash")
+
+        monkeypatch.setitem(run_mod._STAGE_HANDLERS, "verify", _boom)
+        ok, message = run_mod._run_stage("verify", _dt.date(2026, 5, 24))
+        assert ok is True, (
+            "An unexpected raise in the verify handler must not halt the "
+            "pipeline -- _ADVISORY_STAGES guard must catch it and return ok=True"
+        )
+        assert "RuntimeError" in message or "advisory-guard" in message
 
 
 # ---------------------------------------------------------------------------

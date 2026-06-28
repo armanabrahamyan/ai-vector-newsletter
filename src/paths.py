@@ -108,6 +108,34 @@ def centroids_path(date: datetime.date, *, canonical: bool) -> Path:
     return base / "embeddings" / "centroids.npz"
 
 
+def source_excerpts_path(date: datetime.date, *, canonical: bool) -> Path:
+    """Path to source_excerpts.jsonl for the given date and archive state.
+
+    The summarise -> verify hand-off sidecar. ``summarise.py`` persists the
+    exact source excerpts it fetched (one JSONL record per source URL); the
+    advisory verify stage reads this identical text so it judges against the
+    SAME excerpt summarise wrote against. See DESIGN.md "source_excerpts.jsonl".
+
+    Staging-resident by design: this sidecar is ephemeral working material,
+    NOT promoted to released on ``aiv release`` (it exists only to bridge two
+    staging-time stages). The ``canonical`` kwarg is accepted for API
+    consistency with the other path helpers, but production callers always
+    pass ``canonical=False`` -- there is no canonical copy under normal flow.
+    """
+    return (released_dir(date) if canonical else staging_dir(date)) / "source_excerpts.jsonl"
+
+
+def verify_path(date: datetime.date, *, canonical: bool) -> Path:
+    """Path to verify.json for the given date and archive state.
+
+    The VerificationReport sidecar written by the advisory verify stage
+    (``src/verify.py`` ``verify_day``). Promoted to released on ``aiv
+    release`` alongside source_health.json -- it is part of the published
+    audit trail. See DESIGN.md "verify.json".
+    """
+    return (released_dir(date) if canonical else staging_dir(date)) / "verify.json"
+
+
 # ---------------------------------------------------------------------------
 # Render-output helpers.
 # ---------------------------------------------------------------------------

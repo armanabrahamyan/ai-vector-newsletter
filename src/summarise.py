@@ -1309,6 +1309,24 @@ def summarise(date: _dt.date | None = None) -> Issue:
 
     _write_issue_json(issue_out, issue)
 
+    # Persist the source excerpts the summaries were grounded on so the
+    # advisory verify stage judges against identical text (DESIGN.md
+    # "source_excerpts.jsonl"). Best-effort: a sidecar write failure must
+    # never lose the issue we just wrote -- verify degrades to "unavailable"
+    # if the sidecar is missing/unreadable.
+    try:
+        _write_source_excerpts(
+            paths.source_excerpts_path(run_date, canonical=False),
+            issue,
+            fetched_at=_dt.datetime.now(_dt.timezone.utc),
+        )
+    except Exception:  # noqa: BLE001 -- excerpt sidecar is advisory, never fatal
+        _LOG.exception(
+            "summarise: failed to persist source_excerpts.jsonl for %s -- "
+            "verify will degrade to unavailable; issue.json was written",
+            run_date.isoformat(),
+        )
+
     pulse_headline = issue.pulse.stories[0].headline if issue.pulse.stories else "?"
     _LOG.info(
         "summarised top %d: pulse=%r / big_picture: %d / hands_on: %d / "
@@ -3658,6 +3676,103 @@ def _write_issue_json(path: Path, issue: Issue) -> None:
     # for re-use by anyone else who needs to write per-line in this module
     # later (e.g. if we ever emit a sidecar). Keep the import live.
     _ = _atomic_write_jsonl
+
+
+# ---------------------------------------------------------------------------
+# source_excerpts.jsonl -- the summarise -> verify hand-off sidecar.
+#
+# DESIGN.md "source_excerpts.jsonl": summarise grounds each story's summary on
+# the source bodies it fetched into ``_SOURCE_EXCERPT_CACHE`` (per-process,
+# keyed by URL). Historically those bodies were thrown away after the prompt
+# was built ("bodies are NOT persisted to items.jsonl"). The advisory verify
+# stage needs the EXACT text the summary was grounded on so it judges against
+# identical source material. We persist, keyed by URL, only the excerpts the
+# final issue's blocks actually reference (``SummaryBlock.source_urls``).
+#
+# Why join on source_urls (not the raw top-3 item URLs): verify reads each
+# block's ``source_urls`` and unions the excerpts for exactly those URLs. The
+# cache holds every URL we fetched (top-3 items per cluster); ``source_urls``
+# is a deterministic trust-sorted subset. Persisting the source_urls set keeps
+# the sidecar aligned 1:1 with what verify will look up -- no orphan keys, no
+# missing keys for URLs verify cares about.
+#
+# Empty-fetch policy: a 403 / empty / failed fetch lands in the cache as an
+# empty string (see ``_fetch_source_excerpt``). We RECORD it with an empty
+# ``excerpt`` rather than omitting it -- consistent and explicit. Verify then
+# sees "this URL was used but yielded no text" and (per its rubric) marks the
+# affected claims ``unverifiable`` rather than mistaking a missing key for a
+# join failure.
+#
+# Staging-only, ephemeral: never promoted to released (paths helper docstring).
+# ---------------------------------------------------------------------------
+
+_SOURCE_EXCERPTS_SCHEMA_VERSION = 1
+"""Record-shape version for source_excerpts.jsonl lines. Bump if the per-line
+record shape changes (per the architect's pinned contract)."""
+
+
+def _write_source_excerpts(
+    path: Path, issue: Issue, fetched_at: _dt.datetime
+) -> None:
+    """Persist the source excerpts the issue's summaries were grounded on.
+
+    One JSON object per line, keyed by the source URL, in the architect's
+    pinned record shape:
+
+        {"schema_version": 1, "url": <str>, "excerpt": <str>,
+         "fetched_at": <ISO-8601 UTC>, "story_id": <cluster_id>}
+
+    Only URLs that appear in some block's ``source_urls`` are written, read
+    from the per-run ``_SOURCE_EXCERPT_CACHE`` populated during
+    summarisation. A URL absent from the cache (defensive: it should always
+    be present, since source_urls is a subset of the fetched item URLs) is
+    recorded with an empty excerpt so the join surface stays complete.
+
+    De-duped by URL across the whole issue (the first block that references a
+    URL wins its ``story_id``); a URL shared by two stories is written once.
+
+    Atomic: write to ``<path>.tmp``, fsync, then ``os.replace`` -- same-day
+    re-runs overwrite cleanly, and a crash mid-write never leaves a partial
+    sidecar that verify would mis-parse.
+    """
+    fetched_iso = fetched_at.isoformat()
+    seen: set[str] = set()
+    records: list[dict[str, Any]] = []
+
+    def _collect(block: SummaryBlock) -> None:
+        for raw_url in block.source_urls:
+            url = str(raw_url)
+            if url in seen:
+                continue
+            seen.add(url)
+            excerpt = _SOURCE_EXCERPT_CACHE.get(url, "")
+            records.append({
+                "schema_version": _SOURCE_EXCERPTS_SCHEMA_VERSION,
+                "url": url,
+                "excerpt": excerpt,
+                "fetched_at": fetched_iso,
+                "story_id": block.story_id,
+            })
+
+    for story in issue.pulse.stories:
+        _collect(story)
+    for section in issue.sections:
+        for story in section.stories:
+            _collect(story)
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        for rec in records:
+            fh.write(json.dumps(rec, ensure_ascii=False))
+            fh.write("\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, path)
+    _LOG.info(
+        "summarise: persisted %d source excerpt(s) -> %s",
+        len(records), path,
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -557,6 +557,10 @@ def render(
         issue=issue,
         read_minutes=_read_minutes(issue),
         dup_risk_dates=dup_risk_dates,
+        # show_verify_flags: True only in staging preview. The released
+        # reader experience stays clean by default. Verification markers
+        # are advisory for Arman's pre-release review only.
+        show_verify_flags=(mode == "preview"),
     )
     issue_label = (
         f"#{issue.display_number}" if issue.display_number is not None
@@ -778,6 +782,15 @@ def release_promote(
         staging_dir / _PERIPHERAL_EMBEDDINGS,
         released_dir / _PERIPHERAL_EMBEDDINGS,
     )
+    # verify.json: optional peripheral -- copy when present (advisory stage
+    # may have been skipped or returned unavailable). source_excerpts.jsonl
+    # is intentionally NOT promoted (staging-only working material).
+    staging_verify = paths.verify_path(date, canonical=False)
+    if staging_verify.exists():
+        _atomic_copy(staging_verify, paths.verify_path(date, canonical=True))
+        log.debug("release: copied verify.json -> canonical")
+    else:
+        log.debug("release: verify.json not present in staging; skipping copy")
 
     # --- Step 6: write canonical issue.json LAST (the commit marker) -----
     # Construct a fresh Issue with the assigned number + revision. We use

@@ -62,12 +62,21 @@ Audit tag: verify-v0.1-2026-06-22.
 
 from __future__ import annotations
 
+import datetime as _dt
+import json
 import logging
 import os
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
+from src import paths
+from src.models import (
+    ClaimVerdict as ClaimVerdictModel,
+    StoryVerification,
+    VerificationReport,
+)
 from src.rank import JSON_RETRY_BUDGET, _extract_json_object, _llm_call
 
 
@@ -721,6 +730,434 @@ def verify(
 
 
 # ---------------------------------------------------------------------------
+# The verify STAGE -- verify_day(run_date) -> VerificationReport.
+#
+# Reads the staged issue.json + source_excerpts.jsonl sidecar, runs the
+# calibrated verifier (verify_rich) against the EXACT excerpt text summarise
+# grounded on, assembles a VerificationReport, writes verify.json, and
+# rewrites the staged issue.json in place to denormalise each block's
+# verification.
+#
+# FAILURE-SOFT (non-negotiable, mirrors review.py): on ANY failure -- missing
+# issue.json, unparseable sidecar, LLM/transport error, unexpected exception
+# -- write a verdict="unavailable" report (empty stories/counts, reason in
+# note), do NOT rewrite issue.json (leave verification=None), and RETURN
+# NORMALLY. The verify stage is advisory: it never raises into the pipeline
+# and never blocks release.
+# ---------------------------------------------------------------------------
+
+_FLAGGED_VERDICTS = {"contradicted", "unsupported"}
+"""The two verdicts that constitute a flag for the report-level rollup and the
+per-story ``headline_flagged`` boolean. ``unverifiable`` is NOT a flag -- it
+means "nothing in this excerpt to check against", which is advisory noise, not
+a factual concern."""
+
+
+def verify_day(run_date: _dt.date) -> VerificationReport:
+    """Run the advisory factual-accuracy verifier over one day's staged issue.
+
+    Flow
+    ----
+    1. Read the staged ``issue.json`` (``paths.issue_path(run_date,
+       canonical=False)``) and ``source_excerpts.jsonl``
+       (``paths.source_excerpts_path``) into a ``{url: excerpt}`` dict.
+    2. For each ``SummaryBlock`` (Pulse + every section), union the excerpts
+       of its ``source_urls`` (in order, de-duped) into one ``source_excerpt``
+       string and call ``verify_rich(headline, body=summary, source_excerpt)``.
+    3. Assemble a ``StoryVerification`` per story with the three rollups
+       (``has_contradiction`` / ``has_unsupported`` / ``headline_flagged``)
+       computed from the claims.
+    4. Write ``verify.json`` (the ``VerificationReport``) atomically, then
+       rewrite the staged ``issue.json`` in place to set each block's
+       ``verification`` (joined on ``story_id``).
+
+    Report-level verdict
+    ---------------------
+    - ``unavailable`` : the stage could not run at all (missing/unparseable
+      issue.json, etc.) -- see the failure-soft contract below.
+    - ``flagged``     : the stage ran and at least one story has a
+      ``contradicted`` or ``unsupported`` claim.
+    - ``clean``       : the stage ran and no story is flagged (an empty issue,
+      or an all-``supported``/``unverifiable`` issue, is ``clean``).
+
+    Failure-soft contract
+    ----------------------
+    ANY failure -- missing issue.json, unparseable sidecar, LLM/transport
+    error, unexpected exception -- yields a ``verdict="unavailable"`` report
+    (empty stories + counts, reason in ``note``), does NOT rewrite issue.json
+    (blocks keep ``verification=None``), and RETURNS NORMALLY. Per-story
+    isolation: one story whose verifier call raises is recorded as an
+    unverifiable/empty StoryVerification and does not cost the other stories
+    their verdicts.
+
+    Parameters
+    ----------
+    run_date
+        The issue date to verify (the staging date dir).
+
+    Returns
+    -------
+    VerificationReport
+        Always returned -- never raises into the pipeline. The same object is
+        also serialised to ``verify.json``.
+    """
+    verify_out = paths.verify_path(run_date, canonical=False)
+    issue_path = paths.issue_path(run_date, canonical=False)
+
+    # --- Read the staged issue.json --------------------------------------
+    if not issue_path.exists():
+        return _write_unavailable_report(
+            verify_out, f"no staged issue.json at {issue_path}"
+        )
+    try:
+        issue_payload = json.loads(issue_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return _write_unavailable_report(
+            verify_out, f"could not read staged issue.json: {exc}"
+        )
+    if not isinstance(issue_payload, dict):
+        return _write_unavailable_report(
+            verify_out, "staged issue.json is not a JSON object"
+        )
+
+    # --- Read the source_excerpts sidecar --------------------------------
+    excerpts_path = paths.source_excerpts_path(run_date, canonical=False)
+    try:
+        url_to_excerpt = _load_source_excerpts(excerpts_path)
+    except Exception as exc:  # noqa: BLE001 -- unparseable sidecar => unavailable
+        return _write_unavailable_report(
+            verify_out, f"could not read source_excerpts.jsonl: {exc}"
+        )
+
+    # --- Verify each story (per-story isolation) -------------------------
+    try:
+        blocks = _iter_issue_blocks(issue_payload)
+    except Exception as exc:  # noqa: BLE001 -- malformed issue shape => unavailable
+        return _write_unavailable_report(
+            verify_out, f"could not walk issue stories: {exc}"
+        )
+
+    stories: list[StoryVerification] = []
+    for block in blocks:
+        story_id = block.get("story_id")
+        if not isinstance(story_id, str) or not story_id:
+            _LOG.warning("verify: block missing story_id -- skipping")
+            continue
+        try:
+            sv = _verify_one_story(block, url_to_excerpt)
+        except Exception:  # noqa: BLE001 -- one bad story must not lose the rest
+            _LOG.exception(
+                "verify: story_id=%s failed verification -- recording empty",
+                story_id,
+            )
+            sv = _empty_story_verification(story_id)
+        stories.append(sv)
+
+    # --- Assemble the report ---------------------------------------------
+    verdict_counts = _tally_verdicts(stories)
+    flagged = any(
+        s.has_contradiction or s.has_unsupported for s in stories
+    )
+    verdict = "flagged" if flagged else "clean"
+
+    report = VerificationReport(
+        generated_at=_dt.datetime.now(_dt.timezone.utc),
+        prompt_version=VERIFY_PROMPT_VERSION,
+        verdict=verdict,  # type: ignore[arg-type]
+        verdict_counts=verdict_counts,  # type: ignore[arg-type]
+        stories=stories,
+        note=(
+            f"verified {len(stories)} stories"
+            + (" -- factual flags present" if flagged else "")
+        ),
+    )
+
+    # --- Write verify.json (atomic) --------------------------------------
+    try:
+        _write_report(verify_out, report)
+    except Exception as exc:  # noqa: BLE001
+        # If we cannot even write the sidecar, fall back to unavailable so
+        # the pipeline sees a consistent state on disk. We do NOT rewrite
+        # issue.json in this case.
+        _LOG.exception("verify: failed to write verify.json")
+        return _write_unavailable_report(
+            verify_out, f"could not write verify.json: {exc}"
+        )
+
+    # --- Rewrite issue.json in place to denormalise verification ---------
+    # Best-effort: if this fails the report is still the authoritative copy;
+    # the per-story denormalisation is a convenience. We log and return the
+    # report rather than flipping to unavailable (the verify ran fine).
+    try:
+        _rewrite_issue_with_verification(issue_path, issue_payload, stories)
+    except Exception:  # noqa: BLE001
+        _LOG.exception(
+            "verify: wrote verify.json but failed to denormalise "
+            "verification onto issue.json for %s", run_date.isoformat(),
+        )
+
+    _LOG.info(
+        "verify: %s verdict=%s stories=%d counts=%s -> %s",
+        run_date.isoformat(), verdict, len(stories), verdict_counts, verify_out,
+    )
+    return report
+
+
+def _verify_one_story(
+    block: dict[str, Any], url_to_excerpt: dict[str, str]
+) -> StoryVerification:
+    """Run the verifier on one issue block and build its StoryVerification.
+
+    Unions the excerpts of the block's ``source_urls`` (in order, de-duped)
+    into one source excerpt, calls ``verify_rich`` against (headline, summary,
+    source_excerpt), and assembles the model with rollups computed from the
+    claims. The ``ClaimVerdict`` dataclass from ``verify_rich`` maps 1:1 onto
+    the pydantic ``ClaimVerdict`` model.
+    """
+    story_id = str(block.get("story_id", ""))
+    headline = str(block.get("headline", "") or "")
+    body = str(block.get("summary", "") or "")
+    source_urls = block.get("source_urls") or []
+
+    source_excerpt = _union_excerpts(source_urls, url_to_excerpt)
+
+    rich = verify_rich(headline, body, source_excerpt)
+
+    claims: list[ClaimVerdictModel] = []
+    for v in rich:
+        claims.append(ClaimVerdictModel(
+            claim=v.claim,
+            verdict=v.verdict,  # type: ignore[arg-type]
+            location=v.location,  # type: ignore[arg-type]
+            summary_span=v.summary_span,
+            source_span=v.source_span,
+            note=v.note,
+        ))
+
+    has_contra = any(c.verdict == "contradicted" for c in claims)
+    has_unsup = any(c.verdict == "unsupported" for c in claims)
+    headline_flag = any(
+        c.location == "headline" and c.verdict in _FLAGGED_VERDICTS
+        for c in claims
+    )
+    return StoryVerification(
+        story_id=story_id,
+        prompt_version=VERIFY_PROMPT_VERSION,
+        claims=claims,
+        has_contradiction=has_contra,
+        has_unsupported=has_unsup,
+        headline_flagged=headline_flag,
+    )
+
+
+def _union_excerpts(
+    source_urls: list[Any], url_to_excerpt: dict[str, str]
+) -> str:
+    """Join the excerpts for a block's source_urls into one source string.
+
+    In source_urls order, de-duped, skipping URLs with no excerpt or an empty
+    excerpt. Distinct excerpts are joined with a blank line so the verifier
+    sees clean boundaries. Returns an empty string when NONE of the URLs
+    yielded text -- ``verify_rich`` then short-circuits every claim to
+    ``unverifiable`` (the correct behaviour when the source is unavailable).
+    """
+    seen: set[str] = set()
+    parts: list[str] = []
+    for raw in source_urls:
+        url = str(raw)
+        if url in seen:
+            continue
+        seen.add(url)
+        excerpt = (url_to_excerpt.get(url) or "").strip()
+        if not excerpt:
+            continue
+        if excerpt in parts:
+            continue
+        parts.append(excerpt)
+    return "\n\n".join(parts)
+
+
+def _empty_story_verification(story_id: str) -> StoryVerification:
+    """A StoryVerification with no claims -- used when a single story's
+    verification raised. All rollups False; the report still ships the rest
+    of the stories. ``clean`` for this story (no flag), which is honest: we
+    could not check it, we are not asserting a problem."""
+    return StoryVerification(
+        story_id=story_id,
+        prompt_version=VERIFY_PROMPT_VERSION,
+        claims=[],
+        has_contradiction=False,
+        has_unsupported=False,
+        headline_flagged=False,
+    )
+
+
+def _tally_verdicts(
+    stories: list[StoryVerification],
+) -> dict[str, int]:
+    """Per-verdict claim tallies across all stories, e.g.
+    ``{"supported": 31, "unsupported": 2, "contradicted": 0,
+    "unverifiable": 4}``. Verdicts absent from the issue are simply absent
+    from the dict (the model permits a sparse dict)."""
+    counts: dict[str, int] = {}
+    for story in stories:
+        for claim in story.claims:
+            counts[claim.verdict] = counts.get(claim.verdict, 0) + 1
+    return counts
+
+
+# ---------------------------------------------------------------------------
+# Sidecar / issue I/O for the verify stage.
+# ---------------------------------------------------------------------------
+
+def _load_source_excerpts(path: Path) -> dict[str, str]:
+    """Load source_excerpts.jsonl into a ``{url: excerpt}`` dict.
+
+    Tolerates a MISSING file (returns an empty dict -- every story then
+    verifies against an empty source excerpt, i.e. all claims unverifiable;
+    that is the honest degraded state, not a failure). RAISES on an
+    unparseable line so the caller flips the whole stage to ``unavailable``
+    -- a corrupt sidecar means we can't trust the join, and a silent
+    partial-load would mislead the verifier.
+
+    Last writer wins on a duplicate URL (the summarise writer already
+    de-dupes by URL, so duplicates should not occur in practice).
+    """
+    if not path.exists():
+        _LOG.warning(
+            "verify: source_excerpts.jsonl missing at %s -- verifying "
+            "against empty excerpts (all claims unverifiable)", path,
+        )
+        return {}
+    out: dict[str, str] = {}
+    text = path.read_text(encoding="utf-8")
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        line = line.strip()
+        if not line:
+            continue
+        rec = json.loads(line)  # raises JSONDecodeError -> stage unavailable
+        if not isinstance(rec, dict):
+            raise ValueError(
+                f"source_excerpts.jsonl line {lineno} is not an object"
+            )
+        url = rec.get("url")
+        if not isinstance(url, str) or not url:
+            raise ValueError(
+                f"source_excerpts.jsonl line {lineno} missing a string 'url'"
+            )
+        out[url] = str(rec.get("excerpt", "") or "")
+    return out
+
+
+def _iter_issue_blocks(issue_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return every SummaryBlock dict in the issue (Pulse + all sections), in
+    reading order. Works from the raw JSON payload (not the pydantic Issue) so
+    schema-version skew between staged and code never crashes the verify stage.
+    """
+    blocks: list[dict[str, Any]] = []
+    pulse = issue_payload.get("pulse") or {}
+    if isinstance(pulse, dict):
+        for story in pulse.get("stories") or []:
+            if isinstance(story, dict):
+                blocks.append(story)
+    for section in issue_payload.get("sections") or []:
+        if not isinstance(section, dict):
+            continue
+        for story in section.get("stories") or []:
+            if isinstance(story, dict):
+                blocks.append(story)
+    return blocks
+
+
+def _write_report(path: Path, report: VerificationReport) -> None:
+    """Atomic write of verify.json (.tmp + fsync + rename)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    payload = json.loads(report.model_dump_json())
+    with tmp.open("w", encoding="utf-8") as fh:
+        json.dump(payload, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, path)
+
+
+def _write_unavailable_report(path: Path, reason: str) -> VerificationReport:
+    """Build + write a ``verdict="unavailable"`` report and return it.
+
+    Mirrors review.py's ``_write_unavailable``: the stage could not run, so we
+    record WHY (in ``note``) with empty stories/counts, write verify.json, and
+    return normally. issue.json is NOT touched -- blocks keep
+    ``verification=None``. We deliberately do not raise even if the write
+    itself fails: a verify stage must never block the pipeline.
+    """
+    _LOG.warning("verify: unavailable -- %s", reason)
+    report = VerificationReport(
+        generated_at=_dt.datetime.now(_dt.timezone.utc),
+        prompt_version=VERIFY_PROMPT_VERSION,
+        verdict="unavailable",
+        verdict_counts={},
+        stories=[],
+        note=f"unavailable: {reason}",
+    )
+    try:
+        _write_report(path, report)
+    except Exception:  # noqa: BLE001 -- even the unavailable write is best-effort
+        _LOG.exception(
+            "verify: could not write the unavailable verify.json at %s", path,
+        )
+    return report
+
+
+def _rewrite_issue_with_verification(
+    issue_path: Path,
+    issue_payload: dict[str, Any],
+    stories: list[StoryVerification],
+) -> None:
+    """Rewrite the staged issue.json in place, setting each SummaryBlock's
+    ``verification`` by joining on ``story_id``.
+
+    Operates on the raw payload we already parsed (no second read), mutates
+    the block dicts in place, then atomically rewrites the file (.tmp + fsync
+    + rename). Stories the verifier produced an empty StoryVerification for
+    are still joined (with their empty claim list) so render/editor sees a
+    ``clean`` denormalised verdict rather than a ``None`` it can't distinguish
+    from "verify never ran".
+
+    A legitimate issue.json writer: the verify stage is contractually allowed
+    to rewrite the staged issue (DESIGN.md "verify.json").
+    """
+    by_id = {s.story_id: s for s in stories}
+
+    def _apply(block: dict[str, Any]) -> None:
+        sid = block.get("story_id")
+        sv = by_id.get(sid) if isinstance(sid, str) else None
+        if sv is not None:
+            block["verification"] = json.loads(sv.model_dump_json())
+
+    pulse = issue_payload.get("pulse") or {}
+    if isinstance(pulse, dict):
+        for story in pulse.get("stories") or []:
+            if isinstance(story, dict):
+                _apply(story)
+    for section in issue_payload.get("sections") or []:
+        if not isinstance(section, dict):
+            continue
+        for story in section.get("stories") or []:
+            if isinstance(story, dict):
+                _apply(story)
+
+    issue_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = issue_path.with_suffix(issue_path.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        json.dump(issue_payload, fh, ensure_ascii=False, indent=2)
+        fh.write("\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, issue_path)
+
+
+# ---------------------------------------------------------------------------
 # CLI / manual invocation.
 # ---------------------------------------------------------------------------
 
@@ -929,6 +1366,12 @@ def _cli() -> int:
             Run the verifier on a single built-in (headline, body, source)
             triple and pretty-print the rich verdicts. Useful for eyeballing
             prompt changes.
+
+        python -m src.verify --day YYYY-MM-DD
+            Run the full ``verify_day`` stage against that date's staged
+            issue.json + source_excerpts.jsonl: writes verify.json, rewrites
+            issue.json with per-story verification, and prints the report-
+            level verdict + counts. For manual testing of the stage wiring.
     """
     import argparse
     import json as _json
@@ -936,6 +1379,9 @@ def _cli() -> int:
     parser = argparse.ArgumentParser(prog="python -m src.verify")
     parser.add_argument("--eval", action="store_true",
                         help="Run Eval 7 against the factual-accuracy fixtures.")
+    parser.add_argument("--day", default="",
+                        help="Run the verify_day stage for YYYY-MM-DD against "
+                             "the staged issue.json + source_excerpts.jsonl.")
     parser.add_argument("--diagnose", action="store_true",
                         help="Side-by-side ground-truth vs verifier output for "
                              "every contradicted + supported fixture; classifies "
@@ -974,6 +1420,31 @@ def _cli() -> int:
             for f in d["failures"]:
                 print(f"  - {f}")
         return 0 if result.passed else 1
+
+    if args.day:
+        try:
+            run_date = _dt.date.fromisoformat(args.day.strip())
+        except ValueError:
+            print(f"--day must be YYYY-MM-DD; got {args.day!r}")
+            return 2
+        report = verify_day(run_date)
+        print(f"\n=== verify_day {run_date.isoformat()} "
+              f"[{report.verdict.upper()}] ===")
+        print(f"stories       : {len(report.stories)}")
+        print(f"verdict_counts: {dict(report.verdict_counts)}")
+        if report.note:
+            print(f"note          : {report.note}")
+        for s in report.stories:
+            flags = []
+            if s.has_contradiction:
+                flags.append("contradicted")
+            if s.has_unsupported:
+                flags.append("unsupported")
+            if s.headline_flagged:
+                flags.append("headline")
+            flag_str = (" [" + ",".join(flags) + "]") if flags else ""
+            print(f"  - {s.story_id}: {len(s.claims)} claims{flag_str}")
+        return 0
 
     if args.diagnose:
         return _diagnose(only=args.only)

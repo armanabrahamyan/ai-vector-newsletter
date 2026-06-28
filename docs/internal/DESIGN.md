@@ -396,7 +396,8 @@ SectionName = Literal[
 
 
 class SummaryBlock(BaseModel):
-    schema_version: int = 2                                                 # bump on shape change; v2 renames cross_time_ref -> prior_coverage_ref (alias retained)
+    schema_version: int = 3                                                 # v2 renames cross_time_ref -> prior_coverage_ref (alias retained); v3 (2026-06-29) adds optional `verification` from the advisory verify stage
+    # NOTE: this doc snippet omits the v4 drop of direction_note/finance_angle for brevity; src/models.py is authoritative.
     story_id: Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]           # = Cluster.cluster_id (the canonical handle for a story)
     headline: Annotated[str, Field(min_length=1, max_length=200)]           # editorial headline (LLM-written, may differ from canonical_title)
     summary: Annotated[str, Field(min_length=1, max_length=1200)]           # the story body — link out, never reproduce full article
@@ -405,6 +406,7 @@ class SummaryBlock(BaseModel):
     source_urls: Annotated[list[HttpUrl], Field(min_length=1)]              # links to original sources; render attributes attribution
     prior_coverage_ref: Optional[Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$", alias="cross_time_ref", validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref"))]] = None
                                                                             # mirrored from Cluster.prior_coverage_ref so renderers don't need to re-join. v1 alias "cross_time_ref" retained for archive parse.
+    verification: Optional[StoryVerification] = None                        # v3 (2026-06-29): factual-accuracy verdict from the advisory verify stage; None = "not verified" (NOT a clean bill). Additive+nullable; older issue.json parse unchanged. Authoritative copy is verify.json; this is a denormalisation.
 
 
 class IssueSection(BaseModel):
@@ -713,6 +715,112 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   `issue.json` is the labelled corpus** — over months, the most valuable
   artifact in the repo. Staging issues are draft material, not corpus.
 
+### `source_excerpts.jsonl` — LLM Engineer writes (summarise -> verify hand-off)
+
+- **Path:** `data/staging/<date>/source_excerpts.jsonl`. **Staging-only and
+  ephemeral** — it bridges two staging-time stages (`summarise` writes it,
+  `verify` reads it) and is **NOT promoted to released** on `aiv release`.
+  `paths.source_excerpts_path(date, canonical=...)` exists for API symmetry
+  but production callers always pass `canonical=False`.
+- **Writer:** `src/summarise.py`. Today summarise fetches a source excerpt
+  per story to ground its prose, then throws it away (a per-process
+  `_SOURCE_EXCERPT_CACHE`, never persisted). It must now persist that exact
+  text so the verify stage judges against the **identical** excerpt
+  summarise wrote against — not a fresh re-fetch (which could drift if the
+  source page changed between stages).
+- **Schema:** one JSON object per line, keyed by source URL. Record shape:
+  ```
+  {
+    schema_version: 1,
+    url: str,                 # the source URL the excerpt was fetched from
+                              # (matches a SummaryBlock.source_urls entry, exact string)
+    excerpt: str,             # the exact text summarise grounded its prose on
+    fetched_at: str,          # ISO-8601 UTC timestamp of the fetch
+    story_id: str (optional)  # the cluster_id this excerpt was fetched for, when known
+  }
+  ```
+  The file is a flat URL->excerpt map serialised as JSONL (one line per URL).
+  `verify_day` loads it into a `dict[url -> excerpt]` and, for each
+  `SummaryBlock`, concatenates the excerpts of that block's `source_urls`
+  (in order, de-duplicated) to form the `source_excerpt` it passes to
+  `verify.verify_rich(headline, body, source_excerpt)`.
+- **Atomicity:** `.tmp` + fsync + rename (whole-file).
+- **Read contract (verify):** missing-file tolerance is **mandatory** — if
+  `source_excerpts.jsonl` is absent (e.g. summarise predates this contract,
+  or was skipped), `verify_day` treats every excerpt as empty. Per
+  `verify.verify_rich`, an empty excerpt yields all-`unverifiable` verdicts,
+  which is the correct fail-soft outcome: verify still runs, finds nothing
+  to contradict, and never blocks. A URL present in `source_urls` but absent
+  from the sidecar contributes an empty excerpt for that URL.
+- **Why keyed by URL, not by story?** A story's `source_urls` is the join
+  key both stages already share; keying by URL lets summarise write each
+  excerpt once even when two stories cite the same source, and lets verify
+  reconstruct any story's excerpt by unioning its URLs. `story_id` is
+  carried as an optional convenience for debugging / provenance, not the
+  primary key.
+
+### `verify.json` — LLM Engineer writes (advisory factual-accuracy pass)
+
+- **Path:** `data/staging/<date>/verify.json` (staging), promoted to
+  `data/released/<date>/verify.json` on `aiv release`. **Promoted like
+  `source_health.json`** — it is part of the published audit trail, so a
+  released day carries the verdict that was true when it shipped.
+- **Writer:** `src/verify.py` (`verify_day(run_date) -> VerificationReport`),
+  the **advisory** stage that runs after `summarise` and before `render`.
+- **Schema:** a single `VerificationReport` object (not JSONL). Top-level:
+  - `schema_version: int`
+  - `generated_at: datetime` (UTC)
+  - `prompt_version: str` (== `verify.VERIFY_PROMPT_VERSION`)
+  - `verdict: "clean" | "flagged" | "unavailable"`
+  - `verdict_counts: dict[verdict -> int]` (per-claim tallies; empty when unavailable)
+  - `stories: list[StoryVerification]` where each is:
+    ```
+    {
+      schema_version: 1,
+      story_id: str,                 # = SummaryBlock.story_id = Cluster.cluster_id
+      prompt_version: str,           # == verify.VERIFY_PROMPT_VERSION
+      claims: [
+        {
+          schema_version: 1,
+          claim: str,                # near-verbatim span of the headline/body
+          verdict: "supported" | "unsupported" | "contradicted" | "unverifiable",
+          location: "headline" | "body",
+          summary_span: str,         # exact summary text carrying the claim ("" allowed)
+          source_span: str,          # supporting/contradicting source quote
+                                     # (REQUIRED non-empty iff verdict == "contradicted")
+          note: str                  # one-line rationale ("" allowed)
+        }, ...
+      ],
+      has_contradiction: bool,       # any claim contradicted
+      has_unsupported: bool,         # any claim unsupported
+      headline_flagged: bool         # any headline-location claim contradicted/unsupported
+    }
+    ```
+  - `note: str` (free-text; carries the failure reason on an `unavailable` run)
+- **Atomicity:** `.tmp` + fsync + rename.
+- **Advisory / never-block guarantee (non-negotiable):** identical in spirit
+  to `review.md`. On any failure — LLM transport/timeout/auth error, a
+  missing staged `issue.json`, an unparseable `source_excerpts.jsonl`, or any
+  unexpected exception — `verify_day` writes a report with
+  `verdict="unavailable"` (empty `stories`, empty `verdict_counts`, reason in
+  `note`) and returns normally. The verify stage **must never block release.**
+  A `verdict="unavailable"` is a non-event for publication.
+- **Denormalisation contract:** in addition to writing `verify.json`,
+  `verify_day` rewrites the staged `issue.json` in place, setting each
+  `SummaryBlock.verification` to its matching `StoryVerification` (joined on
+  `story_id`). This rewrite is **atomic** (`.tmp` + fsync + rename of the
+  whole `issue.json`) and is the only legitimate writer of `issue.json` other
+  than `summarise.py` and the release-promote step. On an `unavailable` run,
+  `verify_day` leaves `SummaryBlock.verification` as `None` (it does not
+  rewrite the issue) — `None` means "not verified", never "clean".
+- **Readers:** `render.py` (per-story factual flag + optional issue-level
+  banner driven by `verdict` / `headline_flagged`); the Editor loop (a flag
+  Arman sees before ratifying); Eval Engineer (Eval 7 already consumes the
+  verifier via the `VerifierCallable` seam — `verify.json` gives it the
+  production per-issue audit surface to track drift). Readers must tolerate a
+  **missing** `verify.json` (verify skipped) as "not verified", exactly as
+  they tolerate `SummaryBlock.verification == None`.
+
 ### `review.md` — LLM Engineer writes (pre-release editorial pass)
 
 - **Path:** `data/staging/<date>/review.md`. Staging-only — the artifact
@@ -810,10 +918,13 @@ or the eval corpus.
 
 **Staging (default — work in progress).**
 
-- **Path:** `data/staging/YYYY-MM-DD/` with the same five files documented
+- **Path:** `data/staging/YYYY-MM-DD/` with the core files documented
   in [Archive schema](#archive-schema-datayyyy-mm-dd) above:
   `items.jsonl`, `source_health.json`, `clusters.jsonl`, `ranked.jsonl`,
-  `issue.json`, plus the `embeddings/centroids.npz` sidecar.
+  `issue.json`, plus the `embeddings/centroids.npz` sidecar. The advisory
+  stages add `verify.json` (promoted on release), `review.md`
+  (staging-only), and `source_excerpts.jsonl` (staging-only, ephemeral
+  summarise->verify hand-off).
 - **Writer:** every `python -m src.run` invocation, by default. Each
   pipeline stage writes its staging artifact via the same atomic-write
   pattern documented above.
@@ -878,12 +989,15 @@ target date (default: today):
    or `1` if no canonical history exists. Apply on the in-memory
    `Issue`.
 4. **Copy peripheral artifacts first.** For each of `items.jsonl`,
-   `clusters.jsonl`, `ranked.jsonl`, `source_health.json`, and the
+   `clusters.jsonl`, `ranked.jsonl`, `source_health.json`, `verify.json`
+   (when present — verify is advisory and may have been skipped), and the
    `embeddings/` sidecar directory, copy the file from
    `data/staging/<date>/` to `data/<date>/` using the standard atomic
    pattern (write to `<name>.tmp` in the destination, fsync, rename).
    Order among these is not load-bearing; do them in the order listed
-   for log readability.
+   for log readability. **`source_excerpts.jsonl` is NOT promoted** — it is
+   ephemeral summarise->verify hand-off material with no value in the
+   released corpus; it stays in staging only.
 5. **Write canonical `issue.json` LAST.** With `issue_number` now set
    on the in-memory `Issue`, serialise and atomically write to
    `data/<date>/issue.json`. **This is the load-bearing ordering: a
@@ -1043,7 +1157,8 @@ internal helpers are private to the module.
 | `src/fetch.py` | Source Engineer | `config/sources.yaml` | `data/YYYY-MM-DD/items.jsonl`, `data/YYYY-MM-DD/source_health.json` | `def fetch_day(run_date: date, config_path: Path = Path("config/sources.yaml"), out_dir: Path = Path("data")) -> tuple[list[Item], list[SourceHealth]]` |
 | `src/cluster.py` | Retrieval Engineer | `data/YYYY-MM-DD/items.jsonl`, `data/(last 14 days)/clusters.jsonl` (+ embedding sidecars) | `data/YYYY-MM-DD/clusters.jsonl`, `data/YYYY-MM-DD/embeddings/centroids.npz` | `def cluster_day(run_date: date, data_dir: Path = Path("data"), lookback_days: int = 14) -> list[Cluster]` |
 | `src/rank.py` | LLM Engineer | `data/YYYY-MM-DD/clusters.jsonl`, `config/rubric.yaml` | `data/YYYY-MM-DD/ranked.jsonl` | `def rank_day(run_date: date, rubric_path: Path = Path("config/rubric.yaml"), data_dir: Path = Path("data")) -> list[RankedStory]` |
-| `src/summarise.py` | LLM Engineer | `data/YYYY-MM-DD/ranked.jsonl`, `data/YYYY-MM-DD/clusters.jsonl`, `data/YYYY-MM-DD/items.jsonl`, `data/(last 14 days)/issue.json`, `data/(last 14 days)/ranked.jsonl` | `data/YYYY-MM-DD/issue.json` | `def summarise_day(run_date: date, data_dir: Path = Path("data"), lookback_days: int = 14) -> Issue` |
+| `src/summarise.py` | LLM Engineer | `data/YYYY-MM-DD/ranked.jsonl`, `data/YYYY-MM-DD/clusters.jsonl`, `data/YYYY-MM-DD/items.jsonl`, `data/(last 14 days)/issue.json`, `data/(last 14 days)/ranked.jsonl` | `data/staging/YYYY-MM-DD/issue.json`, `data/staging/YYYY-MM-DD/source_excerpts.jsonl` | `def summarise_day(run_date: date, data_dir: Path = Path("data"), lookback_days: int = 14) -> Issue` |
+| `src/verify.py` | LLM Engineer | `data/staging/YYYY-MM-DD/issue.json`, `data/staging/YYYY-MM-DD/source_excerpts.jsonl` | `data/staging/YYYY-MM-DD/verify.json`, `data/staging/YYYY-MM-DD/issue.json` (denormalised `SummaryBlock.verification` rewritten in place) | `def verify_day(run_date: date) -> VerificationReport` (ADVISORY: never blocks release; on any failure writes an `unavailable` report and returns normally) |
 | `src/render.py` | Release Engineer | `data/YYYY-MM-DD/issue.json`, `templates/issue.html.j2` | `docs/index.html`, `docs/archive/YYYY-MM-DD.html` | `def render_issue(issue: Issue, templates_dir: Path = Path("templates"), docs_dir: Path = Path("docs")) -> None` |
 | `src/run.py` | Architect (orchestration shell; module owners maintain their stages) | All of the above, transitively | All of the above, transitively | `def main(run_date: date \| None = None, skip: set[str] = frozenset()) -> int` (CLI: `python -m src.run [--date YYYY-MM-DD] [--skip fetch,cluster,...]`; returns process exit code) |
 
@@ -1056,7 +1171,17 @@ internal helpers are private to the module.
   import the public functions to chain them in-process for local dev; CI
   may also run them as separate subprocesses.)
 - No LLM calls in `fetch.py`, `cluster.py` (embeddings yes; LLM judgment
-  no), `render.py`, or `run.py`. LLM lives in `rank.py` and `summarise.py`.
+  no), `render.py`, or `run.py`. LLM lives in `rank.py`, `summarise.py`,
+  `verify.py`, and `review.py`. The latter two are **advisory** stages:
+  both call the LLM but neither blocks release — an LLM/transport failure
+  produces an `unavailable` artifact, not a crash.
+- **Pipeline stage order** (`src/run.py::STAGE_ORDER`): `fetch -> cluster
+  -> rank -> summarise -> verify -> render -> review`. `verify` runs after
+  `summarise` (it needs the staged `issue.json` + the `source_excerpts.jsonl`
+  summarise wrote) and before `render` (so the renderer can surface the
+  per-story factual flag). Both `verify` and `review` are failure-soft
+  tail stages relative to their producers; skipping either leaves a
+  publishable issue.
 - Logging shape is shared (Architect cross-cutting concern): one
   structured JSON line per significant event, fields `{ts, level, module,
   event, ...}`. `run.py` decides the destination (stderr for CI;
@@ -1440,4 +1565,7 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-05-23 | Archive layout (paths, not schema) | flat `data/<date>/` | split `data/<date>/` (canonical) + `data/staging/<date>/` (working) | New parallel write path under `data/staging/`. Same five files + embeddings sidecar, same atomic-write rules, same shape. Default engine write target is now staging; canonical is written only by `--release`. See [Archive: staging vs canonical](#archive-staging-vs-canonical). | n/a — first introduction. Round B (a follow-up refactor PR) updates `src/fetch.py`, `src/cluster.py`, `src/rank.py`, `src/summarise.py`, `src/render.py`, `src/run.py` to write to staging by default and to expose `--release`. Until Round B lands, the on-disk layout still matches the pre-staging behaviour; this contract specifies the target state. |
 | 2026-05-25 | `Cluster`, `SummaryBlock` | v1 | v2 | Renamed `cross_time_ref` -> `prior_coverage_ref` on both models (task #88). The old name implied temporal progression ("continuation"); what we actually detect is topical RECURRENCE. The rename keeps the semantic honest -- the field just says "this cluster has been covered before" without implying the new article carries new information. Pydantic `validation_alias=AliasChoices("prior_coverage_ref", "cross_time_ref")` retained so already-released archive files (e.g. `data/released/2026-05-24/issue.json`) continue to parse without rewriting any on-disk bytes. Also: `_apply_continuation_penalty` -> `_apply_prior_coverage_penalty`, `_CONTINUATION_SIGNIFICANCE_CAP` -> `_PRIOR_COVERAGE_SIGNIFICANCE_CAP`, log message wording "continuation penalty applied" -> "prior-coverage penalty applied", and `RANK_PROMPT_VERSION` v0.1 -> v0.3 (prompt content unchanged; bump records the audit-tagged log wording change at the rank-output level). | No on-disk migration. The pydantic alias means every existing v1 archive file (`data/released/<date>/issue.json` and `clusters.jsonl`) loads via `Issue.model_validate_json` / `Cluster.model_validate_json` exactly as before -- the field shows up on the in-memory object as `prior_coverage_ref` regardless of which name the JSON used. New writes use the new name (because `extra="forbid"` and pydantic serialises by the field-declaration name by default), so future archives will only contain `prior_coverage_ref`; mixed-vintage corpora remain parseable. Tested by `tests/test_models.py::TestCluster::test_prior_coverage_ref_alias_accepts_old_field_name` and by parsing `data/released/2026-05-24/issue.json` end-to-end. |
 | 2026-05-30 | `RankedStory` | v2 | v3 | `tier` literal value-space changed from `{"pulse", "on_the_radar", "cut"}` to `{"big_picture", "hands_on", "on_the_radar", "cut"}`. `pulse` removed (Pulse is now picked by `summarise._pick_pulse` from the union of `big_picture` and `hands_on` pools — see [Tier as authority](#tier-as-authority-rank---summarise-routing)). `big_picture` and `hands_on` added as deterministic outputs of `rank._assign_initial_tier`, driven by `config/rubric.yaml -> tier_thresholds` and the `audience_tags`-primary routing rule. Tier is now a HARD section boundary in `summarise.py`: each `_pick_*` reads from a single tier pool with no cross-tier scavenging. The three-section integrity gate (`hands_on >= 3`, `pulse present`) becomes a post-condition the Editor judges, not back-pressure that pulls from neighbouring tiers. Also: `config/rubric.yaml` gains a `tier_thresholds` block (additive); `rubric_version` bumps to v0.3-2026-05-30. | Existing released archive: 9 days of `data/released/<date>/ranked.jsonl` carry v2 rows with `tier in {on_the_radar, cut}` only (the pre-fix bug). These values remain valid under v3, so the rows parse transparently — they are semantically under-promoted relative to what Shape A would have assigned, but the field is in-vocabulary. We do NOT re-tier history. v2 readers loading a v3 row would reject `big_picture` / `hands_on` as unknown enum values; mitigation is that all in-repo readers upgrade in the same PR (no external consumers). Tests that asserted `_assign_initial_tier` returns `on_the_radar` for everything above the cut need updating in the implementation PR; Test Engineer catalogues the breakage there. Eval fixtures: existing rows remain valid; fixtures intended to exercise Shape A picker behaviour need re-tiering. |
+| 2026-06-29 | `ClaimVerdict`, `StoryVerification`, `VerificationReport` (new models); `verify.json` + `source_excerpts.jsonl` (new archive files) | — | v1 | New contract surface for the advisory factual-accuracy verify stage (`src/verify.py` `verify_day`). `ClaimVerdict` (claim, verdict[supported\|unsupported\|contradicted\|unverifiable], location[headline\|body], summary_span, source_span, note) with a validator: `verdict == "contradicted"` requires a non-empty `source_span` (mirrors `verify._enforce_contradiction_discipline`). `StoryVerification` (story_id, prompt_version, claims, has_contradiction/has_unsupported/headline_flagged rollups, with a validator keeping rollups consistent with claims). `VerificationReport` (schema_version, generated_at, prompt_version, verdict[clean\|flagged\|unavailable], verdict_counts, stories, note) — the `verify.json` envelope, mirroring `SourceHealthReport`; an `unavailable` report carries empty `stories`. `source_excerpts.jsonl` is a staging-only JSONL keyed by source URL (url, excerpt, fetched_at, optional story_id) that `summarise.py` persists so `verify` judges against the identical excerpt. Promotion: `verify.json` promotes to released like `source_health.json`; `source_excerpts.jsonl` is ephemeral and stays staging-only. | First introduction — no on-disk migration. Missing-file tolerance is the migration story: a day without `verify.json` (verify skipped / unavailable / predates the stage) is read as "not verified"; a missing `source_excerpts.jsonl` makes verify treat all excerpts as empty (all-`unverifiable`, fail-soft). |
+| 2026-06-29 | `SummaryBlock` | v2 | v3 | Added optional nullable `verification: StoryVerification \| None = None`, written in place by the advisory verify stage after summarise. Additive + nullable: `None` means "not verified" (NOT a clean bill of health). | Existing issue.json (SummaryBlock schema_version <= 2) parse unchanged with `verification = None`. `extra="forbid"` means a pre-v3 reader of a v3 record would reject the unknown `verification` field, but this repo upgrades all readers in the same wave (one binary, no external consumers). Verified end-to-end by parsing `data/released/2026-06-28/issue.json` (a v5 issue) under the new model: parses clean, `verification = None`. |
+| 2026-06-29 | `Issue` | v5 | v6 | No field change on `Issue` itself; the bump tracks the transitive SummaryBlock v2->v3 change (issue.json now carries the new SummaryBlock shape) and documents the optional `"verify"` key in `prompt_versions` (set to `verify.VERIFY_PROMPT_VERSION` when the advisory stage runs; absent otherwise — `prompt_versions` still requires only `{"rank", "summarise"}`). | Older issue.json (schema_version <= 5) parse unchanged; the v6 envelope simply admits the new optional SummaryBlock field and the optional prompt-version key. Same in-repo all-readers-upgrade-together mitigation as the SummaryBlock row above. |
 | 2026-05-24 | `Issue` | v4 | v5 | Added `revision: int = 0` (`ge=0`). Same-date re-release (opt-in via `aiv release --revise`) preserves `issue_number` and bumps `revision` instead of consuming a new integer in the registry. Display identifier is now `Issue.display_number` -> `"{issue_number}"` when `revision == 0`, else `"{issue_number}.{revision}"` (`#2`, `#2.1`, `#2.2`). The integer registry semantics are unchanged: uniqueness, monotonic-increase, and `paths.all_released_dates()` all still operate on the integer base; `revision` is a per-date secondary counter. Templates render `issue.display_number`; landing-page archive entries carry `display_number` alongside `issue_number`. See [Issue Number Registry -> Same-date re-release (revision bump)](#issue-number-registry). Motivating case: prompt drift fix on issue #2 (2026-05-24) re-shipped as #2.1 instead of burning #3. | Existing canonical archive (issues #1, #2 on disk) loads transparently: missing `revision` field defaults to 0 via pydantic; `display_number` returns `"1"`, `"2"`. v4 readers handling v5 records: pydantic `extra="forbid"` on `Issue` means a v4 reader of a v5 record would reject the unknown `revision` field. **Mitigation:** this repo upgrades all readers in the same PR (one binary, no external consumers). v5 readers handling v4 records: `revision` defaults to 0, display behaviour is identical to v4. No on-disk migration script is required. |
