@@ -1077,6 +1077,80 @@ per_cluster:
       c_35015ce4ac093533. Expected merged output cluster: c_400ad9a451367f3f.
 
 # ---------------------------------------------------------------------------
+# 4. FACTUAL ACCURACY LABELS (Eval 7 — verifier calibration)
+#
+# Loaded by eval_factual_accuracy() in run_evals.py.
+# The fixture cases themselves live in evals/fixtures/factual-accuracy/cases.yaml.
+# This section acts as an index/summary: categories, counts, and thresholds so
+# the harness can validate it loaded the right fixture set.
+#
+# Fields:
+#   fixture_path:          string  — relative path to the cases.yaml file
+#   schema_version:        int     — must match cases.yaml schema_version
+#   expected_counts:       dict    — category -> expected case count
+#   thresholds:            dict    — the gate thresholds (must match run_evals.py constants)
+#   notes:                 str
+# ---------------------------------------------------------------------------
+
+factual_accuracy:
+  fixture_path: "evals/fixtures/factual-accuracy/cases.yaml"
+  schema_version: 2
+  expected_counts:
+    supported: 8
+    contradicted: 18
+    unverifiable: 5
+    total: 31
+  contradicted_by_mutation_type:
+    numeric_substitution: 4      # body errors: wrong number in summary body
+    entity_substitution: 4       # body errors: wrong named entity in summary body
+    directional_inversion: 3     # body errors: direction flipped in summary body
+    dropped_trust_flag: 3        # body errors: epistemic qualifier removed from body
+    headline_error: 4            # NEW: error in headline only, body left correct
+  headline_error_cases:
+    fa_601_contradicted_headline_wrong_actor:   "wrong named actor (IBM -> Google)"
+    fa_602_contradicted_headline_wrong_number:  "wrong number (80% -> 40%)"
+    fa_603_contradicted_headline_wrong_model_attribution: "wrong company (Axiom -> Mistral)"
+    fa_604_contradicted_headline_inverted_direction: "directional inversion (fail -> work)"
+  thresholds:
+    recall_contradicted: 0.85    # verifier must catch >= 85% of contradicted claims (aggregate)
+    precision_supported: 0.80    # verifier must not flag >= 80% of supported claims
+    unverifiable_accuracy: 0.80  # verifier must label >= 80% of unverifiable claims correctly
+    per_location_recall: "informational_only"
+                                 # per-location (headline vs body) recall is reported for
+                                 # diagnosis but is NOT a hard gate. Use it to surface a
+                                 # verifier that catches body errors but misses headline errors.
+                                 # For drift interpretation: a drop in headline recall without
+                                 # a corresponding body recall drop is a strong signal that the
+                                 # verifier prompt has regressed on headline reading specifically
+                                 # (e.g. the prompt was changed to focus on body claims only).
+  location_dimension_note: >
+    Schema v2 adds a `location` field to every per-claim ground-truth entry
+    ("headline" or "body") and a `headline` field to every fixture case.
+    The four headline_error cases (fa_601-fa_604) exercise the verifier's
+    ability to catch factual errors specifically in the headline, with the
+    body left correct. All 8 supported cases now include headline claims
+    that must NOT be flagged (recognition-rule named actors supported by source).
+    Drift interpretation: if per_location_recall["headline"] drops while
+    per_location_recall["body"] holds, the verifier is not reading headlines
+    carefully enough — likely a prompt regression or a model endpoint shift
+    (see FM-06 + FM-14).
+  notes: >
+    Fixture set v2 updated 2026-06-28 (Eval 7 headline-coverage extension).
+    31 cases across 3 categories, drawn from real summaries + real headlines
+    in issues #13-17 (2026-06-04 to 2026-06-08).
+    Contradicted cases now cover 5 mutation types (18 total):
+      numeric_substitution (4), entity_substitution (4), directional_inversion (3),
+      dropped_trust_flag (3), headline_error (4 NEW).
+    The 4 headline_error cases test body-correct / headline-wrong scenarios:
+      wrong named actor, wrong number, wrong company attribution, inverted direction.
+    Supported cases (8) carry real headlines with recognition-rule named actors
+    that ARE supported by source — the verifier must NOT flag these.
+    Unverifiable cases (5) are unchanged; headlines added for completeness.
+    Calibration target: tune the verifier prompt to pass all 31 cases, not
+    vice versa. The headline_error cases are the new calibration surface for
+    the headline-reading capability.
+
+# ---------------------------------------------------------------------------
 # 2. PER-ISSUE LABELS
 #
 # Fields:

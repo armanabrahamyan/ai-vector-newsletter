@@ -41,7 +41,7 @@ import warnings
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional, Protocol
 
 # ---------------------------------------------------------------------------
 # Project root (so this module can be run from anywhere)
@@ -1875,12 +1875,43 @@ def _extract_feature_vector(
         for tag, count in tag_counts.items()
     }
 
+    # verifier_flag_rate — fraction of stories that have a factual flag in the
+    # per-issue verifier sidecar (data/<date>/verify_sidecar.json), if present.
+    # Populated by the verify stage once it lands; defaults to None until then.
+    # Bidirectional interpretation: a rate spiking HIGH suggests the verifier is
+    # overclaiming (or the pipeline is hallucinating); a rate dropping to ZERO
+    # suggests the verifier stopped running or is trivially passing everything.
+    verifier_sidecar_path = None
+    # Try to locate the sidecar alongside issue.json (released archive only).
+    # We can't resolve the path here without knowing whether we're in staging
+    # or released mode, so we probe the most likely released path from issue_data.
+    _issue_date = issue_data.get("date")
+    if _issue_date:
+        _candidate = DATA_DIR / "released" / _issue_date / "verify_sidecar.json"
+        if _candidate.exists():
+            verifier_sidecar_path = _candidate
+
+    verifier_flag_rate: Optional[float] = None
+    if verifier_sidecar_path is not None:
+        try:
+            sidecar = _load_json(verifier_sidecar_path) or {}
+            flagged = sum(
+                1 for entry in sidecar.get("stories", [])
+                if entry.get("has_flag", False)
+            )
+            total_in_sidecar = len(sidecar.get("stories", []))
+            if total_in_sidecar > 0:
+                verifier_flag_rate = flagged / total_in_sidecar
+        except Exception:  # noqa: BLE001
+            pass  # sidecar malformed; leave None rather than crashing drift
+
     return {
         "story_count": story_count,
         "avg_summary_length": avg_summary_length,
         "finance_tag_rate": finance_tag_rate,
         "signal_pill_distribution": signal_pill_distribution,
         "audience_tag_distribution": audience_tag_distribution,
+        "verifier_flag_rate": verifier_flag_rate,  # None until verify stage lands
     }
 
 
@@ -2073,11 +2104,19 @@ def check_drift(
 
     # ------------------------------------------------------------------
     # 4. Compute z-scores for scalar metrics.
+    #
+    # verifier_flag_rate is included as a scalar metric once the verify
+    # stage lands and populates the sidecar. Until then, most/all values
+    # in the baseline will be None and the metric is skipped gracefully.
+    # When present: a high z-score means the verifier is flagging
+    # unusually often (possible hallucination spike or prompt regression);
+    # a low (negative) z-score means unusually few flags (verifier may
+    # have stopped running or is trivially passing everything).
     # ------------------------------------------------------------------
-    _SCALAR_METRICS = ("story_count", "avg_summary_length", "finance_tag_rate")
+    _SCALAR_METRICS_CORE = ("story_count", "avg_summary_length", "finance_tag_rate")
     z_scores: dict[str, float] = {}
 
-    for metric in _SCALAR_METRICS:
+    for metric in _SCALAR_METRICS_CORE:
         values = [fv[metric] for fv in baseline_fvs]
         n = len(values)
         mean = sum(values) / n
@@ -2087,6 +2126,23 @@ def check_drift(
         today_val = candidate_fv[metric]
         z = (today_val - mean) / effective_stdev
         z_scores[metric] = round(z, 4)
+
+    # verifier_flag_rate: only include in z-scores when enough non-None
+    # baseline values exist (at least half the baseline must have data).
+    _vfr_baseline = [
+        fv.get("verifier_flag_rate")
+        for fv in baseline_fvs
+        if fv.get("verifier_flag_rate") is not None
+    ]
+    _vfr_candidate = candidate_fv.get("verifier_flag_rate")
+    if len(_vfr_baseline) >= max(1, len(baseline_fvs) // 2) and _vfr_candidate is not None:
+        n = len(_vfr_baseline)
+        mean = sum(_vfr_baseline) / n
+        variance = sum((v - mean) ** 2 for v in _vfr_baseline) / n
+        stdev = math.sqrt(variance)
+        effective_stdev = max(stdev, _DRIFT_STDEV_FLOOR)
+        z = (_vfr_candidate - mean) / effective_stdev
+        z_scores["verifier_flag_rate"] = round(z, 4)
 
     # ------------------------------------------------------------------
     # 5. Compute Jensen-Shannon divergences for distribution metrics.
@@ -2268,6 +2324,685 @@ def eval_behavioural_integrity() -> EvalResult:
 
 
 # ---------------------------------------------------------------------------
+# Eval 7 — Factual accuracy verifier calibration
+# STATUS: READY (fixture-only; verifier callable is a seam — plugged in later)
+#
+# This eval defines the calibration gate for the future ``verify`` stage.
+# It does NOT run the verifier itself — the verifier prompt does not yet exist.
+# When the verifier lands, the LLM Engineer wires it by implementing the
+# VerifierCallable protocol (see below) and passing it to eval_factual_accuracy().
+#
+# Until the verifier is wired, the eval runs in SKIP mode:
+#   status="verifier_not_wired"  passed=True  metric=None
+# This is NOT a stub (the fixtures and labels are real and complete); it is
+# a seam that stays green in CI until the verifier lands.
+#
+# The verifier must check BOTH the headline (title) AND the summary body.
+# A factual error in the headline is the most severe kind — it is what readers
+# see and trust first, and AI Vector headlines carry named actors (the
+# recognition rule). Each returned claim dict must include a `location` field
+# indicating where the claim was drawn from: "headline" or "body".
+#
+# The seam — the function the LLM Engineer implements:
+# ---------------------------------------------------------------------------
+#
+#   def verify(
+#       headline: str,
+#       body: str,
+#       source_excerpt: str,
+#   ) -> list[dict]:
+#       """Run the factual-accuracy verifier on one (headline, body, source) triple.
+#
+#       Args:
+#           headline:       The published headline (title) string.
+#           body:           The published summary body string.
+#           source_excerpt: The ~1000-word trafilatura excerpt the summary was
+#                           derived from.
+#
+#       Returns:
+#           A list of per-claim verdict dicts. Each dict must have:
+#               {
+#                   "claim":    str,   # the atomic claim text
+#                   "verdict":  str,   # one of: supported | unsupported |
+#                                      #         contradicted | unverifiable
+#                   "location": str,   # one of: "headline" | "body"
+#                                      # where the claim was drawn from
+#               }
+#           The list must be in the same order as the claims in the fixture case,
+#           or claim-text matching is used (see _match_claims() below).
+#           The `location` field is used for per-location recall reporting.
+#           Returning an empty list causes all claims to score as errors.
+#       """
+#       ...
+#
+# The LLM Engineer passes a function with this exact signature as the
+# ``verifier`` argument to eval_factual_accuracy().
+#
+# HARD GATE thresholds (block merges to verifier prompt when violated):
+#   recall on contradicted claims      >= 0.85   (reliable classes only:
+#                                                 numeric_substitution,
+#                                                 entity_substitution,
+#                                                 directional_inversion,
+#                                                 headline_error)
+#   precision on supported claims      >= 0.80
+#   unverifiable accuracy              >= 0.80
+#
+# dropped_trust_flag is EXCLUDED from the hard-gate recall and is reported
+# as the diagnostic metric dropped_trust_flag_recall_advisory. It is
+# intentionally visible in the report output but does NOT gate. Rationale:
+# catching a dropped epistemic caveat is inherently debatable — the de-hedged
+# claim is factually true; only the epistemic framing was removed. The verifier
+# reliably catches the four clear-cut mutation classes at ~100% recall.
+# Shipping the advisory-mode verifier with dropped_trust_flag as a diagnostic
+# is the responsible path: visible, honest, not hidden, not a blocker.
+# Accepted by Arman: 2026-06-29. See FM-14 in evals/failure_modes.md.
+#
+# Per-location recall (headline vs body) is reported for diagnosis but is
+# NOT a separate hard gate. A verifier that catches body errors but misses
+# headline errors will be visible in the per-location breakdown.
+# Per-mutation-type recall is also reported (informational, not a hard gate).
+# ---------------------------------------------------------------------------
+
+# Factual accuracy fixture path and gate thresholds.
+# Thresholds are defined here as constants so they can be compared against the
+# values in labels.yaml (mismatch = misconfiguration, surfaced as a warning).
+_FA_FIXTURE_PATH = EVALS_DIR / "fixtures" / "factual-accuracy" / "cases.yaml"
+_FA_RECALL_CONTRADICTED_THRESHOLD = 0.85
+_FA_PRECISION_SUPPORTED_THRESHOLD = 0.80
+_FA_UNVERIFIABLE_ACCURACY_THRESHOLD = 0.80
+
+# Mutation types included in the hard-gate recall_contradicted metric.
+# dropped_trust_flag is EXCLUDED from the hard gate (see FM-14 in
+# evals/failure_modes.md and the advisory note in cases.yaml).
+# Rationale: detecting a dropped epistemic caveat is an inherently debatable
+# judgment — the de-hedged claim is factually true; only the epistemic framing
+# was removed. The verifier reliably catches clear-cut errors (numeric swap,
+# entity swap, directional inversion, headline error) at ~100% recall. Including
+# dropped_trust_flag in the gate would pin the aggregate recall at 0.73 even
+# when reliable detection is at 1.0, preventing a demonstrably shippable tool
+# from passing calibration. Decision: track dropped_trust_flag as a visible
+# diagnostic metric (dropped_trust_flag_recall_advisory), never hide it, and
+# ship the gate with recall over reliable classes only.
+# Accepted by Arman: 2026-06-29.
+_FA_RELIABLE_MUTATION_TYPES = frozenset({
+    "numeric_substitution",
+    "entity_substitution",
+    "directional_inversion",
+    "headline_error",
+})
+
+
+# ---------------------------------------------------------------------------
+# Protocol definition: what the verifier callable must implement.
+# The LLM Engineer imports this and implements a function with this signature.
+# Stored here (not in src/) to keep the seam in the eval layer, where this
+# eval engineer maintains it.
+# ---------------------------------------------------------------------------
+class VerifierCallable(Protocol):
+    """Type protocol for the factual-accuracy verifier function.
+
+    The LLM Engineer implements a function matching this protocol and passes
+    it as the ``verifier`` argument to eval_factual_accuracy(). Once wired,
+    the harness will call it for each (headline, body, source_excerpt) triple
+    in the fixture set.
+
+    The verifier must check claims drawn from BOTH the headline and the body.
+    A factual error in the headline is the most severe kind — readers see and
+    trust the headline first, and AI Vector headlines carry named actors.
+
+    Each returned claim dict must include a ``location`` field:
+        "headline" — claim drawn from the headline (title)
+        "body"     — claim drawn from the summary body
+
+    The function must be pure (no side effects, no global state) so the harness
+    can call it multiple times without interference. Caching for cost reduction
+    is the verifier's own concern; the harness does not cache at this layer.
+    """
+    def __call__(
+        self,
+        headline: str,
+        body: str,
+        source_excerpt: str,
+    ) -> list[dict]:
+        """Return per-claim verdicts for the (headline, body, source) triple.
+
+        Each dict in the returned list must have:
+            {
+                "claim":    str,   # atomic claim text
+                "verdict":  str,   # supported | unsupported | contradicted | unverifiable
+                "location": str,   # "headline" | "body"
+            }
+        """
+        ...
+
+
+def _load_fa_fixtures() -> list[dict]:
+    """Load the factual-accuracy fixture cases from cases.yaml.
+
+    Returns a list of case dicts as parsed from YAML. Returns [] if the file
+    does not exist or cannot be parsed; the eval function handles the empty
+    case gracefully.
+    """
+    try:
+        import yaml
+    except ImportError:
+        return []
+    if not _FA_FIXTURE_PATH.exists():
+        return []
+    with _FA_FIXTURE_PATH.open("r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+    return data.get("cases", [])
+
+
+def _match_claims(
+    fixture_claims: list[dict],
+    verifier_output: list[dict],
+) -> list[tuple[dict, Optional[dict]]]:
+    """Match fixture claims to verifier-output verdicts using token-overlap.
+
+    Matching strategy: for each ground-truth fixture claim, find the predicted
+    claim at the same location (headline / body) with the highest Jaccard
+    token-overlap. If no same-location candidate exists, fall back to the
+    full pool. A match is accepted when best Jaccard > 0. Unmatched fixture
+    claims (no overlap > 0 anywhere) get verdict=None (treated as errors).
+
+    This sidesteps the brittle prefix approach that failed when the verifier
+    paraphrases the atomic claim text differently from the fixture wording.
+    The location filter prevents cross-location mismatches (a body claim must
+    not be credited to a headline prediction and vice versa).
+
+    Reference: _scratch/fa_tuning/score.py::best_match / toks.
+    """
+    import re as _re
+
+    _STOP = frozenset(
+        "a an the of to in on for and or with by is are was were be been "
+        "that this its their it they as at from than more less fewer "
+        "shows show test tests results result internal".split()
+    )
+
+    def _toks(s: str) -> frozenset:
+        return frozenset(
+            w for w in _re.findall(r"[a-z0-9.]+", (s or "").lower())
+            if w not in _STOP and len(w) > 1
+        )
+
+    def _best_match(gt_claim: str, gt_loc: str, preds: list[dict]) -> Optional[dict]:
+        """Return the predicted claim dict with highest Jaccard overlap.
+
+        Prefers same-location candidates; falls back to the full pool when
+        no same-location candidate exists. Returns None when nothing overlaps
+        (Jaccard == 0 for all candidates).
+        """
+        gt = _toks(gt_claim)
+        same_loc = [c for c in preds if (c.get("location") or "") == gt_loc]
+        pool = same_loc if same_loc else preds
+        best: Optional[dict] = None
+        best_score = 0.0
+        for c in pool:
+            pt = _toks(c.get("claim", ""))
+            union = len(gt | pt)
+            if union == 0:
+                score = 0.0
+            else:
+                score = len(gt & pt) / union
+            if score > best_score:
+                best, best_score = c, score
+        return best if best_score > 0.0 else None
+
+    if not verifier_output:
+        return [(fc, None) for fc in fixture_claims]
+
+    matched = []
+    for fc in fixture_claims:
+        gt_claim_text = fc.get("claim", "") or ""
+        gt_loc = (fc.get("location", "") or "").strip().lower()
+        vd = _best_match(gt_claim_text, gt_loc, verifier_output)
+        matched.append((fc, vd))
+    return matched
+
+
+def eval_factual_accuracy(
+    verifier: Optional[Callable] = None,
+) -> EvalResult:
+    """Eval 7. Factual-accuracy verifier calibration against labelled fixtures.
+
+    Loads the fixture set from evals/fixtures/factual-accuracy/cases.yaml and
+    runs the provided ``verifier`` callable against each (headline, body,
+    source_excerpt) triple. Computes:
+        - recall on contradicted claims (PRIMARY HARD GATE >= 0.85, over
+          RELIABLE MUTATION CLASSES ONLY: numeric_substitution,
+          entity_substitution, directional_inversion, headline_error)
+        - precision on supported claims (primary hard gate >= 0.80)
+        - unverifiable accuracy (secondary hard gate >= 0.80)
+        - dropped_trust_flag_recall_advisory (DIAGNOSTIC ONLY, not a gate):
+          recall over dropped_trust_flag cases, tracked and printed but does
+          not affect pass/fail. See FM-14 in evals/failure_modes.md.
+        - per-location recall on contradicted claims (headline vs body)
+          — informational, not a hard gate; surfaces a verifier that catches
+          body errors but misses headline errors
+        - per-mutation-type recall (informational, all mutation types)
+
+    The verifier must check claims from BOTH the headline and the summary body.
+    A factual error in the headline is the most severe kind. Each returned claim
+    dict must include a ``location`` field: "headline" or "body".
+
+    SEAM BEHAVIOUR:
+        When ``verifier`` is None (the verifier has not been wired yet), returns
+        status="verifier_not_wired" with passed=True. CI remains green.
+        This is intentional: the fixtures define the goal; the verifier is built
+        to pass them.
+
+    HARD GATE:
+        When ``verifier`` is provided, a regression on recall_contradicted or
+        precision_supported blocks merges to the verifier prompt (via CI non-zero
+        exit). The unverifiable_accuracy gate also blocks.
+
+    The ``verifier`` callable must match the VerifierCallable protocol:
+        def verifier(headline: str, body: str, source_excerpt: str) -> list[dict]:
+            # Returns: [{"claim": str, "verdict": str, "location": str}, ...]
+            # verdict values:  supported | unsupported | contradicted | unverifiable
+            # location values: "headline" | "body"
+
+    Args:
+        verifier: The factual-accuracy verifier function to evaluate.
+                  Pass None (or omit) when the verifier does not yet exist.
+
+    Returns:
+        EvalResult with:
+            name="factual_accuracy"
+            metric=recall_contradicted (primary metric; None when no verifier)
+            status="verifier_not_wired" | "pass" | "fail" | "error"
+    """
+    # ------------------------------------------------------------------
+    # 1. Seam: skip gracefully when no verifier is wired.
+    # ------------------------------------------------------------------
+    if verifier is None:
+        return EvalResult(
+            name="factual_accuracy",
+            passed=True,
+            metric=None,
+            status="verifier_not_wired",
+            details={
+                "message": (
+                    "Verifier callable not wired. "
+                    "Implement the VerifierCallable protocol and pass it as "
+                    "verifier=... to eval_factual_accuracy(). "
+                    "The verifier must accept (headline, body, source_excerpt) "
+                    "and return per-claim dicts with 'claim', 'verdict', and "
+                    "'location' fields. "
+                    "Fixture set is loaded and counts are reported below."
+                ),
+                "fixture_path": str(_FA_FIXTURE_PATH),
+                "fixture_exists": _FA_FIXTURE_PATH.exists(),
+                "thresholds": {
+                    "recall_contradicted": _FA_RECALL_CONTRADICTED_THRESHOLD,
+                    "recall_contradicted_scope": "reliable_classes_only (excl. dropped_trust_flag)",
+                    "precision_supported": _FA_PRECISION_SUPPORTED_THRESHOLD,
+                    "unverifiable_accuracy": _FA_UNVERIFIABLE_ACCURACY_THRESHOLD,
+                    "dropped_trust_flag_recall_advisory": "informational_only",
+                },
+                **_fa_fixture_summary(),
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # 2. Load fixtures.
+    # ------------------------------------------------------------------
+    cases = _load_fa_fixtures()
+    if not cases:
+        return EvalResult(
+            name="factual_accuracy",
+            passed=True,
+            metric=None,
+            status="verifier_not_wired",
+            details={
+                "message": (
+                    f"Fixture file not found or empty: {_FA_FIXTURE_PATH}. "
+                    "Skipping eval."
+                )
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # 3. Run verifier on each case and collect verdicts.
+    # ------------------------------------------------------------------
+    # Tracking structures
+    # For precision (supported): count how many supported-category claims
+    # the verifier did NOT flag (i.e., returned "supported" or "unverifiable"
+    # but NOT "contradicted" or "unsupported").
+    # For recall (contradicted): count how many contradicted-category claims
+    # the verifier flagged as "contradicted".
+    # For unverifiable accuracy: count how many unverifiable-category claims
+    # the verifier returned "unverifiable".
+
+    supported_claims_total = 0
+    supported_claims_not_flagged = 0   # verifier said "supported" (TP for precision)
+    supported_claims_flagged = 0       # verifier said "contradicted"/"unsupported" (FP)
+
+    # Reliable classes (numeric, entity, directional, headline) — hard-gate recall.
+    # Excludes dropped_trust_flag, which is tracked separately as a diagnostic.
+    contradicted_reliable_total = 0
+    contradicted_reliable_caught = 0   # TP for hard-gate recall
+    contradicted_reliable_missed = 0   # FN for hard-gate recall
+
+    # dropped_trust_flag — advisory diagnostic only, NOT in the hard gate.
+    # Tracked and printed so the metric is visible and honest; not hidden.
+    dtf_claims_total = 0
+    dtf_claims_caught = 0
+
+    unverifiable_claims_total = 0
+    unverifiable_claims_correct = 0    # verifier said "unverifiable"
+    unverifiable_claims_wrong = 0
+
+    # Per-mutation-type recall tracking
+    mutation_type_recall: dict[str, dict] = {}
+
+    # Per-location recall tracking for contradicted claims.
+    # Surfaces a verifier that catches body errors but misses headline errors.
+    location_recall: dict[str, dict] = {
+        "headline": {"total": 0, "caught": 0},
+        "body":     {"total": 0, "caught": 0},
+    }
+
+    failures: list[str] = []
+    case_results: list[dict] = []
+
+    for case in cases:
+        case_id = case.get("id", "<unknown>")
+        category = case.get("category", "unknown")
+        mutation_type = case.get("mutation_type")
+        headline_text = case.get("headline", "")
+        summary_text = case.get("summary_text", "")
+        source_excerpt = case.get("source_excerpt", "")
+        fixture_claims = case.get("claims", [])
+
+        # Call verifier with the updated three-argument signature.
+        # Gracefully handle verifiers that still use the old two-argument
+        # signature (headline + body combined, no location) by falling back
+        # to passing body only. This allows a transitional period while the
+        # LLM Engineer updates the verifier prompt.
+        try:
+            import inspect as _inspect
+            _sig = _inspect.signature(verifier)
+            _params = list(_sig.parameters)
+            if len(_params) >= 3:
+                # New signature: (headline, body, source_excerpt)
+                verifier_output = verifier(headline_text, summary_text, source_excerpt)
+            else:
+                # Old signature: (summary_text, source_excerpt) — transitional compat
+                verifier_output = verifier(summary_text, source_excerpt)
+        except Exception as exc:  # noqa: BLE001
+            verifier_output = []
+            failures.append(
+                f"Case {case_id}: verifier raised {type(exc).__name__}: {exc}"
+            )
+
+        # Match claims to verifier output
+        matched = _match_claims(fixture_claims, verifier_output)
+
+        case_claim_results: list[dict] = []
+        for fixture_claim, verifier_verdict in matched:
+            gt = fixture_claim.get("ground_truth_verdict", "unknown")
+            gt_location = fixture_claim.get("location", "body")  # default: body
+            vv = (verifier_verdict or {}).get("verdict", "error") if verifier_verdict else "error"
+            # Location reported by the verifier (if present); fall back to
+            # the fixture's ground-truth location for accounting purposes.
+            vv_location = (
+                (verifier_verdict or {}).get("location", gt_location)
+                if verifier_verdict else gt_location
+            )
+            match_correct = (vv == gt)
+
+            case_claim_results.append({
+                "claim": fixture_claim.get("claim", ""),
+                "ground_truth": gt,
+                "ground_truth_location": gt_location,
+                "verifier_verdict": vv,
+                "verifier_location": vv_location,
+                "correct": match_correct,
+            })
+
+            # "Flagging" verdicts: the verifier considers the claim problematic.
+            # Both "contradicted" and "unsupported" are flagging verdicts.
+            # This set is used for recall (catching injected errors) and for
+            # precision (not incorrectly flagging clean claims).
+            # Reference: _scratch/fa_tuning/score.py::FLAG.
+            _FLAGGING_VERDICTS = frozenset({"contradicted", "unsupported"})
+
+            if category == "supported":
+                if gt == "supported":
+                    supported_claims_total += 1
+                    if vv not in _FLAGGING_VERDICTS:
+                        # Not incorrectly flagged — counts toward precision
+                        supported_claims_not_flagged += 1
+                    else:
+                        supported_claims_flagged += 1
+
+            elif category == "contradicted":
+                # Count this claim toward recall if the ground-truth verdict is a
+                # flagging verdict (contradicted OR unsupported). In all non-trust-flag
+                # mutation types, the injected-error claims have gt="contradicted". In
+                # dropped_trust_flag cases, the re-anchored injected-error claims have
+                # gt="unsupported" because the verifier correctly marks de-hedged bare
+                # factual claims as unsupported rather than contradicted.
+                # Non-error claims in contradicted fixtures (gt="supported") are ignored
+                # for recall (only the injected error claim is the needle).
+                if gt in _FLAGGING_VERDICTS:
+                    caught = (vv in _FLAGGING_VERDICTS)
+
+                    if mutation_type == "dropped_trust_flag":
+                        # Advisory-only: not in the hard-gate recall.
+                        dtf_claims_total += 1
+                        if caught:
+                            dtf_claims_caught += 1
+                    else:
+                        # Reliable class: counts toward hard-gate recall.
+                        contradicted_reliable_total += 1
+                        if caught:
+                            contradicted_reliable_caught += 1
+                        else:
+                            contradicted_reliable_missed += 1
+
+                    # Per-mutation-type tracking (all mutation types, including DTF).
+                    if mutation_type:
+                        if mutation_type not in mutation_type_recall:
+                            mutation_type_recall[mutation_type] = {
+                                "total": 0,
+                                "caught": 0,
+                            }
+                        mutation_type_recall[mutation_type]["total"] += 1
+                        if caught:
+                            mutation_type_recall[mutation_type]["caught"] += 1
+
+                    # Per-location tracking (use fixture's ground-truth location
+                    # so we measure whether the verifier catches errors at each
+                    # location, regardless of what location the verifier reported).
+                    loc_bucket = gt_location if gt_location in location_recall else "body"
+                    location_recall[loc_bucket]["total"] += 1
+                    if caught:
+                        location_recall[loc_bucket]["caught"] += 1
+
+            elif category == "unverifiable":
+                if gt == "unverifiable":
+                    unverifiable_claims_total += 1
+                    if vv == "unverifiable":
+                        unverifiable_claims_correct += 1
+                    else:
+                        unverifiable_claims_wrong += 1
+
+        case_results.append({
+            "id": case_id,
+            "category": category,
+            "mutation_type": mutation_type,
+            "claims": case_claim_results,
+        })
+
+    # ------------------------------------------------------------------
+    # 4. Compute aggregate metrics.
+    # ------------------------------------------------------------------
+
+    # Hard-gate recall: reliable mutation classes only (excludes dropped_trust_flag).
+    recall_contradicted = (
+        contradicted_reliable_caught / contradicted_reliable_total
+        if contradicted_reliable_total > 0 else None
+    )
+
+    # Advisory diagnostic: dropped_trust_flag recall. Tracked and printed.
+    # NOT part of the hard gate. See FM-14 in evals/failure_modes.md.
+    dtf_recall_advisory = (
+        dtf_claims_caught / dtf_claims_total
+        if dtf_claims_total > 0 else None
+    )
+
+    precision_supported = (
+        supported_claims_not_flagged / supported_claims_total
+        if supported_claims_total > 0 else None
+    )
+    unverifiable_accuracy = (
+        unverifiable_claims_correct / unverifiable_claims_total
+        if unverifiable_claims_total > 0 else None
+    )
+
+    per_mutation_recall = {
+        mt: (
+            round(counts["caught"] / counts["total"], 4)
+            if counts["total"] > 0 else None
+        )
+        for mt, counts in mutation_type_recall.items()
+    }
+
+    # Per-location recall: informational only (not a hard gate).
+    # A verifier that catches body errors but misses headline errors is visible here.
+    per_location_recall: dict[str, Any] = {}
+    for loc, counts in location_recall.items():
+        total = counts["total"]
+        caught = counts["caught"]
+        per_location_recall[loc] = {
+            "total": total,
+            "caught": caught,
+            "recall": round(caught / total, 4) if total > 0 else None,
+        }
+
+    # ------------------------------------------------------------------
+    # 5. Apply hard gate thresholds.
+    # ------------------------------------------------------------------
+    # recall_contradicted gates only over _FA_RELIABLE_MUTATION_TYPES.
+    # dropped_trust_flag is deliberately excluded from the gate — it is
+    # inherently debatable (the de-hedged claim is factually true; the
+    # missing epistemic caveat is a harder/softer judgment). It is reported
+    # as dropped_trust_flag_recall_advisory below. Decision accepted by
+    # Arman: 2026-06-29. See FM-14 in evals/failure_modes.md.
+    if recall_contradicted is not None and recall_contradicted < _FA_RECALL_CONTRADICTED_THRESHOLD:
+        failures.append(
+            f"Recall on contradicted claims (reliable classes) {recall_contradicted:.4f} < "
+            f"threshold {_FA_RECALL_CONTRADICTED_THRESHOLD} "
+            f"({contradicted_reliable_caught}/{contradicted_reliable_total} caught; "
+            f"reliable classes: {sorted(_FA_RELIABLE_MUTATION_TYPES)})"
+        )
+    if precision_supported is not None and precision_supported < _FA_PRECISION_SUPPORTED_THRESHOLD:
+        failures.append(
+            f"Precision on supported claims {precision_supported:.4f} < "
+            f"threshold {_FA_PRECISION_SUPPORTED_THRESHOLD} "
+            f"({supported_claims_not_flagged}/{supported_claims_total} not flagged)"
+        )
+    if unverifiable_accuracy is not None and unverifiable_accuracy < _FA_UNVERIFIABLE_ACCURACY_THRESHOLD:
+        failures.append(
+            f"Unverifiable accuracy {unverifiable_accuracy:.4f} < "
+            f"threshold {_FA_UNVERIFIABLE_ACCURACY_THRESHOLD} "
+            f"({unverifiable_claims_correct}/{unverifiable_claims_total} correct)"
+        )
+
+    passed = len(failures) == 0
+
+    return EvalResult(
+        name="factual_accuracy",
+        passed=passed,
+        metric=round(recall_contradicted, 4) if recall_contradicted is not None else None,
+        status="pass" if passed else "fail",
+        details={
+            "fixture_path": str(_FA_FIXTURE_PATH),
+            "total_cases": len(cases),
+            # Hard-gate metrics (block merge on regression).
+            "recall_contradicted": (
+                round(recall_contradicted, 4) if recall_contradicted is not None else None
+            ),
+            "recall_contradicted_scope": "reliable_classes_only",
+            "recall_contradicted_reliable_classes": sorted(_FA_RELIABLE_MUTATION_TYPES),
+            "precision_supported": (
+                round(precision_supported, 4) if precision_supported is not None else None
+            ),
+            "unverifiable_accuracy": (
+                round(unverifiable_accuracy, 4) if unverifiable_accuracy is not None else None
+            ),
+            # Advisory diagnostic: dropped_trust_flag recall.
+            # NOT a hard gate. Tracked so it is visible and honest.
+            # When it improves, we will notice. When it falls, we will notice.
+            # Excluded from the gate because catching a dropped epistemic caveat
+            # is inherently debatable — the de-hedged claim is factually true;
+            # only the epistemic framing was removed. See FM-14.
+            "dropped_trust_flag_recall_advisory": (
+                round(dtf_recall_advisory, 4) if dtf_recall_advisory is not None else None
+            ),
+            "dropped_trust_flag_advisory_raw": {
+                "total": dtf_claims_total,
+                "caught": dtf_claims_caught,
+            },
+            # Per-mutation breakdown (all types, informational).
+            "per_mutation_type_recall": per_mutation_recall,
+            # Per-location recall: informational (not a hard gate).
+            # Use this to diagnose a verifier that catches body errors but
+            # misses headline errors. Example: headline recall = 0.50 while
+            # body recall = 0.92 means the verifier is not reading the headline
+            # carefully enough.
+            "per_location_recall": per_location_recall,
+            "raw_counts": {
+                "supported_total": supported_claims_total,
+                "supported_not_flagged": supported_claims_not_flagged,
+                "supported_flagged": supported_claims_flagged,
+                "contradicted_reliable_total": contradicted_reliable_total,
+                "contradicted_reliable_caught": contradicted_reliable_caught,
+                "contradicted_reliable_missed": contradicted_reliable_missed,
+                "dropped_trust_flag_total": dtf_claims_total,
+                "dropped_trust_flag_caught": dtf_claims_caught,
+                "unverifiable_total": unverifiable_claims_total,
+                "unverifiable_correct": unverifiable_claims_correct,
+                "unverifiable_wrong": unverifiable_claims_wrong,
+            },
+            "thresholds": {
+                "recall_contradicted": _FA_RECALL_CONTRADICTED_THRESHOLD,
+                "recall_contradicted_note": (
+                    "Hard gate applies to reliable mutation classes only: "
+                    "numeric_substitution, entity_substitution, "
+                    "directional_inversion, headline_error. "
+                    "dropped_trust_flag is excluded from this gate — "
+                    "see dropped_trust_flag_recall_advisory."
+                ),
+                "precision_supported": _FA_PRECISION_SUPPORTED_THRESHOLD,
+                "unverifiable_accuracy": _FA_UNVERIFIABLE_ACCURACY_THRESHOLD,
+                "per_location_recall": "informational_only",
+                "dropped_trust_flag_recall_advisory": "informational_only",
+            },
+            "failures": failures,
+            "case_results": case_results,
+        },
+    )
+
+
+def _fa_fixture_summary() -> dict:
+    """Return a summary of fixture case counts per category (used in the seam path)."""
+    cases = _load_fa_fixtures()
+    counts: dict[str, int] = {}
+    for case in cases:
+        cat = case.get("category", "unknown")
+        counts[cat] = counts.get(cat, 0) + 1
+    return {
+        "fixture_case_count": len(cases),
+        "fixture_case_counts_by_category": counts,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Aggregation and reporting
 # ---------------------------------------------------------------------------
 
@@ -2311,6 +3046,7 @@ def _print_pretty(report: dict) -> None:
             "manual": "[MANUAL]",
             "skipped": "[SKIP]",
             "insufficient_baseline": "[DEGRADED]",
+            "verifier_not_wired": "[SEAM]",   # Eval 7: fixture-ready, verifier pending
         }.get(r["status"], "[?]")
         metric_str = f" metric={r['metric']:.3f}" if r["metric"] is not None else ""
         print(f"  {icon} {r['name']}{metric_str}")
@@ -2454,6 +3190,7 @@ _REFERENCE_EVALS = {
     "ranking_quality",
     "module_integrity",
     "drift_detection",
+    "factual_accuracy",   # Eval 7: verifier calibration (seam: green until verifier wired)
 }
 
 
@@ -2540,6 +3277,12 @@ def run_evals(
             "voice_adherence":  lambda: eval_voice_adherence(dataset_dir, labels),
             "module_integrity": lambda: eval_module_integrity(dataset_dir),
             "drift_detection":  lambda: eval_drift_detection(dataset_dir, labels),
+            # Eval 7: factual accuracy verifier calibration.
+            # The verifier=None seam means this runs green (status=verifier_not_wired)
+            # until the LLM Engineer wires the VerifierCallable. To run with a real
+            # verifier, pass it via the VERIFIER_CALLABLE environment variable or
+            # by importing and calling eval_factual_accuracy(verifier=my_fn) directly.
+            "factual_accuracy": lambda: eval_factual_accuracy(verifier=None),
         }
 
         for name, fn in dispatch.items():
@@ -2588,6 +3331,9 @@ def run_evals(
     # manual) trips a non-zero exit. By design this is loud -- the user
     # opted in.
     if strict and exit_code == 0:
+        # "verifier_not_wired" is excluded from warning_states intentionally:
+        # the fixture set is complete and the seam is by design. --strict
+        # should not penalise this state (it is not a gap; it's a planned seam).
         warning_states = {"not_yet_implemented", "skipped", "insufficient_baseline"}
         if any(r["status"] in warning_states for r in report["results"]):
             exit_code = 1

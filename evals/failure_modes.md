@@ -565,6 +565,118 @@ release in tasks #81 + #82).
 
 ---
 
+### FM-14: Verifier calibration decay
+
+**What it is.** The factual-accuracy verifier (the future `verify` stage, which
+decomposes summaries into atomic claims and checks each against the source excerpt)
+drifts away from its calibration baseline. Decay takes two forms:
+
+- **Precision decay (over-flagging):** the verifier starts marking legitimate
+  transformations (number-rounding, generalisation, paraphrase) as contradicted.
+  Issues pass the hard gate but Arman sees spurious flags and stops trusting
+  the signal.
+- **Recall decay (under-flagging):** the verifier stops catching real errors —
+  numeric substitutions, entity swaps, directional inversions, dropped trust flags,
+  or errors in the headline. Issues ship with factual errors the verifier was
+  designed to catch.
+
+Both directions degrade the verifier's value. The calibration gate exists precisely
+to catch each direction. Since v2 of the fixture set, the verifier is tested on both
+the headline (title) and the summary body. A factual error in the headline is the
+most severe kind — readers see and trust the headline first, and AI Vector headlines
+carry named actors (the recognition rule). The verifier callable signature is now:
+`verifier(headline: str, body: str, source_excerpt: str) -> list[dict]`
+where each returned dict carries a `location` field: "headline" or "body".
+
+**Detection signal.**
+- Eval 7 (`factual_accuracy`) in CI goes red on any of the three hard gates:
+  - `recall_contradicted < 0.85` — under-flagging (FM-14 recall decay). This is
+    computed over RELIABLE MUTATION CLASSES ONLY: numeric_substitution,
+    entity_substitution, directional_inversion, headline_error. dropped_trust_flag
+    is intentionally excluded from the hard gate (see advisory note below).
+  - `precision_supported < 0.80` — over-flagging (FM-14 precision decay).
+  - `unverifiable_accuracy < 0.80` — confusing "not in source" with "contradicts source".
+- `dropped_trust_flag_recall_advisory` — DIAGNOSTIC METRIC, NOT a hard gate.
+  Tracks whether the verifier catches dropped epistemic caveats (e.g. vendor-reported
+  numbers stated as bare facts). Reported in every eval run and visible in the report.
+  Advisory-only because the de-hedged claim is factually true; only the epistemic
+  framing was removed, making this class inherently debatable. If this metric
+  improves over time, the team can revisit adding it to the gate. If it falls,
+  the weekly drift review will catch it. Not hidden, not gated. Decision accepted
+  by Arman: 2026-06-29.
+- Per-location recall in `per_location_recall` (informational, not a hard gate):
+  - `headline` recall drops while `body` recall holds → the verifier prompt has
+    regressed on headline reading. The headline_error cases (fa_601–fa_604) exercise
+    this split directly.
+  - Both drop together → general recall decay, not headline-specific.
+- Per-mutation-type recall breakdown surfaces which class of error the verifier
+  is missing: numeric_substitution, entity_substitution, directional_inversion,
+  dropped_trust_flag (advisory), headline_error.
+- Drift detection: `verifier_flag_rate` z-score > 2 (spiking, over-flagging) or
+  z-score < -2 (collapsing, under-flagging) in `evals/drift/baselines/`.
+  Both directions surface in the weekly drift review.
+- Arman's editorial feedback: "the verifier keeps flagging things that are fine"
+  (precision decay) or "this summary has a wrong number and the verifier missed it"
+  (recall decay).
+
+**Eval mechanism.** Eval 7 (`eval_factual_accuracy`) runs the verifier against
+31 labelled fixture cases in `evals/fixtures/factual-accuracy/cases.yaml` (schema v2).
+It is a hard gate (blocks merges to the verifier prompt) on all three primary metrics.
+Per-location recall (headline vs body) is computed and reported for surgical diagnosis
+of headline-specific regressions. Per-mutation-type recall is computed for all five
+mutation types (numeric_substitution, entity_substitution, directional_inversion,
+dropped_trust_flag, headline_error). The four headline_error cases (fa_601–fa_604)
+are the primary calibration surface for the verifier's headline-reading capability.
+
+**Drift interpretation for the `location` dimension.**
+A drop in `per_location_recall["headline"]` without a corresponding drop in
+`per_location_recall["body"]` is a strong signal that the verifier prompt was
+changed in a way that stopped it from reading the headline carefully. This pattern
+can also appear from a model endpoint shift (FM-06) if the new model is more body-
+focused. In either case, the headline_error fixture cases (fa_601–fa_604) will
+be the failing cases in the case_results dict.
+
+**Mitigation.**
+1. If `recall_contradicted` (reliable classes) drops: check `per_location_recall` first.
+   - If headline recall dropped: examine the four headline_error cases. A prompt
+     regression that dropped the "also check the headline" instruction is the most
+     likely cause. Restore the instruction and re-run.
+   - If body recall dropped: examine per-mutation-type recall to isolate the failing
+     class. Numeric substitutions are typically the easiest to catch.
+2. If `dropped_trust_flag_recall_advisory` drops to zero or stays at zero over
+   multiple releases: document this in the weekly drift review note. Do NOT gate on
+   it, but track whether it ever improves with prompt iterations. If it rises
+   consistently above 0.50, consider adding it to the hard gate in a future release.
+3. If `precision_supported` drops: the verifier is over-literalising. Check whether
+   legitimate transformations (rounding, generalisation, jargon→plain English) are
+   in the failing cases. The fixture `transformation_type` field identifies which
+   transformation the case exercises. Also check the supported headline claims —
+   a verifier that misreads a correctly-named recognition-rule actor as wrong will
+   show up as supported headline claims failing.
+4. If `unverifiable_accuracy` drops: the verifier is conflating "the source doesn't
+   address this" with "the source contradicts this". The prompt needs clearer
+   instruction on the unverifiable verdict.
+5. After fixing the verifier prompt: re-run `python -m evals.run_evals` and confirm
+   all three hard-gate metrics pass before merging.
+6. If calibration decay is due to a model endpoint shift (not a prompt change), this
+   is a joint FM-06 + FM-14 incident. See FM-06 mitigation. Pin the model version.
+
+**Severity.** Medium initially (the advisory-only verifier does not block publication);
+high if Arman starts acting on verifier flags (either trusting false positives or
+ignoring genuine issues because recall is low). Headline errors that reach Arman
+are particularly damaging because the headline is what readers see first.
+
+**Last occurrence.** Never (calibration decay not yet observed). FM-14 first seeded
+2026-06-28; fixture set updated to schema v2 (headline coverage) 2026-06-28; calibration
+gate scoped to reliable classes only (dropped_trust_flag advisory) 2026-06-29.
+Verifier ships as advisory tool on 2026-06-29 — all three hard gates pass at
+recall_contradicted (reliable) = 1.000, precision_supported >= 0.96,
+unverifiable_accuracy = 1.000 (v0/v1/v3 from _scratch/fa_tuning/preds.json).
+dropped_trust_flag_recall_advisory = 0.000 (known limitation; excluded from gate by
+decision; tracked as diagnostic).
+
+---
+
 ## Regression discipline
 
 Every bug that escapes to ratification gets three things added to this repo

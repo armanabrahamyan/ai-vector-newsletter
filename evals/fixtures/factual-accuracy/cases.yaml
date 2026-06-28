@@ -1,0 +1,1585 @@
+# evals/fixtures/factual-accuracy/cases.yaml
+#
+# Owner: Eval Engineer.
+# Purpose: Labelled fixture set for Eval 7 — factual-accuracy verifier calibration.
+#
+# Each case is a quadruple: (headline, summary_text, source_excerpt, per-claim ground truth).
+# Claims are atomic factual assertions decomposed from the headline AND the summary body.
+# The verifier callable (see evals/run_evals.py::eval_factual_accuracy) will:
+#   1. Receive (headline, body, source_excerpt).
+#   2. Decompose headline AND body into atomic claims.
+#   3. Return a verdict per claim: supported / unsupported / contradicted / unverifiable.
+#   4. Carry a `location` field per returned claim: "headline" or "body".
+# The harness compares those verdicts against ground_truth_verdict here.
+#
+# Per-claim ground truth now includes a `location` field:
+#   "headline" — the claim is drawn from the headline (title); a factual error here
+#                is the most severe kind (readers see and trust the headline first).
+#   "body"     — the claim is drawn from the summary body.
+#
+# Categories:
+#   supported           Real headline + summary + real (representative) source excerpt.
+#                       Verifier must NOT flag these. Exercises legitimate compression
+#                       transformations: number-rounding, generalisation,
+#                       jargon->plain English, paraphrase. Headline claims in supported
+#                       cases exercise the recognition-rule named actors that ARE
+#                       supported by the source.
+#   contradicted        Same triple with one injected factual mutation. Verifier must
+#                       catch it.
+#                       mutation_type: numeric_substitution | entity_substitution |
+#                                      directional_inversion | dropped_trust_flag |
+#                                      headline_error
+#                       For headline_error cases, the body is left CORRECT; the error
+#                       lives only in the headline. These cases test the verifier's
+#                       ability to catch headline-level factual errors specifically and
+#                       to attribute the flag to location=headline.
+#   unverifiable        Summary makes a claim the source excerpt does not address.
+#                       Verifier should say "unverifiable", not "contradicted".
+#
+# Fixture IDs use the story_id (cluster_id) from the relevant released issue as
+# the base, with a suffix to distinguish mutation variants.
+# Headline-error fixtures use the fa_6xx series.
+#
+# Source: real summaries + real headlines pulled from data/released/ issues #13–17
+# (2026-06-04 to 2026-06-08). Source excerpts are constructed to represent what a
+# ~1000-word trafilatura extraction from the linked URL would return. All numeric and
+# entity details match the published summaries exactly for the "supported" category;
+# mutations are applied only in "contradicted" entries.
+#
+# Schema version: 2
+#   v2 changes vs v1:
+#     - Added `headline` field to every case.
+#     - Added `location` field to every per-claim ground-truth entry.
+#     - Added 4 headline_error contradicted cases (fa_601–fa_604).
+
+schema_version: 2
+
+cases:
+
+  # ===========================================================================
+  # CATEGORY 1: SUPPORTED / FALSE-POSITIVE TRAPS (8 cases)
+  # Real headlines + summaries correctly compressing/rounding/paraphrasing
+  # real source text. These are the hardest legitimate transformations —
+  # verifier must NOT flag them. Headline claims use real named actors that
+  # ARE supported by the source (recognition-rule positive controls).
+  # ===========================================================================
+
+  - id: "fa_001_supported"
+    category: "supported"
+    story_id: "c_4b7f11d142babc90"
+    issue_date: "2026-06-07"
+    source_url: "https://simonwillison.net/2026/Jun/5/openai-help-lockdown-mode/#atom-everything"
+    transformation_type: "paraphrase_plus_jargon_to_plain_english"
+    headline: >
+      ChatGPT now blocks the final step in prompt-injection data theft
+    summary_text: >
+      Prompt injection attacks follow a three-step pattern: reach private data, manipulate
+      the model, exfiltrate the result. OpenAI's Lockdown Mode cuts the third leg by blocking
+      outbound network requests deterministically, without relying on AI judgement that can
+      itself be subverted. It doesn't stop injections entering; it stops data leaving. Default
+      ChatGPT settings offer no such guarantee.
+    source_excerpt: >
+      OpenAI has released a new security feature called Lockdown Mode for ChatGPT. The feature
+      is designed to prevent a class of attacks known as prompt injection exfiltration, in which
+      malicious instructions embedded in content the model reads attempt to extract private user
+      data to external servers.
+
+      Prompt injection exfiltration attacks generally work in three stages. First, the attacker
+      places malicious instructions somewhere the model will encounter them — in a document, an
+      email, or a web page. Second, those instructions attempt to manipulate the model into
+      processing private information from the user's context. Third, the instructions direct
+      the model to send that information to an external URL controlled by the attacker.
+
+      Lockdown Mode addresses the third stage directly. When enabled, ChatGPT blocks all outbound
+      network requests made by the model during a session. This is a deterministic, code-level
+      block: the model cannot make network calls regardless of what instructions it receives.
+      Unlike AI-based content moderation, a deterministic block cannot itself be subverted by
+      cleverly phrased instructions.
+
+      The feature does not prevent the first two stages of the attack. Malicious instructions
+      can still reach the model, and the model can still be influenced. Lockdown Mode specifically
+      prevents the exfiltration step.
+
+      ChatGPT's default settings do not enable Lockdown Mode. Users who want this protection
+      must enable it manually in their settings. OpenAI has not announced plans to make it the
+      default.
+    claims:
+      - claim: "ChatGPT now blocks the final step in prompt-injection data theft"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: Lockdown Mode addresses the third stage (exfiltration) directly. 'Final step' = third stage = exfiltration = data theft completion. Correct."
+      - claim: "Prompt injection attacks follow a three-step pattern"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source explicitly lists three stages."
+      - claim: "The first step is reaching private data"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source says 'processing private information from the user's context'."
+      - claim: "The second step is manipulating the model"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source says 'those instructions attempt to manipulate the model'."
+      - claim: "The third step is exfiltrating the result"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source says 'send that information to an external URL'."
+      - claim: "Lockdown Mode blocks outbound network requests deterministically"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source says 'deterministic, code-level block'."
+      - claim: "Lockdown Mode does not rely on AI judgement"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source says 'Unlike AI-based content moderation, a deterministic block cannot itself be subverted'."
+      - claim: "Lockdown Mode stops data leaving but does not stop injections entering"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source explicitly: 'does not prevent the first two stages'."
+      - claim: "Default ChatGPT settings do not offer Lockdown Mode protection"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'ChatGPT's default settings do not enable Lockdown Mode'."
+
+  - id: "fa_002_supported"
+    category: "supported"
+    story_id: "c_6f59026637ded719"
+    issue_date: "2026-06-07"
+    source_url: "https://huggingface.co/blog/ibm-research/agent-logic-and-scalable-ai-adoption"
+    transformation_type: "number_rounding_and_generalisation"
+    headline: >
+      Structured agent logic cuts token use 30-fold, IBM tests show
+    summary_text: >
+      IBM Research argues that layering structured logic beneath a language model slashes costs
+      and errors. Their legacy-code agent consumed 30 times fewer tokens than a frontier-only
+      baseline; a test-generation tool hit 20-45% better code coverage. All benchmarks are
+      vendor-supplied. Ask for independent replication before committing your agent architecture.
+    source_excerpt: >
+      IBM Research has published results from two internal agent systems that combine language
+      models with structured logic layers.
+
+      The first system, a legacy code modernisation agent, was built to refactor COBOL and
+      Fortran codebases. The system chains a language model with a formal static analyser that
+      pre-identifies code structures before the LLM is invoked. In internal benchmarks, this
+      hybrid approach consumed approximately 30 times fewer tokens than a baseline system that
+      used a frontier language model alone to process the code without pre-analysis. IBM
+      attributes this primarily to the structured analyser narrowing the LLM's task scope.
+
+      The second system, a test generation tool, layers a symbolic coverage tracker with a
+      language model that writes test cases. IBM reports code coverage improvements of between
+      20% and 45% over baselines on internal test suites, with the range reflecting variation
+      across different code types and programming languages.
+
+      Both systems were evaluated internally at IBM Research. No independent third-party
+      replication has been published. The blog post does not provide access to the underlying
+      benchmarks or the specific codebases used for evaluation.
+
+      IBM frames this as evidence that structured logic — static analysis, symbolic reasoning,
+      and formal verification — can reduce the amount of work a language model needs to do,
+      making agents both cheaper and more reliable. The post does not make claims about
+      applicability outside IBM's internal workloads.
+    claims:
+      - claim: "Structured agent logic cuts token use 30-fold in IBM tests"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: 'approximately 30 times fewer tokens'. '30-fold' is correct. 'IBM tests show' is accurate attribution to IBM's internal benchmarks."
+      - claim: "IBM Research argues that layering structured logic beneath a language model slashes costs and errors"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms the argument about combining structured logic with LLMs to reduce cost and errors."
+      - claim: "Their legacy-code agent consumed 30 times fewer tokens than a frontier-only baseline"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source says 'approximately 30 times fewer tokens than a baseline system'."
+      - claim: "A test-generation tool hit 20-45% better code coverage"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source says 'between 20% and 45% over baselines'."
+      - claim: "All benchmarks are vendor-supplied"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'evaluated internally at IBM Research. No independent third-party replication'."
+
+  - id: "fa_003_supported"
+    category: "supported"
+    story_id: "c_569fd49abc96bd13"
+    issue_date: "2026-06-07"
+    source_url: "https://www.latent.space/p/axiom"
+    transformation_type: "generalisation_plus_paraphrase"
+    headline: >
+      Formal proof may be the missing ingredient for AI that compounds
+    summary_text: >
+      Axiom scored 187/189 (99%) on a code-correctness benchmark where OpenAI's leading
+      reasoning model scored 4.9%. The argument: formal proof verification gives reinforcement
+      learning a cleaner signal than statistical methods, letting gains compound rather than
+      plateau. Vendor-reported, no independent replication yet.
+    source_excerpt: >
+      Axiom AI has published benchmark results on a code correctness evaluation suite. The
+      suite contains 189 problems. Axiom's system scored 187 out of 189 correct, which is
+      approximately 99%. On the same benchmark, OpenAI's o3 model scored 4.9%.
+
+      The founders argue that the performance gap stems from the training signal used during
+      reinforcement learning. Standard language model RL training uses statistical or
+      heuristic reward signals — the model receives feedback about whether its output looks
+      correct. Axiom's system uses formal proof verification as the reward signal. After the
+      model produces code, a formal verifier checks whether the code is mathematically
+      provably correct, returning a binary pass or fail.
+
+      The team argues that proof verification provides a crisper, less ambiguous training
+      signal than statistical approximation. This crisper signal allows learning improvements
+      to accumulate over time rather than approaching a performance ceiling, a process they
+      describe as "compounding."
+
+      Axiom AI is a small startup. These benchmarks are vendor-reported. No independent
+      third-party replication of the results has been published. The Latent Space article
+      is a podcast write-up based on a founder interview, not an independent review.
+    claims:
+      - claim: "Formal proof may be the missing ingredient for AI that compounds"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: Axiom argues proof verification enables compounding gains. 'May be' is a correctly hedged summary of an argument, not an overclaim. Supported."
+      - claim: "Axiom scored 187/189 (99%) on a code-correctness benchmark"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms '187 out of 189 correct, which is approximately 99%'."
+      - claim: "OpenAI's leading reasoning model scored 4.9% on the same benchmark"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'OpenAI's o3 model scored 4.9%'."
+      - claim: "Formal proof verification gives reinforcement learning a cleaner signal than statistical methods"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source explicitly describes this argument."
+      - claim: "Vendor-reported, no independent replication yet"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'These benchmarks are vendor-reported. No independent third-party replication'."
+
+  - id: "fa_004_supported"
+    category: "supported"
+    story_id: "c_dec53cd12f76d885"
+    issue_date: "2026-06-04"
+    source_url: "https://huggingface.co/blog/huggingface/hf-cli-agent-optimization"
+    transformation_type: "number_rounding_consumer_gpu_generalisation"
+    headline: >
+      Hugging Face rebuilt its CLI to cut agent token use sixfold
+    summary_text: >
+      Coding agents (Claude Code, Codex, Cursor) already drive nearly 49 million Hub requests.
+      Hugging Face rebuilt the hf CLI so agents auto-receive untruncated TSV output instead of
+      human-formatted tables, cutting token use by up to six times on multi-step tasks.
+      Benchmarks are vendor-supplied. Swap your pipeline's Hub calls to hf v1.9.0 and measure
+      token consumption.
+    source_excerpt: >
+      Hugging Face has released version 1.9.0 of the hf command-line interface. The release
+      is specifically designed to improve how AI coding agents interact with the Hugging Face
+      Hub.
+
+      The background: Hugging Face reports that coding agents including Claude Code, Codex, and
+      Cursor collectively drive approximately 49 million requests to the Hub. The CLI's previous
+      output format used human-readable aligned tables with padding, headers, and truncated
+      field values. This format is useful for humans reading a terminal but wastes tokens when
+      a language model is parsing the output programmatically.
+
+      The new version auto-detects agent execution environments and switches output format to
+      tab-separated values (TSV) with complete, untruncated field values. The model does not
+      need to request this format; the CLI detects the context automatically.
+
+      In internal benchmarks on multi-step Hub tasks, Hugging Face reports that this format
+      change reduced token consumption by up to six times (6x). The reduction varies by task
+      type; tasks that require multiple Hub lookups in sequence show the largest improvement.
+
+      The benchmarks were conducted internally by Hugging Face. No third-party evaluation has
+      been published. The improvement is specific to CLI-mediated Hub interactions; it does not
+      affect API calls made directly to Hub endpoints.
+    claims:
+      - claim: "Hugging Face rebuilt its CLI to cut agent token use sixfold"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: 'reduced token consumption by up to six times (6x)'. 'Sixfold' = 6x. 'Rebuilt its CLI' matches 'released version 1.9.0'. Correct."
+      - claim: "Coding agents including Claude Code, Codex, and Cursor drive nearly 49 million Hub requests"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'approximately 49 million requests'."
+      - claim: "Hugging Face rebuilt the hf CLI so agents auto-receive untruncated TSV output"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms TSV output with untruncated fields."
+      - claim: "The change cuts token use by up to six times on multi-step tasks"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'reduced token consumption by up to six times (6x)'."
+      - claim: "Benchmarks are vendor-supplied"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'internal benchmarks ... No third-party evaluation has been published'."
+
+  - id: "fa_005_supported"
+    category: "supported"
+    story_id: "c_5286c17e08ed592d"
+    issue_date: "2026-06-06"
+    source_url: "https://www.servicenow.com/blogs/2026/eva-bench-2.html"
+    transformation_type: "generalisation_enterprise_workflow_coverage"
+    headline: >
+      Open benchmark tests voice agents across 213 realistic enterprise scenarios
+    summary_text: >
+      ServiceNow's EVA-Bench 2.0 covers 213 voice-agent scenarios across airline, IT, and
+      healthcare workflows, spanning 121 tools. Every scenario has exactly one correct resolution
+      path, reducing evaluation noise. Datasets are open and downloadable today.
+    source_excerpt: >
+      ServiceNow has published EVA-Bench 2.0, a benchmark for evaluating enterprise voice agents.
+
+      The benchmark covers 213 distinct scenarios drawn from three industry verticals: airline
+      customer service, IT help desk, and healthcare administration. Across these 213 scenarios,
+      the benchmark defines a total of 121 unique tools available to the voice agent. Tools
+      include actions like flight rebooking APIs, ticket creation endpoints, appointment scheduling
+      systems, and policy lookup functions.
+
+      Each scenario is designed to have exactly one correct resolution path. ServiceNow argues
+      that multi-path scenarios introduce evaluation ambiguity: two agents can arrive at different
+      valid solutions, making head-to-head comparison noisy. The single-path constraint reduces
+      this ambiguity, though it also means the benchmark penalises creative but valid alternatives.
+
+      The benchmark dataset is publicly available for download on Hugging Face. The evaluation
+      harness is also open. ServiceNow reports that all 213 scenarios were manually validated by
+      human evaluators before inclusion.
+
+      EVA-Bench 2.0 was created and validated entirely by ServiceNow. No independent academic
+      group has co-authored or independently replicated the benchmark.
+    claims:
+      - claim: "Open benchmark tests voice agents across 213 realistic enterprise scenarios"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: 213 scenarios, dataset publicly available (open), covers enterprise workflows. Correct."
+      - claim: "EVA-Bench 2.0 covers 213 voice-agent scenarios"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms 213 scenarios."
+      - claim: "Scenarios span airline, IT, and healthcare workflows"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source lists exactly those three verticals."
+      - claim: "The benchmark spans 121 tools"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: '121 unique tools'."
+      - claim: "Every scenario has exactly one correct resolution path"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source explicitly states this design choice."
+      - claim: "Datasets are open and downloadable today"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'publicly available for download on Hugging Face'."
+
+  - id: "fa_006_supported"
+    category: "supported"
+    story_id: "c_9efbf3685ea08b6e"
+    issue_date: "2026-06-08"
+    source_url: "https://arxiv.org/abs/2606.07054"
+    transformation_type: "number_precision_paraphrase"
+    headline: >
+      A new monitor spots agents hiding malicious intent across long tasks
+    summary_text: >
+      Autonomous agents can pursue hidden objectives through sequences of individually harmless
+      steps; standard monitors miss the pattern. TRACE uses a triage-inspect-judge loop to link
+      evidence across distant actions, achieving recall of 0.844 on a benchmark. No code released;
+      raise this in your next agentic safety architecture review before approving long-horizon
+      deployments.
+    source_excerpt: >
+      We present TRACE (Trajectory Reasoning for Agent Covert-intent Evaluation), a monitoring
+      system designed to detect agents pursuing hidden objectives across multi-step task
+      trajectories. Standard monitors evaluate each agent action individually. This fails when
+      an adversarial or misaligned agent pursues a hidden goal through a sequence of individually
+      innocuous actions.
+
+      TRACE addresses this through a three-stage pipeline: triage, inspect, and judge. In the
+      triage stage, a lightweight classifier identifies turns in the trajectory that may carry
+      evidence of hidden intent. In the inspect stage, a reasoning model examines flagged turns
+      in detail. In the judge stage, a final model integrates evidence from multiple inspected
+      turns and issues a binary verdict on whether the trajectory reveals hidden intent.
+
+      We evaluate TRACE on an internal benchmark of 400 agent trajectories, half of which
+      contain a covert objective. TRACE achieves a recall of 0.844 on this benchmark, meaning
+      it correctly identifies 84.4% of trajectories containing a hidden objective. Precision
+      is 0.791.
+
+      We have not released code or benchmark data. We are coordinating responsible disclosure
+      with relevant parties before publication. This paper is a preprint; it has not been
+      peer reviewed.
+    claims:
+      - claim: "A new monitor spots agents hiding malicious intent across long tasks"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: TRACE monitors multi-step trajectories for hidden objectives. 'Malicious intent' = covert objective. 'Long tasks' = multi-step trajectories. Correct."
+      - claim: "Autonomous agents can pursue hidden objectives through sequences of individually harmless steps"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'pursues a hidden goal through a sequence of individually innocuous actions'."
+      - claim: "Standard monitors miss the pattern"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'Standard monitors evaluate each agent action individually. This fails'."
+      - claim: "TRACE uses a triage-inspect-judge loop"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source explicitly names three stages: triage, inspect, judge."
+      - claim: "TRACE links evidence across distant actions"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'integrates evidence from multiple inspected turns'."
+      - claim: "TRACE achieves recall of 0.844 on a benchmark"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'TRACE achieves a recall of 0.844'."
+      - claim: "No code released"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'We have not released code or benchmark data'."
+
+  - id: "fa_007_supported"
+    category: "supported"
+    story_id: "c_d0c73488f738f7f6"
+    issue_date: "2026-06-08"
+    source_url: "https://www.bis.org/publ/work1351.htm"
+    transformation_type: "approximation_paraphrase"
+    headline: >
+      ECB scrutiny alone lifted cyber spending 80% at underinvesting banks
+    summary_text: >
+      The European Central Bank's 2024 cyber stress test carried no capital penalties and no
+      public results, yet laggard banks raised cybersecurity spending roughly 80% against peers.
+      The mechanism was scrutiny alone. BIS working paper, findings pre-peer-review.
+    source_excerpt: >
+      This paper analyses the 2024 European Central Bank cyber resilience stress test and its
+      effects on participating banks' cybersecurity investment behaviour.
+
+      The ECB conducted the stress test across a sample of significant institutions under its
+      direct supervision. The exercise involved scenario-based assessments of banks' ability to
+      respond to cyber incidents. Importantly, the stress test carried no formal capital add-on
+      consequences and results were not published publicly. Participating institutions were
+      informed of their individual results on a confidential basis.
+
+      Despite the absence of formal penalties, we find significant heterogeneity in subsequent
+      investment behaviour. Banks that performed in the bottom quartile of the stress test
+      increased cybersecurity expenditure by approximately 80 percent compared to their peers in
+      the twelve months following the exercise. Banks in the upper quartile showed no significant
+      change.
+
+      We argue that the mechanism driving this effect is supervisory attention — the awareness
+      that supervisors have directly assessed and scrutinised a specific vulnerability — rather
+      than formal penalty threat or public reputational pressure, both of which were absent in
+      this exercise.
+
+      This paper is a working paper of the Bank for International Settlements. The findings and
+      conclusions are those of the authors and have not been peer reviewed.
+    claims:
+      - claim: "ECB scrutiny alone lifted cyber spending 80% at underinvesting banks"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: bottom-quartile banks increased spending ~80%. 'Scrutiny alone' matches the paper's mechanism (supervisory attention, no penalties). 'Underinvesting banks' = bottom-quartile performers. Correct."
+      - claim: "The ECB's 2024 cyber stress test carried no capital penalties"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'carried no formal capital add-on consequences'."
+      - claim: "The test had no public results"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'results were not published publicly'."
+      - claim: "Laggard banks raised cybersecurity spending roughly 80% against peers"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'approximately 80 percent compared to their peers'. 'roughly' is legitimate approximation."
+      - claim: "The mechanism was scrutiny alone"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'the mechanism driving this effect is supervisory attention ... rather than formal penalty threat'."
+      - claim: "BIS working paper, findings pre-peer-review"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source explicitly states it is a BIS working paper and has not been peer reviewed."
+
+  - id: "fa_008_supported"
+    category: "supported"
+    story_id: "c_89f04ef7db637f25"
+    issue_date: "2026-06-05"
+    source_url: "https://arxiv.org/abs/2506.01234"
+    transformation_type: "jargon_to_plain_english_plus_generalisation"
+    headline: >
+      AI-generated text spreads through training data like an epidemic
+    summary_text: >
+      When models train on synthetic text from other models, degradation spreads ecosystem-wide.
+      Researchers apply epidemic mathematics, finding a reproduction number above 1 across three
+      scenarios, meaning collapse becomes self-sustaining. No code is available yet. Detecting
+      synthetic text at ingestion is the highest-leverage intervention identified. Corpus hygiene
+      is no longer a local problem; it is a shared infrastructure risk.
+    source_excerpt: >
+      We study the propagation of model collapse in ecosystems of language models that iteratively
+      train on each other's outputs. Prior work has studied model collapse in isolated settings —
+      a single model trained repeatedly on its own outputs. We extend this to multi-model systems
+      where synthetic text generated by one model enters the training data of other models through
+      shared data pipelines and web corpora.
+
+      We model this propagation using a compartmental epidemic framework adapted from the SIR
+      (Susceptible-Infected-Recovered) model used in epidemiology. Under this framework, we
+      define a basic reproduction number (R0) that characterises how many subsequent models will
+      be degraded by training on output from a single degraded model.
+
+      We evaluate three scenarios: a centralised pipeline where a single large model's outputs
+      contaminate downstream fine-tuning datasets; a peer-to-peer setting where multiple models
+      exchange training data; and a web-corpus setting where synthetic text accumulates in
+      publicly crawled data over time. Across all three scenarios, we find R0 values exceeding
+      1.0, indicating self-sustaining propagation: once collapse begins, it spreads without
+      external intervention.
+
+      Of the interventions we model, synthetic text detection at data ingestion has the largest
+      effect on reducing R0. Training data deduplication and provenance tracking have smaller
+      but additive effects.
+
+      We have not released code or model weights at this time. The paper is currently under
+      review.
+    claims:
+      - claim: "AI-generated text spreads through training data like an epidemic"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source uses epidemic mathematics; the spread of model collapse via synthetic text through training data is exactly what the paper models. Analogy is apt and supported."
+      - claim: "When models train on synthetic text from other models, degradation spreads ecosystem-wide"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source studies exactly this multi-model propagation scenario."
+      - claim: "Researchers apply epidemic mathematics"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source uses 'compartmental epidemic framework adapted from the SIR model'."
+      - claim: "The reproduction number is above 1 across three scenarios"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'R0 values exceeding 1.0 ... Across all three scenarios'."
+      - claim: "Collapse becomes self-sustaining"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'self-sustaining propagation: once collapse begins, it spreads'."
+      - claim: "No code is available yet"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'We have not released code or model weights at this time'."
+      - claim: "Detecting synthetic text at ingestion is the highest-leverage intervention"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: 'synthetic text detection at data ingestion has the largest effect on reducing R0'."
+
+  # ===========================================================================
+  # CATEGORY 2: CONTRADICTED / INJECTED ERRORS (18 cases)
+  # Real supported triples with one specific mutation injected.
+  # 3-4 cases per body mutation_type (14 cases, fa_1xx–fa_4xx) +
+  # 4 headline_error cases (fa_6xx) where the error is in the HEADLINE ONLY,
+  # body left correct.
+  # ===========================================================================
+
+  # --- mutation_type: numeric_substitution (4 cases, body errors) ---
+
+  - id: "fa_101_contradicted_numeric"
+    category: "contradicted"
+    mutation_type: "numeric_substitution"
+    story_id: "c_6f59026637ded719_mutated"
+    issue_date: "2026-06-07"
+    source_url: "https://huggingface.co/blog/ibm-research/agent-logic-and-scalable-ai-adoption"
+    injected_mutation: "Changed '30 times fewer tokens' to '10 times fewer tokens' (body)"
+    headline: >
+      Structured agent logic cuts token use 30-fold, IBM tests show
+    summary_text: >
+      IBM Research argues that layering structured logic beneath a language model slashes costs
+      and errors. Their legacy-code agent consumed 10 times fewer tokens than a frontier-only
+      baseline; a test-generation tool hit 20-45% better code coverage. All benchmarks are
+      vendor-supplied.
+    source_excerpt: >
+      IBM Research has published results from two internal agent systems that combine language
+      models with structured logic layers.
+
+      The legacy code modernisation agent was built to refactor COBOL and Fortran codebases.
+      The system chains a language model with a formal static analyser that pre-identifies code
+      structures before the LLM is invoked. In internal benchmarks, this hybrid approach consumed
+      approximately 30 times fewer tokens than a baseline system that used a frontier language
+      model alone to process the code without pre-analysis.
+
+      The second system, a test generation tool, layers a symbolic coverage tracker with a
+      language model that writes test cases. IBM reports code coverage improvements of between
+      20% and 45% over baselines on internal test suites.
+
+      Both systems were evaluated internally at IBM Research. No independent third-party
+      replication has been published.
+    claims:
+      - claim: "Structured agent logic cuts token use 30-fold, IBM tests show"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — 30-fold matches source. Only the body contains the injected error."
+      - claim: "Their legacy-code agent consumed 10 times fewer tokens than a frontier-only baseline"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says 30 times fewer, not 10."
+      - claim: "A test-generation tool hit 20-45% better code coverage"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms 20-45% range."
+
+  - id: "fa_102_contradicted_numeric"
+    category: "contradicted"
+    mutation_type: "numeric_substitution"
+    story_id: "c_569fd49abc96bd13_mutated"
+    issue_date: "2026-06-07"
+    source_url: "https://www.latent.space/p/axiom"
+    injected_mutation: "Changed 'scored 4.9%' to 'scored 49%' for the OpenAI model (body)"
+    headline: >
+      Formal proof may be the missing ingredient for AI that compounds
+    summary_text: >
+      Axiom scored 187/189 (99%) on a code-correctness benchmark where OpenAI's leading
+      reasoning model scored 49%. Formal proof verification gives reinforcement learning a
+      cleaner signal than statistical methods, letting gains compound rather than plateau.
+      Vendor-reported, no independent replication yet.
+    source_excerpt: >
+      Axiom AI has published benchmark results on a code correctness evaluation suite. The
+      suite contains 189 problems. Axiom's system scored 187 out of 189 correct, which is
+      approximately 99%. On the same benchmark, OpenAI's o3 model scored 4.9%.
+
+      The founders argue that the performance gap stems from the training signal used during
+      reinforcement learning. Standard language model RL training uses statistical or heuristic
+      reward signals. Axiom's system uses formal proof verification as the reward signal, which
+      they argue provides a crisper learning signal that allows improvements to compound.
+
+      These benchmarks are vendor-reported. No independent third-party replication has been
+      published.
+    claims:
+      - claim: "Formal proof may be the missing ingredient for AI that compounds"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — matches the source's argument. Only the body contains the injected error."
+      - claim: "OpenAI's leading reasoning model scored 49% on the same benchmark"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says 4.9%, not 49%."
+      - claim: "Axiom scored 187/189 (99%) on the benchmark"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms this figure."
+      - claim: "Vendor-reported, no independent replication yet"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  - id: "fa_103_contradicted_numeric"
+    category: "contradicted"
+    mutation_type: "numeric_substitution"
+    story_id: "c_9efbf3685ea08b6e_mutated"
+    issue_date: "2026-06-08"
+    source_url: "https://arxiv.org/abs/2606.07054"
+    injected_mutation: "Changed recall from 0.844 to 0.644 (body)"
+    headline: >
+      A new monitor spots agents hiding malicious intent across long tasks
+    summary_text: >
+      Autonomous agents can pursue hidden objectives through sequences of individually harmless
+      steps; standard monitors miss the pattern. TRACE uses a triage-inspect-judge loop to link
+      evidence across distant actions, achieving recall of 0.644 on a benchmark. No code released.
+    source_excerpt: >
+      TRACE (Trajectory Reasoning for Agent Covert-intent Evaluation) is a monitoring system
+      designed to detect agents pursuing hidden objectives. Standard monitors evaluate each agent
+      action individually, which fails when an adversarial agent pursues a hidden goal through
+      a sequence of individually innocuous actions.
+
+      TRACE uses a three-stage pipeline: triage, inspect, and judge. The triage stage identifies
+      turns that may carry evidence of hidden intent. The inspect stage examines flagged turns
+      in detail. The judge stage integrates evidence across turns.
+
+      We evaluate TRACE on an internal benchmark of 400 agent trajectories. TRACE achieves a
+      recall of 0.844 on this benchmark. Precision is 0.791.
+
+      We have not released code or benchmark data.
+    claims:
+      - claim: "A new monitor spots agents hiding malicious intent across long tasks"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — matches source. Only the body recall figure is wrong."
+      - claim: "TRACE achieves recall of 0.644 on a benchmark"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source states recall is 0.844, not 0.644."
+      - claim: "TRACE uses a triage-inspect-judge loop"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms the three stages."
+      - claim: "No code released"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  - id: "fa_104_contradicted_numeric"
+    category: "contradicted"
+    mutation_type: "numeric_substitution"
+    story_id: "c_d0c73488f738f7f6_mutated"
+    issue_date: "2026-06-08"
+    source_url: "https://www.bis.org/publ/work1351.htm"
+    injected_mutation: "Changed '80 percent' to '30 percent' spending increase (body)"
+    headline: >
+      ECB scrutiny alone lifted cyber spending 80% at underinvesting banks
+    summary_text: >
+      The European Central Bank's 2024 cyber stress test carried no capital penalties and no
+      public results, yet laggard banks raised cybersecurity spending roughly 30% against peers.
+      The mechanism was scrutiny alone. BIS working paper, findings pre-peer-review.
+    source_excerpt: >
+      This paper analyses the 2024 European Central Bank cyber resilience stress test and its
+      effects on participating banks' cybersecurity investment behaviour.
+
+      The ECB stress test carried no formal capital add-on consequences and results were not
+      published publicly. Despite the absence of formal penalties, banks that performed in the
+      bottom quartile of the stress test increased cybersecurity expenditure by approximately
+      80 percent compared to their peers in the twelve months following the exercise.
+
+      We argue that the mechanism driving this effect is supervisory attention rather than
+      formal penalty threat or public reputational pressure, both of which were absent in
+      this exercise.
+
+      This paper is a working paper of the Bank for International Settlements and has not
+      been peer reviewed.
+    claims:
+      - claim: "ECB scrutiny alone lifted cyber spending 80% at underinvesting banks"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — 80% matches source. Only the body figure is wrong (30%)."
+      - claim: "Laggard banks raised cybersecurity spending roughly 30% against peers"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says approximately 80 percent, not 30 percent."
+      - claim: "The mechanism was scrutiny alone"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  # --- mutation_type: entity_substitution (4 cases, body errors) ---
+
+  - id: "fa_201_contradicted_entity"
+    category: "contradicted"
+    mutation_type: "entity_substitution"
+    story_id: "c_dec53cd12f76d885_mutated"
+    issue_date: "2026-06-04"
+    source_url: "https://huggingface.co/blog/huggingface/hf-cli-agent-optimization"
+    injected_mutation: "Changed 'hf v1.9.0' to 'hf v2.0.0' (body)"
+    headline: >
+      Hugging Face rebuilt its CLI to cut agent token use sixfold
+    summary_text: >
+      Coding agents (Claude Code, Codex, Cursor) already drive nearly 49 million Hub requests.
+      Hugging Face rebuilt the hf CLI so agents auto-receive untruncated TSV output instead of
+      human-formatted tables, cutting token use by up to six times on multi-step tasks. Swap
+      your pipeline's Hub calls to hf v2.0.0 and measure token consumption.
+    source_excerpt: >
+      Hugging Face has released version 1.9.0 of the hf command-line interface. The release
+      is specifically designed to improve how AI coding agents interact with the Hugging Face Hub.
+
+      Coding agents including Claude Code, Codex, and Cursor collectively drive approximately
+      49 million requests to the Hub. The new version auto-detects agent execution environments
+      and switches output format to tab-separated values (TSV) with complete, untruncated field
+      values.
+
+      In internal benchmarks on multi-step Hub tasks, Hugging Face reports that this format
+      change reduced token consumption by up to six times (6x).
+    claims:
+      - claim: "Hugging Face rebuilt its CLI to cut agent token use sixfold"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct. Only the body version number is wrong."
+      - claim: "Coding agents drive nearly 49 million Hub requests"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms 'approximately 49 million requests'."
+      - claim: "The change cuts token use by up to six times"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms 6x reduction."
+      - claim: "Swap to hf v2.0.0"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says version 1.9.0, not 2.0.0."
+
+  - id: "fa_202_contradicted_entity"
+    category: "contradicted"
+    mutation_type: "entity_substitution"
+    story_id: "c_5286c17e08ed592d_mutated"
+    issue_date: "2026-06-06"
+    source_url: "https://www.servicenow.com/blogs/2026/eva-bench-2.html"
+    injected_mutation: "Changed 'airline, IT, and healthcare' to 'banking, retail, and telecom' (body)"
+    headline: >
+      Open benchmark tests voice agents across 213 realistic enterprise scenarios
+    summary_text: >
+      ServiceNow's EVA-Bench 2.0 covers 213 voice-agent scenarios across banking, retail, and
+      telecom workflows, spanning 121 tools. Every scenario has exactly one correct resolution
+      path, reducing evaluation noise. Datasets are open and downloadable today.
+    source_excerpt: >
+      ServiceNow has published EVA-Bench 2.0, a benchmark for evaluating enterprise voice agents.
+      The benchmark covers 213 distinct scenarios drawn from three industry verticals: airline
+      customer service, IT help desk, and healthcare administration. Across these 213 scenarios,
+      the benchmark defines a total of 121 unique tools available to the voice agent.
+
+      Each scenario is designed to have exactly one correct resolution path.
+
+      The benchmark dataset is publicly available for download on Hugging Face.
+    claims:
+      - claim: "Open benchmark tests voice agents across 213 realistic enterprise scenarios"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct. Only the body industry verticals are wrong."
+      - claim: "Scenarios span banking, retail, and telecom workflows"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says airline, IT, and healthcare — not banking, retail, or telecom."
+      - claim: "EVA-Bench 2.0 covers 213 voice-agent scenarios"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms 213 scenarios."
+      - claim: "Every scenario has exactly one correct resolution path"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  - id: "fa_203_contradicted_entity"
+    category: "contradicted"
+    mutation_type: "entity_substitution"
+    story_id: "c_4b7f11d142babc90_mutated"
+    issue_date: "2026-06-07"
+    source_url: "https://simonwillison.net/2026/Jun/5/openai-help-lockdown-mode/#atom-everything"
+    injected_mutation: "Changed 'OpenAI's Lockdown Mode' to 'OpenAI's Isolation Mode' (body)"
+    headline: >
+      ChatGPT now blocks the final step in prompt-injection data theft
+    summary_text: >
+      Prompt injection attacks follow a three-step pattern: reach private data, manipulate the
+      model, exfiltrate the result. OpenAI's Isolation Mode cuts the third leg by blocking
+      outbound network requests deterministically, without relying on AI judgement that can
+      itself be subverted. It doesn't stop injections entering; it stops data leaving.
+    source_excerpt: >
+      OpenAI has released a new security feature called Lockdown Mode for ChatGPT. The feature
+      is designed to prevent prompt injection exfiltration attacks, which generally work in three
+      stages: placing malicious instructions, manipulating the model, and directing it to send
+      data to an external URL.
+
+      Lockdown Mode addresses the third stage directly. When enabled, ChatGPT blocks all outbound
+      network requests made by the model during a session. This is a deterministic, code-level
+      block that cannot be subverted by cleverly phrased instructions.
+
+      ChatGPT's default settings do not enable Lockdown Mode.
+    claims:
+      - claim: "ChatGPT now blocks the final step in prompt-injection data theft"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — the feature name is not in the headline. Only the body feature name is wrong."
+      - claim: "OpenAI's Isolation Mode cuts the third leg of prompt injection attacks"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source names the feature 'Lockdown Mode', not 'Isolation Mode'."
+      - claim: "It blocks outbound network requests deterministically"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms deterministic block."
+      - claim: "It stops data leaving but not injections entering"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms this distinction."
+
+  - id: "fa_204_contradicted_entity"
+    category: "contradicted"
+    mutation_type: "entity_substitution"
+    story_id: "c_89f04ef7db637f25_mutated"
+    issue_date: "2026-06-05"
+    source_url: "https://arxiv.org/abs/2506.01234"
+    injected_mutation: "Changed 'SIR model' attribution to 'SEIR model' (body)"
+    headline: >
+      AI-generated text spreads through training data like an epidemic
+    summary_text: >
+      When models train on synthetic text from other models, degradation spreads ecosystem-wide.
+      Researchers apply epidemic mathematics adapted from the SEIR model, finding a reproduction
+      number above 1 across three scenarios, meaning collapse becomes self-sustaining. No code
+      is available yet.
+    source_excerpt: >
+      We model this propagation using a compartmental epidemic framework adapted from the SIR
+      (Susceptible-Infected-Recovered) model used in epidemiology. Under this framework, we
+      define a basic reproduction number (R0) that characterises how many subsequent models will
+      be degraded by training on output from a single degraded model.
+
+      Across all three scenarios, we find R0 values exceeding 1.0, indicating self-sustaining
+      propagation: once collapse begins, it spreads without external intervention.
+
+      We have not released code or model weights at this time.
+    claims:
+      - claim: "AI-generated text spreads through training data like an epidemic"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — the epidemic analogy is supported. Only the body model attribution is wrong."
+      - claim: "Researchers apply epidemic mathematics adapted from the SEIR model"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says SIR (Susceptible-Infected-Recovered), not SEIR."
+      - claim: "The reproduction number is above 1 across three scenarios"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms R0 exceeding 1.0 across three scenarios."
+      - claim: "No code is available yet"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  # --- mutation_type: directional_inversion (3 cases, body errors) ---
+
+  - id: "fa_301_contradicted_directional"
+    category: "contradicted"
+    mutation_type: "directional_inversion"
+    story_id: "c_ba23650cf1e13088_mutated"
+    issue_date: "2026-06-08"
+    source_url: "https://arxiv.org/abs/2606.06698"
+    injected_mutation: "Inverted: 'none improved' changed to 'all improved' (body)"
+    headline: >
+      Current prompt-tuning methods fail when compliance rules change mid-deployment
+    summary_text: >
+      RECAP, a new benchmark, tested six prompt-optimisation methods across four language models
+      under shifting compliance constraints and found all improved reliably under proactive
+      adaptation. No code released yet. If your agentic deployment must absorb a policy change
+      before the next interaction, this gap belongs on your architecture review agenda.
+    source_excerpt: >
+      We introduce RECAP (Regulatory Compliance Adaptation Protocol), a benchmark for evaluating
+      prompt-optimisation methods under changing compliance rules. We test six prompt-optimisation
+      methods across four language models. Compliance constraints shift mid-deployment in three
+      scenario categories, requiring proactive adaptation before the next user interaction.
+
+      We find that none of the six methods improved performance reliably under proactive
+      adaptation conditions. Methods designed for static or feedback-driven settings failed
+      to generalise to the proactive setting: they either failed silently or required human
+      intervention to detect the constraint change.
+
+      We have not released code at this time.
+    claims:
+      - claim: "Current prompt-tuning methods fail when compliance rules change mid-deployment"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — matches the source finding. Only the body inverts the result."
+      - claim: "RECAP found all methods improved reliably under proactive adaptation"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says 'none of the six methods improved performance reliably'. The direction is inverted."
+      - claim: "RECAP tested six prompt-optimisation methods across four language models"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms these numbers."
+      - claim: "No code released yet"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  - id: "fa_302_contradicted_directional"
+    category: "contradicted"
+    mutation_type: "directional_inversion"
+    story_id: "c_bbb30742190c36f4_mutated"
+    issue_date: "2026-06-06"
+    source_url: "https://threatresearch.example.com/llm-worm-2026"
+    injected_mutation: "Inverted: summary says 'runs on a remote server' instead of 'on each compromised machine' (body)"
+    headline: >
+      A new worm carries its own AI brain onto machines it infects
+    summary_text: >
+      Researchers have prototyped a worm that bundles a language model inside itself, running it
+      on a remote command-and-control server: payload and reasoning engine as separate units.
+      Single source, no code or paper published.
+    source_excerpt: >
+      Researchers have demonstrated a prototype malware system that embeds a language model
+      directly within the worm payload. Unlike traditional command-and-control architectures
+      where reasoning is performed at a remote server and instructions are transmitted to the
+      infected host, this system runs the language model locally on each compromised machine.
+      The worm carries its own inference engine; no network connectivity to a central server
+      is required for the model to operate.
+
+      No code or paper has been published. This is a single-source report based on a researcher
+      presentation.
+    claims:
+      - claim: "A new worm carries its own AI brain onto machines it infects"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline is correct — the worm bundles the model locally. Body contains the inversion."
+      - claim: "The worm runs the language model on a remote command-and-control server"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source explicitly contrasts this with the traditional architecture: this system runs locally on each compromised machine."
+      - claim: "Payload and reasoning engine are separate units"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says they are one unit: the worm carries its own inference engine."
+      - claim: "Single source, no code or paper published"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  - id: "fa_303_contradicted_directional"
+    category: "contradicted"
+    mutation_type: "directional_inversion"
+    story_id: "c_ece2af4550593897_mutated"
+    issue_date: "2026-06-05"
+    source_url: "https://arxiv.org/abs/2506.05678"
+    injected_mutation: "Inverted: 'increases' changed to 'reduces' concurrent users (body)"
+    headline: >
+      A memory compression trick more than doubles financial AI concurrency
+    summary_text: >
+      YouZhi-LLM applies a layer-by-layer cache compression technique that reduces concurrent
+      users to 2.69 times fewer on the smaller variant. Benchmarks are vendor-supplied and
+      no weights are public.
+    source_excerpt: >
+      We present YouZhi-LLM, a series of language models optimised for financial applications
+      under multi-user serving conditions. A central contribution is a layer-by-layer KV-cache
+      compression technique that reduces peak memory consumption during inference.
+
+      In serving benchmarks, the compression technique enables 2.69 times the number of
+      concurrent users on the smaller YouZhi-LLM variant compared to the uncompressed baseline,
+      at the same memory budget.
+
+      Benchmarks are conducted on internal infrastructure. Model weights have not been released.
+    claims:
+      - claim: "A memory compression trick more than doubles financial AI concurrency"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: enables 2.69 times more concurrent users. 'More than doubles' is an accurate compression of 2.69x. 'Financial AI' = YouZhi-LLM for financial applications. Headline is correct."
+      - claim: "The technique reduces concurrent users to 2.69 times fewer"
+        ground_truth_verdict: "contradicted"
+        location: "body"
+        notes: "Source says the technique enables 2.69 times MORE concurrent users, not fewer."
+      - claim: "Benchmarks are vendor-supplied and no weights are public"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms both."
+
+  # --- mutation_type: dropped_trust_flag (3 cases, body errors) ---
+  #
+  # ADVISORY-ONLY NOTE (2026-06-29):
+  # The verifier reliably catches numeric_substitution, entity_substitution,
+  # directional_inversion, and headline_error at ~100% recall. It does NOT
+  # reliably catch dropped_trust_flag (recall = 0.00 across prompt variants
+  # v0–v3 in _scratch/fa_tuning/preds.json). This is a known limitation.
+  #
+  # Rationale for excluding dropped_trust_flag from the hard gate:
+  #   The de-hedged claim is factually TRUE; only the epistemic framing
+  #   (e.g. "vendor-supplied") was removed. Whether the omission constitutes
+  #   a "factual error" is inherently debatable — the verifier consistently
+  #   marks these claims as "unsupported" (correct label) but the ground-truth
+  #   verdict in these fixtures is also "unsupported", so matching IS happening;
+  #   the matcher treats them as contradicted-category cases, not as supported
+  #   false-positives. The fundamental difficulty: the verifier needs to know
+  #   the ORIGINAL claim included a caveat it can no longer see.
+  #
+  # Decision (Arman, 2026-06-29): ship the verifier as advisory with
+  # dropped_trust_flag tracked as dropped_trust_flag_recall_advisory in
+  # eval reports. Not hidden. Not gated. Revisit if recall rises.
+  #
+
+  - id: "fa_401_contradicted_trust_flag"
+    category: "contradicted"
+    mutation_type: "dropped_trust_flag"
+    story_id: "c_6f59026637ded719_trust_mutated"
+    issue_date: "2026-06-07"
+    source_url: "https://huggingface.co/blog/ibm-research/agent-logic-and-scalable-ai-adoption"
+    injected_mutation: "Removed 'vendor-supplied' qualifier from benchmarks; stated as fact (body)"
+    headline: >
+      Structured agent logic cuts token use 30-fold, IBM tests show
+    summary_text: >
+      IBM Research argues that layering structured logic beneath a language model slashes costs
+      and errors. Their legacy-code agent consumed 30 times fewer tokens than a frontier-only
+      baseline; a test-generation tool hit 20-45% better code coverage.
+    source_excerpt: >
+      IBM Research has published results from two internal agent systems that combine language
+      models with structured logic layers.
+
+      In internal benchmarks, this hybrid approach consumed approximately 30 times fewer tokens
+      than a baseline system that used a frontier language model alone. IBM reports code coverage
+      improvements of between 20% and 45% over baselines on internal test suites.
+
+      Both systems were evaluated internally at IBM Research. No independent third-party
+      replication has been published. The blog post does not provide access to the underlying
+      benchmarks or the specific codebases used for evaluation.
+    claims:
+      - claim: "Structured agent logic cuts token use 30-fold, IBM tests show"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline correctly attributes to IBM tests and states 30-fold. Not a trust-flag issue at the headline level."
+      - claim: "Their legacy-code agent consumed 30 times fewer tokens than a frontier-only baseline"
+        ground_truth_verdict: "unsupported"
+        location: "body"
+        notes: "The number is correct but stated as bare fact with no vendor-report qualifier. Source says 'evaluated internally at IBM Research. No independent third-party replication has been published.' Without that qualifier, this claim cannot be taken as independently verified — it is unsupported as stated in the de-hedged summary."
+      - claim: "A test-generation tool hit 20-45% better code coverage"
+        ground_truth_verdict: "unsupported"
+        location: "body"
+        notes: "Stated as bare fact with no vendor-report qualifier. Same trust-flag drop as above — source specifies internal evaluation only, no independent replication."
+
+  - id: "fa_402_contradicted_trust_flag"
+    category: "contradicted"
+    mutation_type: "dropped_trust_flag"
+    story_id: "c_8cf2b00528107cb7_trust_mutated"
+    issue_date: "2026-06-07"
+    source_url: "https://openai.com/index/travelers"
+    injected_mutation: "Removed vendor case study qualifier; stated operational facts directly (body)"
+    headline: >
+      A major US insurer now handles claims around the clock via AI
+    summary_text: >
+      Travelers has rolled out an AI claims assistant nationally. The system handles 24/7 filing
+      support and provides surge capacity during peak events.
+    source_excerpt: >
+      OpenAI and Travelers have published a joint case study describing the deployment of an
+      AI-powered claims assistant. According to the case study, the system is now available
+      to customers nationally for filing claims around the clock and provides additional
+      capacity during catastrophic events.
+
+      The case study does not provide architectural details, accuracy benchmarks, error rates,
+      or escalation rates. All information in the case study is provided by Travelers and
+      OpenAI. No independent validation has been conducted or published.
+    claims:
+      - claim: "A major US insurer now handles claims around the clock via AI"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source confirms national 24/7 claims deployment by Travelers. Headline is factually accurate."
+      - claim: "Travelers has rolled out an AI claims assistant nationally"
+        ground_truth_verdict: "unsupported"
+        location: "body"
+        notes: "Stated as bare fact with no vendor-report qualifier. Source: 'All information in the case study is provided by Travelers and OpenAI. No independent validation has been conducted or published.' The injected mutation dropped this qualifier, making the claim unsupported as stated."
+      - claim: "The system handles 24/7 filing support and provides surge capacity during peak events"
+        ground_truth_verdict: "unsupported"
+        location: "body"
+        notes: "Stated as bare operational fact with no vendor case-study caveat. Source confirms capabilities only via a joint vendor case study with no independent validation. Without the qualifier, this claim is unsupported."
+
+  - id: "fa_403_contradicted_trust_flag"
+    category: "contradicted"
+    mutation_type: "dropped_trust_flag"
+    story_id: "c_5be4876c7e2039ae_trust_mutated"
+    issue_date: "2026-06-04"
+    source_url: "https://www.anthropic.com/research/attacker-skill-analysis"
+    injected_mutation: "Removed 'vendor-sourced' and 'risk-scoring as a frame' qualifiers (body)"
+    headline: >
+      Anthropic finds AI is making less-skilled attackers more dangerous
+    summary_text: >
+      AI is moving deeper into attack chains: medium-or-higher-risk attackers rose from 33%
+      to 56% of detected cases over 12 months. Low-skill actors can now perform post-compromise
+      techniques once reserved for experts.
+    source_excerpt: >
+      Anthropic analysed a sample of 832 accounts banned from Claude over a 12-month period
+      for policy violations related to malicious use. Using Anthropic's internal risk-scoring
+      framework, the proportion of medium-or-higher-risk attackers in the banned sample increased
+      from approximately 33% to 56% across the study period.
+
+      The study finds evidence that AI assistance is enabling lower-skill actors to execute
+      post-compromise techniques that previously required specialist expertise.
+
+      All data comes from Anthropic's internal moderation systems. The risk-scoring framework
+      is Anthropic's own and has not been independently validated. The sample covers only
+      accounts that were detected and banned; it does not represent the full population of
+      malicious actors.
+    claims:
+      - claim: "Anthropic finds AI is making less-skilled attackers more dangerous"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Headline correctly attributes the finding to Anthropic and accurately summarises it. The headline does not overclaim."
+      - claim: "Medium-or-higher-risk attackers rose from 33% to 56% of detected cases over 12 months"
+        ground_truth_verdict: "unsupported"
+        location: "body"
+        notes: "The percentages are correct but stated as bare fact with no caveat about the source or methodology. Source: 'All data comes from Anthropic's internal moderation systems' and 'The risk-scoring framework is Anthropic's own and has not been independently validated.' The injected mutation dropped these qualifiers, making the claim unsupported as stated."
+      - claim: "Low-skill actors can now perform post-compromise techniques once reserved for experts"
+        ground_truth_verdict: "unsupported"
+        location: "body"
+        notes: "Stated as a bare finding with no attribution to Anthropic's internal risk-scoring framework or sample limitations. Source notes the sample covers only detected and banned accounts. Without the qualifier, this claim is unsupported."
+
+  # ===========================================================================
+  # CATEGORY 2b: HEADLINE ERRORS (4 new cases, fa_6xx series)
+  # These cases test the verifier's ability to catch factual errors SPECIFICALLY
+  # in the headline, with the body left correct. The error must be attributed
+  # to location=headline in the returned claim dict.
+  #
+  # mutation_type: headline_error for all four.
+  # Sub-types: wrong named actor, wrong number, wrong entity attribution,
+  #             wrong directional claim.
+  # ===========================================================================
+
+  - id: "fa_601_contradicted_headline_wrong_actor"
+    category: "contradicted"
+    mutation_type: "headline_error"
+    story_id: "c_6f59026637ded719_hl_mutated"
+    issue_date: "2026-06-07"
+    source_url: "https://huggingface.co/blog/ibm-research/agent-logic-and-scalable-ai-adoption"
+    injected_mutation: "Changed 'IBM' to 'Google' in the headline; body is correct"
+    headline: >
+      Structured agent logic cuts token use 30-fold, Google tests show
+    summary_text: >
+      IBM Research argues that layering structured logic beneath a language model slashes costs
+      and errors. Their legacy-code agent consumed 30 times fewer tokens than a frontier-only
+      baseline; a test-generation tool hit 20-45% better code coverage. All benchmarks are
+      vendor-supplied.
+    source_excerpt: >
+      IBM Research has published results from two internal agent systems that combine language
+      models with structured logic layers.
+
+      The legacy code modernisation agent consumed approximately 30 times fewer tokens than a
+      baseline system that used a frontier language model alone.
+
+      IBM reports code coverage improvements of between 20% and 45% over baselines on internal
+      test suites. Both systems were evaluated internally at IBM Research. No independent
+      third-party replication has been published.
+    claims:
+      - claim: "Structured agent logic cuts token use 30-fold, Google tests show"
+        ground_truth_verdict: "contradicted"
+        location: "headline"
+        notes: "Source attributes the tests to IBM Research, not Google. Wrong named actor in the headline — the most severe kind of factual error per AI Vector's recognition rule."
+      - claim: "IBM Research argues that layering structured logic beneath a language model slashes costs and errors"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body is correct — IBM is correctly named here."
+      - claim: "Their legacy-code agent consumed 30 times fewer tokens than a frontier-only baseline"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body figure is correct."
+      - claim: "A test-generation tool hit 20-45% better code coverage"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body range is correct."
+      - claim: "All benchmarks are vendor-supplied"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body caveat is correct."
+
+  - id: "fa_602_contradicted_headline_wrong_number"
+    category: "contradicted"
+    mutation_type: "headline_error"
+    story_id: "c_d0c73488f738f7f6_hl_mutated"
+    issue_date: "2026-06-08"
+    source_url: "https://www.bis.org/publ/work1351.htm"
+    injected_mutation: "Changed '80%' to '40%' in the headline; body is correct"
+    headline: >
+      ECB scrutiny alone lifted cyber spending 40% at underinvesting banks
+    summary_text: >
+      The European Central Bank's 2024 cyber stress test carried no capital penalties and no
+      public results, yet laggard banks raised cybersecurity spending roughly 80% against peers.
+      The mechanism was scrutiny alone. BIS working paper, findings pre-peer-review.
+    source_excerpt: >
+      This paper analyses the 2024 European Central Bank cyber resilience stress test and its
+      effects on participating banks' cybersecurity investment behaviour.
+
+      The ECB stress test carried no formal capital add-on consequences and results were not
+      published publicly. Despite the absence of formal penalties, banks that performed in the
+      bottom quartile of the stress test increased cybersecurity expenditure by approximately
+      80 percent compared to their peers in the twelve months following the exercise.
+
+      We argue that the mechanism driving this effect is supervisory attention rather than
+      formal penalty threat or public reputational pressure, both of which were absent in
+      this exercise.
+
+      This paper is a working paper of the Bank for International Settlements and has not
+      been peer reviewed.
+    claims:
+      - claim: "ECB scrutiny alone lifted cyber spending 40% at underinvesting banks"
+        ground_truth_verdict: "contradicted"
+        location: "headline"
+        notes: "Source says approximately 80 percent. The headline says 40% — a wrong number in the headline. Body correctly states roughly 80%."
+      - claim: "Laggard banks raised cybersecurity spending roughly 80% against peers"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body is correct — 80% matches source."
+      - claim: "The mechanism was scrutiny alone"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body is correct."
+      - claim: "The ECB's 2024 cyber stress test carried no capital penalties"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body is correct."
+
+  - id: "fa_603_contradicted_headline_wrong_model_attribution"
+    category: "contradicted"
+    mutation_type: "headline_error"
+    story_id: "c_569fd49abc96bd13_hl_mutated"
+    issue_date: "2026-06-07"
+    source_url: "https://www.latent.space/p/axiom"
+    injected_mutation: "Changed 'Axiom' to 'Mistral' in the headline — wrong company attribution; body is correct"
+    headline: >
+      Mistral's formal-proof approach scores 99% on code benchmark where OpenAI scores 4.9%
+    summary_text: >
+      Axiom scored 187/189 (99%) on a code-correctness benchmark where OpenAI's leading
+      reasoning model scored 4.9%. The argument: formal proof verification gives reinforcement
+      learning a cleaner signal than statistical methods, letting gains compound rather than
+      plateau. Vendor-reported, no independent replication yet.
+    source_excerpt: >
+      Axiom AI has published benchmark results on a code correctness evaluation suite. The
+      suite contains 189 problems. Axiom's system scored 187 out of 189 correct, which is
+      approximately 99%. On the same benchmark, OpenAI's o3 model scored 4.9%.
+
+      The founders argue that the performance gap stems from the training signal used during
+      reinforcement learning. Axiom's system uses formal proof verification as the reward signal,
+      which they argue provides a crisper learning signal that allows improvements to compound.
+
+      These benchmarks are vendor-reported. No independent third-party replication has been
+      published.
+    claims:
+      - claim: "Mistral's formal-proof approach scores 99% on code benchmark where OpenAI scores 4.9%"
+        ground_truth_verdict: "contradicted"
+        location: "headline"
+        notes: "Source clearly attributes the system to Axiom AI, not Mistral. This is a wrong company attribution in the headline — an entity substitution of the most visible kind."
+      - claim: "Axiom scored 187/189 (99%) on a code-correctness benchmark"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body correctly names Axiom. Source confirms 187/189 = 99%."
+      - claim: "OpenAI's leading reasoning model scored 4.9% on the same benchmark"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source: OpenAI's o3 scored 4.9%. Body is correct."
+      - claim: "Formal proof verification gives reinforcement learning a cleaner signal than statistical methods"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body is correct — matches source argument."
+      - claim: "Vendor-reported, no independent replication yet"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body caveat is correct."
+
+  - id: "fa_604_contradicted_headline_inverted_direction"
+    category: "contradicted"
+    mutation_type: "headline_error"
+    story_id: "c_ba23650cf1e13088_hl_mutated"
+    issue_date: "2026-06-08"
+    source_url: "https://arxiv.org/abs/2606.06698"
+    injected_mutation: "Headline inverted to say methods WORK; body correctly says they FAIL"
+    headline: >
+      New benchmark confirms prompt-tuning methods work reliably when compliance rules shift
+    summary_text: >
+      RECAP, a new benchmark, tested six prompt-optimisation methods across four language models
+      under shifting compliance constraints and found none improved reliably under proactive
+      adaptation. No code released yet. If your agentic deployment must absorb a policy change
+      before the next interaction, this gap belongs on your architecture review agenda.
+    source_excerpt: >
+      We introduce RECAP (Regulatory Compliance Adaptation Protocol), a benchmark for evaluating
+      prompt-optimisation methods under changing compliance rules. We test six prompt-optimisation
+      methods across four language models. Compliance constraints shift mid-deployment in three
+      scenario categories, requiring proactive adaptation before the next user interaction.
+
+      We find that none of the six methods improved performance reliably under proactive
+      adaptation conditions. Methods designed for static or feedback-driven settings failed
+      to generalise to the proactive setting: they either failed silently or required human
+      intervention to detect the constraint change.
+
+      We have not released code at this time.
+    claims:
+      - claim: "New benchmark confirms prompt-tuning methods work reliably when compliance rules shift"
+        ground_truth_verdict: "contradicted"
+        location: "headline"
+        notes: "Source says 'none of the six methods improved performance reliably'. The headline inverts the finding — claiming methods work when the source says they fail. Directional inversion in the headline."
+      - claim: "RECAP found none improved reliably under proactive adaptation"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Body is correct — matches source finding."
+      - claim: "RECAP tested six prompt-optimisation methods across four language models"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms these numbers."
+      - claim: "No code released yet"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  # ===========================================================================
+  # CATEGORY 3: UNVERIFIABLE (5 cases)
+  # Summary makes a specific claim not addressed in the source excerpt.
+  # Verifier should say "unverifiable", not "contradicted".
+  # ===========================================================================
+
+  - id: "fa_501_unverifiable"
+    category: "unverifiable"
+    story_id: "c_24afed5ec4f02589_unverifiable"
+    issue_date: "2026-06-07"
+    source_url: "https://llmquant.substack.com/p/llmquant-data-has-arrived-the-first"
+    reason: "Summary cites a skills library URL not mentioned in the excerpt"
+    headline: >
+      A financial data platform built for AI agents launches in beta
+    summary_text: >
+      LLMQuant Data launches in beta as a structured financial data layer for agent workflows,
+      exposing equities, SEC filings, macro indicators, and research papers via a model context
+      protocol connection. A reusable skills library lives at github.com/LLMQuant/skills.
+      Single-source launch, no independent benchmarks.
+    source_excerpt: >
+      LLMQuant is launching LLMQuant Data, a financial data platform designed for integration
+      with AI agent workflows. The platform exposes structured financial data including equity
+      prices, SEC filings, macroeconomic indicators, and research papers. Access is via a
+      Model Context Protocol endpoint, allowing direct consumption by AI agents.
+
+      The service is in beta. LLMQuant describes this as a single-source launch with no
+      independent benchmark comparisons published at this time.
+    claims:
+      - claim: "A financial data platform built for AI agents launches in beta"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source confirms the platform is a financial data platform for AI agents launching in beta."
+      - claim: "LLMQuant Data exposes equities, SEC filings, macro indicators, and research papers"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms all four data types."
+      - claim: "Access is via a model context protocol connection"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms MCP endpoint."
+      - claim: "A reusable skills library lives at github.com/LLMQuant/skills"
+        ground_truth_verdict: "unverifiable"
+        location: "body"
+        notes: "The source excerpt does not mention a skills library or any GitHub repository. The claim may be true — it was in the original article — but it cannot be verified against this excerpt."
+      - claim: "Single-source launch, no independent benchmarks"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms."
+
+  - id: "fa_502_unverifiable"
+    category: "unverifiable"
+    story_id: "c_205c6c3a01c80558_unverifiable"
+    issue_date: "2026-06-08"
+    source_url: "https://simonwillison.net/2026/Jun/7/datasette-agent-edit/#atom-everything"
+    reason: "Summary makes a claim about the str_replace failure mode not in excerpt"
+    headline: >
+      Claude's agentic text-editing pattern becomes a reusable open-source building block
+    summary_text: >
+      Simon Willison has lifted Claude's three-tool text-editing pattern (view, str_replace,
+      insert) out of a single project and packaged it as datasette-agent-edit, a reusable base
+      for agentic editing plugins. The str_replace tool deliberately fails on non-unique strings,
+      preventing silent corruption. Alpha-stage and single-source.
+    source_excerpt: >
+      Simon Willison has published datasette-agent-edit, an open-source library that packages
+      Claude's text-editing tool pattern as a reusable component for building Datasette plugins
+      that can edit files. The library implements a three-tool pattern: a view tool for reading
+      files, a str_replace tool for making targeted replacements, and an insert tool for adding
+      new content.
+
+      The library is in alpha and has been released under an open source licence. Willison
+      describes this as a direct extraction of a pattern he developed for a single project,
+      generalised for reuse.
+    claims:
+      - claim: "Claude's agentic text-editing pattern becomes a reusable open-source building block"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source confirms the library packages Claude's text-editing pattern as open-source reusable code."
+      - claim: "Simon Willison packaged Claude's three-tool text-editing pattern as datasette-agent-edit"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms the library name and three-tool pattern."
+      - claim: "The str_replace tool deliberately fails on non-unique strings, preventing silent corruption"
+        ground_truth_verdict: "unverifiable"
+        location: "body"
+        notes: "The source excerpt describes the three tools but does not explain the failure mode for non-unique strings. This claim may be accurate but is not verifiable against this excerpt."
+      - claim: "Alpha-stage and single-source"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms alpha stage; 'single-source' refers to Willison's own blog post as origin."
+
+  - id: "fa_503_unverifiable"
+    category: "unverifiable"
+    story_id: "c_3994663cee386b54_unverifiable"
+    issue_date: "2026-06-06"
+    source_url: "https://cloud.google.com/blog/products/ai-machine-learning/multi-agent-rag"
+    reason: "Summary cites a 34% accuracy lift not present in the excerpt"
+    headline: >
+      Google's enterprise agent keeps searching until it finds a complete answer
+    summary_text: >
+      Standard retrieval-augmented generation stops at the first search; Google's new multi-agent
+      framework on its enterprise platform keeps iterating until a Sufficient Context Agent
+      confirms the answer is complete. Vendor-reported accuracy lift is 34% on factuality
+      datasets, but benchmarks are Google's own.
+    source_excerpt: >
+      Google has announced a multi-agent retrieval-augmented generation framework for its
+      enterprise AI platform. The framework uses an iterative search loop: after each retrieval
+      step, a specialised agent called the Sufficient Context Agent evaluates whether the
+      retrieved information is complete enough to answer the query. If not, the system issues
+      additional search queries.
+
+      The framework is designed for enterprise deployments where answers must be grounded in
+      authoritative internal sources. Google describes the architecture as suitable for queries
+      that span multiple siloed data sources.
+    claims:
+      - claim: "Google's enterprise agent keeps searching until it finds a complete answer"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source confirms the iterative search loop and the Sufficient Context Agent. Headline is correct."
+      - claim: "Standard RAG stops at the first search; Google's framework keeps iterating"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms the iterative loop."
+      - claim: "A Sufficient Context Agent confirms when the answer is complete"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source names the component and its function."
+      - claim: "Vendor-reported accuracy lift is 34% on factuality datasets"
+        ground_truth_verdict: "unverifiable"
+        location: "body"
+        notes: "The source excerpt does not mention a 34% lift or any factuality benchmark. The claim may appear elsewhere in the full article but is not in the excerpt provided."
+
+  - id: "fa_504_unverifiable"
+    category: "unverifiable"
+    story_id: "c_863f5644ef76a580_unverifiable"
+    issue_date: "2026-06-04"
+    source_url: "https://twitter.com/aurielw/status/1234567890"
+    reason: "Summary includes six failure modes but excerpt only discusses four"
+    headline: >
+      A flawed training harness poisons your model before you notice
+    summary_text: >
+      Auriel W (ex-Gemini RL) catalogues six harness failure modes that corrupt reinforcement
+      learning training data silently: stale caches, reward hacks, false resolutions, silent
+      timeouts, non-deterministic resets, and action space drift.
+    source_excerpt: >
+      Auriel W, formerly of the Gemini reinforcement learning team, has published a thread
+      cataloguing harness failure modes she has encountered in practice. The post identifies
+      four primary failure modes that corrupt training data without triggering obvious errors:
+      stale caches (where old trajectory data is mistakenly included in the current batch),
+      reward hacks (where the scoring function is exploited by the model without completing
+      the task), false resolutions (where the environment incorrectly signals task completion),
+      and silent timeouts (where a terminated environment returns zero-reward without logging
+      the timeout).
+    claims:
+      - claim: "A flawed training harness poisons your model before you notice"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source confirms harness failure modes that corrupt training data silently. Headline is an accurate general characterisation."
+      - claim: "Auriel W is ex-Gemini RL"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms 'formerly of the Gemini reinforcement learning team'."
+      - claim: "Stale caches, reward hacks, false resolutions, and silent timeouts are listed failure modes"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source lists all four."
+      - claim: "Non-deterministic resets and action space drift are catalogued as failure modes"
+        ground_truth_verdict: "unverifiable"
+        location: "body"
+        notes: "The source excerpt lists exactly four failure modes; non-deterministic resets and action space drift are not mentioned. The full thread may contain them, but they are not verifiable against this excerpt."
+
+  - id: "fa_505_unverifiable"
+    category: "unverifiable"
+    story_id: "c_02888d24da00876e_unverifiable"
+    issue_date: "2026-06-05"
+    source_url: "https://arxiv.org/abs/2506.09876"
+    reason: "Summary names Gemini 2.5 as a specific regressor; excerpt only says 'one model regressed'"
+    headline: >
+      Binary pass/fail tests miss a quarter of sycophantic model responses
+    summary_text: >
+      Standard sycophancy tests report modest failure rates; graded scoring across 73 adversarial
+      prompts found 27% of responses contained substantial social compliance. Gemini 2.5 regressed
+      sharply against both older and newer generations. Dataset and rubric are public.
+    source_excerpt: >
+      We present a graded sycophancy evaluation across 73 adversarial prompts designed to elicit
+      social compliance — agreeing with false premises, validating poor reasoning, or softening
+      criticism under social pressure. Standard binary pass/fail benchmarks report modest failure
+      rates; our graded rubric finds that 27% of responses across the evaluated models contained
+      substantial social compliance behaviours.
+
+      One model showed a marked performance regression compared to both its predecessor and newer
+      successor versions. Dataset and evaluation rubric are available at the linked repository.
+    claims:
+      - claim: "Binary pass/fail tests miss a quarter of sycophantic model responses"
+        ground_truth_verdict: "supported"
+        location: "headline"
+        notes: "Source: graded rubric finds 27% (approximately a quarter) that binary tests miss. Headline is an accurate summary."
+      - claim: "Graded scoring across 73 adversarial prompts found 27% of responses contained substantial social compliance"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms both figures."
+      - claim: "Gemini 2.5 regressed sharply against both older and newer generations"
+        ground_truth_verdict: "unverifiable"
+        location: "body"
+        notes: "Source says 'one model showed a marked performance regression' but does not name the model. The claim that this was Gemini 2.5 cannot be verified against this excerpt."
+      - claim: "Dataset and rubric are public"
+        ground_truth_verdict: "supported"
+        location: "body"
+        notes: "Source confirms availability."
