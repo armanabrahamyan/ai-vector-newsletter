@@ -1,0 +1,563 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-29T02:20:38.349188Z",
+  "prompt_version": "v0.4",
+  "verdict": "clean",
+  "verdict_counts": {
+    "supported": 36,
+    "unverifiable": 14
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_7bbdf4ccadf973ff",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Anthropic turns Claude into a persistent Slack teammate for whole teams",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Anthropic turns Claude into a persistent Slack teammate for whole teams",
+          "source_span": "Anthropic launched Claude Tag, a Slack-native way to delegate work to Claude as if it were a teammate... Claude joins as a team member, with access to selected channels and chosen tools/data/codebases... Claude Tag is 'Claude Code made multiplayer, async, and proactive across your whole team'",
+          "note": "Source confirms Claude Tag is a Slack-native, team-wide, persistent agent product from Anthropic."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic's Claude Tag ships as a Slack-native agent that monitors channels, tags colleagues, and acts without being prompted.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anthropic's Claude Tag ships as a Slack-native agent that monitors channels, tags colleagues, and acts without being prompted.",
+          "source_span": "Tag can tag in coworkers who own related code... Tag in ambient behavior mode: responds to channels without being tagged... watches for thresholds to trigger and then attempts to fix if something broke",
+          "note": "Source confirms channel monitoring, tagging colleagues, and proactive/unprompted behavior."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic's own team says it now merges 65% of product pull requests",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anthropic's own team says it now merges 65% of product pull requests",
+          "source_span": "Anthropic employees claimed internal metrics of 65% of code written / 65% of product PRs merged @ClaudeDevs, @_catwu",
+          "note": "Source confirms Anthropic's internal team reported the 65% of product PRs metric."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a vendor-supplied figure worth treating with scepticism",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a vendor-supplied figure worth treating with scepticism",
+          "source_span": "Opinions / interpretations... 'This has completely changed how I work' and 'feels less like using a tool and more like managing a team' are user-experience judgments from Anthropic... 'writes 65% of our product team's code' / 'merges 65% of product PRs' depending on the speaker, which likely reflects different denominators and should not be treated as identical without clarification",
+          "note": "Source itself flags the 65% figure as internally reported and notes ambiguity in the metric, supporting the scepticism hedge."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The async, multiplayer pattern is real",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The async, multiplayer pattern is real",
+          "source_span": "Claude Tag is 'Claude Code made multiplayer, async, and proactive across your whole team'... Work mode: asynchronous delegation via tagging",
+          "note": "Source confirms the async, multiplayer nature of Claude Tag as a real product characteristic."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_d7f998d25a7a018f",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Bank of England finds popular explainability tools mislead on correlated data",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Bank of England finds popular explainability tools mislead on correlated data",
+          "source_span": "once correlation is introduced, ranking performance worsens substantially... feature importance explanations from a single model run can be highly misleading",
+          "note": "The source is published on Bank Underground (Bank of England's research blog) and confirms explainability tools mislead when features are correlated; 'Bank of England' is a supported paraphrase of the publisher."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Bank of England's research blog ran 500 simulations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The Bank of England's research blog ran 500 simulations",
+          "source_span": "This was repeated 500 times to see how stable the results are.",
+          "note": "Source confirms 500 repeated simulation runs; Bank Underground is the Bank of England's research blog."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SHAP, LIME, and similar feature attribution methods rank inputs correctly only when features are independent",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "SHAP, LIME, and similar feature attribution methods rank inputs correctly only when features are independent",
+          "source_span": "Explainability methods are reliable only when features are independent, but their performance deteriorates sharply once features become even mildly correlated",
+          "note": "Source explicitly states methods are reliable only under independence; SHAP and LIME are named in the source as examples of these methods."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Rank agreement drops to between 0.3 and 0.8",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "rank agreement drops to between 0.3 and 0.8",
+          "source_span": "median rank agreement coefficients fall (typically to between 0.3 and 0.8)",
+          "note": "Exact range matches the source verbatim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Adding mild correlation makes explanations actively misleading",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "making explanations actively misleading",
+          "source_span": "feature importance explanations from a single model run can be highly misleading",
+          "note": "Source supports the claim that correlated features cause misleading explanations; 'actively misleading' is a fair paraphrase of 'highly misleading'."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f69e8d85f70a3c30",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Simulating real deployments predicts model safety before release",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Simulating real deployments predicts model safety before release",
+          "source_span": "We've now started using a method for simulating model deployments before they happen, which adds a complementary signal: a deployment-like preview of how a candidate model may behave before it reaches users.",
+          "note": "The headline accurately paraphrases the deployment simulation method's purpose of predicting safety behaviour before release."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Replaying anonymised production conversations with a candidate model before release",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Replaying anonymised production conversations with a candidate model before release",
+          "source_span": "We do so by replaying previous conversations in a privacy-preserving manner with a new candidate model.",
+          "note": "'Anonymised' is a reasonable plain-English paraphrase of 'privacy-preserving manner'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a new technique predicted the direction of safety-behaviour changes 92% of the time",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a new technique predicted the direction of safety-behaviour changes 92% of the time",
+          "source_span": "deployment simulation predicted the direction of change 92% of the time",
+          "note": "The 92% figure and 'direction of change' match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "against 54% for a standard prompt-based baseline",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "against 54% for a standard prompt-based baseline",
+          "source_span": "compared with 54% for a baseline built from challenging prompts",
+          "note": "'Standard prompt-based baseline' is a fair paraphrase of 'a baseline built from challenging prompts'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No public code yet.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "No public code yet.",
+          "source_span": "As we make the pipeline easier to run, we expect it to play a larger role in the future model development process.",
+          "note": "The source never mentions public code release; the body's claim is consistent with the source's framing of the pipeline as still being developed internally."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_848c4040d48f6183",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI builds its own inference chip to reduce reliance on Nvidia",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "OpenAI builds its own inference chip to reduce reliance on Nvidia",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source material exists to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI and Broadcom have built Jalapeño",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "OpenAI and Broadcom have built Jalapeño",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the chip name or Broadcom's involvement."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Jalapeño is a custom chip designed specifically for running large language models at scale",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "a custom chip designed specifically for running large language models at scale",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the chip's design purpose."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No performance benchmarks or deployment timeline are published yet",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "No performance benchmarks or deployment timeline are published yet",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the absence of benchmarks or timeline."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_bad2712c5d89d103",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A careful synthesis of scaling laws sharpens compute allocation decisions",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A careful synthesis of scaling laws sharpens compute allocation decisions",
+          "source_span": "We can view scaling laws as a framework for describing the relationship between compute, loss, model size and data; at its core, it is about how to allocate precious compute optimally between $N$ and $D$.",
+          "note": "The source is a synthesis of scaling-law research focused on compute allocation, supporting the headline as a paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Lilian Weng's synthesis distils three decades of scaling-law research into one reference.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Lilian Weng's synthesis distils three decades of scaling-law research into one reference.",
+          "source_span": "",
+          "note": "The source excerpt never names the author, so the attribution to Lilian Weng and the 'three decades' characterisation cannot be confirmed or denied from this excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Training loss falls predictably as a power law across model size, data, and compute.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The core insight: training loss falls predictably as a power law across model size, data, and compute.",
+          "source_span": "the training loss $L$ decreases predictably as we scale up model size $N$, dataset size $D$, and compute $C$, following a power-law curve",
+          "note": "Direct paraphrase of the source's core finding; verdict is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No new empirical findings; the value is calibration.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "No new empirical findings; the value is calibration.",
+          "source_span": "",
+          "note": "The source excerpt does not characterise the piece as containing no new empirical findings; this editorial framing cannot be verified from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_bdd3545c3cf53e39",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "One command turns an ETF holding list into an institutional crowding scan",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "One command turns an ETF holding list into an institutional crowding scan",
+          "source_span": "A user simply asks the Agent to run sector-smart-money-scan on SOXX and show top holdings, 13F crowding, NVDA duplicate exposure, and ninety-day performance.",
+          "note": "The source confirms a single prompt/command produces a structured crowding scan from ETF holdings and 13F data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LLMQuant's sector scan wires Claude Code and GPT Codex to live ETF holdings, 13F filings, and price data",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "LLMQuant's sector scan wires Claude Code and GPT Codex to live ETF holdings, 13F filings, and price data",
+          "source_span": "How Claude Code and GPT Codex, wired into structured ETF, 13F, and price data, turn a tedious research chore into a single, reviewable page",
+          "note": "Source confirms Claude Code and GPT Codex are wired into ETF, 13F, and price data; 'live' is a minor paraphrase but not contradicted."
+        },
+        {
+          "schema_version": 1,
+          "claim": "collapsing a multi-step research chore into a single prompt",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "collapsing a multi-step research chore into a single prompt",
+          "source_span": "turn a tedious research chore into a single, reviewable page ... The Skill compresses that entire sequence into a single conversation.",
+          "note": "Source confirms the multi-step chore is compressed into a single interaction."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The demo runs on SOXX",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The demo runs on SOXX",
+          "source_span": "A user simply asks the Agent to run sector-smart-money-scan on SOXX",
+          "note": "Source confirms SOXX is the target of the demo scan."
+        },
+        {
+          "schema_version": 1,
+          "claim": "surfacing 56.3% top-ten concentration",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "surfacing 56.3% top-ten concentration",
+          "source_span": "shows top ten concentration of 56.3 percent",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "779 institutional holders for NVDA alone",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "779 institutional holders for NVDA alone",
+          "source_span": "NVDA sits at an 8.3 percent weight, appears in 779 institutional 13F filings",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Single-source, vendor-written; verify the data pipeline before using output in a live position.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Single-source, vendor-written; verify the data pipeline before using output in a live position.",
+          "source_span": "",
+          "note": "The source excerpt does not characterise the piece as 'single-source' or 'vendor-written'; this trust-flag qualifier cannot be confirmed or denied from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_5a49bc29e8de9e80",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Local models now run agentic coding at about 75% of frontier accuracy and speed",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Local models now run agentic coding at about 75% of frontier accuracy and speed",
+          "source_span": "I've finally been able to do agentic coding locally and have loops work at about ~75% the accuracy/speed of frontier models",
+          "note": "Source directly states ~75% accuracy/speed for agentic coding loops, matching the headline."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Vicki Boykis's practitioner survey across llama.cpp, Ollama, and LM Studio on an M2 Mac",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Vicki Boykis's practitioner survey across llama.cpp, Ollama, and LM Studio on an M2 Mac",
+          "source_span": "",
+          "note": "The source never names the author; 'Vicki Boykis' cannot be confirmed or denied from this excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "local agentic coding loops running at roughly 75% the accuracy and speed of frontier models",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "local agentic coding loops running at roughly 75% the accuracy and speed of frontier models",
+          "source_span": "I've finally been able to do agentic coding locally and have loops work at about ~75% the accuracy/speed of frontier models",
+          "note": "Direct match to source figure; 'roughly' is an acceptable paraphrase of '~'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Self-reported, no controlled benchmark",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Self-reported, no controlled benchmark",
+          "source_span": "I have no concrete scientific evidence of this - my own personal vibe metric of \"is a model good enough\"",
+          "note": "Source explicitly disclaims scientific evidence and describes a personal vibe metric, supporting the 'self-reported, no controlled benchmark' characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pull her Pi-plus-LM-Studio Docker config and run it against your coding task set before renewing a cloud inference subscription",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pull her Pi-plus-LM-Studio Docker config",
+          "source_span": "For my local setup, I'm currently using Pi as the agent harness and LM Studio as the inference server... I run every Pi session in a Docker container",
+          "note": "Source confirms Pi + LM Studio + Docker config is shared; 'Pi-plus-LM-Studio Docker config' is a fair compression of the described setup."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_d30b795341be55be",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's fine-tuning library cuts mixture-of-experts training time by 3.5x",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "NVIDIA's fine-tuning library cuts mixture-of-experts training time by 3.5x",
+          "source_span": "The payoff is 3.4-3.7x higher training throughput and 29-32% less GPU memory on fine-tuning MoE models than native Transformers v5",
+          "note": "3.5x is a reasonable midpoint rounding of the 3.4–3.7x range reported in the source; 'training time' vs 'training throughput' is an acceptable paraphrase inversion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's NeMo AutoModel slots into the standard Hugging Face from_pretrained() call via a single import change",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "NVIDIA's NeMo AutoModel slots into the standard Hugging Face from_pretrained() call via a single import change",
+          "source_span": "using the same from_pretrained() API: a single import line, with no other code changes",
+          "note": "'Hugging Face from_pretrained()' is a correct plain-English identification of the API described in the source; single import change is verbatim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NeMo AutoModel delivers 3.4–3.7x faster training throughput",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "delivering 3.4–3.7x faster training throughput",
+          "source_span": "The payoff is 3.4-3.7x higher training throughput",
+          "note": "Exact range matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NeMo AutoModel delivers roughly 30% less GPU memory on mixture-of-experts models",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "roughly 30% less GPU memory on mixture-of-experts models",
+          "source_span": "29-32% less GPU memory on fine-tuning MoE models",
+          "note": "'Roughly 30%' is a valid rounding of the 29–32% range."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Benchmarks are vendor-supplied",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Benchmarks are vendor-supplied",
+          "source_span": "We evaluated NeMo AutoModel in two regimes",
+          "note": "The source is an NVIDIA blog reporting NVIDIA's own measurements, making 'vendor-supplied' an accurate trust qualifier."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_3221ed68c8beef6e",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A lightweight text-reader covers 50 languages, no GPU required",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A lightweight text-reader covers 50 languages, no GPU required",
+          "source_span": "The medium and small tiers support 50 languages, including Simplified Chinese, Traditional Chinese, English, Japanese, and 46 Latin-script languages. ... PP-OCRv6 OCR with ONNX Runtime CPU backend",
+          "note": "50-language coverage is confirmed; CPU-only operation is confirmed by the ONNX Runtime CPU backend title and the lightweight framing; 'text-reader' is a plain-English paraphrase of OCR."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PP-OCRv6 lands on Hugging Face with three model tiers covering 50 languages",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "PP-OCRv6 lands on Hugging Face with three model tiers covering 50 languages",
+          "source_span": "The model family scales from 1.5M to 34.5M parameters, with three tiers: tiny, small, and medium. The medium and small tiers support 50 languages",
+          "note": "Three tiers and 50-language support are confirmed; the body's generalisation that the family 'covers 50 languages' is a minor compression of the source's 'medium and small tiers support 50 languages', not a material error."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the medium tier hits 83.2% recognition accuracy on vendor-supplied benchmarks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the medium tier hits 83.2% recognition accuracy on vendor-supplied benchmarks",
+          "source_span": "On PaddleOCR's official in-house multi-scenario OCR benchmarks, PP-OCRv6_medium reaches 86.2% detection Hmean and 83.2% recognition accuracy.",
+          "note": "The 83.2% recognition accuracy figure is confirmed; 'vendor-supplied benchmarks' correctly flags the in-house nature of the benchmark."
+        },
+        {
+          "schema_version": 1,
+          "claim": "It runs via PaddleOCR, Transformers, or ONNX Runtime with no GPU required",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "It runs via PaddleOCR, Transformers, or ONNX Runtime with no GPU required",
+          "source_span": "PP-OCRv6 can be used with multiple inference backends through PaddleOCR. ... engine=\"transformers\" ... engine=\"onnxruntime\" ... PP-OCRv6 OCR with ONNX Runtime CPU backend",
+          "note": "All three backends are confirmed in the source; CPU-only operation is confirmed by the ONNX Runtime CPU backend reference."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_ec6932c14849b059",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI launches AI tools to find and fix security vulnerabilities",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "OpenAI launches AI tools to find and fix security vulnerabilities",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source material exists to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's Daybreak suite includes Codex Security and GPT-5.5-Cyber",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "OpenAI's Daybreak suite (Codex Security and GPT-5.5-Cyber)",
+          "source_span": "",
+          "note": "Source excerpt is empty; the suite name and component names cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The suite promises an end-to-end pipeline",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "promises an end-to-end pipeline",
+          "source_span": "",
+          "note": "Source excerpt is empty; the pipeline claim cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The pipeline finds a vulnerability, validates it, then generates a patch automatically",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "find a vulnerability, validate it, then generate a patch automatically",
+          "source_span": "",
+          "note": "Source excerpt is empty; the three-step pipeline description cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Details come from a single vendor announcement",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Details come from a single vendor announcement",
+          "source_span": "",
+          "note": "Source excerpt is empty; the provenance of the announcement cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No independent benchmarks or public code exist yet",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "no independent benchmarks or public code exist yet",
+          "source_span": "",
+          "note": "Source excerpt is empty; the absence of benchmarks and public code cannot be verified."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 10 stories"
+}
