@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Vector &middot; Issue No. 21 &middot; 02 July 2026</title>
+  <meta name="description" content="Today&#39;s AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="mask-icon" href="../favicon.svg" color="#e6452f">
+  <link rel="stylesheet" href="../fonts/fonts.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fbfaf6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a17;
+    }
+
+    /* ── shell ─────────────────────────────────────────────── */
+    .av-shell {
+      font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      color: #1a1a17;
+      background: #ffffff;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 88px 80px;
+      letter-spacing: -0.003em;
+      font-feature-settings: "kern", "liga", "calt";
+      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
+    }
+
+    /* ── duplicate-risk gate (staging preview only) ─────────── */
+    .av-dup-gate {
+      border: 2px solid #b00020;
+      border-left-width: 8px;
+      background: #fff5f5;
+      border-radius: 6px;
+      padding: 18px 22px;
+      margin-bottom: 32px;
+      color: #5c0010;
+      font-family: "Inter Tight", system-ui, sans-serif;
+    }
+    .av-dup-gate-head {
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: #b00020;
+    }
+    .av-dup-gate-body, .av-dup-gate-remedy {
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0 0 8px;
+    }
+    .av-dup-gate-cmds {
+      margin: 0;
+      padding: 12px 14px;
+      background: #2b0008;
+      color: #ffd9dd;
+      border-radius: 4px;
+      font-family: "SFMono-Regular", ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    /* ── masthead ──────────────────────────────────────────── */
+    .av-masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0c0c0c;
+      margin-bottom: 36px;
+    }
+    .av-brand {
+      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      line-height: 0.85;
+      color: #0c0c0c;
+      text-transform: uppercase;
+    }
+    .av-brand-slash { color: #e6452f; margin: 0 2px; }
+    .av-mast-meta {
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a5a55;
+      text-align: right;
+      line-height: 1.7;
+    }
+    .av-mast-archive {
+      display: inline-block;
+      margin-top: 4px;
+      color: #e6452f;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(230,69,47,0.35);
+    }
+    .av-mast-archive:hover { border-bottom-color: #e6452f; }
+
+    /* ── tagline ───────────────────────────────────────────── */
+    .av-tagline {
+      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: #1a1a17;
+      margin: 0 0 32px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .av-tagline-mark { color: #e6452f; margin-right: 12px; }
+
+    /* ── pulse ─────────────────────────────────────────────── */
+    .av-pulse {
+      margin: 0 0 56px;
+      padding: 32px 32px 28px;
+      background: #fdf4f1;
+      border-left: 3px solid #e6452f;
+    }
+    .av-pulse-label {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e6452f;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .av-pulse-bar { width: 32px; height: 2px; background: #e6452f; }
+    .av-pulse-title {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      line-height: 1.15;
+      margin: 0 0 22px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 26ch;
+    }
+    .av-pulse-body {
+      font-size: 18px;
+      line-height: 1.65;
+      color: #2a2a26;
+      margin: 0 0 18px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-pulse-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-pulse-link {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 600;
+    }
+
+    /* ── section ───────────────────────────────────────────── */
+    .av-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #0c0c0c;
+      margin: 0 0 28px;
+    }
+    .av-section-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .av-section-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0;
+      color: #0c0c0c;
+    }
+    .av-section-count {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #6a6a64;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── stories ───────────────────────────────────────────── */
+    .av-story { margin: 0 0 36px; }
+    .av-story-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 28em;
+    }
+    .av-story-body {
+      font-size: 17px;
+      line-height: 1.7;
+      color: #2a2a26;
+      margin: 0 0 14px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-story-foot {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-story-src {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 500;
+    }
+
+    /* ── pills ─────────────────────────────────────────────── */
+    .av-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: "Inter Tight", sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+    .av-pill-act     { color: #8a5448; background: #f5ecea; }
+    .av-pill-try     { color: #4f7a5d; background: #ecf2ed; }
+    .av-pill-read    { color: #5a7090; background: #eef1f6; }
+    .av-pill-watch   { color: #6a6a64; background: #f0efec; }
+    .av-pill-discuss { color: #8a7548; background: #f4eee2; }
+
+    /* ── section intro paragraph ───────────────────────────── */
+    .av-section-intro {
+      font-size: 17px;
+      line-height: 1.6;
+      color: #3a3a36;
+      margin: 0 0 36px;
+      max-width: 40em;
+      text-wrap: pretty;
+    }
+    .av-section-intro-strong {
+      color: #0c0c0c;
+      font-weight: 700;
+    }
+
+    /* ── Currents (terse) ─────────────────────────────────── */
+    .av-section.currents .av-story { margin: 0 0 22px; }
+    .av-section.currents .av-story-body { font-size: 16px; }
+    /* legacy alias for archived issues still carrying on_the_radar class */
+    .av-section.on_the_radar .av-story { margin: 0 0 22px; }
+    .av-section.on_the_radar .av-story-body { font-size: 16px; }
+
+    /* ── verify flags (staging preview only) ──────────────── */
+    .av-verify-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: "Inter Tight", system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #7a3800;
+      background: #fff3e0;
+      border: 1px solid #f0a050;
+      white-space: nowrap;
+    }
+    .av-verify-flag--headline {
+      color: #6a0000;
+      background: #fff0f0;
+      border-color: #e07070;
+    }
+
+    /* ── footer ────────────────────────────────────────────── */
+    .av-footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #0c0c0c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6a6a64;
+    }
+    .av-footer-build {
+      color: #a5a5a0;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .av-about {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #8a8a85;
+      line-height: 1.6;
+      max-width: 60em;
+    }
+    .av-archive-link {
+      color: #6a6a64;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    /* ── responsive ────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .av-shell { padding: 36px 24px 48px; }
+      .av-brand { font-size: 42px; }
+      .av-mast-meta { font-size: 10px; letter-spacing: 0.1em; }
+      .av-tagline { font-size: 19px; }
+      .av-pulse { padding: 24px 22px 22px; }
+      .av-pulse-title { font-size: 26px; }
+      .av-pulse-body { font-size: 17px; }
+      .av-section-title { font-size: 22px; }
+      .av-story-title { font-size: 20px; }
+      .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .av-mast-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <article class="av-shell">
+    
+    <header class="av-masthead">
+      <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
+      <div class="av-mast-meta">
+        <div>Thursday, 02 July 2026</div>
+        <div>Issue No. 21 &middot; ~4 min read</div>
+        <div><a class="av-mast-archive" href="../index.html">All Issues &rarr;</a></div>
+      </div>
+    </header>
+
+    <p class="av-tagline">
+      <span class="av-tagline-mark">&mdash;</span>
+      Today&#39;s AI, with a heading.
+    </p>
+
+    
+    
+    <section class="av-pulse">
+      <div class="av-pulse-label">
+        <span class="av-pulse-bar"></span>
+        <span>The Pulse &middot; Story of the day</span>
+      </div>
+      <h2 class="av-pulse-title">EU delays AI compliance deadlines, makes content labelling mandatory but its icons optional</h2>
+      <p class="av-pulse-body">Europe&#39;s parliament voted 423 to 57 to push high-risk AI compliance to late 2027 at the earliest, while the Commission released optional labelling icons for AI-generated content. The labelling obligations are mandatory, but the icons themselves are voluntary and don&#39;t establish compliance on their own. Voluntary tools with binding deadlines behind them: the grace period is real, but the clock is running.</p>
+      <div class="av-pulse-meta">
+        
+          <a class="av-pulse-link" href="https://artificialintelligenceact.substack.com/p/the-eu-ai-act-newsletter-105-transparency">artificialintelligenceact.substack.com&nbsp;&rarr;</a>
+        
+        
+      </div>
+    </section>
+
+    
+    
+      
+        <div class="av-section big_picture">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">The Big Picture</h2>
+            </div>
+            <span class="av-section-count">3 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Architecture is the argument.</span> Across compliance, research, and risk alerting, the structural choice of where a decision gets made is doing more governance work than any policy document. Design is the control.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A classifier intercepts personal data before any language model sees it</h3>
+              <p class="av-story-body">The risk is structural: personal data can reach a language model before the system decides whether it should. ComplianceGate proposes a classifier that screens each query in 7ms, routing sensitive data to local endpoints only. On 600 queries, latency fell 39% and costs dropped 33–52%. No code is public; raise this before your next data-residency design review.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://arxiv.org/abs/2606.31163">arxiv.org&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Anthropic extends its autonomous-agent approach from code to drug discovery</h3>
+              <p class="av-story-body">Anthropic launched Claude Science at a pharma and biotech event, elevating it to the same tier as Claude Code. It runs multi-step research tasks autonomously, with tools for genetics and protein biology. Single-source, no independent benchmarks yet. When an autonomous research agent matches a graduate student&#39;s output, who in your organisation decides which questions it asks?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://www.technologyreview.com/2026/07/01/1139996/the-download-anthropic-claude-science-california-carbon-manure/">technologyreview.com&nbsp;&rarr;</a>
+                
+                  <a class="av-story-src" href="https://www.technologyreview.com/2026/06/30/1139987/claude-science-is-anthropics-newest-flagship-product/">technologyreview.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Forcing AI agents to show evidence before escalating crypto risk alerts</h3>
+              <p class="av-story-body">General-purpose language model agents over-escalate on thin evidence. DeXposure-Claw routes decisions through a graph time-series forecasting model and deterministic stress tests before issuing any supervisory ticket, scoring results against an explicit false-intervention rate. Code is public; benchmarks are self-reported. Does your supervisory AI have a comparable evidence gate, or does the model still escalate directly?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://arxiv.org/abs/2606.19501">arxiv.org&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section hands_on">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Hands-On</h2>
+            </div>
+            <span class="av-section-count">5 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Design for verifiability first.</span> Today&#39;s pattern runs deeper than benchmark hygiene: hidden pricing, self-reported agent success rates, and outputs nobody can check are all the same problem. Build the test before you build the feature.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Hugging Face now surfaces benchmark scores directly on model pages</h3>
+              <p class="av-story-body">Hugging Face now embeds benchmark results directly on model cards, drawing from 229,000 evaluation results across 22,000 models. Scores carry a badge showing whether results are author-submitted or independently verified. The same model on the same benchmark has returned scores as far apart as 63.7 and 48.8; check the badge before using any score in a model-selection decision.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://huggingface.co/blog/eee-community-evals">huggingface.co&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Anthropic ships a near-flagship model with a hidden tokeniser price increase</h3>
+              <p class="av-story-body">Claude Sonnet 5 launches today at the same list price as its predecessor ($3/million input tokens), but a new tokeniser produces roughly 30% more tokens from the same text, making it effectively 30-40% pricier for English. Benchmarks come from vendors. Before migrating Claude Code workloads, run your own token-count comparison on a representative prompt set.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://www.latent.space/p/ainews-sonnet-5-today-and-fable-5">latent.space&nbsp;&rarr;</a>
+                
+                  <a class="av-story-src" href="https://simonwillison.net/2026/Jun/30/claude-sonnet-5/#atom-everything">simonwillison.net&nbsp;&rarr;</a>
+                
+                  <a class="av-story-src" href="https://tldr.tech/ai/2026-07-01">tldr.tech&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">New benchmark reveals coding agents overestimate their own Java migration success</h3>
+              <p class="av-story-body">IBM Research&#39;s ScarfBench tests coding agents on real Java framework migration across Spring, Jakarta EE, and Quarkus, evaluating whether code actually builds, deploys, and runs. One agent reported 29 of 30 successful migrations; only 22 were. Vendor-published benchmark, no independent replication yet. Run ScarfBench against your migration candidate before committing to an automated pipeline.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://huggingface.co/blog/ibm-research/scarfbench">huggingface.co&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Let your coding agent film its own work as a video demo</h3>
+              <p class="av-story-body">shot-scraper 1.10 adds a video command: feed it a YAML storyboard and Playwright records the browser session as an MP4. The demo storyboard above was written by a coding agent from a single prompt. One developer&#39;s workflow, not a benchmarked standard. Add it to your agent&#39;s post-build step before signing off on any UI change.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://simonwillison.net/2026/Jun/30/shot-scraper-video/#atom-everything">simonwillison.net&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Hard-to-eval AI products are a design flaw, not a measurement problem</h3>
+              <p class="av-story-body">Hamel Husain argues &#34;hard to eval&#34; is a product smell: if you can&#39;t verify output, neither can your users. His fix is designing for verifiability first, before building evals. Three before-and-after sketches show how surfacing intermediate SQL and flagging unverifiable figures removes rework. Single-author post, no benchmark data. Audit your next agent&#39;s outputs for checkable artefacts before shipping.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://hamel.dev/blog/posts/eval-smell/">hamel.dev&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section currents">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Currents</h2>
+            </div>
+            <span class="av-section-count">4 items</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Small fixes, system-wide implications.</span> Each item here solves a narrow problem, staleness, failure, hallucination, retraining, but the aggregate direction is the same: the efficiency ceiling on existing AI pipelines is higher than assumed. All are single-source or pre-publication.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Tiny model beats larger rivals by filtering out stale price data</h3>
+              <p class="av-story-body">In high-frequency trading, network delays freeze the last observed price while the real market moves on, corrupting forecasting. ReLaMix, a 14,000-parameter model, outperforms transformer rivals roughly seven times its size by treating staleness as its own problem class. Single-source, no code released; if the result replicates, your latency-aware architecture needs revisiting. If it doesn&#39;t, the design framing still holds.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-watch">watch</span>
+                
+                
+                  <a class="av-story-src" href="https://llmquant.substack.com/p/the-tick-that-lies-a-14k-parameter">llmquant.substack.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Failed agent runs become fuel at inference time, lifting task success nearly 7 points</h3>
+              <p class="av-story-body">Standard pipelines discard failed agent runs; this paper mines them at inference time. A language model diagnoses each failure and generates a lightly human-verified code patch, lifting task success from 42.3% to 48.9%, a gain of 6.6 points, with no retraining. Single-source, pre-publication. If the gain replicates on your task distribution, failure logs become your cheapest data asset; if not, patch-review overhead eats the margin.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-watch">watch</span>
+                
+                
+                  <a class="av-story-src" href="https://arxiv.org/abs/2606.31270">arxiv.org&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">A new method pinpoints hallucinated words in search-augmented AI output</h3>
+              <p class="av-story-body">CORTEX detects hallucinations at the word level by running the same model twice (with retrieved documents, then without) and comparing internal states. Tested across two benchmarks and three models, each component added measurable gains. No code yet. If the technique replicates, whole-response confidence scores become inadequate for audit; if it doesn&#39;t, the benchmark design is still worth examining.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://arxiv.org/abs/2606.31033">arxiv.org&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Google&#39;s tabular foundation model skips training on new structured datasets</h3>
+              <p class="av-story-body">Google&#39;s TabFM reads a full table as a single prompt and predicts without retraining, outperforming tuned XGBoost across 51 benchmarks. Scores come from TabArena, an external living benchmark. Weights and code are public now. If zero-shot accuracy holds on your proprietary fraud tables, retraining cycles shrink and BigQuery lock-in follows. If it doesn&#39;t, synthetic pre-training is the gap.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-watch">watch</span>
+                
+                
+                  <a class="av-story-src" href="https://research.google/blog/introducing-tabfm-a-zero-shot-foundation-model-for-tabular-data/">research.google&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+
+    <footer class="av-footer">
+      <span>AI Vector &middot; Arman Abrahamyan &middot; 02 July 2026 &middot; <a class="av-archive-link" href="../index.html">all issues &rarr;</a></span>
+      <span class="av-footer-build">Compiled 2026-07-02 06:28 AEST</span>
+    </footer>
+    <p class="av-about">
+      A daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+    </p>
+  </article>
+</body>
+</html>

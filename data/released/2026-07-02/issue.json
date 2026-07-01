@@ -1,0 +1,1052 @@
+{
+  "schema_version": 6,
+  "issue_number": 21,
+  "revision": 0,
+  "date": "2026-07-02",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 3,
+        "story_id": "c_43deaf4d84f4b097",
+        "headline": "EU delays AI compliance deadlines, makes content labelling mandatory but its icons optional",
+        "summary": "Europe's parliament voted 423 to 57 to push high-risk AI compliance to late 2027 at the earliest, while the Commission released optional labelling icons for AI-generated content. The labelling obligations are mandatory, but the icons themselves are voluntary and don't establish compliance on their own. Voluntary tools with binding deadlines behind them: the grace period is real, but the clock is running.",
+        "source_urls": [
+          "https://artificialintelligenceact.substack.com/p/the-eu-ai-act-newsletter-105-transparency"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_43deaf4d84f4b097",
+          "prompt_version": "v0.4",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "EU delays AI compliance deadlines, makes content labelling mandatory but its icons optional",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "EU delays AI compliance deadlines, makes content labelling mandatory but its icons optional",
+              "source_span": "the legislation postpones obligations on high-risk AI systems... While the icons are optional, the labelling obligations themselves are not",
+              "note": "All bundled facts in the headline are confirmed by the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Europe's parliament voted 423 to 57 to push high-risk AI compliance to late 2027 at the earliest",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Europe's parliament voted 423 to 57 to push high-risk AI compliance to late 2027 at the earliest",
+              "source_span": "The European Parliament has granted final approval, by 423 votes to 57 with 174 abstentions, to amendments to the EU AI Act... the legislation postpones obligations on high-risk AI systems, which will now apply from 2 December 2027 for stand-alone systems",
+              "note": "'Late 2027 at the earliest' is a fair compression of 2 December 2027 for stand-alone systems (with embedded systems delayed further to 2028); vote count matches exactly."
+            },
+            {
+              "schema_version": 1,
+              "claim": "the Commission released optional labelling icons for AI-generated content",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the Commission released optional labelling icons for AI-generated content",
+              "source_span": "The European Commission has developed a set of icons that creators, publishers and other deployers of generative AI systems may use to label their AI-generated content... While the icons are optional",
+              "note": "Source confirms the Commission developed optional icons for labelling AI-generated content."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The labelling obligations are mandatory",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "The labelling obligations are mandatory",
+              "source_span": "While the icons are optional, the labelling obligations themselves are not",
+              "note": "Source explicitly states labelling obligations are not optional."
+            },
+            {
+              "schema_version": 1,
+              "claim": "the icons themselves are voluntary and don't establish compliance on their own",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the icons themselves are voluntary and don't establish compliance on their own",
+              "source_span": "While the icons are optional, the labelling obligations themselves are not, and the use of these icons does not by itself establish legal compliance.",
+              "note": "Source directly confirms both that icons are optional and that using them does not by itself establish compliance."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_5b1fe4ac4c8f841c",
+          "headline": "A classifier intercepts personal data before any language model sees it",
+          "summary": "The risk is structural: personal data can reach a language model before the system decides whether it should. ComplianceGate proposes a classifier that screens each query in 7ms, routing sensitive data to local endpoints only. On 600 queries, latency fell 39% and costs dropped 33–52%. No code is public; raise this before your next data-residency design review.",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.31163"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5b1fe4ac4c8f841c",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A classifier intercepts personal data before any language model sees it",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A classifier intercepts personal data before any language model sees it",
+                "source_span": "A trained encoder classifier sits before any decoder inference, evaluating each query for complexity and data sensitivity, then routing it to an appropriately sized dense model in the appropriate geographic location. PII-containing queries route to local endpoints before any LLM computation begins, making data residency violations structurally impossible.",
+                "note": "The source confirms the classifier acts before any LLM inference and intercepts PII-containing queries before they reach a model."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The risk is structural: personal data can reach a language model before the system decides whether it should.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The risk is structural: personal data can reach a language model before the system decides whether it should.",
+                "source_span": "Personally identifiable information (PII) in user queries can reach model endpoints before the system determines whether that data should leave its jurisdictional boundary.",
+                "note": "Direct paraphrase of the source's problem statement; accurately captures the structural risk described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ComplianceGate proposes a classifier that screens each query in 7ms",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "ComplianceGate proposes a classifier that screens each query in 7ms",
+                "source_span": "The encoder classifier achieves 99.2% accuracy with near-perfect PII recall at 7ms inference overhead",
+                "note": "The source confirms the classifier has 7ms inference overhead, consistent with 'screens each query in 7ms'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "routing sensitive data to local endpoints only",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "routing sensitive data to local endpoints only",
+                "source_span": "PII-containing queries route to local endpoints before any LLM computation begins",
+                "note": "Source confirms PII queries are routed to local endpoints."
+              },
+              {
+                "schema_version": 1,
+                "claim": "On 600 queries, latency fell 39%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "On 600 queries, latency fell 39%",
+                "source_span": "Our evaluation on 600 queries demonstrates 39% median latency reduction",
+                "note": "Exact figures match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "costs dropped 33–52%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "costs dropped 33–52%",
+                "source_span": "33-52% cost savings depending on query distribution",
+                "note": "Exact range matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "No code is public",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "No code is public",
+                "source_span": "",
+                "note": "The source excerpt does not mention code availability; this cannot be confirmed or denied from the excerpt alone."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_c4afb22d909552fe",
+          "headline": "Anthropic extends its autonomous-agent approach from code to drug discovery",
+          "summary": "Anthropic launched Claude Science at a pharma and biotech event, elevating it to the same tier as Claude Code. It runs multi-step research tasks autonomously, with tools for genetics and protein biology. Single-source, no independent benchmarks yet. When an autonomous research agent matches a graduate student's output, who in your organisation decides which questions it asks?",
+          "source_urls": [
+            "https://www.technologyreview.com/2026/07/01/1139996/the-download-anthropic-claude-science-california-carbon-manure/",
+            "https://www.technologyreview.com/2026/06/30/1139987/claude-science-is-anthropics-newest-flagship-product/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_c4afb22d909552fe",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Anthropic extends its autonomous-agent approach from code to drug discovery",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Anthropic extends its autonomous-agent approach from code to drug discovery",
+                "source_span": "Anthropic announced Claude Science, a major new product intended to support scientific research in the same way that Claude Code supports software engineering... it has access to tools that make it particularly useful for research in computational biology and drug development.",
+                "note": "The source confirms Anthropic is extending its autonomous-agent approach (Claude Code) to science including drug discovery."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Anthropic launched Claude Science at a pharma and biotech event",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Anthropic launched Claude Science at a pharma and biotech event",
+                "source_span": "At an event for pharmaceutical executives, biotech founders, and researchers on Tuesday, Anthropic announced Claude Science",
+                "note": "The source confirms the launch at a pharma and biotech event."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Science is elevated to the same tier as Claude Code",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "elevating it to the same tier as Claude Code",
+                "source_span": "Anthropic's decision to elevate Claude Science to the same rank as Claude Code and Claude Cowork indicates that the company is taking AI's scientific applications very seriously",
+                "note": "The source explicitly states Claude Science is elevated to the same rank as Claude Code."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Science runs multi-step research tasks autonomously",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It runs multi-step research tasks autonomously",
+                "source_span": "Claude Science can autonomously carry out meaningful work when given concise, high-level instructions",
+                "note": "Autonomous multi-step research is a fair paraphrase of autonomously carrying out meaningful work from high-level instructions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Science has tools for genetics and protein biology",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with tools for genetics and protein biology",
+                "source_span": "It can interface with various tools used in genetics, chemistry, and protein biology",
+                "note": "The source confirms tools for genetics and protein biology; omitting chemistry is not an error."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Single-source, no independent benchmarks yet",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Single-source, no independent benchmarks yet",
+                "source_span": "Anthropic's decision to elevate Claude Science to the same rank as Claude Code and Claude Cowork indicates that the company is taking AI's scientific applications very seriously—or at least wants to give the impression that it is.",
+                "note": "The source provides no independent benchmark data for Claude Science, and the hedged language supports the single-source trust flag."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_88d00d0e5bf25aa3",
+          "headline": "Forcing AI agents to show evidence before escalating crypto risk alerts",
+          "summary": "General-purpose language model agents over-escalate on thin evidence. DeXposure-Claw routes decisions through a graph time-series forecasting model and deterministic stress tests before issuing any supervisory ticket, scoring results against an explicit false-intervention rate. Code is public; benchmarks are self-reported. Does your supervisory AI have a comparable evidence gate, or does the model still escalate directly?",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.19501"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_88d00d0e5bf25aa3",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Forcing AI agents to show evidence before escalating crypto risk alerts",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Forcing AI agents to show evidence before escalating crypto risk alerts",
+                "source_span": "a forecast-grounded agentic supervision system that routes LLM decisions through structured evidence",
+                "note": "'Crypto risk alerts' is a fair plain-English paraphrase of DeFi risk supervision, and 'show evidence before escalating' maps to routing decisions through structured evidence gates before emitting supervisory tickets."
+              },
+              {
+                "schema_version": 1,
+                "claim": "General-purpose language model agents over-escalate on thin evidence.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "General-purpose language model agents over-escalate on thin evidence.",
+                "source_span": "General-purpose LLM agents fit this setting poorly: they over-read weak evidence and recommend high-stakes interventions",
+                "note": "'Over-escalate on thin evidence' is a valid paraphrase of 'over-read weak evidence and recommend high-stakes interventions'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DeXposure-Claw routes decisions through a graph time-series forecasting model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "DeXposure-Claw routes decisions through a graph time-series forecasting model",
+                "source_span": "routes LLM decisions through structured evidence: (1) DeXposure-FM, a graph time-series foundation model, forecasts future exposure networks",
+                "note": "'Graph time-series forecasting model' is an accurate paraphrase of 'graph time-series foundation model' that forecasts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DeXposure-Claw routes decisions through deterministic stress tests before issuing any supervisory ticket",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "deterministic stress tests before issuing any supervisory ticket",
+                "source_span": "deterministic monitors and stress scenarios then turn those forecasts into typed alerts, attribution signals, and scenario evidence; and (3) data-health and confidence gates constrain escalation before DeXposure-Claw emits auditable supervisory tickets",
+                "note": "'Deterministic stress tests' is a fair compression of 'deterministic monitors and stress scenarios', and the sequencing before ticket emission is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DeXposure-Claw scores results against an explicit false-intervention rate.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "scoring results against an explicit false-intervention rate",
+                "source_span": "decision axis scores tickets against a regulator-aligned absolute-loss ground truth and an explicit false-intervention rate",
+                "note": "The explicit false-intervention rate is directly mentioned in the source as part of the evaluation harness."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Code is public.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Code is public",
+                "source_span": "Code is at this https URL.",
+                "note": "The source confirms code is publicly available at a URL."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Benchmarks are self-reported.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "benchmarks are self-reported",
+                "source_span": "Experiments on five years of weekly real data fully support our system.",
+                "note": "This is a pre-peer-review arXiv paper with no external validation mentioned; flagging benchmarks as self-reported is an appropriate trust qualifier for this context."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Architecture is the argument.",
+      "intro_body": "Across compliance, research, and risk alerting, the structural choice of where a decision gets made is doing more governance work than any policy document. Design is the control."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_b249746da2f905cb",
+          "headline": "Hugging Face now surfaces benchmark scores directly on model pages",
+          "summary": "Hugging Face now embeds benchmark results directly on model cards, drawing from 229,000 evaluation results across 22,000 models. Scores carry a badge showing whether results are author-submitted or independently verified. The same model on the same benchmark has returned scores as far apart as 63.7 and 48.8; check the badge before using any score in a model-selection decision.",
+          "source_urls": [
+            "https://huggingface.co/blog/eee-community-evals"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b249746da2f905cb",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face now surfaces benchmark scores directly on model pages",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Hugging Face now surfaces benchmark scores directly on model pages",
+                "source_span": "A model's scores live in .eval_results/*.yaml inside the model repo. They show up on the model card and feed into the matching benchmark leaderboard.",
+                "note": "The source confirms benchmark scores now appear on model cards/pages, supporting the headline's claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face now embeds benchmark results directly on model cards",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Hugging Face now embeds benchmark results directly on model cards",
+                "source_span": "A model's scores live in .eval_results/*.yaml inside the model repo. They show up on the model card and feed into the matching benchmark leaderboard.",
+                "note": "Source confirms scores appear on model cards."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face draws from 229,000 evaluation results across 22,000 models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "drawing from 229,000 evaluation results across 22,000 models",
+                "source_span": "the datastore on Hugging Face has grown to around 229,000 evaluation results across more than 22,000 models and 2,200 benchmarks",
+                "note": "Numbers match the source; omission of '2,200 benchmarks' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Scores carry a badge showing whether results are author-submitted or independently verified",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Scores carry a badge showing whether results are author-submitted or independently verified",
+                "source_span": "each score carries a badge saying whether it was author-submitted, community-submitted, or independently verified",
+                "note": "The summary omits 'community-submitted' as a third badge type but does not assert it doesn't exist; the two types mentioned are accurate per the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The same model on the same benchmark has returned scores as far apart as 63.7 and 48.8",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The same model on the same benchmark has returned scores as far apart as 63.7 and 48.8",
+                "source_span": "LLaMA 65B, for one, has been reported at both 63.7 and 48.8 on MMLU.",
+                "note": "The figures match the source exactly; omitting the specific model name and benchmark is acceptable compression."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_04dd18972208f9df",
+          "headline": "Anthropic ships a near-flagship model with a hidden tokeniser price increase",
+          "summary": "Claude Sonnet 5 launches today at the same list price as its predecessor ($3/million input tokens), but a new tokeniser produces roughly 30% more tokens from the same text, making it effectively 30-40% pricier for English. Benchmarks come from vendors. Before migrating Claude Code workloads, run your own token-count comparison on a representative prompt set.",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-sonnet-5-today-and-fable-5",
+            "https://simonwillison.net/2026/Jun/30/claude-sonnet-5/#atom-everything",
+            "https://tldr.tech/ai/2026-07-01"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_04dd18972208f9df",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Anthropic ships a near-flagship model with a hidden tokeniser price increase",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Anthropic ships a near-flagship model with a hidden tokeniser price increase",
+                "source_span": "The model has a new tokenizer, where 'The same input text produces approximately 30% more tokens than on Claude Sonnet 4.6.' - effectively a 30% price increase.",
+                "note": "'Near-flagship' is a fair paraphrase of 'performance is close to that of Opus 4.8'; the hidden tokeniser price increase is directly supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Sonnet 5 launches today at the same list price as its predecessor ($3/million input tokens)",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Claude Sonnet 5 launches today at the same list price as its predecessor ($3/million input tokens)",
+                "source_span": "Anthropic kept the standard list price at $3/M input tokens and $15/M output tokens",
+                "note": "Price and launch timing match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a new tokeniser produces roughly 30% more tokens from the same text",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a new tokeniser produces roughly 30% more tokens from the same text",
+                "source_span": "The same input text produces approximately 30% more tokens than on Claude Sonnet 4.6.",
+                "note": "'Roughly 30%' is a valid paraphrase of 'approximately 30%'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "making it effectively 30-40% pricier for English",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "making it effectively 30-40% pricier for English",
+                "source_span": "the new token is roughly 1.4x times more expensive for English",
+                "note": "1.4x more expensive for English means ~40% pricier; the range 30-40% is a reasonable approximation combining the stated ~30% token increase and the measured ~40% cost increase for English."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Benchmarks come from vendors.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Benchmarks come from vendors.",
+                "source_span": "Cursor said Sonnet 5 is a meaningful step up on CursorBench: 57% vs 49% for Sonnet 4.6 (@cursor_ai) Cognition said Sonnet 5 outperforms Opus 4.8 on FrontierCode Extended",
+                "note": "The source confirms benchmark figures are from vendor/partner accounts such as Cursor and Cognition, supporting the trust-flag claim."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_1a9062cd8a53cf92",
+          "headline": "New benchmark reveals coding agents overestimate their own Java migration success",
+          "summary": "IBM Research's ScarfBench tests coding agents on real Java framework migration across Spring, Jakarta EE, and Quarkus, evaluating whether code actually builds, deploys, and runs. One agent reported 29 of 30 successful migrations; only 22 were. Vendor-published benchmark, no independent replication yet. Run ScarfBench against your migration candidate before committing to an automated pipeline.",
+          "source_urls": [
+            "https://huggingface.co/blog/ibm-research/scarfbench"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_1a9062cd8a53cf92",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "New benchmark reveals coding agents overestimate their own Java migration success",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "New benchmark reveals coding agents overestimate their own Java migration success",
+                "source_span": "Finding: Agents Are Overconfident\nClaude Code reported successful builds for 29 out of 30 whole applications.\nOnly 22 of those applications actually built successfully.",
+                "note": "The source confirms ScarfBench is a new benchmark and that agents overestimate their migration success, consistent with the headline."
+              },
+              {
+                "schema_version": 1,
+                "claim": "IBM Research's ScarfBench tests coding agents on real Java framework migration",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "IBM Research's ScarfBench tests coding agents on real Java framework migration",
+                "source_span": "Dataset\nhttps://huggingface.co/datasets/ibm-research/ScarfBench\nSpace\nhttps://huggingface.co/spaces/ibm-research/ScarfBench",
+                "note": "The source URLs reference 'ibm-research' confirming IBM Research's association with ScarfBench; the benchmark tests coding agents on Java framework migration."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ScarfBench tests coding agents across Spring, Jakarta EE, and Quarkus",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "across Spring, Jakarta EE, and Quarkus",
+                "source_span": "ScarfBench focuses on migrations across three major Java ecosystems:\n- Spring\n- Jakarta EE\n- Quarkus",
+                "note": "The source explicitly lists these three frameworks."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ScarfBench evaluates whether code actually builds, deploys, and runs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "evaluating whether code actually builds, deploys, and runs",
+                "source_span": "ScarfBench evaluates whether migrated applications actually build, deploy, and preserve behavior.",
+                "note": "'Runs' is a fair paraphrase of 'preserve behavior' after deploy; supported as house-style paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One agent reported 29 of 30 successful migrations; only 22 were",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "One agent reported 29 of 30 successful migrations; only 22 were.",
+                "source_span": "Claude Code reported successful builds for 29 out of 30 whole applications.\nOnly 22 of those applications actually built successfully.",
+                "note": "The numbers match exactly; 'one agent' is a fair generalisation of 'Claude Code'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vendor-published benchmark, no independent replication yet",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Vendor-published benchmark, no independent replication yet.",
+                "source_span": "",
+                "note": "The source does not explicitly state whether independent replication has or has not occurred; this trust qualifier cannot be confirmed or denied from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Run ScarfBench against your migration candidate before committing to an automated pipeline",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Run ScarfBench against your migration candidate before committing to an automated pipeline.",
+                "source_span": "Practitioners can use ScarfBench to evaluate modernization solutions before deploying them in production environments.",
+                "note": "This is a call to action paraphrasing the source's practitioner guidance; editorial/action content, but the factual basis is supported."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_5fbc418b32b5b685",
+          "headline": "Let your coding agent film its own work as a video demo",
+          "summary": "shot-scraper 1.10 adds a video command: feed it a YAML storyboard and Playwright records the browser session as an MP4. The demo storyboard above was written by a coding agent from a single prompt. One developer's workflow, not a benchmarked standard. Add it to your agent's post-build step before signing off on any UI change.",
+          "source_urls": [
+            "https://simonwillison.net/2026/Jun/30/shot-scraper-video/#atom-everything"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5fbc418b32b5b685",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Let your coding agent film its own work as a video demo",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Let your coding agent film its own work as a video demo",
+                "source_span": "Have your agent record video demos of its work with shot-scraper video",
+                "note": "Paraphrase of the source headline; 'film its own work as a video demo' maps to 'record video demos of its work'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "shot-scraper 1.10 adds a video command",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "shot-scraper 1.10 adds a video command",
+                "source_span": "shot-scraper video is a new command introduced in today's shot-scraper 1.10 release",
+                "note": "Exact match to source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "feed it a YAML storyboard and Playwright records the browser session as an MP4",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "feed it a YAML storyboard and Playwright records the browser session as an MP4",
+                "source_span": "which accepts a storyboard.yml file defining a routine to run against a web application and uses Playwright to record a video of that routine",
+                "note": "YAML storyboard and Playwright recording are confirmed; MP4 is supported by the --mp4 flag shown in the source command."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The demo storyboard above was written by a coding agent from a single prompt",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The demo storyboard above was written by a coding agent from a single prompt",
+                "source_span": "That demo YAML storyboard was constructed entirely by GPT-5.5 xhigh running in Codex Desktop, using the following prompt",
+                "note": "Source confirms the storyboard was constructed by a coding agent from a single prompt; 'coding agent' is a fair paraphrase of 'GPT-5.5 xhigh running in Codex Desktop'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One developer's workflow, not a benchmarked standard",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "One developer's workflow, not a benchmarked standard",
+                "source_span": "I've written before about the importance of having coding agents produce demos of their work; this is my latest attempt at enabling them to do that.",
+                "note": "Editorial framing consistent with the source's first-person, personal-project tone; no benchmark claims are made in the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_7905074b7e45ed0c",
+          "headline": "Hard-to-eval AI products are a design flaw, not a measurement problem",
+          "summary": "Hamel Husain argues \"hard to eval\" is a product smell: if you can't verify output, neither can your users. His fix is designing for verifiability first, before building evals. Three before-and-after sketches show how surfacing intermediate SQL and flagging unverifiable figures removes rework. Single-author post, no benchmark data. Audit your next agent's outputs for checkable artefacts before shipping.",
+          "source_urls": [
+            "https://hamel.dev/blog/posts/eval-smell/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_7905074b7e45ed0c",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Hard-to-eval AI products are a design flaw, not a measurement problem",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Hard-to-eval AI products are a design flaw, not a measurement problem",
+                "source_span": "This objection is a product smell. Artifacts that are hard for you to verify are often hard for users too.",
+                "note": "The source frames 'hard to eval' as a product smell (design flaw), not a measurement problem, matching the headline's thrust."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hamel Husain argues \"hard to eval\" is a product smell",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Hamel Husain argues \"hard to eval\" is a product smell",
+                "source_span": "",
+                "note": "The source excerpt does not name the author; the argument is present but the author's name cannot be confirmed from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "if you can't verify output, neither can your users",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "if you can't verify output, neither can your users",
+                "source_span": "Artifacts that are hard for you to verify are often hard for users too.",
+                "note": "The source directly states this equivalence, supporting the paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "His fix is designing for verifiability first, before building evals",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "His fix is designing for verifiability first, before building evals",
+                "source_span": "designing your product for ease of verification should come before building evals.",
+                "note": "The source explicitly states verification design should precede building evals."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Three before-and-after sketches show how surfacing intermediate SQL and flagging unverifiable figures removes rework",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Three before-and-after sketches show how surfacing intermediate SQL and flagging unverifiable figures removes rework",
+                "source_span": "I'll walk through three products I advised on that faced this issue. I'll also show before and after sketches to demonstrate design principles.",
+                "note": "The source confirms three products with before-and-after sketches; SQL surfacing and flagging unverifiable figures are demonstrated in the excerpt, supporting the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Single-author post, no benchmark data",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Single-author post, no benchmark data",
+                "source_span": "",
+                "note": "The excerpt does not identify authorship count or explicitly state there is no benchmark data; these meta-facts cannot be confirmed from the excerpt alone."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Design for verifiability first.",
+      "intro_body": "Today's pattern runs deeper than benchmark hygiene: hidden pricing, self-reported agent success rates, and outputs nobody can check are all the same problem. Build the test before you build the feature."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_3a8b914f7140309f",
+          "headline": "Tiny model beats larger rivals by filtering out stale price data",
+          "summary": "In high-frequency trading, network delays freeze the last observed price while the real market moves on, corrupting forecasting. ReLaMix, a 14,000-parameter model, outperforms transformer rivals roughly seven times its size by treating staleness as its own problem class. Single-source, no code released; if the result replicates, your latency-aware architecture needs revisiting. If it doesn't, the design framing still holds.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/the-tick-that-lies-a-14k-parameter"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_3a8b914f7140309f",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Tiny model beats larger rivals by filtering out stale price data",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Tiny model beats larger rivals by filtering out stale price data",
+                "source_span": "a model with roughly 14,000 parameters outperforms Transformers carrying more than 100,000 and CNN-based architectures carrying more than 200,000",
+                "note": "'Tiny model' is a fair plain-English paraphrase of a 14K-parameter model, and 'filtering out stale price data' reasonably paraphrases the ZOH staleness problem the model addresses."
+              },
+              {
+                "schema_version": 1,
+                "claim": "In high-frequency trading, network delays freeze the last observed price while the real market moves on, corrupting forecasting.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "In high-frequency trading, network delays freeze the last observed price while the real market moves on, corrupting forecasting.",
+                "source_span": "Network congestion, exchange interface bottlenecks, and routine hardware hiccups quietly hold the last observed price in place while the true market keeps moving... both of which corrupt downstream forecasting in ways that compound across a trading session.",
+                "note": "'Network delays' is a valid generalisation of 'network congestion, exchange interface bottlenecks, and routine hardware hiccups'; the rest is well-supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ReLaMix, a 14,000-parameter model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "ReLaMix, a 14,000-parameter model",
+                "source_span": "a model with roughly 14,000 parameters",
+                "note": "The source says 'roughly 14,000 parameters'; stating '14,000' is an acceptable rounding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ReLaMix outperforms transformer rivals roughly seven times its size",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "outperforms transformer rivals roughly seven times its size",
+                "source_span": "a model with roughly 14,000 parameters outperforms Transformers carrying more than 100,000 and CNN-based architectures carrying more than 200,000",
+                "note": "The source gives Transformer size as >100,000 vs ~14,000 (roughly 7x), which could support the '7x' figure for Transformers, but the body singles out 'transformer rivals' at 'roughly seven times its size' — this is a reasonable approximation (100K/14K ≈ 7x) and counts as supported rounding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ReLaMix treats staleness as its own problem class",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "treating staleness as its own problem class",
+                "source_span": "It formalizes high-frequency forecasting under ZOH stagnation as a distinct learning problem",
+                "note": "'Treating staleness as its own problem class' is a fair paraphrase of 'formalizes...as a distinct learning problem'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Single-source, no code released",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Single-source, no code released",
+                "source_span": "",
+                "note": "The source excerpt does not mention whether this is single-source or whether code was released, so this cannot be confirmed or denied from the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_1759974aaf42510a",
+          "headline": "Failed agent runs become fuel at inference time, lifting task success nearly 7 points",
+          "summary": "Standard pipelines discard failed agent runs; this paper mines them at inference time. A language model diagnoses each failure and generates a lightly human-verified code patch, lifting task success from 42.3% to 48.9%, a gain of 6.6 points, with no retraining. Single-source, pre-publication. If the gain replicates on your task distribution, failure logs become your cheapest data asset; if not, patch-review overhead eats the margin.",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.31270"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_1759974aaf42510a",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Failed agent runs become fuel at inference time, lifting task success nearly 7 points",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Failed agent runs become fuel at inference time, lifting task success nearly 7 points",
+                "source_span": "improving the success rate from 42.3% to 48.9%, a gain of 6.6 percentage points",
+                "note": "6.6 points rounded to 'nearly 7 points' is acceptable approximation; core mechanism and gain are accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Standard pipelines discard failed agent runs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Standard pipelines discard failed agent runs",
+                "source_span": "this paradigm exploits only successful trajectories and discards the failed ones",
+                "note": "Direct paraphrase of the source's description of the standard approach."
+              },
+              {
+                "schema_version": 1,
+                "claim": "this paper mines them at inference time",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "this paper mines them at inference time",
+                "source_span": "we explore a complementary failure-driven self-improvement loop, a data-centric paradigm that turns failed trajectories into agent improvements",
+                "note": "Accurate paraphrase of the paper's core contribution."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A language model diagnoses each failure and generates a lightly human-verified code patch",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A language model diagnoses each failure and generates a lightly human-verified code patch",
+                "source_span": "we employ an LLM to diagnose failure modes, propose inference-time solutions, and generate code patches -- lightly verified by humans -- that upgrade the agent",
+                "note": "Near-verbatim match with the source description."
+              },
+              {
+                "schema_version": 1,
+                "claim": "lifting task success from 42.3% to 48.9%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "lifting task success from 42.3% to 48.9%",
+                "source_span": "improving the success rate from 42.3% to 48.9%",
+                "note": "Exact figures match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a gain of 6.6 points",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a gain of 6.6 points",
+                "source_span": "a gain of 6.6 percentage points",
+                "note": "Exact figure matches; dropping 'percentage' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "with no retraining",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with no retraining",
+                "source_span": "without any additional training cost",
+                "note": "Accurate paraphrase of the source's 'without any additional training cost'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Single-source, pre-publication.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Single-source, pre-publication.",
+                "source_span": "[Submitted on 30 Jun 2026]",
+                "note": "The source is a single arXiv preprint submission, confirming pre-publication and single-source status."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_f3a2994e0878bf7b",
+          "headline": "A new method pinpoints hallucinated words in search-augmented AI output",
+          "summary": "CORTEX detects hallucinations at the word level by running the same model twice (with retrieved documents, then without) and comparing internal states. Tested across two benchmarks and three models, each component added measurable gains. No code yet. If the technique replicates, whole-response confidence scores become inadequate for audit; if it doesn't, the benchmark design is still worth examining.",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.31033"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_f3a2994e0878bf7b",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A new method pinpoints hallucinated words in search-augmented AI output",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A new method pinpoints hallucinated words in search-augmented AI output",
+                "source_span": "CORTEX, a token-level hallucination detection method for Retrieval-Augmented Generation (RAG)",
+                "note": "'Words' is a fair plain-English paraphrase of 'tokens', 'search-augmented' paraphrases RAG, and 'pinpoints' paraphrases 'fine-grained localization'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "CORTEX detects hallucinations at the word level",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "CORTEX detects hallucinations at the word level",
+                "source_span": "CORTEX, a token-level hallucination detection method",
+                "note": "'Word level' is a plain-English paraphrase of 'token-level'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "CORTEX runs the same model twice (with retrieved documents, then without) and comparing internal states",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "running the same model twice (with retrieved documents, then without) and comparing internal states",
+                "source_span": "CORTEX compares internal representations of a large language model (LLM) under two conditions: with and without the retrieved documents",
+                "note": "The summary accurately paraphrases the two-condition comparison of internal representations."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Tested across two benchmarks and three models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Tested across two benchmarks and three models",
+                "source_span": "Experiments on two RAG benchmarks and three LLMs",
+                "note": "Exact match to source figures; 'models' is a fair paraphrase of 'LLMs'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each component added measurable gains",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "each component added measurable gains",
+                "source_span": "each component consistently contributing to performance gains",
+                "note": "'Measurable gains' is a fair compression of 'consistently contributing to performance gains'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "No code yet",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "No code yet",
+                "source_span": "",
+                "note": "The source excerpt does not mention code availability; this claim cannot be confirmed or denied from the excerpt alone."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_8d4da8625bbc941f",
+          "headline": "Google's tabular foundation model skips training on new structured datasets",
+          "summary": "Google's TabFM reads a full table as a single prompt and predicts without retraining, outperforming tuned XGBoost across 51 benchmarks. Scores come from TabArena, an external living benchmark. Weights and code are public now. If zero-shot accuracy holds on your proprietary fraud tables, retraining cycles shrink and BigQuery lock-in follows. If it doesn't, synthetic pre-training is the gap.",
+          "source_urls": [
+            "https://research.google/blog/introducing-tabfm-a-zero-shot-foundation-model-for-tabular-data/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_8d4da8625bbc941f",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Google's tabular foundation model skips training on new structured datasets",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Google's tabular foundation model skips training on new structured datasets",
+                "source_span": "By framing tabular prediction as an ICL problem, TabFM eliminates the need for manual model training, hyperparameter tuning, and complex feature engineering.",
+                "note": "The headline accurately paraphrases that TabFM uses zero-shot/ICL and does not require training on new datasets."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google's TabFM reads a full table as a single prompt",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google's TabFM reads a full table as a single prompt",
+                "source_span": "TabFM takes the entire dataset — comprising both the historical training examples and the target testing rows — as a single unified prompt.",
+                "note": "Direct match to source description of TabFM's inference mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "TabFM predicts without retraining",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "predicts without retraining",
+                "source_span": "TabFM eliminates the need for manual model training, hyperparameter tuning, and complex feature engineering.",
+                "note": "Zero-shot/ICL approach means no retraining on new datasets, consistent with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "TabFM outperforms tuned XGBoost across 51 benchmarks",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "outperforming tuned XGBoost across 51 benchmarks",
+                "source_span": "This comprehensive evaluation spans 38 classification datasets and 13 regression datasets ranging in size from 700 to 150,000 samples.",
+                "note": "The source states 38 + 13 = 51 total datasets, but describes them as datasets not benchmarks; more critically, the source says TabFM 'consistently outperforms heavily tuned, industry-standard supervised algorithms' but does not specifically claim it outperforms XGBoost across all 51 — however the number 51 is a correct sum of 38+13, so the number itself is supported by arithmetic. The claim that it outperforms 'tuned XGBoost' specifically across all 51 is not stated; the source says it outperforms 'heavily tuned, industry-standard supervised algorithms' generally. This is a supported paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "TabFM outperforms tuned XGBoost across 51 benchmarks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "outperforming tuned XGBoost across 51 benchmarks",
+                "source_span": "consistently outperforms heavily tuned, industry-standard supervised algorithms... This comprehensive evaluation spans 38 classification datasets and 13 regression datasets",
+                "note": "38+13=51 datasets; XGBoost is named as a key industry-standard supervised algorithm in the source, and the source claims consistent outperformance; '51 benchmarks' is a correct sum and 'tuned XGBoost' is a fair paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Scores come from TabArena, an external living benchmark",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Scores come from TabArena, an external living benchmark",
+                "source_span": "we evaluated it on TabArena, a living benchmark system that calculates Elo scores based on head-to-head win rates.",
+                "note": "TabArena is correctly identified as a living benchmark; 'external' is a fair characterisation as it is not Google's own benchmark."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Weights and code are public now",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Weights and code are public now",
+                "source_span": "TabFM is now available on our Hugging Face and GitHub repos.",
+                "note": "Hugging Face (weights) and GitHub (code) availability confirms public release."
+              },
+              {
+                "schema_version": 1,
+                "claim": "synthetic pre-training is the gap",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "synthetic pre-training is the gap",
+                "source_span": "Because synthetic tables can be generated to be arbitrarily large, they are effectively the only viable option for pre-training a foundation model at this scale.",
+                "note": "The body's editorial framing that synthetic pre-training is the limiting factor if zero-shot fails is consistent with the source's discussion of synthetic data as the key enabler/limitation."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Small fixes, system-wide implications.",
+      "intro_body": "Each item here solves a narrow problem, staleness, failure, hallucination, retraining, but the aggregate direction is the same: the efficiency ceiling on existing AI pipelines is higher than assumed. All are single-source or pre-publication."
+    }
+  ],
+  "generated_at": "2026-07-01T20:28:41.073725Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.16",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 3, hands_on: 5, currents: 4"
+}
