@@ -91,10 +91,23 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.16"
+SUMMARISE_PROMPT_VERSION = "v0.17"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.15-2026-06-03``. v0.15 (Headlines that land + wider excerpt
-cap):
+``summarise-v0.17-2026-07-04``. v0.17 (Trust hedges are factual claims):
+  - New HONESTY rule + house-style guardrail: the verifier caught the
+    summariser INVENTING trust hedges ("self-reported", "no independent
+    replication") the source never supports -- three times in three days
+    (2026-07-02 crypto-risk; 2026-07-04 Office-docs, both drafts;
+    2026-07-04 Reverse-engineering-Claude-Code Pulse). Root cause: the
+    "THREE THINGS THAT MUST SURVIVE" block rewards the trust flag as a
+    style move ("judgement is the product") with no constraint that the
+    hedge be source-supported, so the model applied it decoratively.
+    Fix asserts trust hedges are FACTUAL CLAIMS about sourcing -- allowed
+    only when the source explicitly supports the characterisation -- with
+    three negative examples drawn from the real failures. Added next to
+    the HONESTY rule (instructions block) and the trust-flag teaching
+    (house-style block) so the reward and the constraint co-locate.
+v0.15 (Headlines that land + wider excerpt cap):
   - Three new HEADLINE RULES inlined into every per-story summarise prompt
     (head-tier and currents-tier alike; not Pulse-specific). (1) Name the
     artifact when the source names one; do not invent one when it doesn't.
@@ -631,7 +644,12 @@ THREE THINGS THAT MUST SURVIVE EVERY EDIT:
   2. THE TRUST FLAG when warranted. Say what's flimsy: "self-reported,"
      "no code yet," "thin sourcing, one Reddit thread," "vendor-supplied
      benchmark." Never drop this when the story warrants it -- judgement
-     is the product.
+     is the product. BUT a trust flag is a FACTUAL CLAIM about the
+     sourcing: assert "self-reported" / "vendor-supplied" / "single-
+     source" / "no independent replication" ONLY when the source
+     explicitly supports it. If the source doesn't state its sourcing
+     status, drop the flag -- never decorate a summary with an
+     unsupported hedge.
   3. A RELEVANCE LINE tied to a DECISION, not a department or group.
        Group (weak):     "useful for teams managing vendor risk"
        Decision (strong): "useful when you're renegotiating a closed-
@@ -2224,6 +2242,19 @@ ITEMS:
   licence, or artefact (weights / code / demo) is NOT stated in the
   source, do NOT assert it. Say what is genuinely unknown ("benchmarks
   not yet published", "licence not specified") rather than inventing.
+- TRUST HEDGES ARE FACTUAL CLAIMS. "Self-reported", "vendor-supplied",
+  "single-source", "no independent replication", "pre-peer-review"
+  assert something about the SOURCING. Use them ONLY when the source
+  explicitly supports that characterisation (the paper says the
+  benchmarks are its own; the post is the vendor's own numbers). If the
+  sourcing status is not stated, OMIT the hedge -- or phrase it as an
+  absence you can stand behind from metadata you DO have ("one research
+  team's analysis" when the cluster is a single source). Do not
+  decorate. Wrong: "self-reported" when the source describes scoring by
+  an ensemble of LLM judges. Wrong: "no independent replication" when
+  the paper triangulates against two independent systems. Wrong:
+  "benchmarks are self-reported" when the source describes experiments
+  on real data with no such framing.
 - Direction and finance lens live in the prose -- NEVER labels.
 - If callback context is present and the connection is tight, weave a
   brief reference in ("last week we flagged X; today's update is..."). If
