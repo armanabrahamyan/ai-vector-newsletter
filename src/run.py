@@ -28,7 +28,7 @@ from typing import Any, Callable, Iterable, Optional
 
 import typer
 
-from src import paths
+from src import llm_usage, paths
 
 # ---------------------------------------------------------------------------
 # Stage registry (staging-pipeline only). Release / unrelease are separate
@@ -398,6 +398,10 @@ def _run_stage(name: str, run_date: _dt.date) -> tuple[bool, str]:
     """
     _LOG.info("--- stage: %s ---", name)
     handler = _STAGE_HANDLERS[name]
+    # Tag any LLM calls this stage makes so src/llm_usage.py's accumulator
+    # can attribute tokens/cost to the right stage in the end-of-run summary.
+    # Cheap no-op for stages that never call the LLM (fetch, cluster, render).
+    llm_usage.set_stage(name)
     t0 = time.monotonic()
     try:
         summary = handler(run_date)
@@ -535,6 +539,10 @@ def _run_pipeline(
         _dry_run_staging(run_date, stages)
         return 0
 
+    # Fresh accumulator per run -- a re-run in the same process (tests, or a
+    # long-lived shell) must not carry over a prior run's token counts.
+    llm_usage.reset()
+
     # The env validator hard-fails when LLM stages can't run. Both ``review``
     # and ``verify`` are failure-soft -- a misconfigured env should still let
     # render+release ship -- so we skip the strict check for both when they
@@ -587,10 +595,12 @@ def _run_pipeline(
             review_summary = message
 
     elapsed = time.monotonic() - wall_t0
+    llm_usage_snapshot = llm_usage.snapshot()
     _print_staging_summary(
         run_date, stages_succeeded, failed_stage, failure_reason, elapsed,
         verify_summary=verify_summary,
         review_summary=review_summary,
+        llm_usage_snapshot=llm_usage_snapshot,
     )
     # Duplicate-risk guard: fires when this run (re)built the issue and
     # earlier issues are staged-but-unreleased -- dedup was blind to them,
@@ -601,7 +611,10 @@ def _run_pipeline(
     # Council Phase-1: append a metrics line for trend observation. Best-
     # effort -- never fails the run on logging error.
     try:
-        _append_run_metrics(run_date, stages_succeeded, failed_stage, elapsed)
+        _append_run_metrics(
+            run_date, stages_succeeded, failed_stage, elapsed,
+            llm_usage_snapshot=llm_usage_snapshot,
+        )
     except Exception as exc:  # noqa: BLE001
         _LOG.warning("metrics: failed to append run-metrics log: %s", exc)
     return 0 if failed_stage is None else 1
@@ -612,6 +625,8 @@ def _append_run_metrics(
     stages_succeeded: list[str],
     failed_stage: str | None,
     elapsed_s: float,
+    *,
+    llm_usage_snapshot: dict[str, Any] | None = None,
 ) -> None:
     """Append a single JSONL record to ``data/metrics_log.jsonl`` after a
     pipeline run. Phase-1 observability per the council brainstorm.
@@ -627,6 +642,7 @@ def _append_run_metrics(
         "stages_succeeded": stages_succeeded,
         "failed_stage": failed_stage,
         "elapsed_s": round(elapsed_s, 1),
+        "llm_usage": llm_usage_snapshot if llm_usage_snapshot is not None else llm_usage.snapshot(),
     }
 
     staging_dir = paths.staging_dir(run_date)
@@ -805,6 +821,7 @@ def _print_staging_summary(
     *,
     verify_summary: str | None = None,
     review_summary: str | None = None,
+    llm_usage_snapshot: dict[str, Any] | None = None,
 ) -> None:
     mm = int(elapsed_seconds // 60)
     ss = int(elapsed_seconds % 60)
@@ -838,6 +855,14 @@ def _print_staging_summary(
         _LOG.info("verify: %s", verify_summary)
     if review_summary is not None:
         _LOG.info("review: %s", review_summary)
+    # Cost line -- last, so it's the final thing on screen. Silent (no line
+    # at all) for stage subsets that never touch the LLM (e.g. fetch/cluster/
+    # render only).
+    usage_line = llm_usage.format_summary_line(
+        llm_usage_snapshot, stage_order=STAGE_ORDER
+    )
+    if usage_line is not None:
+        _LOG.info(usage_line)
 
 
 _WARN_RULE = "!" * 60
