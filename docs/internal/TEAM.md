@@ -1,7 +1,8 @@
 # AI Vector — Team Working Agreements
 
 *"Today's AI, with a heading."* — Author: **Arman**. Project plan:
-[`/PLAN.md`](../PLAN.md). Agent definitions: [`/.claude/agents/`](../.claude/agents/).
+[`PLAN.md`](PLAN.md) (this directory). Agent definitions:
+[`/.claude/agents/`](../../.claude/agents/).
 
 This document tells a new contributor, in five minutes, **who decides what
 and where the seams are**. If something here disagrees with PLAN.md, PLAN.md
@@ -13,12 +14,19 @@ wins; open a PR to fix this file.
 
 **The team builds the engine. The engine produces the newsletter.**
 
-The pipeline (`src/fetch.py` → `src/cluster.py` → `src/rank.py` →
-`src/summarise.py` → `src/render.py`, wired by `src/run.py` and triggered
-daily by `.github/workflows/daily.yml`) is the engine. Once v0.1 ships, the
+The pipeline (`fetch → cluster → rank → summarise → verify → render →
+review`, i.e. `src/fetch.py` → `src/cluster.py` → `src/rank.py` →
+`src/summarise.py` → `src/verify.py` → `src/render.py` → `src/review.py`,
+wired by `src/run.py`'s `aiv` CLI and triggered
+daily by `.github/workflows/daily.yml`) is the engine. The
 engine runs every morning **without any agent in the runtime loop** — Python
-code + LLM API calls (LiteLLM/Bedrock) inside `rank.py` and `summarise.py`
-produce `data/YYYY-MM-DD/issue.json` and a previewable HTML.
+code + LLM API calls inside `rank.py`, `summarise.py`, `verify.py`, and
+`review.py`
+produce `data/staging/<date>/issue.json` and a previewable HTML at
+`docs/staging/<date>.html`. Two stages are **advisory** and never block
+the pipeline or the release: `verify` (factual-accuracy flags, badges in
+the staging preview only) and `review` (automated editorial verdict in
+`review.md`).
 
 **Arman is the only required participant in the daily loop.** He ratifies;
 Release pushes; Pages serves.
@@ -48,9 +56,11 @@ helping Arman ratify, you're out of scope.
 | **Architect & Tech Lead** | Opus | Owns contracts, repo structure, DESIGN.md, archive schema. The buck stops here on "does the shape make sense." |
 | **Source Engineer** | Sonnet | Owns `config/sources.yaml`, `src/fetch.py`, source-health tracking. Subscribe, don't scrape. |
 | **Retrieval Engineer** | Sonnet | Owns `src/cluster.py`. Makes 10 feeds not produce 10 copies of one story — today or across the last 14 days. |
-| **LLM Engineer** | Opus | Owns `src/rank.py`, `src/summarise.py`, the prompts, and the rubric content. Implements voice. |
-| **Eval Engineer** | Sonnet (independent) | Owns `evals/`. Hard veto on regressions to dedup, ranking, voice, module integrity, drift. |
-| **Editor** | Opus | Owns `docs/EDITORIAL.md` and voice labels. Managing-editor assistant — Arman ratifies every issue. |
+| **LLM Engineer** | Opus | Owns `src/rank.py`, `src/summarise.py`, `src/verify.py` (advisory factual verifier), `src/review.py` (advisory editorial pass), the prompts (rank/summarise/verify/review prompt versions), and the rubric content. Implements voice. |
+| **Eval Engineer** | Sonnet (independent) | Owns `evals/`. Hard veto on regressions to dedup, ranking, voice, module integrity, drift, verifier calibration (Eval 7). |
+| **Test Engineer** | Sonnet (independent) | Owns `tests/` in full, including `tests/CONVENTIONS.md`. Hard veto on test PRs — keeps the unit-test suite load-bearing, not performative. Files bugs in `src/`; never fixes them. |
+| **Editor** | Opus | Owns `EDITORIAL.md` (repo root) and voice labels. Managing-editor assistant — Arman ratifies every issue. |
+| **Experience Designer** | Opus | Owns `docs/internal/READING_EXPERIENCE.md`, presentation specs, text-unit patterns, and product microcopy. The reader's advocate — how the issue reads, scans, converses, and feels. Specifies; Release Engineer implements; Editor keeps story prose; never touches code. |
 | **Release Engineer** | Sonnet | Owns `src/render.py`, templates, workflow, GitHub Pages, §7 day-one validation, liaison drafting. |
 
 No Haiku in v0. No sub-agent spawning in v0.
@@ -61,8 +71,8 @@ No Haiku in v0. No sub-agent spawning in v0.
 
 | Domain | Decides | Consults | Informed |
 |---|---|---|---|
-| Pydantic contracts (Item, Cluster, RankedStory, Issue, archive) | Architect | All pipeline engineers, Eval | Editor |
-| `data/YYYY-MM-DD/` schema | Architect | All who read/write it | All |
+| Pydantic contracts (Item, Cluster, RankedStory, Issue, verification models, archive) | Architect | All pipeline engineers, Eval | Editor |
+| Archive schema (`data/staging/` + `data/released/`) | Architect | All who read/write it | All |
 | Repo structure, module boundaries | Architect | Module owners | All |
 | Source list (`sources.yaml`), trust weights | Source | Editor, LLM Engineer | Eval |
 | Embedding model, cluster thresholds | Retrieval | Architect (availability), Eval | LLM Engineer |
@@ -70,8 +80,11 @@ No Haiku in v0. No sub-agent spawning in v0.
 | LLM model per stage | LLM Engineer | Architect, Arman (cost) | Eval |
 | Eval rubric mechanics, harness | Eval | Editor (voice rubric co-dev) | All |
 | Voice itself | **Arman** | Editor proposes, LLM Engineer implements | All |
-| Per-issue release | **Arman** (runs `python -m src.run --release`) | Editor flags tradeoffs | Release Engineer (renders + archives + appends URLs) |
-| Template / layout / CSS | Release | Editor (visual voice) | Architect |
+| Per-issue release | **Arman** (runs `aiv release`) | Editor flags tradeoffs; advisory verify + review verdicts inform | Release Engineer (renders + archives + appends URLs) |
+| Verify prompt + calibration thresholds | LLM Engineer | Eval (Eval 7 gates) | Editor, Arman |
+| Test conventions (`tests/CONVENTIONS.md`) | Test Engineer | Module engineers (they write module tests) | All |
+| Reading experience / presentation specs | Experience Designer (proposes) | Release (implements), Editor (prose stays theirs) | Arman ratifies visible changes |
+| Template / layout / CSS | Release | Experience Designer (specs), Editor (visual voice) | Architect |
 | `daily.yml`, Pages, deployment | Release | Architect | Arman |
 | §7 internal-platform asks | Release **drafts** | Arman **sends** | Architect |
 | Adding/removing a source | Source | Editor, LLM Engineer | Eval |
@@ -80,9 +93,13 @@ No Haiku in v0. No sub-agent spawning in v0.
 
 **Veto powers:**
 - **Eval Engineer — hard veto** on PRs touching `src/cluster.py`,
-  `src/rank.py`, `src/summarise.py`, `config/rubric.yaml`, and LLM
-  Engineer's prompts. Mechanism: CI runs the harness; non-zero exit blocks
-  merge.
+  `src/rank.py`, `src/summarise.py`, `src/verify.py`,
+  `config/rubric.yaml`, and LLM
+  Engineer's prompts. Mechanism: CI runs the harness (`aiv eval`);
+  non-zero exit blocks merge.
+- **Test Engineer — hard veto** on PRs touching anything under `tests/`.
+  Mechanism: `tests/CONVENTIONS.md` compliance review; the suite's green
+  bar in CI.
 - **Architect — required reviewer** on any PR touching pydantic models,
   archive schema, or a module's public interface.
 - **Editor — labelling authority** on voice. Labels accumulate in
@@ -90,8 +107,8 @@ No Haiku in v0. No sub-agent spawning in v0.
   them. Editor does not auto-block merges (Eval's rubric does, once
   voice-adherence is wired in).
 - **Arman — release on every daily issue.** Nothing reaches
-  `docs/index.html` or `data/published_urls.txt` without `python -m
-  src.run --release`. Staging drafts may come and go; canonical only
+  `docs/index.html` or `data/published_urls.txt` without `aiv release`.
+  Staging drafts may come and go; the released archive only
   grows when Arman says so.
 
 ---
@@ -101,45 +118,66 @@ No Haiku in v0. No sub-agent spawning in v0.
 ```
 ┌──────────────────┐
 │ Source Engineer  │  reads:  config/sources.yaml
-│  src/fetch.py    │  writes: data/YYYY-MM-DD/items.jsonl
-└────────┬─────────┘          data/YYYY-MM-DD/source_health.json
+│  src/fetch.py    │  writes: data/staging/<date>/items.jsonl
+└────────┬─────────┘          data/staging/<date>/source_health.json
          │ items.jsonl
          ▼
-┌──────────────────┐  reads:  data/YYYY-MM-DD/items.jsonl
-│ Retrieval Eng.   │          data/(last 14 days)/clusters.jsonl  ← cross-time dedup
-│  src/cluster.py  │  writes: data/YYYY-MM-DD/clusters.jsonl
-└────────┬─────────┘
+┌──────────────────┐  reads:  data/staging/<date>/items.jsonl
+│ Retrieval Eng.   │          data/released/(last 14d)/clusters.jsonl + centroids  ← cross-time dedup
+│  src/cluster.py  │  writes: data/staging/<date>/clusters.jsonl
+└────────┬─────────┘          data/staging/<date>/embeddings/centroids.npz
          │ clusters.jsonl
          ▼
-┌──────────────────┐  reads:  data/YYYY-MM-DD/clusters.jsonl
-│ LLM Engineer     │          data/(last 14 days)/issue.json     ← callbacks, direction
-│  src/rank.py     │          data/(last 14 days)/ranked.jsonl
-│  src/summarise.py│  writes: data/YYYY-MM-DD/ranked.jsonl
-└────────┬─────────┘          data/YYYY-MM-DD/issue.json
-         │ issue.json (draft)
+┌──────────────────┐  reads:  data/staging/<date>/clusters.jsonl
+│ LLM Engineer     │          data/released/(last 14d)/issue.json   ← callbacks, direction
+│  src/rank.py     │          data/released/(last 14d)/ranked.jsonl
+│  src/summarise.py│  writes: data/staging/<date>/ranked.jsonl
+│  src/verify.py   │          data/staging/<date>/issue.json
+│                  │          data/staging/<date>/source_excerpts.jsonl (staging-only)
+│                  │          data/staging/<date>/verify.json  ← ADVISORY: factual flags,
+└────────┬─────────┘          never blocks release; badges in staging preview only
+         │ issue.json (draft) + advisory verify flags
          ▼
-┌──────────────────┐  reads:  data/YYYY-MM-DD/issue.json + ranked.jsonl
-│ Editor           │          docs/EDITORIAL.md, past issue.json files
-│ (assistant)      │  writes: evals/voice/YYYY-MM-DD.labels.yaml
-└────────┬─────────┘          daily editorial note for Arman
+┌──────────────────┐  render (staging) → docs/staging/<date>.html
+│ render + review  │  review (ADVISORY, Editor persona via src/review.py)
+│ (engine stages)  │  writes: data/staging/<date>/review.md (verdict for Arman)
+└────────┬─────────┘
+         │ staging preview + review verdict
+         ▼
+┌──────────────────┐  reads:  data/staging/<date>/issue.json + ranked.jsonl + verify.json
+│ Editor           │          EDITORIAL.md, past released issue.json files
+│ (assistant,      │  writes: evals/voice/YYYY-MM-DD.labels.yaml
+│  optional)       │          daily editorial note for Arman
+└────────┬─────────┘
          │ flagged tradeoffs, Pulse proposal
          ▼
 ┌──────────────────┐
-│   Arman          │  ratifies the issue (per-issue, daily)
+│   Arman          │  ratifies the issue (per-issue, daily): runs `aiv release`
 │   (human gate)   │
 └────────┬─────────┘
-         │ ratified
+         │ released
          ▼
-┌──────────────────┐  reads:  ratified data/YYYY-MM-DD/issue.json
-│ Release Engineer │  writes: docs/index.html
-│  src/render.py   │          docs/archive/YYYY-MM-DD.html
-│  .github/...     │  commits & pushes; GitHub Pages serves
-└──────────────────┘
+┌──────────────────┐  release_promote: data/staging/<date>/ → data/released/<date>/
+│ Release Engineer │  (incl. verify.json), assigns issue_number, appends
+│  src/render.py   │  data/published_urls.txt
+│  .github/...     │  writes: docs/index.html + docs/released/<date>.html (no badges)
+└──────────────────┘  commits & pushes; GitHub Pages serves
 
       ╔════════════════════════════════════════════════════════╗
       ║ Eval Engineer (independent) — reads everything in      ║
       ║ data/, src/, config/. Writes only to evals/ and        ║
       ║ derived eval sidecars. Hard-veto gate at PR time.      ║
+      ╚════════════════════════════════════════════════════════╝
+
+      ╔════════════════════════════════════════════════════════╗
+      ║ Test Engineer (independent) — owns tests/ in full.     ║
+      ║ Hard veto on test PRs; files (never fixes) src/ bugs.  ║
+      ╚════════════════════════════════════════════════════════╝
+
+      ╔════════════════════════════════════════════════════════╗
+      ║ Experience Designer — reads staged/released HTML;      ║
+      ║ writes READING_EXPERIENCE.md + presentation specs      ║
+      ║ (Release implements; Editor keeps story prose).        ║
       ╚════════════════════════════════════════════════════════╝
 
       ╔════════════════════════════════════════════════════════╗
@@ -158,7 +196,7 @@ artifact's pydantic shape, downstream blows up loudly — not silently.
 
 ### Phase 0 kickoff (one-off, before any pipeline code)
 - **Owner:** Architect.
-- **Deliverables:** `docs/DESIGN.md` (contracts written out), first cut of
+- **Deliverables:** `docs/internal/DESIGN.md` (contracts written out), first cut of
   `config/sources.yaml` (Source), first cut of `config/rubric.yaml` (LLM
   Engineer, reviewed by Editor + Eval), README with Arman as author.
 - **In parallel:** Release Engineer drafts the §7 asks; Arman sends them.
@@ -173,32 +211,39 @@ artifact's pydantic shape, downstream blows up loudly — not silently.
 ### Eval gate (continuous, in CI)
 - **Owner:** Eval Engineer.
 - **Trigger:** every PR touching gated paths (cluster.py, rank.py,
-  summarise.py, rubric.yaml, prompts).
-- **Mechanism:** `python -m evals.run_evals` runs on PR. Non-zero exit
-  blocks merge. Soft gates rot; this one doesn't.
+  summarise.py, verify.py, rubric.yaml, prompts).
+- **Mechanism:** the harness (`aiv eval` / `python -m evals.run_evals`)
+  runs on PR. Non-zero exit blocks merge. Soft gates rot; this one doesn't.
 
 ### Daily draft loop (the daily heartbeat)
-- **Trigger:** engine produces `data/staging/YYYY-MM-DD/issue.json` and a
-  preview HTML at `docs/preview/<date>.html`.
+- **Trigger:** engine produces `data/staging/<date>/issue.json`, the
+  advisory `verify.json` + `review.md` verdicts, and a preview HTML at
+  `docs/staging/<date>.html` (advisory factual-flag badges visible in the
+  preview only).
 - **Default flow:** engine writes staging draft → **Arman** reviews preview
-  → **Arman** runs `python -m src.run --release` → Release promotes staging
-  to canonical, assigns `issue_number`, ships to `docs/index.html`,
-  archives, appends URLs to `data/published_urls.txt`.
+  (plus the verify/review advisory verdicts printed at end of run, and the
+  LLM cost line) → **Arman** runs `aiv release` → Release promotes staging
+  to `data/released/<date>/` (including `verify.json`), assigns
+  `issue_number`, ships to `docs/index.html` +
+  `docs/released/<date>.html`, appends URLs to `data/published_urls.txt`.
 - **Optional editorial pass:** Arman may invoke the **Editor** agent
   between engine output and his ratification. Editor reads the staging
   draft, labels off-voice candidates, flags tradeoffs, proposes The Pulse.
-  Editor never auto-releases; Arman runs `--release` himself.
+  Editor never auto-releases; Arman runs `aiv release` himself.
 - **Experimentation:** Arman re-runs the pipeline freely. Same-day re-runs
-  overwrite `data/staging/<date>/` atomically; nothing touches canonical
-  (`data/<date>/`) or `data/published_urls.txt` until `--release`.
+  overwrite `data/staging/<date>/` atomically; nothing touches the released
+  archive (`data/released/<date>/`) or `data/published_urls.txt` until
+  `aiv release`.
   Cross-time dedup, callbacks, and the URL exclusion index all read
-  canonical only, so staging churn is invisible to tomorrow's run.
+  released only, so staging churn is invisible to tomorrow's run.
 - **Cutoff:** if Arman hasn't released by the configured cutoff
-  (operationally: he just hasn't run `--release`), yesterday's canonical
+  (operationally: he just hasn't run `aiv release`), yesterday's released
   issue stays live (with its "as of" date). No silent skips. A staging
   draft that never gets released is fine -- it stays in
   `data/staging/<date>/` as evidence of the attempt and gets overwritten
-  next time the engine runs for that date.
+  next time the engine runs for that date. (`run.py` warns loudly when
+  earlier issues sit staged-but-unreleased: dedup couldn't see them, so a
+  later issue risks repeating their stories.)
 
 ### Voice review (weekly, lightweight — changed shape, see below)
 - **Owner:** Editor, with Eval Engineer + LLM Engineer.
@@ -243,30 +288,34 @@ artifact's pydantic shape, downstream blows up loudly — not silently.
 
 ---
 
-## Archive — `data/YYYY-MM-DD/`
+## Archive — `data/staging/<date>/` and `data/released/<date>/`
 
 Locked for v0: **JSON-per-day, no SQLite.** If query patterns warrant
 SQLite later, a lazy `src/index.py` builds it from JSONL on demand;
 Architect authorises.
 
-> **Two archive states (staging vs canonical).** The table below describes
-> the **canonical** archive at `data/<date>/` -- the released, immutable
-> record. Every file in the table also lives, with the same shape, under
+> **Two archive states (staging vs released).** The table below describes
+> the **released** archive at `data/released/<date>/` -- the canonical,
+> immutable record. Every promoted file in the table also lives, with the
+> same shape, under
 > `data/staging/<date>/` while the engine is iterating on a draft. Default
-> `python -m src.run` writes to staging; `python -m src.run --release`
-> promotes staging to canonical, assigns `Issue.issue_number`, and
+> `aiv run` writes to staging; `aiv release`
+> promotes staging to released, assigns `Issue.issue_number`, and
 > appends URLs to `data/published_urls.txt`. Cross-time dedup,
 > callbacks, the URL exclusion index, and the eval harness all read
-> **canonical only** -- staging is invisible to history. See DESIGN.md
+> **released only** -- staging is invisible to history. See DESIGN.md
 > "Archive: staging vs canonical" for the full state model.
 
 | File | Writer | Schema owner | Read by |
 |---|---|---|---|
 | `items.jsonl` | Source Engineer | Architect | Retrieval, Eval, Release (provenance views) |
 | `source_health.json` | Source Engineer | Architect | Eval, Release, Source (trust-weight decay) |
-| `clusters.jsonl` | Retrieval Engineer | Architect | LLM Engineer (current + last 14 days), Eval |
+| `clusters.jsonl` (+ `embeddings/centroids.npz`) | Retrieval Engineer | Architect | LLM Engineer (current + last 14 days), Retrieval (cross-time dedup), Eval |
 | `ranked.jsonl` | LLM Engineer | Architect | Editor, Eval, Release (archive views) |
-| `issue.json` | LLM Engineer (staging); `src/run.py --release` (canonical, assigns `issue_number`) | Architect | Editor, Arman, Release, Eval, LLM Engineer (callbacks -- canonical only) |
+| `issue.json` | LLM Engineer (staging); `aiv release` (released, assigns `issue_number`) | Architect | Editor, Arman, Release, Eval, LLM Engineer (callbacks -- released only) |
+| `verify.json` | LLM Engineer (`src/verify.py`, advisory) | Architect | Render (staging badges), Editor, Eval (drift `verifier_flag_rate`); promoted on release |
+| `source_excerpts.jsonl` | LLM Engineer (`src/summarise.py`) | Architect | Verify stage only. **Staging-only** — never promoted |
+| `review.md` | LLM Engineer (`src/review.py`, advisory Editor-persona pass) | Architect | Arman (pre-release verdict). **Staging-only** |
 
 **Rules:**
 - Atomic writes (`.tmp` + fsync + rename). Half-written files are worse
@@ -285,7 +334,8 @@ Architect authorises.
 ## Day-one validation (PLAN §7) — named owner, three blocking questions
 
 **Owner:** Release Engineer (drafts) + Architect (records answers) +
-Arman (sends, decides).
+Arman (sends, decides). Ask/response status is tracked in
+`docs/internal/PLATFORM_ASKS.md`.
 
 1. Does internal bank GitHub have **Actions + `schedule:` triggers**
    enabled? Fallback if no: `workflow_dispatch` + external nudge.
@@ -308,9 +358,11 @@ You are joining AI Vector. Five minutes from now you should know:
    agent-assisted, with a financial-services lens. Arman authors and
    ratifies every issue. **You build the engine; the engine runs daily.**
 2. **Where the code lives** — `src/` (pipeline modules), `config/`
-   (sources + rubric), `templates/` (HTML), `evals/` (Eval Engineer's
-   yard), `docs/` (Pages publish surface + design + editorial), `data/`
-   (per-day archive — the project's labelled corpus over time).
+   (sources + rubric + editorial + brand), `templates/` (HTML), `evals/`
+   (Eval Engineer's yard), `tests/` (Test Engineer's yard), `docs/` (Pages
+   publish surface + `docs/internal/` living docs), `data/`
+   (per-day archive, staging + released — the project's labelled corpus
+   over time).
 3. **The seams** — see the handoff diagram. Artifacts at every seam are
    pydantic-typed; Architect owns the shapes.
 4. **The non-negotiables** — design before code; evals before features;
@@ -324,10 +376,12 @@ You are joining AI Vector. Five minutes from now you should know:
    to FS?" rubric). Read them once before your first PR; invoke them in
    flow.
 7. **Veto powers** — Eval Engineer has hard veto on dedup/ranking/voice/
-   integrity regressions. Don't try to route around it; it's the
-   guardrail keeping the publication honest.
+   integrity/verifier-calibration regressions; Test Engineer has hard veto
+   on test PRs. Don't try to route around them; they're the
+   guardrails keeping the publication honest.
 
-Then read `PLAN.md`. Then read `docs/DESIGN.md`. Then read your seat's
+Then read `docs/internal/PLAN.md`. Then read `docs/internal/DESIGN.md`.
+Then read your seat's
 agent file in `.claude/agents/`. Then ship something small.
 
 Welcome.
