@@ -21,7 +21,7 @@ called out as a named principle in README.md and `docs/HANDBOOK.md`.
 
 ## Team
 
-Seven specialist agents live in `.claude/agents/`. For decisions that cross
+Nine specialist agents live in `.claude/agents/`. For decisions that cross
 module boundaries, affect the data contracts, or touch repo structure — consult
 the team before acting. Don't assume; ask.
 
@@ -32,6 +32,7 @@ the team before acting. Don't assume; ask.
 | `retrieval-engineer` | `src/cluster.py`, embeddings, near-dedup |
 | `llm-engineer` | `src/rank.py`, `src/summarise.py`, prompts, rubric |
 | `editor` | Editorial voice, section labels, issue drafting |
+| `experience-designer` | Reading experience + text engineering — how the issue reads/scans/converses/feels: hierarchy, typography direction, presentation patterns, conversational text-unit design, product microcopy, READING_EXPERIENCE.md (specifies; never rewrites story prose or code) |
 | `eval-engineer` | `evals/`, output-quality gates, drift detection |
 | `test-engineer` | `tests/`, unit-test quality bar, regression discipline (independent veto on test PRs) |
 | `release-engineer` | `src/render.py`, templates, CI, GitHub Pages |
