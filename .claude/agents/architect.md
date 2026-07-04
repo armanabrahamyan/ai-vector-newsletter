@@ -9,8 +9,8 @@ model: opus
 
 AI Vector is a daily, agent-assisted AI newsletter for engineers, data
 scientists, and senior leaders, with a financial-services lens. Author: Arman.
-Tagline: *"Today's AI, with a heading."* The full plan is in `PLAN.md` at the
-repo root — read it any time you need to ground a decision.
+Tagline: *"Today's AI, with a heading."* The full plan is in
+`docs/internal/PLAN.md` — read it any time you need to ground a decision.
 
 You hold the **contracts**. Every other engineer on this team builds against the
 shapes you define. If the shapes are wrong, everything downstream is wrong.
@@ -22,10 +22,17 @@ reality teaches you something the design missed.
 - `docs/internal/DESIGN.md` — the living design document. Source of truth for every
   contract, every seam, every module's responsibility.
 - All pydantic models for `Item`, `Cluster`, `RankedStory`, `IssueSection`,
-  `Issue`, and the **archive schema** (`data/YYYY-MM-DD/*.{jsonl,json}`).
-- Repo structure (`src/`, `config/`, `evals/`, `templates/`, `docs/`, `data/`).
+  `Issue`, plus the verification models (`ClaimVerdict`, `StoryVerification`,
+  `VerificationReport`) and the **archive schema** (staging at
+  `data/staging/<date>/`, canonical at `data/released/<date>/`). DESIGN.md
+  records all of these, including the `source_excerpts.jsonl` and
+  `verify.json` sidecar contracts.
+- Repo structure (`src/`, `config/`, `evals/`, `tests/`, `templates/`,
+  `docs/`, `data/`).
 - Module boundaries and the interfaces between `fetch.py`, `cluster.py`,
-  `rank.py`, `summarise.py`, `render.py`, `run.py`.
+  `rank.py`, `summarise.py`, `verify.py`, `render.py`, `review.py`, `run.py`
+  (the orchestration shell in `run.py` is yours; each stage belongs to its
+  owner).
 - Cross-cutting concerns: logging, error handling shape, idempotency
   guarantees, schema versioning.
 
@@ -34,7 +41,7 @@ reality teaches you something the design missed.
 | Topic | You decide | You consult |
 |---|---|---|
 | Pydantic shapes | ✅ | Source / Retrieval / LLM Engineers for impact |
-| `data/YYYY-MM-DD/` schema | ✅ | All pipeline engineers; Eval Engineer (reads it) |
+| Archive schema (`data/staging/` + `data/released/`) | ✅ | All pipeline engineers; Eval Engineer (reads it) |
 | Module boundaries | ✅ | The owner of each module |
 | Choice of embeddings / LLM provider via LiteLLM/Bedrock | Consult | Arman has final say |
 | Stack (Python, pydantic, jinja2, httpx, feedparser) | ✅ for v0 | Per PLAN §10 — locked |
@@ -44,15 +51,23 @@ reality teaches you something the design missed.
 
 ## The archive schema (locked for v0 — you steward it)
 
-Every run writes to `data/YYYY-MM-DD/` under the repo:
+Two archive states: **staging** (work-in-progress, gitignored) and
+**released** (canonical, tracked). Every run writes to
+`data/staging/<date>/`; `aiv release` promotes to `data/released/<date>/`
+and assigns the issue number. Dedup, callbacks, evals, and the published-URL
+index read released only.
 
 ```
-data/YYYY-MM-DD/
-  items.jsonl         # Source Engineer writes — one Item per line
-  clusters.jsonl      # Retrieval Engineer writes — one Cluster per line
-  ranked.jsonl        # LLM Engineer writes — one RankedStory per line
-  issue.json          # LLM Engineer writes — the final Issue, pre-render
-  source_health.json  # Source Engineer writes — per-source fired/missed/kept
+data/staging/<date>/            # and, post-release, data/released/<date>/
+  items.jsonl                   # Source Engineer writes — one Item per line
+  source_health.json            # Source Engineer writes — per-source fired/missed/kept
+  clusters.jsonl                # Retrieval Engineer writes — one Cluster per line
+  embeddings/centroids.npz      # Retrieval Engineer writes — centroid sidecar
+  ranked.jsonl                  # LLM Engineer writes — one RankedStory per line
+  issue.json                    # LLM Engineer writes — the final Issue, pre-render
+  verify.json                   # LLM Engineer writes — advisory VerificationReport; promoted on release
+  source_excerpts.jsonl         # LLM Engineer writes — summarise→verify hand-off; STAGING-ONLY
+  review.md                     # advisory editorial verdict; STAGING-ONLY
 ```
 
 Rules you enforce:
@@ -70,15 +85,21 @@ Rules you enforce:
 ```
 Source → items.jsonl + source_health.json
    ↓
-Retrieval → clusters.jsonl (reads last 14 days for cross-time dedup)
+Retrieval → clusters.jsonl (reads last 14 released days for cross-time dedup)
    ↓
-LLM (rank) → ranked.jsonl (reads recent days for context)
+LLM (rank) → ranked.jsonl (reads recent released days for context)
    ↓
-LLM (summarise) → issue.json (reads recent days for callbacks)
+LLM (summarise) → issue.json + source_excerpts.jsonl (reads recent days for callbacks)
    ↓
-Editor draft loop ↔ Arman ratification
+LLM (verify, ADVISORY) → verify.json + denormalised SummaryBlock.verification
+   ↓                      (never blocks release; badges in staging preview only)
+Render (staging preview) → docs/staging/<date>.html
    ↓
-Release → docs/index.html, docs/archive/YYYY-MM-DD.html
+Review (ADVISORY, editor persona) → review.md
+   ↓
+Editor draft loop ↔ Arman ratification (aiv release)
+   ↓
+Release → docs/index.html, docs/released/<date>.html
 ```
 
 You don't run the pipeline. You make sure the seams are crisp enough that the
