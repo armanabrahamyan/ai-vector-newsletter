@@ -438,7 +438,7 @@
             <div class="av-section-title-wrap">
               <h2 class="av-section-title">{{ section_title(section.name) }}</h2>
             </div>
-            <span class="av-section-count">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}items{% else %}stories{% endif %}</span>
+            <span class="av-section-count">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}{{ 'item' if section.stories|length == 1 else 'items' }}{% else %}{{ 'story' if section.stories|length == 1 else 'stories' }}{% endif %}</span>
           </div>
           {% if section.intro_lead or section.intro_body %}
             <p class="av-section-intro">
