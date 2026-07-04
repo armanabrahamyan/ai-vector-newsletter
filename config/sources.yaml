@@ -588,6 +588,36 @@ sources:
       add as watch. Substack public RSS = free content only.
       Added 2026-05-25 (source council, Karpathy lens).
 
+  # ---- Added 2026-07-04 institutional sources round ----
+
+  - name: QuantumBlack (McKinsey AI)
+    url: https://medium.com/feed/quantumblack
+    type: rss
+    category: newsletter
+    trust_weight: 3
+    enabled: true
+    max_age_days: 30
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0 via Medium. McKinsey's AI arm;
+      genuinely practitioner-grade despite consulting origin: "Agent skills turn
+      human expertise into AI advantage" (Jun 4, 2026), "Generative AI workflows
+      need engineering discipline to scale beyond the demo" (May 7), "Creating a
+      future-proof enterprise agentic platform architecture" (Apr 23). Deliberately
+      NOT the McKinsey Insights main feed (mckinsey.com/insights/rss) — that feed
+      is live but Tier-3-dominant marketing content ("From anxiety to advantage:
+      A marketing organization that thrives with AI") and was rejected on signal
+      density. Consulting-origin guardrail: Eval Engineer to track consulting-origin
+      share of ranked issues (this + Accenture Banking Blog) — if institutional
+      thought-leadership starts displacing lab/tooling items from top sections,
+      floor the trust weight rather than tune ranking around it. Trust weight 3
+      (Arman's call, informed by the 1–4 scale — level with the central-bank
+      sources so a brand-new source doesn't outrank primary labs before any
+      items_kept history; can earn 4 later). Note: trust 3 clears the Pulse
+      eligibility floor, so single-source QuantumBlack stories are Pulse-eligible
+      from day one — accepted deliberately to observe real ranking behaviour.
+      Added 2026-07-04 (institutional sources round).
+
   # ---------------------------------------------------------------------------
   # RESEARCH BLOGS
   # ---------------------------------------------------------------------------
@@ -686,6 +716,36 @@ sources:
       Added 2026-05-25 (source council, Karpathy + Weng cross-mention).
       Re-probe from pipeline Actions runner; if blocked there too, flag
       to Architect.
+
+  # ---- Added 2026-07-04 institutional sources round ----
+
+  - name: ACM Queue
+    url: https://queue.acm.org/rss/feeds/queuecontent.xml
+    type: rss
+    category: research
+    trust_weight: 3
+    enabled: true
+    max_age_days: 30
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, 15 items. Practitioner
+      engineering essays from working engineers under ACM's institutional
+      banner; 4 of 5 most recent items AI-focused ("In Code They Think; In
+      Proof We Trust" Jun 14, 2026; "The SPACE of AI" Jun 8; "From Technical
+      Debt to Cognitive and Intent Debt" Jun 1). Near-zero Tier-3/marketing
+      risk — peer-edited technical writing, not thought-leadership. Strongest
+      institutional fit for the engineer half of the audience. Trust weight 3
+      (Arman's call, informed by the 1–4 scale — level with the central-bank
+      sources so a brand-new source doesn't outrank primary labs before any
+      items_kept history; Arman floated 4 but we're starting at 3, can earn 4
+      later). Note: trust 3 clears the Pulse eligibility floor, so
+      single-source ACM Queue stories are Pulse-eligible from day one —
+      accepted deliberately to observe real ranking behaviour; Eval Engineer
+      to watch consulting/institutional-origin share. Sibling ACM feeds
+      (Communications of the ACM cacm.acm.org/feed/, ACM TechNews
+      technews.acm.org/rss.cfm) returned 403 from this research environment —
+      re-probe from the Actions runner before Phase 2. Added 2026-07-04
+      (institutional sources round).
 
   # ---------------------------------------------------------------------------
   # NEWS / COMMUNITY
@@ -813,6 +873,64 @@ sources:
       ("Generative AI's Act Two/Three"); Tier-3 risk on portfolio
       spotlights. Trust weight 2 — Eval to watch portfolio-promo ratio.
       Added 2026-05-25 (source council, Andreessen lens).
+
+  # ---- Added 2026-07-04 institutional sources round ----
+
+  - name: IEEE Spectrum AI
+    url: https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss
+    type: rss
+    category: news
+    trust_weight: 3
+    enabled: true
+    max_age_days: 7
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, 10 items, current through
+      Jul 3, 2026. Engineering journalism with an infrastructure/hardware/
+      energy angle no current source owns ("AI's Volatile Power Use Quietly
+      Tests Grid Limits"). Sponsored-content watch flag: one recent item in
+      the probed feed was bylined "Melbourne Convention Bureau" (sponsored
+      placement inside the feed) — Eval Engineer to watch items_kept ratio
+      for sponsored-content leakage. Trust weight 3 (Arman's call, informed
+      by the 1–4 scale — level with the central-bank sources so a brand-new
+      source doesn't outrank primary labs before any items_kept history; can
+      earn higher later). Note: trust 3 clears the Pulse eligibility floor,
+      so single-source IEEE Spectrum AI stories are Pulse-eligible from day
+      one — accepted deliberately to observe real ranking behaviour. Added
+      2026-07-04 (institutional sources round).
+
+  # ---- Added 2026-07-04 IEEE-family follow-up probe (Arman asked whether
+  # other IEEE feeds — "IEEE data science and others" — were worth adding
+  # alongside the AI topic feed above) ----
+
+  - name: IEEE Spectrum Computing
+    url: https://spectrum.ieee.org/feeds/topic/computing.rss
+    type: rss
+    category: news
+    trust_weight: 2
+    enabled: true
+    max_age_days: 7
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, 10 items. Distinct coverage
+      from IEEE Spectrum AI (above): "Why Does a Bank Need a Chief Scientist?"
+      (Jun 25, 2026, FS-relevant), "Vibecoded Malware Is Flooding the
+      Internet" (Jun 23, AI-coding relevant), quantum-computing policy, EU
+      tech supply chain. Overlap note: one article ("As AI Reshapes Global
+      Energy Systems, Melbourne Leads Through Engineering Collaboration",
+      Jul 1) was confirmed cross-tagged into both this feed and the AI topic
+      feed — expected behaviour (IEEE Spectrum tags articles into multiple
+      topic channels), handled by the pipeline's exact-URL dedup, not a
+      duplication bug. Same sponsored-content watch flag as IEEE Spectrum AI
+      — Eval Engineer to watch items_kept ratio for sponsored placements and
+      for Tier-3 drift (quantum/policy stories with no AI angle). Trust
+      weight 2 — one notch below IEEE Spectrum AI since this is broader/
+      noisier and unproven; can earn higher over months. Sibling slugs
+      probed and confirmed absent: data-science.rss and machine-learning.rss
+      both 404 (IEEE Spectrum doesn't segment that granularly — computing.rss
+      is the closest bucket). robotics.rss is live but hardware/video-roundup
+      content, weak fit for the Agentic+GenAI lens — not added. Added
+      2026-07-04 (IEEE-family follow-up probe).
 
   # ---------------------------------------------------------------------------
   # TOOLING / INFRASTRUCTURE
@@ -1117,19 +1235,24 @@ sources:
       for future scraper if Architect approves.
 
   - name: Jane Street Tech Blog
-    url: https://www.janestreet.com/tech-blog/
+    url: https://blogs.janestreet.com/feed.xml
     type: rss
     category: finance-ai
-    trust_weight: 3
-    enabled: false
-    tier_expectation: tier-1
+    trust_weight: 2
+    enabled: true
+    tier_expectation: tier-1-mixed
     notes: >
-      No RSS feed found 2026-05-24. Tried janestreet.com/tech-blog/feed/, /rss.xml,
-      /feed.xml — all 404. Blog exists at janestreet.com/tech-blog/ but no discoverable
-      feed endpoint. Jane Street publishes high-quality engineering content (OCaml, systems,
-      trading infrastructure). Finance-lens Tier-1: FS-firm engineering at elite quant shop.
-      Enabled: false; no feed. High-value if feed ever appears. TODO: check HTML head tags
-      for feed link when not rate-limited; or use Olshansk/rss-feeds if community adds it.
+      Feed fix 2026-07-04 (discovery round, directory mining): the janestreet.com/tech-blog/
+      canonical variants probed 2026-05-24 all 404'd. Correct feed lives on the Ghost backend
+      at blogs.janestreet.com/feed.xml — confirmed live 2026-07-04, most recent items "Using
+      OxCaml to implement type-safe reference counting between OCaml and Python" (Jun 15,
+      2026), "Formal methods and the future of programming" (Jun 7), "strace-ui, Bonsai_term,
+      and the TUI renaissance" (May 26). FS-firm engineering at an elite quant shop, but AI
+      density is low — most posts are OCaml/systems/formal-methods with no AI angle. Downgraded
+      tier_expectation from tier-1 to tier-1-mixed and trust_weight from 3 to 2 (was set
+      pre-content-review, when the feed itself was still unconfirmed) to reflect the real
+      tier mix rather than the aspirational one. Eval Engineer to watch items_kept ratio —
+      expect a high drop rate.
 
   # ---- Added 2026-05-24 from awesome-list survey (tmp/awesome-lists-survey.md) ----
   - name: BIS Central Bank Research Hub
@@ -1277,3 +1400,188 @@ sources:
       Anthropic client library. Same signal logic as the OpenAI SDK feed.
       Together these two cover the API-shape evolution most builders care
       about week-to-week.
+
+  # ---------------------------------------------------------------------------
+  # ---- Added 2026-07-04 discovery round (directory mining) ----
+  # Sourced by systematically mining feed directories (kilimchoi/engineering-blogs
+  # OPML, plenaryapp/awesome-rss-feeds, tuan3w/awesome-tech-rss, Feedspot AI/fintech
+  # lists) rather than evaluating individually-named candidates. See
+  # docs/internal/SOURCES_RESEARCH.md §Discovery round (2026-07-04) for full method,
+  # yield ranking per directory, and dead-ends. All URLs probed live 2026-07-04.
+  # ---------------------------------------------------------------------------
+
+  - name: Ramp Engineering
+    url: https://engineering.ramp.com/feed.xml
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    max_age_days: 14
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, most recent "Agentic Risk
+      Operations" (Jun 30, 2026), "You're Spending Too Much on AI. You're Also
+      Using Too Little." (Jun 17). Fintech company engineering blog writing
+      directly about agentic AI in production risk operations — passes both
+      the editorial-focus and finance-lens tests outright. Found via
+      kilimchoi/engineering-blogs OPML. Trust weight 2 — new addition; earn
+      toward higher weight over months. Added 2026-07-04 (discovery round).
+
+  - name: Stripe Blog
+    url: https://stripe.com/blog/feed.rss
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    max_age_days: 7
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, most recent "Four travel and
+      hospitality trends from HITEC 2026" (Jun 23, 2026), "What Link data
+      tells us about AI spending" (Jun 23), "Stripe Projects adds new agent
+      integrations, more providers, and custom developer controls" (Jun 18).
+      Note the corporate-post mix: industry-vertical trend pieces and
+      partnership announcements sit alongside genuine AI-in-payments signal
+      (agent commerce infra, AI spending data). Prior round probed
+      stripe.com/blog/feed/rss (404) and rejected on that basis — the correct
+      URL (feed.rss, found via kilimchoi/engineering-blogs OPML) is live.
+      Tier-1-mixed; Eval Engineer to watch items_kept ratio for
+      travel/hospitality/vertical-marketing drift. Trust weight 2 — new
+      addition. Added 2026-07-04 (discovery round).
+
+  - name: Building Nubank
+    url: https://building.nubank.com.br/feed/
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    max_age_days: 14
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, most recent "How Nubank uses
+      causality, machine learning and Python to support credit limit increase
+      decisions" (Jul 1, 2026), "How Nubank distributes infrastructure
+      ownership to operate more than 21 thousand databases" (Jun 24). Large
+      digital bank's engineering blog — ML-in-production-at-a-bank is exactly
+      the FS-practitioner gap this round targeted. Mixed with non-AI
+      infrastructure posts (databases, platform ownership). Found via
+      kilimchoi/engineering-blogs-adjacent search. Trust weight 2 — new
+      addition; Eval to watch items_kept ratio. Added 2026-07-04 (discovery
+      round).
+
+  - name: GitHub Blog — AI & ML
+    url: https://github.blog/ai-and-ml/feed/
+    type: rss
+    category: tooling
+    trust_weight: 3
+    enabled: true
+    max_age_days: 7
+    tier_expectation: tier-1
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, category-scoped (not the full
+      GitHub Blog firehose), most recent "Evaluating performance and
+      efficiency of the GitHub Copilot agentic harness across models" (Jun
+      23, 2026). Primary-vendor agent-tooling signal (Copilot, agentic
+      harnesses) not otherwise carried. Trust weight 3 (Arman's call, same
+      trade as ACM Queue / IEEE Spectrum AI — level with the central-bank
+      sources so a brand-new institutional source doesn't outrank primary
+      labs before any items_kept history). Note: trust 3 clears the Pulse
+      eligibility floor, so single-source GitHub Blog AI&ML stories are
+      Pulse-eligible from day one — accepted deliberately to observe real
+      ranking behaviour, same trade as ACM Queue. Added 2026-07-04 (discovery
+      round).
+
+  - name: NVIDIA Technical Blog
+    url: https://developer.nvidia.com/blog/feed
+    type: rss
+    category: tooling
+    trust_weight: 2
+    enabled: true
+    max_age_days: 7
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0 (Atom-style entries), most
+      recent "Hardware-Rooted AI Security That Won't Slow You Down" and
+      "Mastering Agentic Techniques: AI Agent Reinforcement Learning" (Jul 2,
+      2026). High-volume vendor blog: inference, security, agentic RL content
+      is genuine Tier-1, but significant vendor-tutorial and developer-event
+      volume dilutes it. Trust weight 2 — Eval Engineer to watch items_kept
+      ratio closely; this is a firehose, not a curated feed. Added 2026-07-04
+      (discovery round).
+
+  - name: InfoQ AI/ML & Data Engineering
+    url: https://feed.infoq.com/ai-ml-data-eng/
+    type: rss
+    category: news
+    trust_weight: 2
+    enabled: true
+    max_age_days: 7
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, daily cadence, most recent
+      "Presentation: Fine Tuning the Enterprise: Reinforcement Learning in
+      Practice" (Jul 3, 2026). Practitioner engineering journalism, category-
+      scoped to AI/ML and data engineering (not the full InfoQ firehose).
+      Meaningful data-engineering-only content mixed in (data platforms,
+      query engines) with no AI angle. Trust weight 2 — Eval Engineer to
+      watch items_kept ratio for non-AI data-eng drift. Added 2026-07-04
+      (discovery round).
+
+  - name: Databricks Blog
+    url: https://www.databricks.com/feed
+    type: rss
+    category: tooling
+    trust_weight: 2
+    enabled: true
+    max_age_days: 7
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, daily cadence, most recent
+      "The 3 questions to answer to take AI from experimentation to impact"
+      and "Inside the infrastructure strategies propelling AI leaders" (Jul
+      2, 2026). Enterprise AI/data platform with a heavy FS customer base —
+      relevant lens on production ML infrastructure. Explicit Eval watch:
+      titles like "The 3 questions..." read as Tier-3 vendor thought-
+      leadership rather than substantive technical content; same
+      consulting-origin risk pattern as QuantumBlack/Accenture. Trust weight
+      2 — Eval Engineer to track thought-leadership share and floor further
+      if it displaces technical content. Added 2026-07-04 (discovery round).
+
+  - name: ML@CMU Blog
+    url: https://blog.ml.cmu.edu/feed/
+    type: rss
+    category: research
+    trust_weight: 2
+    enabled: true
+    max_age_days: 30
+    tier_expectation: tier-1-mixed
+    notes: >
+      Confirmed live 2026-07-04 — valid RSS 2.0, most recent "Healthcare
+      Benchmarks Are Only as Good as Their Assumptions" (Jun 19, 2026).
+      Carnegie Mellon ML research blog, BAIR-analogous — academic practitioner
+      writing, monthly-ish cadence. Found via tuan3w/awesome-tech-rss.
+      Tier-1-mixed: strong on eval/benchmarking methodology, Tier-2 on
+      domain-specific ML (healthcare, robotics). Trust weight 2 — new
+      addition. Added 2026-07-04 (discovery round).
+
+  - name: Bank Automation News
+    url: https://bankautomationnews.com/feed/
+    type: rss
+    category: finance-ai
+    trust_weight: 2
+    enabled: true
+    max_age_days: 7
+    tier_expectation: load-bearing-tier-2
+    notes: >
+      Trade press specifically on AI/automation inside banks — strong content
+      fit for the finance-AI lens (this is exactly the audience gap: bankers
+      and bank-tech buyers writing about deployed automation, not vendor
+      marketing). NOT independently confirmed live: returned 403 from this
+      research sandbox on both curl and WebFetch 2026-07-04 — same bot-block
+      pattern already documented in this file for Ars Technica AI and The
+      Verge AI, both of which work fine from the production Actions runner.
+      Enabled true on that precedent, but this is a bet, not a confirmed
+      probe. Source Engineer to check source_health.json closely on the next
+      production run: if fired stays false for several days running, disable
+      and log as a genuine dead end rather than a sandbox artifact.
+      Added 2026-07-04 (discovery round).
