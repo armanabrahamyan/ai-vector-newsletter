@@ -531,3 +531,214 @@ Kill-the-Newsletter setup required (~5 min per source, one-time):
 2. **The character lens that produced the most additions was Taleb** (5 of 16 — Schneier, Krebs, Gelman, Shalizi, Gary Marcus, AI Incident Database). Antifragile / skeptic / statistical-rigour sources are heavily under-represented in awesome-list aggregators; the character framing surfaced them.
 3. **Karpathy contributed the highest-confidence single find** (FlashAttention releases, trust 4) but his lens has lower hit rate because most of what he wants ships through GitHub commits (noisy) rather than tagged releases (useful).
 4. **Sources count** went 67 → 83 (77 enabled, 6 disabled). Adding 16 in a single round is the largest expansion since the initial 2026-05-23 round.
+
+---
+
+## Institutional sources round (2026-07-04)
+
+*Follow-up to a wire-service scoping question. Reuters/AP/Bloomberg were rejected
+(no usable free RSS, off-signal, wrong tool for the thin-Currents/single-source
+problems). Arman then clarified the real intent: because AI Vector has a
+financial-services lens, he wants credible institutional sources — named
+McKinsey, KPMG, EY, BBC, NYTimes, ACM.org, "and others" — not general wires.
+Hard constraint held: subscribe-only (official RSS/Atom/API), no scraping.
+15 candidate URLs probed live via WebFetch.*
+
+### Added (3)
+
+| Name | Feed URL | Category | Trust weight | max_age_days | Why |
+|------|----------|----------|---------------|---------------|-----|
+| ACM Queue | `https://queue.acm.org/rss/feeds/queuecontent.xml` | research | 3 | 30 | Confirmed live, 15 items. Practitioner engineering essays under ACM's institutional banner; 4 of 5 most recent items AI-focused. Peer-edited technical writing, not thought-leadership — near-zero Tier-3 risk. Strongest institutional fit for the engineer half of the audience. |
+| QuantumBlack (McKinsey AI) | `https://medium.com/feed/quantumblack` | newsletter | 3 | 30 | Confirmed live via Medium. McKinsey's AI arm; genuinely practitioner-grade ("Agent skills turn human expertise into AI advantage" Jun 4, 2026; "Generative AI workflows need engineering discipline to scale beyond the demo" May 7). Deliberately not the McKinsey Insights main feed — see rejected list below. |
+| IEEE Spectrum AI | `https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss` | news | 3 | 7 | Confirmed live, 10 items through Jul 3, 2026. Engineering journalism with an infrastructure/hardware/energy angle no current source owns ("AI's Volatile Power Use Quietly Tests Grid Limits"). Sponsored-content watch flag: one recent item bylined "Melbourne Convention Bureau" — a sponsored placement inside the feed. |
+
+**Trust weight rationale**: all three start at 3 — Arman's call, informed by the
+1–4 scale. ACM was floated at 4 but deliberately started at 3, level with the
+central-bank sources (FRBNY, Fed FEDS, Bank Underground), so a brand-new source
+doesn't outrank primary labs before any observed `items_kept` history. Can earn
+4 later through the normal trust-weight discipline.
+
+**Pulse-eligibility consequence**: trust weight 3 meets the Pulse-eligibility
+floor, so single-source stories from all three sources are Pulse-eligible from
+day one. Arman accepted this explicitly to observe real ranking behaviour
+rather than wait out a probation period. Eval Engineer should watch
+consulting/institutional-origin share of ranked issues (QuantumBlack + ACM
+Queue + IEEE Spectrum AI + the existing Accenture Banking Blog) — if
+institutional thought-leadership starts displacing lab/tooling items from top
+sections or from Pulse specifically, that's the signal to floor trust weights,
+not a reason to tune the ranker around it.
+
+### Rejected (with reason)
+
+| Candidate | Feed(s) probed | Reason |
+|-----------|-----------------|--------|
+| McKinsey Insights (main feed) | `https://www.mckinsey.com/insights/rss` | Live RSS 2.0, ~60 items, but Tier-3-dominant marketing content ("From campaigns to continuous growth: AI capabilities shaping marketing", "From anxiety to advantage: A marketing organization that thrives with AI"). QuantumBlack (added above) is the practitioner-grade alternative from the same institution. |
+| KPMG | `kpmg.com/us/en/insights.rss` (404), `kpmg.com/xx/en/home/insights.rss.xml` (404) | No feed at any probed variant. Subscribe-only rules it out. |
+| EY | `ey.com/en_gl/newsroom/rss` (404) | No feed found. |
+| PwC | `pwc.com/gx/en/rss.xml` (403) | No feed found. |
+| Deloitte | `www2.deloitte.com/us/en/insights/rss.html` (302 → `www.deloitte.com/us/en/insights/rss.html`, 404) | Old RSS directory redirects to a dead page — RSS removed in a site migration. |
+| BBC (Technology + AI topic feeds) | `feeds.bbci.co.uk/news/technology/rss.xml`, `feeds.bbci.co.uk/news/topics/ce1qrvleleqt/rss.xml` | Both live RSS 2.0. Quality journalism but general-audience framing (AI abuse-material warnings, Netflix AI-voice backlash) — redundant with the existing, already-crowded news tier (Ars Technica, MIT TR, The Verge, VentureBeat) and adds mainstream reach, not practitioner depth. |
+| NYTimes | `rss.nytimes.com/services/xml/rss/nyt/Technology.xml`, `www.nytimes.com/svc/...` | Both blocked from this research environment (nytimes.com domains fully unreachable via WebFetch here). Even setting the probe failure aside: hard paywall limits the pipeline to headline + one-line summary, and NYT's ToS/robots.txt posture toward AI crawlers is explicitly hostile — a poor fit for the excerpt-fetch model even at the RSS layer. Recommend skip; if Arman wants it anyway, needs a runner-side probe plus an explicit ToS note in the source entry. |
+| Knowledge at Wharton | `https://knowledge.wharton.upenn.edu/feed/` | Live RSS 2.0, but general business-school feed — healthcare marketing, World Cup analytics; AI/finance content ~40% at best. Noise floor too high. |
+| The Gradient | `https://thegradient.pub/rss/` | Live but near-dormant — most recent item Feb 2026, prior item Jun 2025. Watchlist only. |
+
+### Deferred — re-probe from the Actions runner (403 in this environment)
+
+Same anti-scrape pattern seen elsewhere in this file (Ars Technica, The Verge,
+Transformer Circuits Thread) — likely IP-level blocking of the research
+environment, not server-side.
+
+| Name | URL | Notes |
+|------|-----|-------|
+| Communications of the ACM | `https://cacm.acm.org/feed/` | 403 here; ACM Queue (added) already covers the practitioner-essay signal. Worth a runner probe — natural trust-2/3 add if live. |
+| ACM TechNews | `https://technews.acm.org/rss.cfm` | 403 here. Lower priority — TechNews aggregates mainstream press, likely duplicates the existing news tier. |
+| NBER working papers | `https://back.nber.org/rss/new.xml` | 403 here. Would be another economics firehose alongside Fed FEDS (already in config, aggressively filtered) — marginal even if it probes clean. |
+
+### Pattern noticed
+
+Consulting/institutional sources split cleanly into two groups: those that
+distribute a *practitioner arm* separately from their marketing arm
+(McKinsey/QuantumBlack, ACM/ACM Queue) clear the strong-signal filter; the
+marketing-arm main feeds (McKinsey Insights) and the Big Four (no feeds at
+all — RSS is not part of their lead-generation funnel) do not. This class does
+not solve the thin-Currents/single-source-day problem from the original
+wire-service question — these are slow-cadence credibility sources, not
+volume sources.
+
+### Addendum: IEEE-family follow-up probe (2026-07-04)
+
+Arman asked whether other IEEE feeds — "IEEE data science and others" — were
+worth adding alongside IEEE Spectrum AI. Widened the probe to the rest of the
+IEEE family: other Spectrum topic feeds, the whole-site feed, IEEE Computer
+Society magazines, and an IEEE Xplore journal feed as a spot-check.
+
+| Candidate | Feed URL | Verdict | Reason |
+|-----------|----------|---------|--------|
+| IEEE Spectrum Computing | `https://spectrum.ieee.org/feeds/topic/computing.rss` | **Added — trust 2** | Live RSS 2.0, distinct coverage from the AI topic feed (bank-chief-scientist piece, AI-coding/"vibecoded malware" story, quantum policy). One article confirmed cross-tagged into both this feed and IEEE Spectrum AI — expected IEEE Spectrum behaviour, handled by exact-URL dedup, not a bug. Started one notch below IEEE Spectrum AI (trust 2 vs 3) since it's broader/noisier and unproven. |
+| IEEE Spectrum Robotics | `https://spectrum.ieee.org/feeds/topic/robotics.rss` | Skipped | Live, but content is hardware/video-roundup coverage ("Video Friday" series, humanoid-marathon robots) — weak fit for the Agentic+GenAI-heavy lens. |
+| IEEE Spectrum whole-site feed | `https://spectrum.ieee.org/rss/fulltext` | Skipped | Live, but a strict superset firehose — carries zero-signal career-development content ("Why Public Speaking Skills Are Worth Investing In," IEEE museum history) on top of what the topic feeds already deliver. Topic-scoped is the right granularity; the site feed adds noise only. |
+| IEEE Spectrum data-science / machine-learning topic slugs | `.../feeds/topic/data-science.rss`, `.../feeds/topic/machine-learning.rss` | Not found | Both 404 — IEEE Spectrum doesn't segment that granularly. `computing.rss` is the closest existing bucket. |
+| IEEE Computer Society magazines (Software, Computer, Intelligent Systems) | `computer.org/rss/software-rss.xml`, `computer.org/csdl/rss/magazine/so`, `computer.org/rss-feeds` | Skipped — no feeds exist | All probes returned 404 or a bare error page with no feed links anywhere in site navigation. Distribution is CSDL-gated (paywalled digital library), not RSS-first — same pattern as the Big Four. |
+| IEEE Xplore journal feeds (e.g. TPAMI) | `ieeexplore.ieee.org/rss/TOC34.XML` | Skipped | Returned HTTP 418 ("I'm a Teapot") — deliberate anti-bot block. Confirms the prior: academic table-of-contents firehose, heavily redundant with the arXiv cs.CL/cs.AI/cs.LG feeds already in the config at trust weight 1. Not worth pursuing further. |
+
+**Net result**: one feed added (IEEE Spectrum Computing, trust 2), not three —
+the IEEE door widened by exactly the amount the signal justified.
+
+---
+
+## Discovery round (2026-07-04): directory mining
+
+Different method from every prior round. Instead of evaluating individually-named
+candidates, this round mined feed *directories* systematically — the motivation
+being that ACM Queue and IEEE Spectrum only got added because Arman happened to
+name them; the goal was to find the channel that surfaces such feeds proactively.
+
+### Directories mined
+
+1. **kilimchoi/engineering-blogs** (`engineering_blogs.opml`, not just the README —
+   the OPML has the live feed URLs the README table omits). Searched two slices:
+   AI-lab/tooling companies, and financial-services engineering blogs by name
+   (JPMorgan, Goldman Sachs, Bloomberg, Two Sigma, Jane Street, Man Group, Stripe,
+   Ramp, Nubank, Monzo, Wise, Robinhood, Coinbase, Block/Square, Plaid, Adyen).
+2. **plenaryapp/awesome-rss-feeds** — README Directory + Recommended Sources
+   (Programming, Startups, Tech sections). No dedicated AI section; general
+   consumer-tech snapshot circa 2020.
+3. **tuan3w/awesome-tech-rss** — Machine Learning and Engineering-blogs sections.
+4. **Feedspot** public directory pages — AI RSS feeds, Fintech RSS feeds.
+
+### Yield ranking (for the next quarterly re-mine)
+
+1. **kilimchoi/engineering-blogs OPML — best yield.** This is where the two
+   highest-value finds came from: the correct live URL for Jane Street
+   (`blogs.janestreet.com/feed.xml`, fixing a stale disabled entry) and the correct
+   live URL for Stripe (`stripe.com/blog/feed.rss` — the earlier `/feed/rss` variant
+   404'd and had been rejected). Re-mine this one quarterly; grep the FS-firm names
+   first, then the AI-tooling names.
+2. **Feedspot fintech directory — medium yield.** One strong lead (Bank Automation
+   News); the other ~75 entries are vendor marketing, funding-announcement blogs,
+   or newsletter-farm content not worth individual probing.
+3. **tuan3w/awesome-tech-rss — low-medium yield.** Surfaced ML@CMU; otherwise a
+   2021-vintage snapshot (Distill, Magenta, old Google AI Blog URLs — mostly dead
+   or superseded by entries already in this config).
+4. **plenaryapp/awesome-rss-feeds — low yield.** No AI-specific section at all;
+   indirect leads only (InfoQ, GitHub Blog — both of which paid off via their
+   *category-scoped* AI feeds, not the general feeds listed in the directory).
+   Not worth a dedicated quarterly pull; the Programming/Tech sections are
+   consumer/general-audience.
+5. **Feedspot AI directory — skip.** Content-farm tier (AI Weekly, AIwire,
+   insideAI News, Unite.AI, AI ASPIRANT) — none cleared editorial-focus on
+   inspection. Do not re-mine.
+
+**Recommendation**: make kilimchoi/engineering-blogs a standing quarterly ritual
+(FS-firm names first, then AI-tooling names); treat the others as occasional,
+lower-priority pulls.
+
+### Adds (9) — all URL-probed live 2026-07-04
+
+| Source | Feed URL | Category | Trust | Rationale |
+|--------|----------|----------|-------|-----------|
+| Ramp Engineering | `https://engineering.ramp.com/feed.xml` | finance-ai | 2 | Fintech engineering blog writing directly about agentic AI in production risk operations ("Agentic Risk Operations", Jun 30, 2026). Passes both lenses outright. Best single find of the round. |
+| Stripe Blog | `https://stripe.com/blog/feed.rss` | finance-ai | 2 | Corrects a prior-round 404 rejection (wrong URL variant probed). AI-in-payments signal ("What Link data tells us about AI spending", "Stripe Projects adds new agent integrations") mixed with vertical-marketing posts — watch items_kept. |
+| Building Nubank | `https://building.nubank.com.br/feed/` | finance-ai | 2 | Large digital bank's engineering blog; "How Nubank uses causality, machine learning and Python to support credit limit increase decisions" is exactly the ML-in-a-bank-at-scale gap. Mixed with non-AI infra posts. |
+| GitHub Blog — AI & ML | `https://github.blog/ai-and-ml/feed/` | tooling | 3 | Category-scoped (not the GitHub Blog firehose). Primary-vendor agent-tooling signal (Copilot agentic harness evals) not otherwise carried. Trust 3 = same institutional trade as ACM Queue/IEEE Spectrum AI — Pulse-eligible from day one, deliberately. |
+| NVIDIA Technical Blog | `https://developer.nvidia.com/blog/feed` | tooling | 2 | High-volume vendor blog; genuine Tier-1 (agentic RL, inference, hardware security) diluted by vendor-tutorial/event volume. Eval to watch items_kept ratio. |
+| InfoQ AI/ML & Data Eng | `https://feed.infoq.com/ai-ml-data-eng/` | news | 2 | Category-scoped practitioner engineering journalism; meaningful data-eng-only (no AI angle) content mixed in. |
+| Databricks Blog | `https://www.databricks.com/feed` | tooling | 2 | Enterprise AI platform, heavy FS customer base. Explicit Eval watch: same consulting-origin/thought-leadership risk pattern as QuantumBlack/Accenture — floor further if it displaces technical content. |
+| ML@CMU Blog | `https://blog.ml.cmu.edu/feed/` | research | 2 | Academic practitioner blog, BAIR-analogous; monthly-ish cadence, strong on eval/benchmarking methodology. |
+| Bank Automation News | `https://bankautomationnews.com/feed/` | finance-ai | 2 | Trade press specifically on AI/automation inside banks — strong content fit. **Not independently confirmed live**: 403 from the research sandbox on both curl and WebFetch, matching the exact bot-block pattern already documented for Ars Technica AI and The Verge AI (both of which work from the production Actions runner). Enabled on that precedent as a bet, not a confirmed probe — watch `source_health.json` closely; disable if `fired` stays false for several days running rather than assuming it's a sandbox artifact indefinitely. |
+
+### Fix (1)
+
+| Source | Change | Reason |
+|--------|--------|--------|
+| Jane Street Tech Blog | URL swapped from `janestreet.com/tech-blog/` (404, disabled) to `blogs.janestreet.com/feed.xml` (confirmed live); `enabled: false → true`; `trust_weight: 3 → 2`; `tier_expectation: tier-1 → tier-1-mixed` | The 2026-05-24 round only probed canonical `janestreet.com/tech-blog/*` variants; the working feed lives on the Ghost backend. On inspection, content is mostly OCaml/systems/formal-methods with low AI density — the original trust weight of 3 was set aspirationally before the feed was confirmed live and its actual content reviewed. Downgraded to reflect the real tier mix; Eval Engineer to expect a high items_kept drop rate. |
+
+### Skipped
+
+| Candidate | Reason |
+|-----------|--------|
+| Finextra headlines | `https://www.finextra.com/rss/headlines.aspx` — live, daily, but a general fintech news firehose (banking layoffs, tokenisation policy, payments-industry business news). AI is a sub-theme, not the beat. Passed on; heavy filter load for thin AI yield. |
+
+### Dead ends (from the FS-firm engineering sweep)
+
+| Candidate | Finding |
+|-----------|---------|
+| Bloomberg engineering (Tech at Bloomberg) | `techatbloomberg.com/feed/` returns valid XML but frozen at Feb 2022 (last item). The live site 302-redirects to `bloomberg.com/company/values/tech-at-bloomberg/` — a blocked domain, and there is no evidence of an active engineering-blog feed distinct from the newswire. No live Bloomberg engineering feed exists. |
+| Two Sigma | `twosigma.com/feed/` re-confirmed as an empty RSS channel (valid XML, zero `<item>` elements) — same dead result as the prior round. |
+| PayPal | Medium feed (`medium.com/feed/paypal-tech`) is live but its most recent entry announces the blog moved to `developer.paypal.com/community/blog` — which serves HTML with no discoverable feed. Frustrating: "PayPal Releases Agentic Toolkit to Accelerate Commerce" is exactly our signal, but genuinely no machine-readable feed exists post-migration. Candidate for a future community-feed request (Olshansk-style), not scraping. |
+| Coinbase | `coinbase.com/blog/rss.xml` returns 403 (bot-block); no alternate feed endpoint found. |
+| Plaid | `plaid.com/blog/feed/` 404; no discoverable feed. |
+| Monzo | `monzo.com/blog/rss` 404; no discoverable feed. |
+| Wise (Transferwise) | `medium.com/feed/wise-engineering` live but stale — most recent item Feb 2025. Not daily-signal viable. |
+| Robinhood | `medium.com/feed/robinhood-engineering` live but stale — most recent item Jun 2023. Migrated off Medium with no successor feed found. |
+| Adyen | `medium.com/feed/adyen` live, most recent Sep 2025, but content is non-AI (database partitioning, API tooling) — no AI angle observed across recent items. |
+| Square | `developer.squareup.com/blog/rss.xml` live but sporadic (gaps of months); `corner.squareup.com/blog/rss.xml` returns non-XML. Not pursued further. |
+| Wealthfront | `eng.wealthfront.com/feed/` live, active, but zero AI content in recent items (FIX trading infra, MariaDB, Android build tooling) — engineering-quality but off-lens. |
+| Man Group | No feed endpoint found (`man.com/rss/insights.xml` 404); no further variant probed. |
+
+### Fetch hardening ladder (scoping note only — no code changes)
+
+For sources that 403 in production (not just in this research sandbox), propose a
+graduated response, in order, before disabling:
+
+1. **Re-probe from the real Actions runner first.** Several apparent 403s in this
+   file (Ars Technica, The Verge, Transformer Circuits Thread, and now Bank
+   Automation News in this round) are IP-level blocks on the research sandbox, not
+   server-side blocks — they may fetch cleanly from the production runner's IP.
+   Confirm before assuming a feed is dead.
+2. **Proper feed-reader User-Agent + conditional GET in `src/fetch.py`.** Some
+   403s are basic bot-detection keyed off a missing/generic User-Agent string or
+   the absence of `If-Modified-Since`/`If-None-Match` conditional-GET headers.
+   Sending a real feed-reader UA and honouring 304s is squarely within
+   subscribe-don't-scrape — it's still fetching the same official RSS/Atom
+   endpoint, just politely. No Architect approval needed for this step.
+3. **`curl_cffi` browser-TLS impersonation, per-source, official-feeds-only, as a
+   last resort.** For a feed confirmed to be an *official* public RSS/Atom
+   endpoint (not paywalled content, not HTML scraping) that still 403s after step
+   2 — likely TLS/JA3 fingerprinting rather than UA-string bot detection —
+   browser-TLS impersonation is a judgment call, not a default. This is a
+   per-source exception requiring Arman's explicit sign-off before enabling,
+   logged in that source's `notes:` field with the date and reasoning. It must
+   never be used to reach paywalled content or to scrape non-feed HTML — that
+   remains a hard no per PLAN §0.4/§6, Architect-gated. Flagging as a future
+   option, not proposing it for any current source.
