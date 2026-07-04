@@ -2150,9 +2150,9 @@ class TestVoiceDiversityVersionBump:
     """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
     must move with it so the audit trail picks up the shift."""
 
-    def test_summarise_prompt_version_is_v0_18(self) -> None:
+    def test_summarise_prompt_version_is_v0_19(self) -> None:
         from src.summarise import SUMMARISE_PROMPT_VERSION
-        assert SUMMARISE_PROMPT_VERSION == "v0.18"
+        assert SUMMARISE_PROMPT_VERSION == "v0.19"
 
 
 # ===========================================================================
