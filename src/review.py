@@ -34,12 +34,19 @@ from src import paths
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT_VERSION = "v0.2"
+REVIEW_PROMPT_VERSION = "v0.3"
 """Versioned prompt string written into ``review.md`` frontmatter so the
 eval harness can correlate verdict movement against prompt revisions.
 
 Bump when the prompt content (criteria, instructions, output format)
-changes substantively. Audit tag: ``review-v0.2-2026-07-04``.
+changes substantively. Audit tag: ``review-v0.3-2026-07-04``.
+
+v0.3 (2026-07-04): trust flags are presence-form (Arman's direction via
+Experience Designer, READING_EXPERIENCE.md R-8). New per-story
+criterion: trust flags must characterise the evidence that exists;
+absence-inventory ("no code yet", "no independent replication yet",
+"not yet peer-reviewed") is flagged as a defect, never demanded back
+as a missing virtue. Aligns the reviewer with summarise v0.19.
 
 v0.2 (2026-07-04): Currents closing-shape wording generalised — the
 calibrated stake is the turn-type; "if X, Y; if not, Z" is one grammar
@@ -233,6 +240,13 @@ CURRENTS (variable count)
 - Section intro is MANDATORY and names the aggregate motion direction --
   flag if missing or flat.
 - Flag items that belong head-tier (Big Picture / Hands-On) instead.
+
+TRUST FLAGS (every story, all sections)
+- Trust flags must be PRESENCE-FORM: they characterise the evidence that
+  exists ("self-reported", "vendor-supplied benchmark", "single-source").
+  Flag absence-inventory ("no code yet", "no independent replication
+  yet", "not yet peer-reviewed") as a DEFECT -- never as a missing
+  virtue.
 
 DRIFT WATCH (compare against previous released issues, supplied below)
 - Recurring themes covered the same way without progression.

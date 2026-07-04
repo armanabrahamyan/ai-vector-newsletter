@@ -91,9 +91,30 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.18"
+SUMMARISE_PROMPT_VERSION = "v0.19"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.18-2026-07-04``. v0.18 (reading-experience: close-form
+``summarise-v0.19-2026-07-04``. v0.19 (trust flags are presence-form;
+Arman's direction via Experience Designer, R-8):
+  - Trust flags must characterise the evidence that EXISTS
+    (presence-characterisation), never inventory what is missing
+    (READING_EXPERIENCE.md §3 "Presence, not absence" + R-8; ratified
+    by Arman 2026-07-04). Absence-statements ("no code yet", "no
+    independent replication yet", "not yet peer-reviewed") are banned
+    forms: naming one absence from an unbounded set reads as
+    filler-hedging, the trailing "yet" adds a promise the source never
+    made, and a global negative asserted from a local excerpt is
+    usually unverifiable (the #22 Pulse "No code is linked" case).
+    Changes: house-style trust-flag teaching rewritten with
+    presence-form examples + the ban; the strong worked example's "No
+    code yet" flag rewritten presence-form; HONESTY rule no longer
+    suggests stating what is unknown (describe what IS stated, stay
+    silent about the rest); TRUST HEDGES block drops absence-forms from
+    the approved list and states the two-gate composition
+    (source-supported AND presence-form); negative examples from real
+    released issues added; Currents WHY constrained to presence-form
+    (the "no action yet" direction-note recommendation is a different
+    speech act and stays).
+v0.18 (reading-experience: close-form
 grammar diversification, turn-types unchanged):
   - Experience Designer's #1 finding (READING_EXPERIENCE.md R-1 + R-2):
     the Hands-On and Currents CLOSE TURN-TYPES are correct, but their
@@ -659,15 +680,19 @@ THREE THINGS THAT MUST SURVIVE EVERY EDIT:
 
   1. ONE concrete number or mechanism. A real figure or real technical
      detail; not a vague claim.
-  2. THE TRUST FLAG when warranted. Say what's flimsy: "self-reported,"
-     "no code yet," "thin sourcing, one Reddit thread," "vendor-supplied
-     benchmark." Never drop this when the story warrants it -- judgement
+  2. THE TRUST FLAG when warranted. Say what the evidence IS:
+     "self-reported," "vendor-supplied benchmark," "single-source,"
+     "thin sourcing, one Reddit thread," "the paper's own LLM-judge
+     scoring." Never drop this when the story warrants it -- judgement
      is the product. BUT a trust flag is a FACTUAL CLAIM about the
      sourcing: assert "self-reported" / "vendor-supplied" / "single-
-     source" / "no independent replication" ONLY when the source
-     explicitly supports it. If the source doesn't state its sourcing
-     status, drop the flag -- never decorate a summary with an
-     unsupported hedge.
+     source" ONLY when the source explicitly supports it. If the source
+     doesn't state its sourcing status, drop the flag -- never decorate
+     a summary with an unsupported hedge. AND a trust flag characterises
+     the evidence that EXISTS; it NEVER states what is missing. "No code
+     yet", "no independent replication yet", "not yet peer-reviewed" are
+     BANNED forms. If the sourcing status matters, say what the evidence
+     IS ("a preprint with the authors' own scoring"), not what it lacks.
   3. A RELEVANCE LINE tied to a DECISION, not a department or group.
        Group (weak):     "useful for teams managing vendor risk"
        Decision (strong): "useful when you're renegotiating a closed-
@@ -728,12 +753,13 @@ CALIBRATION (body):
   Strong: "When an agent hands a decision to a sub-agent, how do you know
            the handoff was safe? Safe Bilevel Delegation (via LLMQuant)
            scores that moment 0-to-1 at runtime, gating execution when
-           confidence drops -- auditable for model-risk teams. No code
-           yet, so pressure-test it in your next architecture review,
-           don't ship it."
-           -- 55 words. Sharp opener. Trust flag ("no code yet"). Decision-
-           tied close ("pressure-test in your next architecture review,
-           don't ship it").
+           confidence drops -- auditable for model-risk teams. The
+           scoring is the authors' own, so pressure-test it in your next
+           architecture review, don't ship it."
+           -- 57 words. Sharp opener. Trust flag ("the scoring is the
+           authors' own" -- presence-form, says what the evidence IS).
+           Decision-tied close ("pressure-test in your next architecture
+           review, don't ship it").
 
   Strong (declarative open, NOT a question): "NVIDIA's diffusion LMs
            generate tokens in parallel blocks and can revise earlier ones
@@ -967,7 +993,9 @@ _VOICE_PER_SECTION: dict[str, str] = {
         "not arrival. Open with a hedge: \"If this holds...\", \"Early\n"
         "signal that...\", \"Worth watching: X moving toward Y.\" The\n"
         "direction-note explicitly says \"no action yet\" and WHY -- thin\n"
-        "sourcing, early trajectory, single benchmark. A Currents story\n"
+        "sourcing, early trajectory, single benchmark. The WHY must be\n"
+        "PRESENCE-FORM (\"one vendor's announcement\", not \"no\n"
+        "independent validation yet\"). A Currents story\n"
         "that reads as a confirmed arrival is mis-tiered; pull the hedge\n"
         "forward to make the maturity visible. Shorter than head-section\n"
         "bodies; cap at 50 words when in doubt."
@@ -2274,7 +2302,7 @@ ITEMS:
   to the SAME cap (60 words). Count before returning. SHAPE: shift ->
   shipped -> judgement-tied-to-decision. Must include: one concrete
   number or mechanism; a trust flag if warranted (vendor benchmark?
-  no code? thin sourcing?); a close tied to a SPECIFIC decision, not
+  self-reported? single-source?); a close tied to a SPECIFIC decision, not
   a department or group. If you cannot fit all three in 60 words,
   cut a clause or sharpen a verb -- the cap holds.
 - LANGUAGE: plain English. No acronyms a non-specialist wouldn't
@@ -2287,21 +2315,39 @@ ITEMS:
 - HONESTY: use ONLY facts present in source_excerpt (or the title /
   summary / cluster metadata if the excerpt is missing). If a number,
   licence, or artefact (weights / code / demo) is NOT stated in the
-  source, do NOT assert it. Say what is genuinely unknown ("benchmarks
-  not yet published", "licence not specified") rather than inventing.
-- TRUST HEDGES ARE FACTUAL CLAIMS. "Self-reported", "vendor-supplied",
-  "single-source", "no independent replication", "pre-peer-review"
-  assert something about the SOURCING. Use them ONLY when the source
-  explicitly supports that characterisation (the paper says the
-  benchmarks are its own; the post is the vendor's own numbers). If the
-  sourcing status is not stated, OMIT the hedge -- or phrase it as an
-  absence you can stand behind from metadata you DO have ("one research
-  team's analysis" when the cluster is a single source). Do not
-  decorate. Wrong: "self-reported" when the source describes scoring by
-  an ensemble of LLM judges. Wrong: "no independent replication" when
-  the paper triangulates against two independent systems. Wrong:
-  "benchmarks are self-reported" when the source describes experiments
-  on real data with no such framing.
+  source, do NOT assert it -- and do NOT inventory its absence either
+  ("benchmarks not yet published", "licence not specified" are both
+  out). Describe what the source DOES state; stay silent about the
+  rest.
+- TRUST HEDGES ARE FACTUAL CLAIMS -- AND PRESENCE-FORM. "Self-reported",
+  "vendor-supplied", "single-source" assert something about the
+  SOURCING. Use them ONLY when the source explicitly supports that
+  characterisation (the paper says the benchmarks are its own; the post
+  is the vendor's own numbers). If the sourcing status is not stated,
+  OMIT the hedge -- or phrase it as a presence-characterisation from
+  metadata you DO have ("one research team's analysis" when the cluster
+  is a single source). TWO GATES, both mandatory: a trust flag must be
+  SOURCE-SUPPORTED and PRESENCE-FORM. Neither gate substitutes for the
+  other. Do not decorate. Wrong: "self-reported" when the source
+  describes scoring by an ensemble of LLM judges. Wrong: "no independent
+  replication" when the paper triangulates against two independent
+  systems. Wrong: "benchmarks are self-reported" when the source
+  describes experiments on real data with no such framing.
+- PRESENCE-FORM REWRITES (real defects from released issues):
+    "No code is public yet." -> delete, or "a preprint with the
+      authors' own scoring".
+    "Single-source interview; no independent benchmarks." ->
+      "Single-source interview." (the second clause is entailed by
+      the first).
+    "...the paper's own LLM judges, with no independent replication
+      yet" -> end the sentence after "LLM judges."
+    "Vendor release notes only; no independent benchmarks." ->
+      "Vendor release notes."
+    "Single research team; peer review pending." -> "A preprint from
+      a single research team."
+  ALLOWED: when the source ITSELF states the absence, report the
+  actor's statement or decision -- "the paper says code will be
+  released on acceptance" is an actor-statement, not a void.
 - Direction and finance lens live in the prose -- NEVER labels.
 - If callback context is present and the connection is tight, weave a
   brief reference in ("last week we flagged X; today's update is..."). If
