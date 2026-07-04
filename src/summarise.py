@@ -91,9 +91,38 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.19"
+SUMMARISE_PROMPT_VERSION = "v0.20"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.19-2026-07-04``. v0.19 (trust flags are presence-form;
+``summarise-v0.20-2026-07-04``. v0.20 (third gate: informative vs class
+default + affirmative-presence obligation (reader-needs study, R-8)):
+  - The source-class attribution in the body ("an arXiv preprint",
+    "Anthropic's release notes", "a Reddit thread") carries the
+    reader's default calibration for free; an explicit trust flag earns
+    its words ONLY on DEVIATION from that class default (independent
+    replication present on a preprint; a competitor ran the vendor's
+    benchmark; non-obvious scoring method; claim far heavier than its
+    evidence). Restating the default ("a preprint from a single
+    research team", "single-source" on a podcast interview) is banned;
+    the fix is DELETE the flag and let the class name in the body carry
+    it. Study-validated (five-persona panel + verifier-verdict archive
+    evidence, READING_EXPERIENCE.md §3 + R-8; ratified by Arman
+    2026-07-04).
+    Changes: TRUST HEDGES block composes THREE gates (source-supported
+    AND presence-form AND informative-vs-default) with the compact
+    deviation taxonomy (preprint / vendor blog-release notes /
+    named-author experiment / forum thread); "one research team's
+    analysis" RECLASSIFIED from positive to negative example (restates
+    the preprint default); per-story trust-flag probe rewritten
+    deviation-shaped; claim-magnitude routing added (claim-vs-evidence
+    mismatch belongs in the Currents stake / Big Picture question, not
+    the flag, except "thin sourcing, one Reddit thread" on a big claim;
+    say it once, flag or stake, never both); AFFIRMATIVE-PRESENCE
+    OBLIGATION added to the HONESTY rule and trust-flag teaching (when
+    the source states an artifact IS available, the summary MUST say so
+    affirmatively -- "dataset and tooling are public"); rewrite-move
+    examples updated so no fix manufactures a default-restating flag;
+    Currents WHY constrained to presence-form AND non-default.
+v0.19 (trust flags are presence-form;
 Arman's direction via Experience Designer, R-8):
   - Trust flags must characterise the evidence that EXISTS
     (presence-characterisation), never inventory what is missing
@@ -680,19 +709,28 @@ THREE THINGS THAT MUST SURVIVE EVERY EDIT:
 
   1. ONE concrete number or mechanism. A real figure or real technical
      detail; not a vague claim.
-  2. THE TRUST FLAG when warranted. Say what the evidence IS:
-     "self-reported," "vendor-supplied benchmark," "single-source,"
-     "thin sourcing, one Reddit thread," "the paper's own LLM-judge
-     scoring." Never drop this when the story warrants it -- judgement
-     is the product. BUT a trust flag is a FACTUAL CLAIM about the
-     sourcing: assert "self-reported" / "vendor-supplied" / "single-
-     source" ONLY when the source explicitly supports it. If the source
-     doesn't state its sourcing status, drop the flag -- never decorate
-     a summary with an unsupported hedge. AND a trust flag characterises
-     the evidence that EXISTS; it NEVER states what is missing. "No code
-     yet", "no independent replication yet", "not yet peer-reviewed" are
-     BANNED forms. If the sourcing status matters, say what the evidence
-     IS ("a preprint with the authors' own scoring"), not what it lacks.
+  2. THE TRUST FLAG when warranted -- and it is warranted ONLY on
+     DEVIATION. Naming the source class in the body ("an arXiv
+     preprint", "Anthropic's release notes", "a Reddit thread") already
+     tells the reader what to assume (preprint = single team, not
+     peer-reviewed, authors' own scoring); the DEFAULT needs no flag.
+     An explicit flag earns its words only when the evidence deviates
+     from its class default: "a second lab replicated it," "the vendor
+     benchmarked its competitor's model," "scored by an ensemble of
+     LLM judges," "thin sourcing, one Reddit thread" under a big claim.
+     Never drop a deviation flag -- judgement is the product. THREE
+     GATES, all mandatory: (a) SOURCE-SUPPORTED -- a trust flag is a
+     FACTUAL CLAIM about the sourcing; assert it ONLY when the source
+     explicitly supports it, never decorate. (b) PRESENCE-FORM -- it
+     characterises the evidence that EXISTS; "no code yet", "no
+     independent replication yet", "not yet peer-reviewed" are BANNED
+     forms. (c) NON-DEFAULT -- restating the class default ("a preprint
+     from a single research team") is banned; DELETE the flag and let
+     the class name in the body carry it. AND the positive duty: when
+     the source states an artifact IS available (code, weights,
+     dataset, tooling), SAY SO affirmatively ("dataset and tooling are
+     public") -- acknowledging presence is obligatory; only
+     inventorying absence is banned.
   3. A RELEVANCE LINE tied to a DECISION, not a department or group.
        Group (weak):     "useful for teams managing vendor risk"
        Decision (strong): "useful when you're renegotiating a closed-
@@ -701,7 +739,8 @@ THREE THINGS THAT MUST SURVIVE EVERY EDIT:
 WHEN CONSTRAINTS COLLIDE (thin item, won't all fit), resolve in this
 order. Drop from the bottom, never the top.
 
-  1. Trust flag -- never sacrificed. Judgement is the product.
+  1. Trust flag (when a deviation warrants one) -- never sacrificed.
+     Judgement is the product.
   2. One concrete number or mechanism.
   3. Decision-tied close.
   4. Word count -- the 60-word cap is HARD. If you cannot fit
@@ -751,15 +790,17 @@ CALIBRATION (body):
            buries the lede in clause three.
 
   Strong: "When an agent hands a decision to a sub-agent, how do you know
-           the handoff was safe? Safe Bilevel Delegation (via LLMQuant)
-           scores that moment 0-to-1 at runtime, gating execution when
-           confidence drops -- auditable for model-risk teams. The
-           scoring is the authors' own, so pressure-test it in your next
-           architecture review, don't ship it."
-           -- 57 words. Sharp opener. Trust flag ("the scoring is the
-           authors' own" -- presence-form, says what the evidence IS).
-           Decision-tied close ("pressure-test in your next architecture
-           review, don't ship it").
+           the handoff was safe? Safe Bilevel Delegation (an arXiv
+           preprint, via LLMQuant) scores that moment 0-to-1 at runtime,
+           gating execution when confidence drops; auditable for
+           model-risk teams. Pressure-test it in your next architecture
+           review, don't ship it."
+           -- 50 words. Sharp opener. The class name in the body ("an
+           arXiv preprint") carries the calibration; NO separate trust
+           flag ("the scoring is the authors' own" would restate the
+           preprint default -- gate 3). Decision-tied close
+           ("pressure-test in your next architecture review, don't
+           ship it").
 
   Strong (declarative open, NOT a question): "NVIDIA's diffusion LMs
            generate tokens in parallel blocks and can revise earlier ones
@@ -994,8 +1035,10 @@ _VOICE_PER_SECTION: dict[str, str] = {
         "signal that...\", \"Worth watching: X moving toward Y.\" The\n"
         "direction-note explicitly says \"no action yet\" and WHY -- thin\n"
         "sourcing, early trajectory, single benchmark. The WHY must be\n"
-        "PRESENCE-FORM (\"one vendor's announcement\", not \"no\n"
-        "independent validation yet\"). A Currents story\n"
+        "PRESENCE-FORM AND NON-DEFAULT (\"Vercel's own eve framework\",\n"
+        "not \"no independent validation yet\", and not the empty \"a\n"
+        "single vendor\" when the body already names the vendor). A\n"
+        "Currents story\n"
         "that reads as a confirmed arrival is mis-tiered; pull the hedge\n"
         "forward to make the maturity visible. Shorter than head-section\n"
         "bodies; cap at 50 words when in doubt."
@@ -2301,10 +2344,12 @@ ITEMS:
 - BODY: 30 to 60 words HARD CAP. 61 words is a fail. The Pulse is held
   to the SAME cap (60 words). Count before returning. SHAPE: shift ->
   shipped -> judgement-tied-to-decision. Must include: one concrete
-  number or mechanism; a trust flag if warranted (vendor benchmark?
-  self-reported? single-source?); a close tied to a SPECIFIC decision, not
-  a department or group. If you cannot fit all three in 60 words,
-  cut a clause or sharpen a verb -- the cap holds.
+  number or mechanism; a trust flag if warranted (does the evidence
+  DEVIATE from its class default -- replication present, competitor-run,
+  non-obvious scoring method, claim heavier than evidence? If not, name
+  the source class in the body and write no flag.); a close tied to a
+  SPECIFIC decision, not a department or group. If you cannot fit all
+  three in 60 words, cut a clause or sharpen a verb -- the cap holds.
 - LANGUAGE: plain English. No acronyms a non-specialist wouldn't
   recognise (spell out, replace, or drop). No spec-sheet stacking:
   ONE news number, the rest replaced with their consequence. Model
@@ -2318,36 +2363,78 @@ ITEMS:
   source, do NOT assert it -- and do NOT inventory its absence either
   ("benchmarks not yet published", "licence not specified" are both
   out). Describe what the source DOES state; stay silent about the
-  rest.
-- TRUST HEDGES ARE FACTUAL CLAIMS -- AND PRESENCE-FORM. "Self-reported",
-  "vendor-supplied", "single-source" assert something about the
-  SOURCING. Use them ONLY when the source explicitly supports that
-  characterisation (the paper says the benchmarks are its own; the post
-  is the vendor's own numbers). If the sourcing status is not stated,
-  OMIT the hedge -- or phrase it as a presence-characterisation from
-  metadata you DO have ("one research team's analysis" when the cluster
-  is a single source). TWO GATES, both mandatory: a trust flag must be
-  SOURCE-SUPPORTED and PRESENCE-FORM. Neither gate substitutes for the
-  other. Do not decorate. Wrong: "self-reported" when the source
-  describes scoring by an ensemble of LLM judges. Wrong: "no independent
-  replication" when the paper triangulates against two independent
-  systems. Wrong: "benchmarks are self-reported" when the source
-  describes experiments on real data with no such framing.
-- PRESENCE-FORM REWRITES (real defects from released issues):
-    "No code is public yet." -> delete, or "a preprint with the
-      authors' own scoring".
-    "Single-source interview; no independent benchmarks." ->
-      "Single-source interview." (the second clause is entailed by
-      the first).
+  rest. AFFIRMATIVE-PRESENCE OBLIGATION: when the source STATES an
+  artifact is available (code, weights, dataset, tooling public), the
+  summary MUST say so affirmatively ("dataset and tooling are
+  public") -- that is the signal a builder acts on, and it clears all
+  three gates.
+- TRUST HEDGES ARE FACTUAL CLAIMS -- PRESENCE-FORM -- AND NON-DEFAULT.
+  THREE GATES, all mandatory; a flag that fails ANY one does not appear:
+    1. SOURCE-SUPPORTED: the characterisation is one the source
+       explicitly supports (the paper says the benchmarks are its own;
+       the post is the vendor's own numbers). Never invented, never
+       decoration.
+    2. PRESENCE-FORM: it describes evidence that EXISTS, never what is
+       missing.
+    3. INFORMATIVE VS THE CLASS DEFAULT: it tells the reader something
+       the source-class name in the body did not already tell them.
+  The class attribution in the body carries the default calibration
+  for FREE. Deviation taxonomy (default needs NO flag; deviation EARNS
+  one):
+    * arXiv preprint. Default: single team, not peer-reviewed, authors'
+      own scoring. Deviation: independent replication PRESENT;
+      third-party scoring; multi-lab authorship on a dramatic claim.
+    * Vendor blog / release notes. Default: vendor's own numbers and
+      framing. Deviation: benchmark presented as if neutral; a
+      COMPETITOR ran the comparison; an independent audit is cited.
+    * Named-author experiment / blog. Default: one practitioner's
+      setup, n=1. Deviation: reproduced by others; production scale.
+    * Reddit / forum thread. Default: anecdote, n=1. Deviation: rarely;
+      a big claim resting on it (see magnitude routing below).
+  Non-obvious scoring METHOD also deviates: "scored by an ensemble of
+  LLM judges" is informative in a way "authors' own" is not.
+  RESTATING THE DEFAULT IS BANNED; the fix is DELETE the flag and let
+  the class name in the body carry it.
+    Wrong (restates default): "a preprint from a single research team."
+      Right: body says "an arXiv preprint", no separate flag.
+    Wrong: "Vendor-published benchmark" when the body already names the
+      vendor. Right (deviation): "the vendor benchmarked its
+      competitor's model."
+    Wrong: "one research team's analysis" (single-team IS the preprint
+      default). Wrong: "single-source" on a podcast interview (of
+      course it is).
+    Wrong: "self-reported" when the source describes scoring by an
+      ensemble of LLM judges (name the ensemble; that IS the flag).
+    Wrong: "no independent replication" when the paper triangulates
+      against two independent systems.
+    Wrong: "benchmarks are self-reported" when the source describes
+      experiments on real data with no such framing.
+- CLAIM-MAGNITUDE ROUTING: a claim far heavier than its evidence (a
+  field-redefining result in a single-team preprint; a big number from
+  one thread) belongs in the CLOSE -- the Currents calibrated stake or
+  the Big Picture strategic question -- NOT in the flag. One exception:
+  "thin sourcing, one Reddit thread" under a big claim is a legitimate
+  FLAG, because there the deviation IS the magnitude/evidence mismatch.
+  Either way, say it ONCE: flag or stake, never both.
+- THREE-GATE REWRITES (real defects from released issues; the most
+  common fix is now: name the class in the body, write NO flag):
+    "No code is public yet." -> delete; if the source states
+      availability, say it affirmatively ("code and weights are
+      public").
+    "Single-source interview; no independent benchmarks." -> delete
+      both clauses; "a single podcast interview" in the body carries
+      the calibration.
     "...the paper's own LLM judges, with no independent replication
-      yet" -> end the sentence after "LLM judges."
-    "Vendor release notes only; no independent benchmarks." ->
-      "Vendor release notes."
-    "Single research team; peer review pending." -> "A preprint from
-      a single research team."
+      yet" -> "scored by the paper's own LLM-judge ensemble." (the
+      METHOD is the informative part; the absence clause goes).
+    "Vendor release notes only; no independent benchmarks." -> name
+      the class in the body ("Anthropic's release notes"); no flag.
+    "Single research team; peer review pending." -> body says "an
+      arXiv preprint"; no separate flag.
   ALLOWED: when the source ITSELF states the absence, report the
   actor's statement or decision -- "the paper says code will be
-  released on acceptance" is an actor-statement, not a void.
+  released on acceptance", "weights withheld for safety" are
+  actor-statements, not voids (all three gates still apply).
 - Direction and finance lens live in the prose -- NEVER labels.
 - If callback context is present and the connection is tight, weave a
   brief reference in ("last week we flagged X; today's update is..."). If

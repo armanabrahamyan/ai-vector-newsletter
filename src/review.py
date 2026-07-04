@@ -34,12 +34,21 @@ from src import paths
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT_VERSION = "v0.3"
+REVIEW_PROMPT_VERSION = "v0.4"
 """Versioned prompt string written into ``review.md`` frontmatter so the
 eval harness can correlate verdict movement against prompt revisions.
 
 Bump when the prompt content (criteria, instructions, output format)
-changes substantively. Audit tag: ``review-v0.3-2026-07-04``.
+changes substantively. Audit tag: ``review-v0.4-2026-07-04``.
+
+v0.4 (2026-07-04): trust-flag gate 3 (informative vs the evidence-class
+default; reader-needs study, READING_EXPERIENCE.md §3 + R-8). The
+TRUST FLAGS criterion now flags default-restating flags ("a preprint
+from a single research team"; "vendor-published benchmark" when the
+body names the vendor) as noise, not virtue -- the fix is deleting the
+flag, not rewording it -- and its positive examples are deviation-shaped
+so the reviewer never demands a default-restating flag back. Aligns the
+reviewer with summarise v0.20.
 
 v0.3 (2026-07-04): trust flags are presence-form (Arman's direction via
 Experience Designer, READING_EXPERIENCE.md R-8). New per-story
@@ -243,10 +252,16 @@ CURRENTS (variable count)
 
 TRUST FLAGS (every story, all sections)
 - Trust flags must be PRESENCE-FORM: they characterise the evidence that
-  exists ("self-reported", "vendor-supplied benchmark", "single-source").
+  exists ("a second lab replicated it", "the vendor benchmarked its
+  competitor's model", "scored by an ensemble of LLM judges").
   Flag absence-inventory ("no code yet", "no independent replication
   yet", "not yet peer-reviewed") as a DEFECT -- never as a missing
   virtue.
+- A flag that merely restates its evidence-class default ("a preprint
+  from a single research team"; "vendor-published benchmark" when the
+  body already names the vendor) is NOISE, not virtue -- flag it as a
+  defect; the fix is deleting the flag and letting the source-class
+  name in the body carry the calibration.
 
 DRIFT WATCH (compare against previous released issues, supplied below)
 - Recurring themes covered the same way without progression.
