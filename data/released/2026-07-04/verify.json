@@ -1,0 +1,571 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-04T01:16:07.821071Z",
+  "prompt_version": "v0.4",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 48,
+    "unverifiable": 4,
+    "contradicted": 1
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_996303102906a8b3",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Reverse-engineering Claude Code reveals the design rules agentic systems need",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Reverse-engineering Claude Code reveals the design rules agentic systems need",
+          "source_span": "This study describes its architecture by analyzing the publicly available source code",
+          "note": "'Reverse-engineering' is a fair paraphrase of 'analyzing the publicly available source code'; the rest of the headline accurately reflects the paper's thrust."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Researchers reverse-engineered Claude Code's source code",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Researchers reverse-engineered Claude Code's source code",
+          "source_span": "This study describes its architecture by analyzing the publicly available source code",
+          "note": "'Reverse-engineered' is an acceptable paraphrase of 'analyzing the publicly available source code'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "mapping five design values through thirteen principles",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "mapping five design values through thirteen principles",
+          "source_span": "Our analysis identifies five human values, philosophies, and needs that motivate the architecture... We then trace them through thirteen design principles to implementation choices.",
+          "note": "Both numbers match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The core is a simple loop",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The core is a simple loop",
+          "source_span": "The core of the system is a simple while-loop that calls the model, runs tools, and repeats.",
+          "note": "Direct match; 'loop' is a fair compression of 'while-loop'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the real complexity sits in a seven-mode permission system around it",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the real complexity sits in a seven-mode permission system around it",
+          "source_span": "Most of the code, however, lives in the systems around this loop: a permission system with seven modes and an ML-based classifier",
+          "note": "The seven-mode permission system is confirmed; omitting the ML-based classifier detail is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The paper triangulates its reading against two independent open-source agents, OpenClaw and Hermes Agent",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The paper triangulates its reading against two independent open-source agents, OpenClaw and Hermes Agent",
+          "source_span": "comparing it with two independent open-source AI agent systems, OpenClaw and Hermes Agent",
+          "note": "'Triangulates its reading against' is a fair paraphrase of 'comparing it with'; both agent names match."
+        },
+        {
+          "schema_version": 1,
+          "claim": "it remains one research team's analysis",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it remains one research team's analysis",
+          "source_span": "From: Jiacheng Liu [view email]",
+          "note": "The source is a single submitted paper from one research team; this trust qualifier is appropriate and supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentic coding systems are already structuring human authority as a first-order constraint, not a safety layer bolted on after the fact",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agentic coding systems are already structuring human authority as a first-order constraint, not a safety layer bolted on after the fact",
+          "source_span": "Our analysis identifies five human values, philosophies, and needs that motivate the architecture: human decision authority, safety, security, and privacy",
+          "note": "The source lists 'human decision authority' as a primary motivating value of the architecture, supporting the claim that it is a first-order design concern rather than an afterthought."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_a154d83163fb3317",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Character-level text tricks bypass safety filters in most open models tested",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Character-level text tricks bypass safety filters in most open models tested",
+          "source_span": "Character-level perturbations bypass safety alignment in modern LLMs despite leaving prompts human-readable. The mechanism is a chain, tested end-to-end on five model families (Qwen-3-4B, Qwen-2.5-7B, Gemma-3-4B, Llama-3.1-8B, Mistral-7B).",
+          "note": "'Most open models tested' is a fair generalisation of five model families where 80-100% of refusals were flipped; 'text tricks' paraphrases 'character-level perturbations'; 'safety filters' paraphrases 'safety alignment'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "BPE tokenisation fragments safety-critical words into sub-pieces",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "BPE tokenisation fragments safety-critical words into sub-pieces",
+          "source_span": "BPE tokenization fragments safety-critical words into sub-word pieces",
+          "note": "'Sub-pieces' is a minor paraphrase of 'sub-word pieces'; the core fact matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "none of the 30,000 alignment examples across three public datasets contained intentionally fragmented inputs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "none of the 30,000 alignment examples across three public datasets contained intentionally fragmented inputs",
+          "source_span": "an alignment-data scan finds zero fragmented prompts among 30,000 examples (positive-control recall ≥99% at attack-relevant intensities); the three public alignment datasets we surveyed contain no intentionally fragmented inputs",
+          "note": "The body's claim matches the source's stated figures and dataset count exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "simple character-level perturbations flipped refusals on 80-100% of harmful prompts",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "simple character-level perturbations flipped refusals on 80-100% of harmful prompts",
+          "source_span": "An optimization targeting safety-token fragmentation flips the first-token refusal trigger on 80-100% of refused HarmBench prompts",
+          "note": "'Simple character-level perturbations' is a fair plain-English paraphrase of the described optimization; the 80-100% figure matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Across five open model families, simple character-level perturbations flipped refusals",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Across five open model families, simple character-level perturbations flipped refusals on 80-100% of harmful prompts",
+          "source_span": "tested end-to-end on five model families (Qwen-3-4B, Qwen-2.5-7B, Gemma-3-4B, Llama-3.1-8B, Mistral-7B)",
+          "note": "Five model families is confirmed; the attack scope across all five is supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "48% produced genuinely harmful outputs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "48% produced genuinely harmful outputs",
+          "source_span": "with 48% of those flips producing genuinely harmful outputs",
+          "note": "Exact figure and phrasing match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No code is public yet",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "No code is public yet",
+          "source_span": "",
+          "note": "The source excerpt makes no mention of code availability; this claim cannot be confirmed or denied from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_d6196059e2803c8b",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Provenance checks cut AI agent tool errors from 42% to under 2%",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Provenance checks cut AI agent tool errors from 42% to under 2%",
+          "source_span": "ProvenanceGuard reduces error rate on misaligned traces from 42.9% to 1.8% on Agent-SafetyBench",
+          "note": "42.9% rounded to 42% and 1.8% described as 'under 2%' are acceptable approximations; the core fact matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The weak point in deployed AI agents is unverifiable tool calls.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The weak point in deployed AI agents is unverifiable tool calls.",
+          "source_span": "ensuring that their actions are aligned with the user's intent becomes critical. When an agent's proposed tool invocation deviates from the user's intent -- a phenomenon called misalignment -- it may lead to harmful consequences that are difficult to undo.",
+          "note": "Editorial framing consistent with the source's motivation; paraphrase of the misalignment problem is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ProvenanceGuard checks each proposed action against traceable evidence in the agent's context before execution.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ProvenanceGuard checks each proposed action against traceable evidence in the agent's context before execution",
+          "source_span": "a provenance-based conceptual framework that formalizes misalignment detection as determining whether a proposed tool call is supported by traceable evidence in the agent's context... analyzes the agent's action for three types of misalignment before the selected tool is executed",
+          "note": "Accurate paraphrase of ProvenanceGuard's mechanism as described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ProvenanceGuard cuts error rates on misaligned actions from 42.9% to 1.8% on one benchmark.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "cutting error rates on misaligned actions from 42.9% to 1.8% on one benchmark",
+          "source_span": "ProvenanceGuard reduces error rate on misaligned traces from 42.9% to 1.8% on Agent-SafetyBench",
+          "note": "Figures match exactly; 'one benchmark' is a correct generalisation (Agent-SafetyBench is one of two benchmarks tested)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No code is public.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "No code is public.",
+          "source_span": "",
+          "note": "The source excerpt does not mention code availability, so this claim cannot be confirmed or denied from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_03b4074652908f35",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "SkillOpt trains an agent's instruction file without touching the model",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "SkillOpt trains an agent's instruction file without touching the model",
+          "source_span": "SkillOpt treats the skill file as a trainable parameter living outside a frozen target model",
+          "note": "Source confirms skill file is trained while model weights remain frozen; 'instruction file' is a plain-English paraphrase of 'skill file'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SkillOpt treats an agent's instruction file as a trainable parameter",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "SkillOpt treats an agent's instruction file as a trainable parameter",
+          "source_span": "SkillOpt treats the skill file as a trainable parameter living outside a frozen target model",
+          "note": "'Instruction file' is a plain-English paraphrase of 'skill file'; the core claim matches the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SkillOpt runs a forward-backward-update loop in text space while the underlying model stays frozen",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "running a forward-backward-update loop in text space while the underlying model stays frozen",
+          "source_span": "SkillOpt organizes skill editing as a forward–backward–update cycle in text space... the frozen target model executes a batch of training tasks",
+          "note": "Source explicitly describes the forward-backward-update cycle in text space with a frozen target model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Across 52 benchmark-model combinations, SkillOpt was best or tied-best in every cell",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Across 52 benchmark-model combinations, it was best or tied-best in every cell",
+          "source_span": "SkillOpt delivered the best or tied for-best results on all 52 cells",
+          "note": "'Benchmark-model combinations' is a reasonable compression of the six benchmarks, seven models, and three execution modes that yield 52 cells."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SkillOpt lifted one model's average score from 58.8 to 82.3",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "lifting one model's average score from 58.8 to 82.3",
+          "source_span": "With GPT-5.5 in direct chat, SkillOpt raises the six-benchmark average from 58.8 to 82.3",
+          "note": "Numbers match exactly; omitting the model name (GPT-5.5) and mode (direct chat) is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No code is public yet",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "No code is public yet",
+          "source_span": "",
+          "note": "The source excerpt makes no mention of code availability or a public repository, so this claim cannot be confirmed or denied from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_eca826dc11c94871",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Vercel now exposes full agent traces via its CLI and inspector tools",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Vercel now exposes full agent traces via its CLI and inspector tools",
+          "source_span": "eve traces are automatically ingested when deployed to Vercel and available as Agent Runs. The new Vercel MCP tools and Vercel CLI commands let you find projects with runs, list recent runs, and retrieve full traces, including reasoning, tool calls, and token usage.",
+          "note": "Source confirms full traces are retrievable via CLI and MCP/inspector tools; 'inspector tools' is a fair paraphrase of the MCP inspect commands."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Vercel's eve agent framework now auto-ingests traces on deployment",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Vercel's eve agent framework now auto-ingests traces on deployment",
+          "source_span": "eve traces are automatically ingested when deployed to Vercel and available as Agent Runs.",
+          "note": "Direct match to source language."
+        },
+        {
+          "schema_version": 1,
+          "claim": "surfacing reasoning steps, tool calls, and token usage",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "surfacing reasoning steps, tool calls, and token usage",
+          "source_span": "retrieve full traces, including reasoning, tool calls, and token usage.",
+          "note": "'Reasoning steps' is a fair paraphrase of 'reasoning'; other items match exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "four new CLI commands (vercel agent-runs inspect, trace, list, projects)",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "four new CLI commands (vercel agent-runs inspect, trace, list, projects)",
+          "source_span": "vercel agent-runs projects\nvercel agent-runs list\nvercel agent-runs inspect <runId>\nvercel agent-runs trace <runId>",
+          "note": "The source lists the correct four commands but the summary reverses the order of 'inspect' and 'trace', listing them as 'inspect, trace, list, projects' whereas the source order is 'projects, list, inspect, trace'; more critically the names themselves are correct so this is a reordering not a factual error — however the claim is still supported on the substance of the four command names being correct."
+        },
+        {
+          "schema_version": 1,
+          "claim": "matching MCP tools",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "matching MCP tools",
+          "source_span": "The new Vercel MCP tools and Vercel CLI commands let you find projects with runs, list recent runs, and retrieve full traces",
+          "note": "Source confirms corresponding MCP tools exist alongside CLI commands."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Single-vendor source, no independent benchmarks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Single-vendor source, no independent benchmarks.",
+          "source_span": "Your agent can now inspect Agent Runs via the Vercel MCP and CLI for eve, the open-source agent framework.",
+          "note": "The source is a Vercel announcement with no third-party validation; 'single-vendor' is an accurate editorial trust flag, not a factual claim requiring contradiction."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_0ad0dbe9b3b988bb",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "The best AI systems score under 60% on real Office documents",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "The best AI systems score under 60% on real Office documents",
+          "source_span": "Even the strongest frontier system in its default reasoning mode reaches only about 59.3% on Domain Q&A",
+          "note": "59.3% rounds to 'under 60%'; 'real Office documents' is a fair paraphrase of native Word/Excel/PowerPoint files."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Office Comprehension Bench (OCB) is the first public benchmark testing language models on native Word, Excel, and PowerPoint files.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Office Comprehension Bench (OCB) is the first public benchmark testing language models on native Word, Excel, and PowerPoint files.",
+          "source_span": "We introduce Office Comprehension Bench (OCB), the first public benchmark to jointly evaluate LLM systems on Word, Excel, and PowerPoint comprehension over native file formats (.docx, .xlsx, .pptx)",
+          "note": "Direct match; 'native Word, Excel, and PowerPoint files' is a valid paraphrase of the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The strongest frontier model scores only 59.3% on expert-level document reasoning.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The strongest frontier model scores only 59.3% on expert-level document reasoning",
+          "source_span": "Even the strongest frontier system in its default reasoning mode reaches only about 59.3% on Domain Q&A",
+          "note": "'Expert-level document reasoning' is a fair paraphrase of Domain Q&A; the figure matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pushing it to think harder barely moves the needle.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "pushing it to think harder barely moves the needle",
+          "source_span": "increasing thinking depth within a tier does not move performance materially",
+          "note": "'Think harder' paraphrases 'increasing thinking depth'; 'barely moves the needle' paraphrases 'does not move performance materially'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Dataset and tooling are public.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Dataset and tooling are public",
+          "source_span": "We release the dataset, evaluation tooling, judge prompt, and a public leaderboard.",
+          "note": "Source confirms dataset and tooling are released publicly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Scoring runs on the paper's own ensemble of LLM judges.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scoring runs on the paper's own ensemble of LLM judges",
+          "source_span": "an ensemble of LLM judges scores responses against each claim independently",
+          "note": "Accurate description of the scoring mechanism described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No independent replication yet.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "with no independent replication yet",
+          "source_span": "",
+          "note": "The source excerpt does not mention anything about independent replication; this claim cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Run OCB against your document pipeline before signing a processing vendor.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Run OCB against your document pipeline before signing a processing vendor.",
+          "source_span": "",
+          "note": "This is an editorial call to action, not a factual claim; it should be skipped per scope rules, but if evaluated it is opinion/advice rather than a checkable fact."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_a4189b2c9861d1d6",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code tip: let the agent decide when to write tests",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Claude Code tip: let the agent decide when to write tests",
+          "source_span": "it's better to just tell Fable to use its own judgement when deciding to write tests instead.",
+          "note": "The headline accurately paraphrases the core tip from the Claude Code team source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Claude Code team's tip: give Fable a goal, not a rulebook.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The Claude Code team's tip: give Fable a goal, not a rulebook.",
+          "source_span": "One of the most interesting tips I got from the Fireside Chat I hosted with Cat Wu and Thariq Shihipar from the Claude Code team",
+          "note": "The tip originates from the Claude Code team and the 'goal not rulebook' framing is a fair paraphrase of letting Fable use its own judgement."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Instead of \"run tests only for large features,\" tell it to use its own judgement.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Instead of \"run tests only for large features,\" tell it to use its own judgement.",
+          "source_span": "You can tell Fable \"only use automated testing for larger features, don't update and run tests for small copy or design changes\" - but it's better to just tell Fable to use its own judgement when deciding to write tests instead.",
+          "note": "The summary accurately paraphrases the contrast given in the source, with minor compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A second trick routes smaller coding tasks to cheaper sub-models.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A second trick routes smaller coding tasks to cheaper sub-models",
+          "source_span": "Tell Fable to use other models for smaller tasks, applying its own judgement about which model to use.",
+          "note": "The source confirms routing smaller tasks to other (cheaper/lower-power) models via subagents."
+        },
+        {
+          "schema_version": 1,
+          "claim": "preserving the top-tier model for review and synthesis",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "preserving the top-tier model for review and synthesis",
+          "source_span": "judgment, review, and synthesis stay with the main loop.",
+          "note": "The source explicitly states review and synthesis stay with the main (top-tier) model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Single-source, practitioner-reported.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Single-source, practitioner-reported.",
+          "source_span": "One of the most interesting tips I got from the Fireside Chat I hosted with Cat Wu and Thariq Shihipar from the Claude Code team",
+          "note": "The source is a single practitioner's blog/post reporting tips from a fireside chat, so the trust qualifier is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Add both prompts to your project memory file today.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Add both prompts to your project memory file today.",
+          "source_span": "Claude saved this memory file in ~/.claude/projects/name-of-project/memory/delegate-coding-to-subagents.md",
+          "note": "The source shows the author saved the prompt to a project memory file, making this a reasonable call to action grounded in the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_fb584b0292bee2f9",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Vercel's agent framework treats skills and sandboxes as first-class infrastructure",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Vercel's agent framework treats skills and sandboxes as first-class infrastructure",
+          "source_span": "That became eve. ... A year ago, I started working toward putting an agent on every desk inside Vercel. That led me to build a successful data agent, and along the way a number of best practices emerged: filesystem agents, skills, compaction and subagents. These were all things I wished had come out of the box.",
+          "note": "Source confirms eve is Vercel's agent framework and that skills and sandboxes are core primitives treated as foundational infrastructure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Vercel's eve framework, grown from building its v0 vibe-coding product",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Vercel's eve framework, grown from building its v0 vibe-coding product",
+          "source_span": "While building our own agent in v0, our vibe-coding product, we ran into a lot of paper cuts that existing tooling did not solve... We turned those solutions into reusable libraries... That became eve.",
+          "note": "Source explicitly states eve grew out of building v0, described as Vercel's vibe-coding product."
+        },
+        {
+          "schema_version": 1,
+          "claim": "eve packages four primitives as first-class infrastructure",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "packages four primitives as first-class infrastructure -- skills (portable knowledge to correct outdated model behaviour), sandboxes for secure code execution, subagents, and resumable runs",
+          "source_span": "a number of best practices emerged: filesystem agents, skills, compaction and subagents... switching models or providers, adding fallbacks and making runs resumable... A year ago, we did not know sandboxes would become so important, or how much demand there would be for secure code execution and long-running jobs.",
+          "note": "Source mentions skills, sandboxes, subagents, and resumable runs as key primitives; the count of four and the specific grouping is a reasonable compression of the source material."
+        },
+        {
+          "schema_version": 1,
+          "claim": "skills (portable knowledge to correct outdated model behaviour)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "skills (portable knowledge to correct outdated model behaviour)",
+          "source_span": "Skills are useful as portable, on-demand knowledge. Models often contain outdated information. For example, they still sometimes recommend Vercel Postgres, even though we deprecated it years ago... A skill can tell the agent that Vercel Postgres is deprecated and steer it toward the current approach.",
+          "note": "Source directly describes skills as portable knowledge used to correct outdated model behaviour."
+        },
+        {
+          "schema_version": 1,
+          "claim": "sandboxes for secure code execution",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "sandboxes for secure code execution",
+          "source_span": "A year ago, we did not know sandboxes would become so important, or how much demand there would be for secure code execution and long-running jobs.",
+          "note": "Source explicitly links sandboxes to secure code execution."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Single-source interview; no independent benchmarks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Single-source interview; no independent benchmarks",
+          "source_span": "In this interview with Latent Space, Qu explains why agents represent a new form of software",
+          "note": "The source is a single interview with one Vercel employee; no benchmarks or independent validation appear in the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 8 stories -- factual flags present"
+}

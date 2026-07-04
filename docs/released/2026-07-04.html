@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Vector &middot; Issue No. 23 &middot; 04 July 2026</title>
+  <meta name="description" content="Today&#39;s AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="mask-icon" href="../favicon.svg" color="#e6452f">
+  <link rel="stylesheet" href="../fonts/fonts.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fbfaf6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a17;
+    }
+
+    /* ── shell ─────────────────────────────────────────────── */
+    .av-shell {
+      font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      color: #1a1a17;
+      background: #ffffff;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 88px 80px;
+      letter-spacing: -0.003em;
+      font-feature-settings: "kern", "liga", "calt";
+      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
+    }
+
+    /* ── duplicate-risk gate (staging preview only) ─────────── */
+    .av-dup-gate {
+      border: 2px solid #b00020;
+      border-left-width: 8px;
+      background: #fff5f5;
+      border-radius: 6px;
+      padding: 18px 22px;
+      margin-bottom: 32px;
+      color: #5c0010;
+      font-family: "Inter Tight", system-ui, sans-serif;
+    }
+    .av-dup-gate-head {
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: #b00020;
+    }
+    .av-dup-gate-body, .av-dup-gate-remedy {
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0 0 8px;
+    }
+    .av-dup-gate-cmds {
+      margin: 0;
+      padding: 12px 14px;
+      background: #2b0008;
+      color: #ffd9dd;
+      border-radius: 4px;
+      font-family: "SFMono-Regular", ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    /* ── masthead ──────────────────────────────────────────── */
+    .av-masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0c0c0c;
+      margin-bottom: 36px;
+    }
+    .av-brand {
+      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      line-height: 0.85;
+      color: #0c0c0c;
+      text-transform: uppercase;
+    }
+    .av-brand-slash { color: #e6452f; margin: 0 2px; }
+    .av-mast-meta {
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a5a55;
+      text-align: right;
+      line-height: 1.7;
+    }
+    .av-mast-archive {
+      display: inline-block;
+      margin-top: 4px;
+      color: #e6452f;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(230,69,47,0.35);
+    }
+    .av-mast-archive:hover { border-bottom-color: #e6452f; }
+
+    /* ── tagline ───────────────────────────────────────────── */
+    .av-tagline {
+      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: #1a1a17;
+      margin: 0 0 32px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .av-tagline-mark { color: #e6452f; margin-right: 12px; }
+
+    /* ── pulse ─────────────────────────────────────────────── */
+    .av-pulse {
+      margin: 0 0 56px;
+      padding: 32px 32px 28px;
+      background: #fdf4f1;
+      border-left: 3px solid #e6452f;
+    }
+    .av-pulse-label {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e6452f;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .av-pulse-bar { width: 32px; height: 2px; background: #e6452f; }
+    .av-pulse-title {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      line-height: 1.15;
+      margin: 0 0 22px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 26ch;
+    }
+    .av-pulse-body {
+      font-size: 18px;
+      line-height: 1.65;
+      color: #2a2a26;
+      margin: 0 0 18px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-pulse-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-pulse-link {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 600;
+    }
+
+    /* ── section ───────────────────────────────────────────── */
+    .av-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #0c0c0c;
+      margin: 0 0 28px;
+    }
+    .av-section-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .av-section-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0;
+      color: #0c0c0c;
+    }
+    .av-section-count {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #6a6a64;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── stories ───────────────────────────────────────────── */
+    .av-story { margin: 0 0 36px; }
+    .av-story-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 28em;
+    }
+    .av-story-body {
+      font-size: 17px;
+      line-height: 1.7;
+      color: #2a2a26;
+      margin: 0 0 14px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-story-foot {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-story-src {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 500;
+    }
+
+    /* ── pills ─────────────────────────────────────────────── */
+    .av-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: "Inter Tight", sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+    .av-pill-act     { color: #8a5448; background: #f5ecea; }
+    .av-pill-try     { color: #4f7a5d; background: #ecf2ed; }
+    .av-pill-read    { color: #5a7090; background: #eef1f6; }
+    .av-pill-watch   { color: #6a6a64; background: #f0efec; }
+    .av-pill-discuss { color: #8a7548; background: #f4eee2; }
+
+    /* ── section intro paragraph ───────────────────────────── */
+    .av-section-intro {
+      font-size: 17px;
+      line-height: 1.6;
+      color: #3a3a36;
+      margin: 0 0 36px;
+      max-width: 40em;
+      text-wrap: pretty;
+    }
+    .av-section-intro-strong {
+      color: #0c0c0c;
+      font-weight: 700;
+    }
+
+    /* ── Currents (terse) ─────────────────────────────────── */
+    .av-section.currents .av-story { margin: 0 0 22px; }
+    .av-section.currents .av-story-body { font-size: 16px; }
+    /* legacy alias for archived issues still carrying on_the_radar class */
+    .av-section.on_the_radar .av-story { margin: 0 0 22px; }
+    .av-section.on_the_radar .av-story-body { font-size: 16px; }
+
+    /* ── verify flags (staging preview only) ──────────────── */
+    .av-verify-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: "Inter Tight", system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #7a3800;
+      background: #fff3e0;
+      border: 1px solid #f0a050;
+      white-space: nowrap;
+    }
+    .av-verify-flag--headline {
+      color: #6a0000;
+      background: #fff0f0;
+      border-color: #e07070;
+    }
+
+    /* ── footer ────────────────────────────────────────────── */
+    .av-footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #0c0c0c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6a6a64;
+    }
+    .av-footer-build {
+      color: #a5a5a0;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .av-about {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #8a8a85;
+      line-height: 1.6;
+      max-width: 60em;
+    }
+    .av-archive-link {
+      color: #6a6a64;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    /* ── responsive ────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .av-shell { padding: 36px 24px 48px; }
+      .av-brand { font-size: 42px; }
+      .av-mast-meta { font-size: 10px; letter-spacing: 0.1em; }
+      .av-tagline { font-size: 19px; }
+      .av-pulse { padding: 24px 22px 22px; }
+      .av-pulse-title { font-size: 26px; }
+      .av-pulse-body { font-size: 17px; }
+      .av-section-title { font-size: 22px; }
+      .av-story-title { font-size: 20px; }
+      .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .av-mast-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <article class="av-shell">
+    
+    <header class="av-masthead">
+      <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
+      <div class="av-mast-meta">
+        <div>Saturday, 04 July 2026</div>
+        <div>Issue No. 23 &middot; ~3 min read</div>
+        <div><a class="av-mast-archive" href="../index.html">All Issues &rarr;</a></div>
+      </div>
+    </header>
+
+    <p class="av-tagline">
+      <span class="av-tagline-mark">&mdash;</span>
+      Today&#39;s AI, with a heading.
+    </p>
+
+    
+    
+    <section class="av-pulse">
+      <div class="av-pulse-label">
+        <span class="av-pulse-bar"></span>
+        <span>The Pulse &middot; Story of the day</span>
+      </div>
+      <h2 class="av-pulse-title">Reverse-engineering Claude Code reveals the design rules agentic systems need</h2>
+      <p class="av-pulse-body">Researchers reverse-engineered Claude Code&#39;s source code, mapping five design values through thirteen principles. The core is a simple loop; the real complexity sits in a seven-mode permission system around it. The paper triangulates its reading against two independent open-source agents, OpenClaw and Hermes Agent, though it remains one research team&#39;s analysis. Agentic coding systems are already structuring human authority as a first-order constraint, not a safety layer bolted on after the fact. Where yesterday&#39;s Pulse showed agents hiding the evidence they never used, today&#39;s shows the same systems making human authority a design primitive -- oversight is shifting from an audit problem to an architectural one.</p>
+      <div class="av-pulse-meta">
+        
+          <a class="av-pulse-link" href="https://arxiv.org/abs/2604.14228">arxiv.org&nbsp;&rarr;</a>
+        
+        
+      </div>
+    </section>
+
+    
+    
+      
+        <div class="av-section big_picture">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">The Big Picture</h2>
+            </div>
+            <span class="av-section-count">3 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Safety is an engineering problem.</span> Today&#39;s research treats alignment failures as fixable at the infrastructure layer: through provenance checks, instruction tuning, and a hard look at how tokenisation fragments safety. The implication is that governance now has specific levers to pull, not just principles to endorse.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Character-level text tricks bypass safety filters in most open models tested</h3>
+              <p class="av-story-body">BPE tokenisation fragments safety-critical words into sub-pieces, and none of the 30,000 alignment examples across three public datasets contained intentionally fragmented inputs. Across five open model families, simple character-level perturbations flipped refusals on 80-100% of harmful prompts; 48% produced genuinely harmful outputs. No code is public yet. If a perturbation this simple flips refusals across five open model families, how much of the published refusal-rate literature still describes a defence that holds?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://arxiv.org/abs/2607.01239">arxiv.org&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Provenance checks cut AI agent tool errors from 42% to under 2%</h3>
+              <p class="av-story-body">The weak point in deployed AI agents is unverifiable tool calls. ProvenanceGuard checks each proposed action against traceable evidence in the agent&#39;s context before execution, cutting error rates on misaligned actions from 42.9% to 1.8% on one benchmark. No code is public. If provenance tracing can cut misaligned tool-call rates this sharply, what does that ask of the liability and sign-off frameworks now being drafted around autonomous agents?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://arxiv.org/abs/2607.01236">arxiv.org&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">SkillOpt trains an agent&#39;s instruction file without touching the model</h3>
+              <p class="av-story-body">SkillOpt treats an agent&#39;s instruction file as a trainable parameter, running a forward-backward-update loop in text space while the underlying model stays frozen. Across 52 benchmark-model combinations, it was best or tied-best in every cell, lifting one model&#39;s average score from 58.8 to 82.3. No code is public yet. If instruction files can be tuned into gains like this while the model stays frozen, where should teams draw the line between prompt engineering and training?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://www.microsoft.com/en-us/research/blog/skillopt-agent-skills-as-trainable-parameters/">microsoft.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section hands_on">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Hands-On</h2>
+            </div>
+            <span class="av-section-count">3 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Bench before you budget.</span> Today&#39;s pattern is mixed provenance: one genuinely independent benchmark, one vendor trace tool, one workflow tip. Treat the independent score as signal; hold the rest until you can replicate it on your own documents.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Vercel now exposes full agent traces via its CLI and inspector tools</h3>
+              <p class="av-story-body">Vercel&#39;s eve agent framework now auto-ingests traces on deployment, surfacing reasoning steps, tool calls, and token usage through four new CLI commands (vercel agent-runs inspect, trace, list, projects) and matching MCP tools. Single-vendor source, no independent benchmarks. If you&#39;re already running eve on Vercel, pull vercel agent-runs trace on your next production run before filing a bug report.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://vercel.com/changelog/agent-runs-vercel-mcp-cli">vercel.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">The best AI systems score under 60% on real Office documents</h3>
+              <p class="av-story-body">Office Comprehension Bench (OCB) is the first public benchmark testing language models on native Word, Excel, and PowerPoint files. The strongest frontier model scores only 59.3% on expert-level document reasoning; pushing it to think harder barely moves the needle. Dataset and tooling are public, though scoring runs on the paper&#39;s own ensemble of LLM judges, with no independent replication yet. Run OCB against your document pipeline before signing a processing vendor.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://arxiv.org/abs/2607.01245">arxiv.org&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Claude Code tip: let the agent decide when to write tests</h3>
+              <p class="av-story-body">The Claude Code team&#39;s tip: give Fable a goal, not a rulebook. Instead of &#34;run tests only for large features,&#34; tell it to use its own judgement. A second trick routes smaller coding tasks to cheaper sub-models, preserving the top-tier model for review and synthesis. Single-source, practitioner-reported. Add both prompts to your project memory file today.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://simonwillison.net/2026/Jul/3/judgement/#atom-everything">simonwillison.net&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section currents">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Currents</h2>
+            </div>
+            <span class="av-section-count">1 items</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">One current worth watching.</span> A thin day beneath the surface, but not an empty one. The undercurrent is agent frameworks hardening their primitives -- skills, sandboxes, subagents -- into named infrastructure. One vendor&#39;s move is not yet a trend, but it is the direction to watch as scaffolding choices start to set.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Vercel&#39;s agent framework treats skills and sandboxes as first-class infrastructure</h3>
+              <p class="av-story-body">Early signal: Vercel&#39;s eve framework, grown from building its v0 vibe-coding product, packages four primitives as first-class infrastructure -- skills (portable knowledge to correct outdated model behaviour), sandboxes for secure code execution, subagents, and resumable runs. Single-source interview; no independent benchmarks; the shipping CLI that traces these agents in production sits in Hands-On above. If this primitive set becomes the default shape of agent frameworks, scaffolding choices made against it now will age well; if it stays one vendor&#39;s house style, it is a preview rather than a standard.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://www.latent.space/p/vercel-agents-new-software">latent.space&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+
+    <footer class="av-footer">
+      <span>AI Vector &middot; Arman Abrahamyan &middot; 04 July 2026 &middot; <a class="av-archive-link" href="../index.html">all issues &rarr;</a></span>
+      <span class="av-footer-build">Compiled 2026-07-04 10:59 AEST</span>
+    </footer>
+    <p class="av-about">
+      A daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+    </p>
+  </article>
+</body>
+</html>
