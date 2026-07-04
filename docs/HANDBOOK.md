@@ -522,6 +522,26 @@ endpoint is unavailable.
 For iteration: do one full run to get fresh data, then loop on
 `--stages rank,summarise,render` while tweaking prompts.
 
+**Every `aiv run` prints an actual cost line** (no estimating needed) as
+the last line of the closing banner, one segment per stage that ran plus a
+total:
+
+```
+LLM usage: rank 25.1k/3.2k ($0.12) | summarise 88.0k/12.0k ($0.44) | verify 41.0k/6.0k ($0.21) | review 9.0k/4.0k ($0.09) | TOTAL $0.86
+```
+
+Each segment is `stage input_tokens/output_tokens ($cost)`. Only stages
+that actually called the LLM show up — a `--stages fetch,cluster,render`
+run prints no cost line at all. The same numbers are also written to
+`data/metrics_log.jsonl` under an `"llm_usage"` key for trend-watching.
+
+Prices live in a small table at the top of `src/llm_usage.py`, keyed by
+model-id prefix (so dated ids like `claude-sonnet-4-6-20260115` still
+match). **They drift** — if you swap models or Anthropic changes pricing,
+update that table. If a model isn't in the table, the line still shows
+token counts but prints `(cost unknown)` for that stage rather than a
+guess — add the model's prices to unblock it.
+
 ---
 
 ## 13. "What's safe to edit by hand?"

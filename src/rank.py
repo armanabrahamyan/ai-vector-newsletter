@@ -64,7 +64,7 @@ from typing import Any, Iterable
 import yaml
 from pydantic import ValidationError
 
-from src import paths
+from src import llm_usage, paths
 from src.models import RUBRIC_WEIGHTS, SECTION_WEIGHTS, Cluster, Item, RankedStory
 
 
@@ -1496,6 +1496,13 @@ def _assign_initial_tier(
 # ---------------------------------------------------------------------------
 # LLM client -- branches on LLM_PROVIDER. Anthropic + Bedrock implemented;
 # other providers raise NotImplementedError for v0 (LiteLLM later).
+#
+# This is the single choke point every LLM-calling stage funnels through
+# (rank + summarise call `_llm_call` directly; verify reuses it via its own
+# metered wrapper; review calls `_rank._llm_call`). Each provider branch
+# below records real billed token usage into `src.llm_usage` right after
+# the response comes back, so cost reporting covers every call path from
+# one place.
 # ---------------------------------------------------------------------------
 
 def _llm_call(prompt: str, *, temperature: float, max_tokens: int) -> str:
@@ -1583,6 +1590,15 @@ def _llm_call_anthropic(
             resp = client.messages.create(**create_kwargs)
         else:
             raise
+    # Record token usage for the cost-reporting accumulator (src/llm_usage.py)
+    # before anything else can raise -- the SDK's `.usage` carries actual
+    # billed counts, not an estimate.
+    usage = getattr(resp, "usage", None)
+    llm_usage.record(
+        model,
+        getattr(usage, "input_tokens", 0) or 0,
+        getattr(usage, "output_tokens", 0) or 0,
+    )
     # Concatenate text blocks. SDK returns a list of content blocks; the
     # ranking + summarisation prompts both request plain text/JSON, so we
     # join all text blocks defensively.
@@ -1636,6 +1652,14 @@ def _llm_call_bedrock(
         body=body,
     )
     payload = json.loads(resp["body"].read())
+    # Bedrock's Anthropic Messages API mirrors the native `.usage` shape as a
+    # plain dict in the response body.
+    usage = payload.get("usage") or {}
+    llm_usage.record(
+        model,
+        usage.get("input_tokens", 0) or 0,
+        usage.get("output_tokens", 0) or 0,
+    )
     chunks: list[str] = []
     for block in payload.get("content", []) or []:
         if isinstance(block, dict) and isinstance(block.get("text"), str):
@@ -1687,6 +1711,16 @@ def _llm_call_openai_compatible(
         raise RuntimeError(
             f"openai-compatible response had no choices: {payload!r}"
         )
+    # OpenAI Chat Completions shape: {"usage": {"prompt_tokens":,
+    # "completion_tokens":, ...}}. Some gateways (LiteLLM) echo back the
+    # resolved model id in `payload["model"]`; prefer that for pricing
+    # lookups since it's often more specific than the alias we requested.
+    usage = payload.get("usage") or {}
+    llm_usage.record(
+        payload.get("model") or model,
+        usage.get("prompt_tokens", 0) or 0,
+        usage.get("completion_tokens", 0) or 0,
+    )
     return (choices[0].get("message") or {}).get("content") or ""
 
 
