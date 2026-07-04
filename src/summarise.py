@@ -91,9 +91,27 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.17"
+SUMMARISE_PROMPT_VERSION = "v0.18"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.17-2026-07-04``. v0.17 (Trust hedges are factual claims):
+``summarise-v0.18-2026-07-04``. v0.18 (reading-experience: close-form
+grammar diversification, turn-types unchanged):
+  - Experience Designer's #1 finding (READING_EXPERIENCE.md R-1 + R-2):
+    the Hands-On and Currents CLOSE TURN-TYPES are correct, but their
+    surface grammar has collapsed into single moulds -- Hands-On ~95%
+    "[imperative] ... before [milestone]"; Currents nearly always "If X
+    replicates, Y; if it doesn't, Z" -- so the reader's eye predicts the
+    scaffold and skips the most actionable line. Fix adds a SURFACE
+    VARIETY instruction to each of the two closing-shape blocks
+    (``_CLOSING_SHAPE_PER_SECTION['hands_on'|'currents']``): 3-4
+    alternative grammatical realisations of each turn-type, the old mould
+    demoted to one option among several (~2 per section), plus a
+    within-issue line barring consecutive stories from sharing a mould.
+    The turn-type CONTRACT is unchanged (Hands-On still closes on a
+    specific imperative action; Currents still on a two-sided calibrated
+    stake with real stakes on both branches) -- src/review.py's shape
+    checks are untouched. Illustrative phrasings are voice-adjacent;
+    Editor may tune them.
+v0.17 (Trust hedges are factual claims):
   - New HONESTY rule + house-style guardrail: the verifier caught the
     summariser INVENTING trust hedges ("self-reported", "no independent
     replication") the source never supports -- three times in three days
@@ -1008,12 +1026,27 @@ _CLOSING_SHAPE_PER_SECTION: dict[str, str] = {
         "    incident baseline.\"\n"
         "  - \"Run v0.22.0 against your own latency baseline this week;\n"
         "    if you confirm even half the 28.9% claim, ship the upgrade --\n"
-        "    the cost-per-token math justifies the migration.\""
+        "    the cost-per-token math justifies the migration.\"\n"
+        "SURFACE VARIETY (the imperative turn-type is FIXED; its grammar is\n"
+        "NOT). The \"[do X] before [milestone]\" mould is ONE realisation,\n"
+        "not the default -- cap it at ~2 per section. Vary the construction\n"
+        "story to story:\n"
+        "  - trigger-first: \"Before your next eval cycle, install it and\n"
+        "    diff the guardrail scores against your current stack.\"\n"
+        "  - condition-first: \"Already on the older CLI? Upgrade before\n"
+        "    your next batch job; the token savings compound.\"\n"
+        "  - bare imperative with stakes: \"Pull the weights and run your\n"
+        "    own guardrail eval; the vendor's F1 numbers won't transfer.\"\n"
+        "  - the classic \"[do X] before [milestone]\" -- one option among\n"
+        "    these, not the reflex.\n"
+        "Within an issue, consecutive Hands-On stories must NOT share the\n"
+        "same closing mould; vary the grammar story to story."
     ),
     "currents": (
         "CLOSING SHAPE -- CALIBRATED STAKE\n"
         "End on a two-sided watch-condition with stakes on BOTH branches.\n"
-        "Structure: \"If X holds, Y; if not, Z.\" Both branches must carry\n"
+        "Two-sidedness is the INTENT; \"If X holds, Y; if not, Z\" is ONE\n"
+        "grammar for it, not the required shape. Both branches must carry\n"
         "REAL stakes -- one-sided \"if X, Y\" without an inverse FAILS;\n"
         "false-binaries where one branch is impossible FAIL; placebo\n"
         "stakes (\"if not, we'll know more next quarter\") FAIL. The\n"
@@ -1027,7 +1060,21 @@ _CLOSING_SHAPE_PER_SECTION: dict[str, str] = {
         "  - \"If the FinGuard claim holds under audit, every customer-\n"
         "    facing deployment without a regulation-grounded check is a\n"
         "    compliance gap waiting to be found. If it doesn't, the gap\n"
-        "    is the audit.\""
+        "    is the audit.\"\n"
+        "SURFACE VARIETY (two-sidedness is FIXED; its grammar is NOT). Do\n"
+        "NOT reach for \"If X, Y; if not, Z\" every time -- cap it at ~2 per\n"
+        "section. Alternatives that still carry the calibrated stake:\n"
+        "  - stake-first: \"The bet is that latent reasoning survives audit;\n"
+        "    the hedge is that even if it doesn't, the monitoring gap it\n"
+        "    exposes is already yours to close.\"\n"
+        "  - watch-condition: \"Worth watching until a second lab\n"
+        "    replicates or kills it; either way, staleness as its own\n"
+        "    failure class is the takeaway.\"\n"
+        "  - magnitude-framed: \"Replicated, this reshapes latency-aware\n"
+        "    design. Unreplicated, it is still the best evidence yet that\n"
+        "    the benchmark suite, not the model, is the story.\"\n"
+        "Within an issue, consecutive Currents items must NOT share the\n"
+        "same closing mould; vary the grammar item to item."
     ),
 }
 

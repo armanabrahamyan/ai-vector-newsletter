@@ -34,12 +34,18 @@ from src import paths
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT_VERSION = "v0.1"
+REVIEW_PROMPT_VERSION = "v0.2"
 """Versioned prompt string written into ``review.md`` frontmatter so the
 eval harness can correlate verdict movement against prompt revisions.
 
 Bump when the prompt content (criteria, instructions, output format)
-changes substantively. Audit tag: ``review-v0.1-2026-05-31``."""
+changes substantively. Audit tag: ``review-v0.2-2026-07-04``.
+
+v0.2 (2026-07-04): Currents closing-shape wording generalised — the
+calibrated stake is the turn-type; "if X, Y; if not, Z" is one grammar
+for it, not the required scaffold. Keeps reviewer aligned with
+summarise v0.18's close-form grammar diversification so legitimate
+variety isn't false-flagged. v0.1 audit tag: ``review-v0.1-2026-05-31``."""
 
 _REVIEW_LOOKBACK_ISSUES = 3
 """How many previously-released issues to include for drift-watch context.
@@ -219,8 +225,11 @@ HANDS-ON (up to 5 stories)
 CURRENTS (variable count)
 - Voice adherence: conditional / hedged opening ("Early signal:";
   "If X holds:"; "Worth watching:").
-- Closing shape: CALIBRATED STAKE -- two-sided "if X, Y; if not, Z" with
-  real stakes on both branches.
+- Closing shape: CALIBRATED STAKE -- two-sided, with real stakes on both
+  branches. "If X, Y; if not, Z" is ONE grammar for it, not the required
+  scaffold: stake-first, watch-condition, and magnitude-framed closes are
+  equally valid when both branches carry real stakes. Judge the
+  two-sidedness, not the surface mould.
 - Section intro is MANDATORY and names the aggregate motion direction --
   flag if missing or flat.
 - Flag items that belong head-tier (Big Picture / Hands-On) instead.
