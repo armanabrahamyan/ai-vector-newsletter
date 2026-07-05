@@ -293,6 +293,152 @@ presence-form AND non-default ("Vercel's own eve framework", not "no
 independent validation yet", and not the empty "a single vendor" when the
 body already named the vendor).
 
+### The headline-opener contract — anchors, articles, and genre labels
+*Ruling 2026-07-04 (R-9), triggered by Arman's question on the restaged
+2026-07-04 issue ("why do we have A or THE in titles now? Do they add
+value?") and consolidated with two same-day ratified preferences (the
+Claude Code tip headline; venue-derived Microsoft attribution). One
+contract, because the three patterns are the same decision: what earns
+the first three words — the F-pattern's hottest fixation window.*
+
+**Diagnosis (articles).** Article-led headlines are the grammatical
+shadow of the recognition rule: describing an unnamed artifact in a
+*full-sentence* headline produces a singular indefinite noun-phrase
+subject, and English grammar then requires "A/An". Archive audit (23
+released issues, 263 headlines): 63 article-led (24%). Every "The"-led
+headline (4/4) uses the article as a real semantic operator — superlative
+("The best AI systems score under 60%…"), unique referent ("The UK
+financial regulator…"), definite scope ("The next video AI leap…"),
+restrictive relative ("The benchmark reproducibility guide that most
+evals quietly violate"). Of the 59 "A/An"-led, only ~2 are semantically
+load-bearing ("A quarter of benchmark tasks…", "A second training
+pass…"); the rest are semantically inert **but grammatically required by
+the full-sentence form** — they are not deletable filler.
+
+**The opener ladder (in force — choose the subject by the highest rung
+available):**
+
+1. **Recognised anchor first — and never trade it away.** If a
+   recognised tool, vendor, lab, or regulation anchors the story, it
+   opens the headline ("Claude Code tip: …", "Microsoft trains…",
+   "Vercel redesigns…"). Attribution derivable from the *source venue*
+   counts as recognition-rule material: a post on
+   microsoft.com/en-us/research is Microsoft's work; a first-party
+   vendor blog is the vendor's. (Third-party coverage and aggregators do
+   NOT transfer their name to the work.) **Regression class, ratified
+   2026-07-04:** a regeneration must never drop an existing recognised
+   anchor for an abstract benefit — "Claude Code tip: let the agent
+   decide when to write tests" regenerated into "Let your coding agent
+   choose its own tools and save tokens" lost the triage anchor, the
+   genre, and the actual insight in one move.
+2. **General finding, plural subject.** If no recognised name and the
+   finding holds for the class, state it as the class: "Character-level
+   tricks bypass safety filters in most open models tested." Plural
+   subjects need no article and remain full sentences — this is the
+   article-free recast, not deletion.
+3. **Single unnamed artifact: "A/An" + identifying modifiers.** Keep the
+   article — **never delete an article from a full-sentence headline.**
+   Bare deletion ("Small open safety classifier beats…") converts house
+   voice to wire headlinese; measured at phone line widths (~30–33 chars
+   at the 20px mobile title size), dropping "A /An /The " almost never
+   promotes a keyword above the first line break — scan gain ~zero,
+   register cost real. But every word between the article and the verb
+   must identify the artifact: "A 9-millisecond CPU model", "A CUDA-free
+   kernel", "A character-level trick" are in voice; **"A new + generic
+   noun" (framework / method / tool / benchmark / system) is banned as
+   an opener** — "new" is entailed by appearing in today's issue, and
+   the empty subject wastes the fixation window whether or not the
+   article is there (16 of the 59 archive cases are "A new X").
+4. **"The" only as a semantic operator** — superlative, unique referent,
+   definite scope, restrictive relative. All archive instances already
+   pass; frequency is self-limiting (~1.5%). No change.
+
+**Genre labels ("Claude Code tip: …") — honest sizing.** Ratified
+preference, 2026-07-04: a recognised-anchor + genre-label headline beats
+a bare declarative when the item is a small practical move that a
+declarative would oversell as news. The label declares the genre (a tip,
+not a release) and the anchor resolves triage in word one. Constraints:
+(a) only with a recognised anchor; (b) only when the genre would
+otherwise be oversold; (c) at most one labelled headline per issue —
+this is the corpus's *first* such headline, so the label vocabulary
+stays tiny and earns each addition; (d) this colon is a genre label, not
+a second idea — it is the one licensed exception to the one-idea colon
+ban.
+
+**Density guardrail: at most two "A/An"-led headlines per issue.** The
+per-headline pattern is mostly fine; the per-issue *density* is what
+reads as a template. Evidence: #22 ran five of nine ("A proposed outer
+loop / A small open safety classifier / A deterministic scoring library
+/ A live experiment / An open voice pipeline") — the same
+repetition-fatigue mechanism as R-1/R-2, at the headline layer. #23's
+1/8 is the healthy baseline.
+
+**Calibration pairs (both ratified 2026-07-04; same stories, two
+renders):**
+- BETTER: "Claude Code tip: let the agent decide when to write tests" ·
+  WORSE: "Let your coding agent choose its own tools and save tokens"
+  (dropped anchor; oversold genre; abstract benefit displaced the
+  insight; unanchored imperative opener — which the existing imperative
+  rule already forbids).
+- BETTER: "Microsoft trains agent instruction files instead of rewriting
+  them by hand" · WORSE: "SkillOpt trains an agent's instruction file
+  without touching the model" (SkillOpt is unrecognised — a parked
+  string in position 1; the venue supplies the recognised actor; the
+  artifact name belongs in the body's first sentences).
+
+**Competitive check (one pass, 2026-07-04).** TLDR: 1 of 12 titles
+article-led — but their openers are recognisable proper names ("Meta's…",
+"Mark Zuckerberg tells staff…") plus clipped noun phrases; the
+article-free surface comes from name-led subjects, i.e. their corpus
+lives on ladder rung 1. Stratechery: 7 of 10 recent titles *begin with
+"The"* — the analyst-register publication closest to ours keeps articles
+freely. Axios-style Smart Brevity drops articles, and that wire-adjacent
+register is precisely what the house voice is defined against.
+Conclusion: article-dropping is a register choice, not a scanning
+optimisation, and it is the wrong register for this publication; the
+real lever is which rung of the ladder supplies the subject.
+
+### Prose sharpness under constraint — the anti-flattening contract
+*Ruling 2026-07-04 (R-10). Four rule layers landed on the summarise
+prompt in one week (invented-hedge ban, presence-form, three gates,
+close variety). Constraint stacking makes a model more compliant and
+less vivid: prose drifts into careful indirect discourse. The v0.20
+restage of 2026-07-04 shows it on disk (evidence in R-10). Compliance
+rules say what the prose must NOT do; this contract says what it MUST
+keep doing.*
+
+Four moves the house prose keeps, all Grice-manner (vividness IS
+clarity), all ratified against the tip-story pair:
+
+1. **Direct over reported speech.** "The Claude Code team's tip: give
+   [the agent] a goal, not a rulebook" — not "The Claude Code team
+   recommends telling your agent to judge when…". Indirect discourse
+   ("recommends / suggests / notes that") adds a hedging frame the
+   reader must unwrap; the direct form hands over the insight itself.
+2. **Quote the replaced thing verbatim.** When a story's point is
+   *stop doing X, do Y*, X appears in quotation marks: `Instead of "run
+   tests only for large features," tell it to use its own judgement.`
+   The before/after lands in one glance; the abstraction ("rather than
+   encoding rules") makes the reader reconstruct the example the writer
+   already had.
+3. **Contrast-pair aphorisms where the insight IS a contrast.** "A goal,
+   not a rulebook" / "a first-order constraint, not a safety layer
+   bolted on after the fact" / "an audit problem, not an architectural
+   one". Not ornament — the X-not-Y frame is the fastest encoding of a
+   reframe, and it is the beat readers quote when they forward the
+   issue.
+4. **Keep recognised names and hard numbers in the prose.** "Fable",
+   "OpenClaw and Hermes Agent", "58.8 to 82.3" survive regeneration;
+   "your agent", "two open-source agents", and a vanished number are
+   flattening, not compression. (Distinct from the trust-flag gates:
+   those govern *hedges*; names and numbers are *content*.)
+
+**Regeneration invariant (pairs with the headline anchor-retention
+rule):** a regeneration may restructure, but it must not net-lose
+verbatim quotes, recognised names, hard numbers, or contrast beats
+relative to the draft it replaces. Sharper is the only acceptable
+direction.
+
 ### Grice as the test
 - **Quantity** — say enough for the turn, no more. Pulse headline R-3
   violates this by bundling three clauses into a one-glance object.
@@ -532,6 +678,98 @@ alongside the absence ban (spec item A/D).
 **Status:** ratified and study-validated (Arman, 2026-07-04, incl. same-day
 refinement); implementation pending (spec + amendment issued to LLM
 Engineer).
+
+### R-9 · 2026-07-04 · Headline openers consolidated: articles are grammar, anchors are triage, density is the defect
+Triggered by Arman on the restaged 2026-07-04 issue: "why do we have A or
+THE in titles now? Do they add value?" Audit of all 23 released issues
+(263 headlines): 63 article-led (24%), spiking to 5/9 in #22 — the spike,
+not the pattern, is what a daily reader feels. Split: all 4 "The"-led
+headlines are load-bearing (superlative / unique referent / definite
+scope / restrictive relative); of 59 "A/An"-led, ~2 are semantically
+load-bearing ("A quarter of…", "A second training pass…") and the rest
+are inert **but grammatically required** — the indefinite article is the
+grammatical shadow of the recognition rule (unnamed artifact → described
+in a full sentence → singular indefinite subject). 16 of 59 open with
+"A new + generic noun", which wastes the fixation window with or without
+the article.
+**Persona scan (5 archetypes, phone-width pairs).** Deleting the article
+promoted a keyword above the first line break in ~0 of the pairs tested
+(~30–33 chars/line at mobile title size) — "A character-level trick
+bypasses" and "Character-level trick bypasses" break identically. The
+eng director read every clipped variant as aggregator register (less
+forwardable); the risk officer mis-parsed "Best AI systems score…" as a
+listicle label (the superlative "The" carries *even-the-frontier-fails*
+scope); the platform engineer's failure case was "A new framework
+cuts…" — which fails identically with the article deleted, proving the
+subject, not the article, is the cost. Ratified pairs: "Claude Code
+tip: …" beat the anchor-less regeneration for builder/engineer triage
+(word-one relevance filter) and for the director's honest-sizing need
+("tip:" declares the genre); "Microsoft trains…" beat "SkillOpt
+trains…" (unrecognised string parked in position 1; venue
+microsoft.com/en-us/research legitimately supplies the actor).
+**Competitive one-pass (fetched 2026-07-04):** TLDR 1/12 article-led but
+name-led throughout (rung 1 of our ladder, available to them because
+their subjects are famous); Stratechery 7/10 recent titles *start* with
+"The"; Smart-Brevity article-dropping is the wire-adjacent register the
+house voice is defined against.
+**Reader cost:** empty subjects and opener-shape repetition in the triage
+layer; NOT the articles themselves.
+**Ruling:** the opener ladder in §3 — recognised anchor (incl.
+venue-derived) → plural/general subject → "A/An" + identifying modifiers
+→ semantic "The"; never delete articles from full sentences; "A new +
+generic noun" banned; ≤2 "A/An" openers and ≤1 genre-labelled headline
+per issue; regenerations must never drop a recognised anchor.
+**Direction:** consolidated spec issued to LLM Engineer (single teaching
+block inside the summarise headline rules, fused with the recognition
+rule so the two cannot fight; the density caps are set-level — encode as
+preference in-prompt, count deterministically in code per No Token
+Wasted).
+**Status:** specced; opener-ladder preferences ratified by Arman
+2026-07-04 (the two calibration pairs); implementation pending.
+
+### R-10 · 2026-07-04 · v0.20 restage flattens the rhetorical layer (quotes, names, aphorisms) while factual density holds
+Story-by-story comparison of `data/staging/2026-07-04-before/issue.json`
+(old draft) vs `data/staging/2026-07-04/issue.json` (v0.20 restage),
+triggered by Arman's ratified "much sharper" verdict on the tip story.
+Findings across the 8 shared stories:
+- **Verbatim quotes:** 1 → 0 (the load-bearing `"run tests only for
+  large features"` abstracted to "encoding rules"; the four named CLI
+  commands reduced to one).
+- **Names and numbers lost:** OpenClaw, Hermes Agent → "two open-source
+  agents"; Fable → "your agent"; v0 → "its own vibe-coding product";
+  "58.8 to 82.3" → dropped; "30,000 alignment examples across three
+  public datasets" → "no alignment dataset covers".
+- **Contrast/reframe beats:** ~5 lost ("a goal, not a rulebook"; "a
+  first-order constraint, not a safety layer bolted on after the fact";
+  "an audit problem to an architectural one"; "a preview rather than a
+  standard"; "pushing it to think harder barely moves the needle") vs
+  ~3 gained ("agents, not websites"; "on the instruction file itself,
+  not the model"; "the live edge of agentic risk"). Losses cluster in
+  **closes and quotes** — the highest-value beats.
+- **Reported-speech creep:** "The Claude Code team recommends telling
+  your agent to…" replacing direct construction + quote.
+- **Byproduct:** two v0.20 Big Picture closes turned imperative ("Add
+  fragmented-prompt cases…", "Raise this at your next guardrail
+  review…") — the R-7 turn-type leak re-opening.
+- **Fairness note:** factual density held or improved (Microsoft
+  attribution, the no-model-switching/no-resumable-runs/no-fallbacks
+  gap list, mechanism detail). The flattening is specifically
+  *rhetorical-layer*.
+**Diagnosis (systemic hypothesis, assessed and supported):** four
+constraint layers landed on the summarise prompt in one week; the model
+is buying compliance with vividness. 5 of 8 stories lost at least one
+vivid beat. This is prompt-pressure drift, not a one-story accident.
+**Reader cost:** the forwardable beats — the quoted rule, the aphorism,
+the named number — are exactly what flattening removes; the issue stays
+correct and stops being quotable.
+**Direction:** anti-flattening contract written into §3 ("Prose
+sharpness under constraint"); consolidated regeneration-quality spec
+issued to LLM Engineer with Arman's three ratified pairs as in-prompt
+calibration. **Recommendation, concurred from evidence: run the
+voice-adherence eval on any v0.20 output before tomorrow's issue** —
+5-of-8 incidence is too widespread to trust a spot check.
+**Status:** observed + specced; the three calibration pairs ratified by
+Arman 2026-07-04.
 
 ### Ritual-sameness watch (not yet a finding)
 Two of four reviewed issues (#18, #21) lead the Pulse with an EU-AI-Act

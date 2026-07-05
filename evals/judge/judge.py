@@ -65,9 +65,19 @@ _MODELS_REJECTING_TEMPERATURE: set[str] = set()
 # Cache helpers
 # ---------------------------------------------------------------------------
 
-def _cache_key(artifact_content_json: str, prompt_version: str) -> str:
-    """SHA-256 of artifact content + prompt_version string."""
-    raw = artifact_content_json + "|" + prompt_version
+def _cache_key(
+    artifact_content_json: str, prompt_version: str, rubric_version: str = ""
+) -> str:
+    """SHA-256 of artifact content + prompt_version + rubric_version.
+
+    rubric_version added 2026-07-04 (rubric v0.2 re-anchor): rubric
+    anchors are injected into the prompt at runtime, so a rubric
+    re-anchor changes judge behaviour without any prompt_version bump.
+    Keying on rubric_version too means re-anchoring invalidates stale
+    verdicts instead of serving them from cache (FM-class: calibration
+    decay masked by caching).
+    """
+    raw = artifact_content_json + "|" + prompt_version + "|" + rubric_version
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
@@ -377,8 +387,10 @@ def judge_artifact(
     # Serialise artifact as compact JSON for the cache key and prompt.
     artifact_json = json.dumps(artifact_content, ensure_ascii=False, separators=(",", ":"))
 
-    # Compute cache key.
-    key = _cache_key(artifact_json, prompt_version)
+    # Compute cache key (includes rubric_version so re-anchoring the
+    # rubric invalidates cached verdicts -- see _cache_key docstring).
+    rubric_version = str(rubric.get("rubric_version", ""))
+    key = _cache_key(artifact_json, prompt_version, rubric_version)
 
     # Cache hit?
     cached = _cache_read(key)

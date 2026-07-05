@@ -2150,9 +2150,209 @@ class TestVoiceDiversityVersionBump:
     """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
     must move with it so the audit trail picks up the shift."""
 
-    def test_summarise_prompt_version_is_v0_20(self) -> None:
+    def test_summarise_prompt_version_is_v0_21_3(self) -> None:
+        # v0.21.3 (2026-07-05): close-variety is cross-story; per-story
+        # prompting cannot coordinate it -- feed prior section closes
+        # into each subsequent story prompt (feed-forward close context
+        # for hands_on + currents). Audit tag: summarise-v0.21.3-2026-07-05.
         from src.summarise import SUMMARISE_PROMPT_VERSION
-        assert SUMMARISE_PROMPT_VERSION == "v0.20"
+        assert SUMMARISE_PROMPT_VERSION == "v0.21.3"
+
+
+# ===========================================================================
+# v0.21.3 (2026-07-05): feed-forward close context.
+#
+# Root cause of the thrice-failed Hands-On close-mould veto: close-variety
+# is a CROSS-STORY property, but each story's prompt was built in
+# isolation -- the model writing story 3 had never seen stories 1-2's
+# closes, so "consecutive stories must never share the scaffold" was
+# unfollowable. The fix threads the closing sentences of already-accepted
+# same-tier summaries into each subsequent prompt. These tests pin the
+# deterministic seam: close extraction, block rendering, prompt assembly,
+# and the _summarise_one threading (LLM boundary mocked).
+# ===========================================================================
+
+class TestExtractClosingSentence:
+    """``_extract_closing_sentence`` -- last sentence of the summary body."""
+
+    def test_multi_sentence_returns_last(self) -> None:
+        from src.summarise import _extract_closing_sentence
+        summary = (
+            "The shift landed today. Weights are public. "
+            "Pull the repo and diff it against your eval baseline."
+        )
+        assert _extract_closing_sentence(summary) == (
+            "Pull the repo and diff it against your eval baseline."
+        )
+
+    def test_question_close_preserved(self) -> None:
+        from src.summarise import _extract_closing_sentence
+        summary = "A thing happened. Who owns the review step now?"
+        assert _extract_closing_sentence(summary) == (
+            "Who owns the review step now?"
+        )
+
+    def test_single_sentence_returned_whole(self) -> None:
+        from src.summarise import _extract_closing_sentence
+        assert _extract_closing_sentence("One sentence only.") == (
+            "One sentence only."
+        )
+
+    def test_empty_and_whitespace_return_empty(self) -> None:
+        from src.summarise import _extract_closing_sentence
+        assert _extract_closing_sentence("") == ""
+        assert _extract_closing_sentence("   \n  ") == ""
+
+
+class TestRenderPriorClosesBlock:
+    """``_render_prior_closes_block`` -- the exact prompt block format."""
+
+    def test_empty_list_renders_empty_string(self) -> None:
+        from src.summarise import _render_prior_closes_block
+        assert _render_prior_closes_block([]) == ""
+
+    def test_block_format_numbered_and_quoted(self) -> None:
+        from src.summarise import _render_prior_closes_block
+        block = _render_prior_closes_block([
+            "Swap the loop this week; measure the flaw rate.",
+            "Already on v2? Upgrade before the next batch job.",
+        ])
+        assert block == (
+            "CLOSES ALREADY WRITTEN IN THIS SECTION (do not reuse their "
+            "closing construction or scaffold):\n"
+            '  1. "Swap the loop this week; measure the flaw rate."\n'
+            '  2. "Already on v2? Upgrade before the next batch job."'
+        )
+
+
+class TestPriorClosesInPrompt:
+    """Prompt assembly: the CLOSES block lands at the write site and the
+    Hands-On FINAL REMINDER references it -- only when closes exist."""
+
+    @staticmethod
+    def _make_story_cluster_item(tier: str):
+        breakdown = {
+            "significance": 60, "hands_on_utility": 60,
+            "big_picture_relevance": 60, "financial_services_impact": 25,
+            "freshness_momentum": 60,
+        }
+        story = RankedStory(
+            cluster_id="c_0123456789abcdef",
+            score=55, breakdown=breakdown,
+            audience_tags=["general"],  # type: ignore[arg-type]
+            rationale="t", tier=tier, prompt_version="v0.2",
+        )
+        cluster = Cluster(
+            cluster_id=story.cluster_id, item_ids=["i_x"],
+            canonical_title="t", sources=["src_a"],
+            earliest_published=FIXED_EARLIER, size=1,
+        )
+        item = Item(
+            id="i_x", source="src_a", source_type="rss",
+            url="https://example.com/x",  # type: ignore[arg-type]
+            title="t", published_at=FIXED_EARLIER, raw_summary="",
+            fetched_at=FIXED_NOW, trust_weight=2,
+        )
+        return story, cluster, item
+
+    def test_hands_on_prompt_carries_block_and_reminder_reference(self) -> None:
+        story, cluster, item = self._make_story_cluster_item("hands_on")
+        prompt = _build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            prior_section_closes=[
+                "Pull the weights and run your own guardrail eval."
+            ],
+        )
+        assert "CLOSES ALREADY WRITTEN IN THIS SECTION" in prompt
+        assert '1. "Pull the weights and run your own guardrail eval."' in prompt
+        # The reminder references the list...
+        assert (
+            "VARY THE CONSTRUCTION against the CLOSES ALREADY WRITTEN "
+            "list above" in prompt
+        )
+        # ...and the block sits BEFORE the reminder (write-site recency:
+        # list first, then the instruction that points back at it).
+        assert prompt.index("CLOSES ALREADY WRITTEN IN THIS SECTION") < \
+            prompt.index("HANDS-ON CLOSE (FINAL REMINDER)")
+
+    def test_hands_on_prompt_without_closes_has_no_dangling_reference(self) -> None:
+        story, cluster, item = self._make_story_cluster_item("hands_on")
+        prompt = _build_summary_prompt(story, cluster, [item], callbacks=[])
+        # First story in the section: no block, no reference to a list
+        # that isn't there -- the static v0.21.2 reminder still applies.
+        assert "CLOSES ALREADY WRITTEN" not in prompt
+        assert "HANDS-ON CLOSE (FINAL REMINDER)" in prompt
+
+    def test_currents_prompt_carries_block(self) -> None:
+        story, cluster, item = self._make_story_cluster_item("currents")
+        prompt = _build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            prior_section_closes=[
+                "Worth watching until a second lab replicates or kills it.",
+            ],
+        )
+        assert "CLOSES ALREADY WRITTEN IN THIS SECTION" in prompt
+        assert (
+            '1. "Worth watching until a second lab replicates or kills it."'
+            in prompt
+        )
+
+    def test_pulse_override_suppresses_block(self) -> None:
+        # The Pulse plain take is a different speech act; feed-forward
+        # closes must not leak into the re-summarise prompt.
+        story, cluster, item = self._make_story_cluster_item("hands_on")
+        prompt = _build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            section_override="pulse",
+            prior_section_closes=["Some earlier close."],
+        )
+        assert "CLOSES ALREADY WRITTEN IN THIS SECTION" not in prompt
+
+
+class TestSummariseOneThreadsPriorCloses:
+    """``_summarise_one`` passes prior_section_closes through to the prompt
+    the LLM actually receives (LLM boundary mocked)."""
+
+    def test_prior_closes_reach_the_llm_prompt(self, monkeypatch) -> None:
+        from src import summarise as summarise_mod
+        from src.summarise import _SummaryDraft
+
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        )
+        captured: dict[str, str] = {}
+
+        def fake_call_and_parse(prompt, temperature, cluster_id):
+            captured["prompt"] = prompt
+            return _SummaryDraft(
+                headline="A CUDA-free kernel cuts inference cost in half",
+                summary=(
+                    "The shift is real and the mechanism is public. "
+                    "The kernel drops CUDA entirely and the repo ships "
+                    "benchmarks on consumer hardware. Weights and tooling "
+                    "are public. Clone the repo and rerun the latency "
+                    "suite on your own stack this week."
+                ),
+                signal="try",
+            )
+
+        monkeypatch.setattr(
+            summarise_mod, "_call_and_parse_summary", fake_call_and_parse,
+        )
+        monkeypatch.setattr(
+            summarise_mod, "_fetch_source_excerpt", lambda url: "",
+        )
+
+        block = summarise_mod._summarise_one(
+            story=story, cluster=cluster, items=[item], callbacks=[],
+            prior_section_closes=["Swap one loop and measure the flaw rate."],
+        )
+        assert block is not None
+        assert "CLOSES ALREADY WRITTEN IN THIS SECTION" in captured["prompt"]
+        assert (
+            '1. "Swap one loop and measure the flaw rate."'
+            in captured["prompt"]
+        )
 
 
 # ===========================================================================
@@ -2687,3 +2887,132 @@ class TestVoiceDiversityBlockReachesPromptBuilders:
         summarise_mod._populate_section_intro(section, block)
         assert "VOICE DIVERSITY" in captured["prompt"]
         assert "Speed is outrunning safety." in captured["prompt"]
+
+
+# ===========================================================================
+# v0.21 (2026-07-04): empty-Currents quiet-day intro.
+#
+# Three shipped issues carried an empty Currents section with null intros
+# (template-integrity failure per review). Two-layer fix: the section-intro
+# LLM pass now runs on a zero-story Currents with a quiet-day instruction,
+# and ``_ensure_quiet_day_currents_intro`` is the deterministic code guard
+# that makes the template contract unbreakable (No Token Wasted: the
+# fallback is code, not another LLM call).
+# ===========================================================================
+
+class TestQuietDayCurrentsIntro:
+    """The deterministic fallback + the quiet-day prompt branch."""
+
+    def test_fallback_injects_defaults_when_intros_null(self) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(name="currents", stories=[])
+        summarise_mod._ensure_quiet_day_currents_intro(section)
+        assert section.intro_lead == (
+            summarise_mod._QUIET_DAY_CURRENTS_INTRO_LEAD
+        )
+        assert section.intro_body == (
+            summarise_mod._QUIET_DAY_CURRENTS_INTRO_BODY
+        )
+
+    def test_fallback_treats_empty_strings_as_missing(self) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(
+            name="currents", stories=[], intro_lead="  ", intro_body="",
+        )
+        summarise_mod._ensure_quiet_day_currents_intro(section)
+        assert section.intro_lead == (
+            summarise_mod._QUIET_DAY_CURRENTS_INTRO_LEAD
+        )
+        assert section.intro_body == (
+            summarise_mod._QUIET_DAY_CURRENTS_INTRO_BODY
+        )
+
+    def test_fallback_leaves_llm_quiet_day_intro_untouched(self) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(
+            name="currents",
+            stories=[],
+            intro_lead="Still waters below the fold.",
+            intro_body="The head sections carry today's whole signal.",
+        )
+        summarise_mod._ensure_quiet_day_currents_intro(section)
+        assert section.intro_lead == "Still waters below the fold."
+        assert section.intro_body == (
+            "The head sections carry today's whole signal."
+        )
+
+    def test_fallback_ignores_currents_with_stories(self) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(
+            name="currents",
+            stories=[
+                SummaryBlock(
+                    story_id="c_0123456789abcdef",
+                    headline="h1",
+                    summary="A body that satisfies the validator threshold "
+                            "for word count and lands cleanly somewhere.",
+                    source_urls=["https://example.com/x"],  # type: ignore[list-item]
+                )
+            ],
+        )
+        summarise_mod._ensure_quiet_day_currents_intro(section)
+        # A populated Currents with a missing intro is the EXISTING
+        # mandatory-intro WARNING path, not the quiet-day contract.
+        assert section.intro_lead is None
+        assert section.intro_body is None
+
+    def test_fallback_ignores_other_sections(self) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(name="big_picture", stories=[])
+        summarise_mod._ensure_quiet_day_currents_intro(section)
+        assert section.intro_lead is None
+        assert section.intro_body is None
+
+    def test_populate_intro_runs_quiet_day_prompt_for_empty_currents(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A zero-story Currents no longer skips the intro pass: the LLM
+        is called with the QUIET DAY instruction and its lead/body land
+        on the section."""
+        from src import summarise as summarise_mod
+        section = IssueSection(name="currents", stories=[])
+        captured: dict[str, str] = {}
+
+        def fake_llm_call(prompt, **_kwargs):
+            captured["prompt"] = prompt
+            return (
+                '{"lead": "Still waters below the fold.", '
+                '"body": "The day\'s signal sits above; the watch resumes '
+                'when early signals return."}'
+            )
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm_call)
+        summarise_mod._populate_section_intro(section)
+        assert "QUIET DAY" in captured["prompt"]
+        # The prior renders are offered as register examples, not scripts.
+        assert "A quiet day in the undercurrents." in captured["prompt"]
+        assert section.intro_lead == "Still waters below the fold."
+        assert section.intro_body is not None
+
+    def test_populate_intro_still_skips_empty_non_currents(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(name="hands_on", stories=[])
+
+        def fail_llm_call(prompt, **_kwargs):  # pragma: no cover
+            raise AssertionError(
+                "LLM must not be called for an empty non-Currents section"
+            )
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fail_llm_call)
+        summarise_mod._populate_section_intro(section)
+        assert section.intro_lead is None
+        assert section.intro_body is None
+
+    def test_fallback_defaults_fit_model_length_caps(self) -> None:
+        """The deterministic defaults must always validate: lead <= 80
+        chars, body <= 400 chars (IssueSection field caps)."""
+        from src import summarise as summarise_mod
+        assert len(summarise_mod._QUIET_DAY_CURRENTS_INTRO_LEAD) <= 80
+        assert len(summarise_mod._QUIET_DAY_CURRENTS_INTRO_BODY) <= 400

@@ -34,12 +34,25 @@ from src import paths
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT_VERSION = "v0.4"
+REVIEW_PROMPT_VERSION = "v0.5"
 """Versioned prompt string written into ``review.md`` frontmatter so the
 eval harness can correlate verdict movement against prompt revisions.
 
 Bump when the prompt content (criteria, instructions, output format)
-changes substantively. Audit tag: ``review-v0.4-2026-07-04``.
+changes substantively. Audit tag: ``review-v0.5-2026-07-04``.
+
+v0.5 (2026-07-04): trust-flag reviewer calibration after two same-day
+misfires on summarise v0.20 output. Misfire 1: the review claimed
+"trust flags defective ... functioning as absence inventories" on
+stories whose text contained ZERO absence forms. Misfire 2: it
+requested "(arXiv preprint, single research team)" -- a
+default-restating flag its own gate-3 criterion bans -- on a body that
+already opened with "An arXiv preprint reverse-engineers...". The
+TRUST FLAGS criterion now requires QUOTING the offending flag text
+verbatim from the story before any defect finding (no quote = no
+finding), and states that a source-class noun phrase in the body IS
+the calibration -- the reviewer must never request parenthetical flags
+on top of it.
 
 v0.4 (2026-07-04): trust-flag gate 3 (informative vs the evidence-class
 default; reader-needs study, READING_EXPERIENCE.md §3 + R-8). The
@@ -262,6 +275,17 @@ TRUST FLAGS (every story, all sections)
   body already names the vendor) is NOISE, not virtue -- flag it as a
   defect; the fix is deleting the flag and letting the source-class
   name in the body carry the calibration.
+- CALIBRATION -- evidence before finding. Before flagging ANY
+  trust-flag defect, QUOTE the offending flag text VERBATIM from the
+  story summary. No verbatim quote = no finding; do not report
+  "absence inventories" against stories whose text contains zero
+  absence forms.
+- A source-class noun phrase in the body ("an arXiv preprint",
+  "Anthropic's release notes", "a Reddit thread") IS the calibration.
+  Never request a parenthetical flag on top of it -- asking for
+  "(arXiv preprint, single research team)" on a body that already
+  opens "An arXiv preprint reverse-engineers..." demands the exact
+  default-restating noise this criterion bans.
 
 DRIFT WATCH (compare against previous released issues, supplied below)
 - Recurring themes covered the same way without progression.

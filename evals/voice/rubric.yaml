@@ -1,37 +1,55 @@
-# evals/voice/rubric.yaml -- AI Vector voice + quality rubric (v0 first cut)
+# evals/voice/rubric.yaml -- AI Vector voice + quality rubric
+# (v0.2 -- re-anchored to the 2026-07-04 ratified rulings)
 #
-# Per Phase A of the eval plan (hey-there-is-plan-md-twinkly-reef.md).
-#
-# This rubric is what the LLM-judge prompts will reference in Phase C to
-# score each ratified issue against the publication's own standards. The
-# five issue-level voice dimensions are the heartbeat; the four per-story
-# quality criteria are what the judge applies to every block.
+# This rubric is what the LLM-judge prompts reference at runtime (Phase C)
+# to score each issue against the publication's own standards. The five
+# issue-level voice dimensions are the heartbeat; the per-story quality
+# criteria are what the judge applies to every block.
 #
 # Anchors mirror config/rubric.yaml's 0/25/50/75/100 calibration pattern.
-# Exemplars are pulled from the first two ratified issues (2026-05-23,
-# 2026-05-24) so the anchors are grounded in real prose the team produced,
-# not hypothetical text.
+# v0.1 anchors were grounded in the first two ratified issues (2026-05-23,
+# 2026-05-24). v0.2 re-anchors the trust-flag, headline-opener and
+# close-shape criteria to the 2026-07-04 ratified rulings
+# (docs/internal/READING_EXPERIENCE.md SS3 + rationale log R-8 / R-9 /
+# R-10) and to the summarise prompt v0.21 -- the judge and the writer
+# must agree on what "in voice" means, or the gate fails ratified prose.
+# The concrete failure that forced this re-anchor: the v0.1 gate failed
+# the RATIFIED headline "Claude Code tip: let the agent decide when to
+# write tests" as press-release style, and demanded a default-restating
+# trust flag on a body that already opened "An arXiv preprint
+# reverse-engineers...".
 #
 # Decision rights (docs/internal/TEAM.md): Editor drafts; Eval Engineer
 # owns rubric mechanics (weights, judge prompting); Arman ratifies any
 # anchor change that shifts what counts as in-voice.
 #
-# Source of truth for voice itself: src/summarise.py's _VOICE_BLOCK
-# (mirror of docs/EDITORIAL.md, when authored). When that block changes,
-# bump rubric_version and re-anchor the exemplars below from the next
-# ratified issue.
+# Source of truth for voice itself: EDITORIAL.md + READING_EXPERIENCE.md
+# SS3 (the ratified rulings), mirrored operationally in src/summarise.py
+# (the v0.21 prompt blocks). When those change, bump rubric_version and
+# re-anchor the exemplars from the next ratified issue.
 
 schema_version: 1
-rubric_version: "v0.1-2026-05-24"
+rubric_version: "v0.2-2026-07-04"
 corpus_basis:
-  ratified_issues: ["2026-05-23", "2026-05-24"]
+  ratified_issues: ["2026-05-23 .. 2026-07-03 (23 released issues)"]
+  rulings_basis: >
+    Re-anchored to the 2026-07-04 ratified rulings: R-8 (trust flags pass
+    THREE gates -- source-supported, presence-form, informative vs the
+    evidence-class default -- plus the affirmative-presence obligation),
+    R-9 (the headline opener ladder; genre labels on recognised anchors
+    ratified as a positive marker; article deletion is wire headlinese,
+    off-voice), R-10 (prose sharpness under constraint; the regeneration
+    invariant). Calibration pairs ratified by Arman 2026-07-04.
   caveat: >
-    Bootstrap rubric on a two-issue corpus. Anchors will sharpen as more
-    ratified issues land. Re-anchor at ~5 issues, again at ~14.
+    v0.1 exemplars from 2026-05-23/-24 are retained where still
+    representative. v0.1 trust-flag exemplars are RETIRED: several taught
+    the absence-inventory form ("no code published", "no benchmarks yet")
+    that the 2026-07-04 ruling now classes as a DEFECT. Do not resurrect
+    them from git history as calibration.
 
 # ---------------------------------------------------------------------------
-# Issue-level voice dimensions. Scored per ratified issue, 0-100. These are
-# the dimensions the Editor labels in evals/voice/YYYY-MM-DD.labels.yaml as
+# Issue-level voice dimensions. Scored per issue, 0-100. These are the
+# dimensions the Editor labels in evals/voice/YYYY-MM-DD.labels.yaml as
 # pass / borderline / fail; the LLM judge mirrors that scoring at scale.
 # ---------------------------------------------------------------------------
 
@@ -44,26 +62,35 @@ voice_dimensions:
       trust the reader feels when they can hear a person on the other end
       of the prose. NOT chumminess, NOT performance. The signals: prose
       that addresses the reader's decision directly ("if you're choosing
-      a document pipeline this week..."); confident hedging on weak
-      sourcing ("treat as directional"); the absence of press-release
-      cadence.
+      a document pipeline this week..."); calibration that is specific to
+      the evidence (a class-name attribution like "an arXiv preprint", or
+      a deviation flag like "the vendor scored its own rival"); the
+      absence of press-release cadence. GUARD (ratified 2026-07-04, R-9):
+      a genre-labelled headline on a recognised anchor ("Claude Code tip:
+      let the agent decide when to write tests") is warm, human-edited
+      sizing -- an editor telling you honestly this is a tip, not a
+      release. It is NEVER press-release style. Press-release cadence
+      means vendor-flattering hype and spec-sheet self-importance, not
+      the presence of a recognised name in the opener.
     anchors:
       "0": >
         Aggregator-cold. Reads like a feed dump or model card paste.
-        Headlines are nouns; bodies list specs; no second-person framing
-        anywhere; trust flags absent or boilerplate.
+        Headlines are bare noun labels; bodies list specs; no
+        second-person framing anywhere; no calibration of any kind (not
+        even a source-class attribution in the body).
       "25": >
-        Mostly cold with one or two warmer touches. Trust flags present
-        but mechanical ("vendor-supplied benchmark, take with salt"). No
-        sense that a person chose this story over another.
+        Mostly cold with one or two warmer touches. Calibration present
+        but templated ("take with salt" boilerplate, or the same hedge
+        pasted across stories). No sense that a person chose this story
+        over another.
       "50": >
         Mixed. Some stories address a decision; others read like
-        rewritten abstracts. Most trust flags are warranted and specific
-        but a few feel templated.
+        rewritten abstracts. Calibration is mostly warranted and specific
+        but reads mechanical in places.
       "75": >
         Warm throughout. Every story names a decision the reader might be
-        making, hedging is specific to the source's actual weakness, and
-        the section intros frame rather than restate.
+        making, calibration is specific to the evidence's actual shape,
+        and the section intros frame rather than restate.
         EXEMPLAR (2026-05-23, Hands-On intro): "Verify before you deploy.
         Today's gains, faster inference, cheaper routing, sharper
         tool-calling, look compelling on paper. Most rest on single-source
@@ -80,7 +107,13 @@ voice_dimensions:
       Every paragraph earns its line, or is there padding? Signal density
       is the test that adjectives without consequence, hedge-stacking, and
       summary scaffolds ("the pitch is", "it's worth noting that") are
-      absent. A body at 32 words can be denser than one at 58.
+      absent. A body at 32 words can be denser than one at 58. RULING
+      (2026-07-04, R-8): empty trust flags are PADDING -- an
+      absence-inventory ("no code public yet") or a default-restating flag
+      ("a preprint from a single research team" when the body already says
+      "an arXiv preprint") costs six words of a 60-word budget and
+      delivers zero bits. Count them against density, never in favour of
+      caution.
     anchors:
       "0": >
         Heavy padding. Multiple paragraphs without a concrete number or
@@ -89,13 +122,15 @@ voice_dimensions:
       "25": >
         Padding visible in roughly half the stories. Specs stacked
         without consequence; relevance lines hedged to the point of
-        uselessness.
+        uselessness; empty flags (absence-inventory or default-restating)
+        decorating most stories.
       "50": >
-        Mixed. Some bodies land sharp; others stack specs you'd cut on a
-        second read.
+        Mixed. Some bodies land sharp; others stack specs or empty hedges
+        you'd cut on a second read.
       "75": >
         Lean throughout. Each body carries its one number or mechanism;
-        adjectives earn their place.
+        adjectives earn their place; every calibration beat is
+        informative (class name in the body, or a real deviation flag).
         EXEMPLAR (2026-05-23, c_04fad2b47962173f body): "One developer
         wired a routing layer over a self-hosted mixture-of-experts model
         so 95% of agentic coding steps never touch a premium API. On a
@@ -111,28 +146,43 @@ voice_dimensions:
       Does each story say "where this is heading"? Direction is the
       closing judgement-tied-to-decision in the body, woven into the
       prose, never labelled. The reader leaves each story with one clear
-      next move OR one clear forward bet.
+      next move OR one clear forward bet. Each section has a fixed close
+      TURN-TYPE (unchanged by the 2026-07-04 rulings): Pulse = plain
+      take (declarative editorial position, never a question or a
+      prescription); Big Picture = strategic question; Hands-On =
+      imperative action on a specific artefact with a trigger; Currents =
+      two-sided calibrated stake. The turn-type is FIXED; its surface
+      grammar is NOT -- single-mould repetition (every Hands-On close
+      "[do X] before [milestone]"; every Currents close "if it
+      replicates / if it doesn't") is a defect (R-1/R-2): the reader's
+      eye predicts the scaffold and skips the most actionable line.
     anchors:
       "0": >
         Bodies end on a summary of what shipped, with no judgement.
         Reader leaves not knowing what to do or what to expect next.
       "25": >
         Most stories end on a generic close ("worth keeping an eye on",
-        "interesting for teams working in X"). No specific decision named.
+        "interesting for teams working in X"). No specific decision
+        named. OR closes leak turn-types across sections (imperatives on
+        Big Picture, questions on the Pulse).
       "50": >
         Roughly half the stories close on a specific decision; the rest
-        coast.
+        coast. OR the right turn-types but one grammatical mould carries
+        nearly every close in a section.
       "75": >
-        Almost every story ends on either a named decision or a forward
-        bet. Closes vary in framing (imperative, conditional, bet) so
+        Almost every story ends on its section's turn-type. Closes vary
+        in surface grammar (no more than ~2 of one mould per section) so
         the issue doesn't drumbeat one template.
         EXEMPLAR (2026-05-23, c_c997d4c916785564 close): "Thin sourcing
         (one Reddit thread), but the question is concrete: ask your
-        vendor for a dated retraining schedule before renewing."
+        vendor for a dated retraining schedule before renewing." (NOTE:
+        "thin sourcing, one Reddit thread" under a big claim is the ONE
+        licensed magnitude-mismatch flag -- said once, flag or stake,
+        never both.)
       "100": >
-        Every story closes on direction. Closes are varied (imperative,
-        conditional, bet) and tied to the specific decision the story
-        informs, never a department or group.
+        Every story closes on its section's turn-type, in varied surface
+        grammar, tied to the specific decision the story informs, never
+        a department or group.
 
   - name: finance_lens_presence
     weight: 15
@@ -176,10 +226,9 @@ voice_dimensions:
     description: >
       When a story continues a chain we covered before, does the prose
       tie back credibly? When there is no continuation, is the issue
-      free of forced "as we noted last week" tics?
-      NOTE: bootstrap caveat -- with only two issues released, no
-      cross-time chains exist yet. Score N/A on issues without
-      cross_time_ref fields populated.
+      free of forced "as we noted last week" tics? Cross-time chains
+      exist in the corpus now (23 released issues); score N/A only on
+      issues with no populated cross-time references.
     anchors:
       "0": >
         Forced callback to a story we didn't actually cover, OR a real
@@ -191,17 +240,22 @@ voice_dimensions:
         Callback ties back accurately but doesn't sharpen the new piece.
       "75": >
         Callback names the specific prior framing and shows what
-        changed. Adds direction. (No 2026-05-23/-24 exemplar yet; chain
-        will start at the earliest after issue #3.)
+        changed. Adds direction.
+        EXEMPLAR (2026-07-04 staged Pulse chain): "Where yesterday's
+        Pulse showed agents hiding the evidence they never used, today's
+        shows the same systems making human authority a design
+        primitive."
       "100": >
         Callback reads as part of an ongoing argument; the chain itself
         is a feature of the publication, not a parenthetical.
 
 # ---------------------------------------------------------------------------
 # Per-story quality criteria. Scored per SummaryBlock (headline + body +
-# signal). These are the criteria the judge prompt walks story-by-story
-# in Phase C. Each story gets a pass / borderline / fail per criterion
-# and the issue-level score is the mix.
+# signal). Each story gets a pass / borderline / fail per criterion and
+# the issue-level score is the mix.
+#
+# Sub-test KEY NAMES are frozen (run_evals.py's editor-label agreement
+# derivation reads them); their CHECK TEXT is the governing semantics.
 # ---------------------------------------------------------------------------
 
 per_story_criteria:
@@ -210,74 +264,119 @@ per_story_criteria:
     description: >
       The headline test: a non-specialist who skims ONLY headlines knows
       what happened AND why it matters. Apply three sub-tests, ALL of
-      which must hold for a clean pass.
+      which must hold for a clean pass. Re-anchored 2026-07-04 to the
+      OPENER LADDER (R-9, ratified): the first three words are the
+      reader's hottest fixation window; what earns them is decided by
+      the ladder, not by a blanket no-names rule.
     sub_tests:
       consequence_led:
         check: >
-          Lead with the consequence or action, not the topic / name /
-          vendor. McKinsey tagline, not press-release header.
+          HISTORICAL KEY NAME; the governing test is the OPENER LADDER
+          (R-9). Choose the headline subject from the highest rung
+          available: RUNG 1 -- recognised anchor first (recognised tool,
+          vendor, lab, or regulation; attribution derivable from the
+          SOURCE VENUE counts -- a microsoft.com/research post is
+          Microsoft's work; third-party coverage does NOT transfer its
+          name), and a recognised anchor must NEVER be traded away for
+          an abstract benefit. RUNG 2 -- plural class-finding when the
+          finding holds for the class ("Character-level tricks bypass
+          safety filters..."). RUNG 3 -- single unnamed artifact: "A/An"
+          + identifying modifiers ("A CUDA-free kernel..."); "A new" +
+          generic noun (framework/method/tool/benchmark/system) is a
+          BANNED opener. RUNG 4 -- "The" only as a semantic operator
+          (superlative, unique referent, definite scope, restrictive
+          relative). ARTICLE POLICY: never delete "A/An/The" from a
+          full-sentence headline -- bare article deletion ("Small open
+          safety classifier beats...") is wire headlinese, OFF-VOICE, a
+          defect not a virtue. GENRE LABELS: "Claude Code tip: ..." on a
+          recognised anchor for a small practical move is a POSITIVE
+          marker (ratified 2026-07-04 -- "it is useful one to pay
+          attention"); score it UP when well-used (recognised anchor +
+          genre a declarative would oversell + at most one per issue).
+          It is NOT press-release style and NOT a spec-sheet colon.
+          Consequence still matters below the opener: the headline
+          carries what happened and why it matters, not a bare topic.
         pass_exemplar: >
-          (2026-05-23) "A weekend routing layer cut a $160 AI coding
-          bill to $16" -- subject + verb + so-what in one clause; numbers
-          carry the news; no jargon.
+          (RATIFIED 2026-07-04, calibration pair) "Claude Code tip: let
+          the agent decide when to write tests" -- rung 1 anchor in word
+          one, genre label sizes the item honestly, insight stated. The
+          v0.1 gate failed this ratified headline as press-release
+          style; that verdict class is the misfire this re-anchor
+          removes.
         pass_exemplar_2: >
-          (2026-05-24) "UK regulators warn that frontier AI now outpaces
-          skilled human attackers" -- consequence-led, plain English,
-          stakes obvious from the headline alone.
+          (RATIFIED 2026-07-04, calibration pair) "Microsoft trains
+          agent instruction files instead of rewriting them by hand" --
+          venue-derived recognised anchor (microsoft.com/research);
+          the unrecognised artifact name (SkillOpt) correctly parked in
+          the body.
         fail_exemplar: >
-          (2026-05-23 Pulse, borderline) "A small open model pulls
-          structured data from invoices and forms without sending files
-          to the cloud" -- consequence is there but buried behind a
-          three-clause feature list. A tagline would be: "A small open
-          model reads invoices without sending the files anywhere."
+          (RATIFIED WORSE, 2026-07-04) "Let your coding agent choose its
+          own tools and save tokens" -- regeneration dropped the
+          recognised anchor "Claude Code", oversold the genre, displaced
+          the actual insight with an abstract benefit, and opened on an
+          unanchored imperative. Anchor-dropping regenerations are a
+          named regression class.
+        fail_exemplar_class: >
+          Unrecognised proper noun parked in position 1 ("SkillOpt
+          trains..."); "A new framework/tool/benchmark..." empty
+          opener; bare article deletion (wire headlinese); >2
+          "A/An"-led headlines in one issue (density defect, R-9);
+          spec-sheet colon on an unrecognised name ("NuExtract3: 4B VLM
+          for structured extraction") -- note this is NOT the same
+          pattern as a genre label on a recognised anchor.
       length:
-        check: "<= ~90 characters AND <= 12 words ideally"
-        anchor: >
-          Up to 13 words / ~95 chars is borderline; >14 words OR >100
-          chars is fail unless the spec ITSELF is the news.
+        check: >
+          <= 90 characters AND <= 12 words (hard caps, mirrored in
+          summarise.py). 13 words / ~95 chars is borderline; >14 words
+          OR >100 chars is fail unless the spec ITSELF is the news.
       no_forbidden_elements:
         check: >
           No version numbers, no acronyms (LM/VLM/MoE/ASR/OCR/RAG/etc.),
-          no em-dashes (-- or --), no model names UNLESS the model name
-          IS the news, no slang verbs ("drops", "ships hot").
+          no em-dashes, no slang verbs ("drops", "ships hot"), no
+          jargon needing a dictionary lookup. NAMES: recognised names
+          are ENCOURAGED per the opener ladder (rung 1) -- the forbidden
+          thing is an UNRECOGNISED name (new tool/paper/benchmark) in
+          the headline; those are described instead, named in the body.
+          COLONS: one idea per headline; a colon joining two ideas is a
+          defect -- EXCEPT the one licensed genre-label colon on a
+          recognised anchor ("Claude Code tip: ..."), max one per issue,
+          tiny label vocabulary.
         pass_exemplar: >
           (2026-05-23) "Every major AI model lab is now building its own
-          agent product" -- no names, no versions, the pattern IS the
-          news. ("Major" is the cuttable adjective; borderline on that
-          alone.)
+          agent product" -- no unrecognised names, no versions, the
+          pattern IS the news. ("Major" is the cuttable adjective;
+          borderline on that alone.)
         fail_exemplar: >
           Hypothetical: "NuExtract3: 4B VLM for structured extraction"
-          -- proper noun colon, version number, acronym, spec sheet.
-          The actual 2026-05-23 Pulse headline is a deliberate rewrite
-          AWAY from this pattern.
+          -- unrecognised proper noun + spec-sheet colon, version
+          number, acronym. Contrast: "Claude Code tip: let the agent
+          decide when to write tests" PASSES -- recognised anchor,
+          genre-label colon, no specs.
 
   - name: summary_quality
     description: >
       The body test: shift -> shipped -> judgement-tied-to-decision, in
-      30-60 words HARD, with the three load-bearing elements that must
-      survive every edit.
+      30-60 words HARD, with the fact -> calibration -> stake rhythm.
+      Re-anchored 2026-07-04: calibration is usually the source-class
+      noun phrase IN THE BODY ("an arXiv preprint", "Anthropic's release
+      notes"); a separate trust flag appears ONLY on deviation from the
+      class default (R-8, three gates). Prose sharpness (R-10) is now a
+      scored sub-test: compliance bought with flat prose is a
+      regression.
     sub_tests:
       word_count:
-        check: "30-60 words, HARD limit per voice block."
-        anchor: >
-          61-62 is borderline ONLY when the alternative is dropping a
-          trust flag (per collision priority). 63+ is fail. Under 30 is
-          rare but fail (the story isn't earning its place).
-        fail_exemplar: >
-          (2026-05-23 Pulse, ~63 words) "NuExtract3 is a small
-          image-and-text model built for extracting structured information
-          from PDFs, invoices, tables, and screenshots, released under a
-          permissive open licence with weights on Hugging Face.
-          Single-source disclosure: the announcement comes from the
-          vendor themselves on Reddit. If data residency stops you using
-          a closed extraction API, test this against your own document
-          corpus before committing." -- the spec list ("PDFs, invoices,
-          tables, and screenshots") could collapse to "documents" and
-          come in under 60.
+        check: >
+          30-60 words, HARD limit per voice block. 61-62 is borderline
+          ONLY when the alternative is dropping a warranted deviation
+          flag (collision priority). 63+ is fail. Under 30 is rare but
+          fail (the story isn't earning its place).
       concrete_specific:
         check: >
           ONE concrete number OR mechanism that carries the news. Not
-          decoration; the news itself.
+          decoration; the news itself. Recognised names and hard numbers
+          are CONTENT, not hedges -- they survive every edit (R-10):
+          "58.8 to 82.3" vanishing, or "OpenClaw and Hermes Agent"
+          becoming "two open-source agents", is flattening, a defect.
         pass_exemplar: >
           (2026-05-23, c_04fad2b47962173f) "$7.60 to the open model and
           $8 to Claude Opus, totalling $15.60 at 93% success" -- the
@@ -287,30 +386,114 @@ per_story_criteria:
           -- no number, no mechanism, no news.
       trust_flag:
         check: >
-          When the source warrants it (single Reddit post, vendor
-          benchmark, no code published, thin sourcing), the body says
-          so explicitly. NEVER sacrificed under collision priority.
+          THREE GATES (R-8, ratified + study-validated 2026-07-04), all
+          required for any explicit flag: (1) SOURCE-SUPPORTED -- the
+          characterisation is one the source explicitly supports, never
+          invented. (2) PRESENCE-FORM -- it describes evidence that
+          EXISTS; absence-inventories ("no code public yet", "no
+          independent replication yet", "peer review pending") are
+          DEFECTS, not caution. (3) INFORMATIVE VS THE CLASS DEFAULT --
+          it tells the reader something the source-class name in the
+          body did not already: a default-restating flag ("a preprint
+          from a single research team", "one research team's analysis",
+          "single-source" on a podcast interview) is a DEFECT.
+          THE CLASS NOUN PHRASE IN THE BODY IS THE CALIBRATION: "an
+          arXiv preprint", "Anthropic's release notes", "a Reddit
+          thread" already carry the default posture. A body that names
+          its evidence class and deviates nowhere NEEDS NO FLAG AND
+          MUST PASS -- the judge must NEVER demand a parenthetical flag
+          on top of the class attribution. AFFIRMATIVE-PRESENCE
+          OBLIGATION: when the source states an artifact IS available,
+          the body says so ("dataset and tooling are public") -- that is
+          the flag a builder acts on. MAGNITUDE ROUTING: claim-vs-
+          evidence mismatch belongs in the close/stake, not the flag
+          (one licensed exception: "thin sourcing, one Reddit thread"
+          under a big claim); either way said ONCE, flag or stake,
+          never both. Deviation examples that DO earn a flag: "a second
+          lab replicated it", "the vendor scored its own rival",
+          "scored by an ensemble of LLM judges", "presented as neutral,
+          but the numbers are the vendor's own".
         pass_exemplar: >
-          (2026-05-23, c_4a9fa5a7bf386dee) "Single-source coverage with
-          no paper link, no code, and no benchmarks published yet" --
-          specific about what's missing, not a generic "take with salt".
+          (2026-07-04 staged Pulse) Body opens "An arXiv preprint
+          reverse-engineers Claude Code against two open-source agents,
+          OpenClaw and Hermes Agent..." -- the class name carries the
+          calibration; no separate flag; PASSES. The v0.1 gate demanded
+          a default-restating flag here; that demand is the misfire
+          this re-anchor removes.
+        pass_exemplar_2: >
+          (2026-07-04 staged, Office-documents story) "Scored by an
+          ensemble of LLM judges" (non-obvious scoring METHOD -- a real
+          deviation flag) + "Dataset and evaluation tooling are public"
+          (affirmative presence a builder acts on). Both earn their
+          words.
         fail_exemplar: >
-          Hypothetical: a Reddit-sourced benchmark written as fact with
-          no flag at all. (Not observed in 2026-05-23 or 2026-05-24;
-          this is the standard to defend.)
+          (released #23, verbatim x3) "No code is public yet." --
+          absence-inventory: fails gate 2, usually unverifiable from the
+          excerpt (the verifier marks these unverifiable), trailing
+          "yet" promises what the source never said.
+        fail_exemplar_class: >
+          Default-restating flags: "a preprint from a single research
+          team" / "one research team's analysis" / "Vendor-published
+          benchmark" when the body already names the vendor as author
+          -- delete the flag, let the class name carry it. EQUALLY a
+          defect in the JUDGE: demanding any flag on a body whose class
+          attribution already carries the default calibration.
       decision_tied_close:
         check: >
-          Closing sentence ties to a SPECIFIC decision a reader might
-          be making, not a department / group / role. Framing varies
-          across the issue (imperative, conditional, forward bet) --
-          repeating one frame across all stories drops to borderline.
+          Closing sentence honours the section's close TURN-TYPE
+          (unchanged by the 2026-07-04 rulings): Pulse = PLAIN TAKE
+          (declarative editorial position; never a question, never a
+          prescription); Big Picture = STRATEGIC QUESTION anchored to a
+          role/decision/constraint (an imperative here is the R-7
+          turn-type leak, a defect); Hands-On = IMPERATIVE ACTION on a
+          specific artefact with a trigger or condition (generic "just
+          test it" fails); Currents = TWO-SIDED CALIBRATED STAKE (real
+          stakes on both branches; one-sided or placebo branches fail).
+          Tied to a SPECIFIC decision, not a department/group/role.
+          SURFACE VARIETY is valued: the turn-type is fixed, its grammar
+          is not -- one mould repeated across a section ("...before
+          [milestone]" every time; "if it replicates / if it doesn't"
+          every time) drops to borderline (R-1/R-2; ~2 of a mould per
+          section is the ceiling).
         pass_exemplar: >
           (2026-05-23, c_c997d4c916785564) "ask your vendor for a dated
           retraining schedule before renewing" -- specific decision
           (vendor renewal), specific instrument (dated schedule).
         fail_exemplar_class: >
-          The "useful for teams managing X" scaffold. Department, not
-          decision. Borderline on a single instance, fail when repeated.
+          The "useful for teams managing X" scaffold (department, not
+          decision); an imperative close on a Big Picture story or a
+          question close on the Pulse (turn-type leak); a section where
+          every close shares one grammatical mould.
+      prose_sharpness:
+        check: >
+          The anti-flattening contract (R-10, ratified 2026-07-04).
+          Four moves the prose must KEEP: (1) DIRECT over reported
+          speech -- "The Claude Code team's tip: give it a goal, not a
+          rulebook", not "The team recommends telling your agent
+          to..."; (2) QUOTE THE REPLACED THING VERBATIM on
+          stop-X-do-Y stories -- 'Instead of "run tests only for large
+          features," tell it to use its own judgement'; (3) CONTRAST
+          PAIRS kept where the insight IS a contrast ("a goal, not a
+          rulebook"); (4) recognised names and hard numbers KEPT.
+          REGENERATION INVARIANT: a rewrite must not net-lose verbatim
+          quotes, recognised names, hard numbers, or contrast beats vs
+          the draft it replaces. BOUNDARY: sharper must stay
+          SUPPORTABLE -- vividness never licenses a claim the source
+          does not support (gate 1 governs); sharper than the source is
+          invention, not sharpness.
+        pass_exemplar: >
+          (RATIFIED "much sharper", 2026-07-04) "The Claude Code team's
+          tip: give Fable a goal, not a rulebook. Instead of 'run tests
+          only for large features,' tell it to use its own judgement."
+          -- direct construction, verbatim quote of the replaced rule,
+          contrast pair, recognised names kept.
+        fail_exemplar: >
+          (v0.20 restage flattening, R-10) "The Claude Code team
+          recommends telling your agent to judge when..." -- reported
+          speech wraps the insight; the verbatim quote and the contrast
+          pair vanish; "OpenClaw and Hermes Agent" flattened to "two
+          open-source agents"; "58.8 to 82.3" dropped. Correct but no
+          longer quotable.
 
   - name: signal_appropriateness
     description: >
@@ -325,7 +508,7 @@ per_story_criteria:
           - "try": drop into a sandbox this week; the body points at a
             repo, technique, or technique you can clone or pip-install.
           - "read": absorb framing; no clear action yet. Use sparingly.
-          - "watch": too thin / too early to act; default for On the Radar.
+          - "watch": too thin / too early to act; default for Currents.
           - "discuss": design concept worth raising at a review, not yet
             shippable. Right for single-source frameworks without code.
         pass_exemplar: >
@@ -348,13 +531,19 @@ per_story_criteria:
 
   - name: section_intro_quality
     description: >
-      Per non-pulse section (big_picture, hands_on, on_the_radar). The
+      Per non-pulse section (big_picture, hands_on, currents). The
       Pulse carries no intro by design -- the Pulse IS the framing.
+      QUIET-DAY ALLOWANCE (v0.21): an empty Currents section still
+      carries an intro acknowledging the quiet day in the Currents
+      register ("A quiet day in the undercurrents..."); score it on
+      register fit, not on pattern-reading of stories it doesn't have.
     sub_tests:
       lead_phrase:
         check: >
           2-5 words, full-stop at end. Posture-setting phrase, not a
-          headline restatement.
+          headline restatement. Watch the R-observed drift: the nominal
+          "X is the Y" frame repeated issue over issue is a tic; vary
+          the grammar.
         pass_exemplar: >
           (2026-05-23, Big Picture) "Trust gaps are widening." -- 4
           words, posture-setting, names the day's pattern in the bold
@@ -363,13 +552,13 @@ per_story_criteria:
           (2026-05-24, Big Picture) "Regulators set the pace." -- 4
           words, frames the section without restating the FCA headline.
         fail_exemplar_class: >
-          "Today's top stories." -- 3 words, but vapid posture. Not
-          observed in current corpus.
+          "Today's top stories." -- 3 words, but vapid posture.
       body_pattern:
         check: >
           20-35 words, frames the day's PATTERN across the section's
           stories without restating any headline verbatim. Names what
-          the editor wants the reader to NOTICE.
+          the editor wants the reader to NOTICE. On a quiet day (empty
+          Currents), acknowledges the quiet in-register instead.
         pass_exemplar: >
           (2026-05-23, Hands-On) "Today's gains, faster inference,
           cheaper routing, sharper tool-calling, look compelling on
@@ -382,8 +571,8 @@ per_story_criteria:
           threads with no independent verification. The pattern here is
           community-driven, practical signal that deserves a watch, not
           yet a decision." -- 30 words, but "the pattern here is" is a
-          tic; "deserves a watch" lifts language from the section name
-          (on the radar -> watch). Borderline -- could land sharper.
+          tic; "deserves a watch" lifts language from the section name.
+          Borderline -- could land sharper.
 
 # ---------------------------------------------------------------------------
 # Judge instructions (Phase C reference). The LLM-judge prompt will:
@@ -410,25 +599,38 @@ judge_instructions:
   never_auto_fail: >
     The judge produces drafts. Final pass/fail goes to the Editor and
     then to Arman. The judge can FLAG; it cannot DECIDE.
+  rubric_governs: >
+    This rubric is loaded at runtime and is the governing text. If a
+    judge prompt's inlined summary of a criterion conflicts with the
+    rubric anchors, the rubric wins. Two verdict classes are named
+    JUDGE DEFECTS after the 2026-07-04 misfire: (a) failing a
+    genre-labelled recognised-anchor headline as press-release style;
+    (b) demanding a trust flag on a body whose source-class attribution
+    already carries the default calibration.
 
 # ---------------------------------------------------------------------------
-# Re-anchoring schedule. Voice rubrics drift; this one is bootstrap.
+# Re-anchoring schedule. Voice rubrics drift; keep the receipts.
 # ---------------------------------------------------------------------------
 
 reanchoring_schedule:
   - at_corpus_size: 5
     action: >
-      Re-pick exemplars from the strongest single issue and the weakest
-      borderline. Replace any anchor whose exemplar no longer reads as
-      representative.
+      DONE in spirit 2026-07-04 (corpus at 23): exemplars re-picked
+      against the ratified rulings rather than a single strong issue.
   - at_corpus_size: 14
     action: >
-      Full review with Eval Engineer + Arman. Consider adding any
-      dimensions that drift surfaced (e.g. "headline freshness" if the
-      same construction recurs across the corpus).
+      SUPERSEDED by the 2026-07-04 ruling-driven re-anchor (v0.2).
+      Next full review with Eval Engineer + Arman at ~35 ratified
+      issues, or on the next ratified ruling that shifts voice.
   - on_drift_signal:
     action: >
       Eval Engineer's drift detection flags a dimension trending down
       week-over-week -> Editor investigates with specific examples
       (per editor.md "Drift") and may re-anchor that dimension's
       exemplars to recalibrate.
+  - on_ruling:
+    action: >
+      Any Arman-ratified ruling that reclassifies a form (as 2026-07-04
+      reclassified absence-inventory flags and genre-label headlines)
+      triggers a same-week rubric re-anchor -- the judge must never be
+      teaching yesterday's voice against today's ratified prose.
