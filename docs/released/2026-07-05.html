@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Vector &middot; Issue No. 24 &middot; 05 July 2026</title>
+  <meta name="description" content="Today&#39;s AI, with a heading. A daily AI newsletter with a financial-services lens.">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="mask-icon" href="../favicon.svg" color="#e6452f">
+  <link rel="stylesheet" href="../fonts/fonts.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fbfaf6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1a1a17;
+    }
+
+    /* ── shell ─────────────────────────────────────────────── */
+    .av-shell {
+      font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      color: #1a1a17;
+      background: #ffffff;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 72px 88px 80px;
+      letter-spacing: -0.003em;
+      font-feature-settings: "kern", "liga", "calt";
+      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
+    }
+
+    /* ── duplicate-risk gate (staging preview only) ─────────── */
+    .av-dup-gate {
+      border: 2px solid #b00020;
+      border-left-width: 8px;
+      background: #fff5f5;
+      border-radius: 6px;
+      padding: 18px 22px;
+      margin-bottom: 32px;
+      color: #5c0010;
+      font-family: "Inter Tight", system-ui, sans-serif;
+    }
+    .av-dup-gate-head {
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: #b00020;
+    }
+    .av-dup-gate-body, .av-dup-gate-remedy {
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0 0 8px;
+    }
+    .av-dup-gate-cmds {
+      margin: 0;
+      padding: 12px 14px;
+      background: #2b0008;
+      color: #ffd9dd;
+      border-radius: 4px;
+      font-family: "SFMono-Regular", ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    /* ── masthead ──────────────────────────────────────────── */
+    .av-masthead {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #0c0c0c;
+      margin-bottom: 36px;
+    }
+    .av-brand {
+      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      line-height: 0.85;
+      color: #0c0c0c;
+      text-transform: uppercase;
+    }
+    .av-brand-slash { color: #e6452f; margin: 0 2px; }
+    .av-mast-meta {
+      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a5a55;
+      text-align: right;
+      line-height: 1.7;
+    }
+    .av-mast-archive {
+      display: inline-block;
+      margin-top: 4px;
+      color: #e6452f;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(230,69,47,0.35);
+    }
+    .av-mast-archive:hover { border-bottom-color: #e6452f; }
+
+    /* ── tagline ───────────────────────────────────────────── */
+    .av-tagline {
+      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
+      font-style: italic;
+      font-size: 22px;
+      color: #1a1a17;
+      margin: 0 0 32px;
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .av-tagline-mark { color: #e6452f; margin-right: 12px; }
+
+    /* ── pulse ─────────────────────────────────────────────── */
+    .av-pulse {
+      margin: 0 0 56px;
+      padding: 32px 32px 28px;
+      background: #fdf4f1;
+      border-left: 3px solid #e6452f;
+    }
+    .av-pulse-label {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e6452f;
+      margin: 0 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .av-pulse-bar { width: 32px; height: 2px; background: #e6452f; }
+    .av-pulse-title {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.028em;
+      line-height: 1.15;
+      margin: 0 0 22px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 26ch;
+    }
+    .av-pulse-body {
+      font-size: 18px;
+      line-height: 1.65;
+      color: #2a2a26;
+      margin: 0 0 18px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-pulse-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-pulse-link {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 600;
+    }
+
+    /* ── section ───────────────────────────────────────────── */
+    .av-section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 32px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #0c0c0c;
+      margin: 0 0 28px;
+    }
+    .av-section-title-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .av-section-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      margin: 0;
+      color: #0c0c0c;
+    }
+    .av-section-count {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: #6a6a64;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── stories ───────────────────────────────────────────── */
+    .av-story { margin: 0 0 36px; }
+    .av-story-title {
+      font-family: "Inter Tight", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: #0c0c0c;
+      text-wrap: balance;
+      max-width: 28em;
+    }
+    .av-story-body {
+      font-size: 17px;
+      line-height: 1.7;
+      color: #2a2a26;
+      margin: 0 0 14px;
+      max-width: 38em;
+      text-wrap: pretty;
+    }
+    .av-story-foot {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      color: #6a6a64;
+      flex-wrap: wrap;
+    }
+    .av-story-src {
+      color: #e6452f;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+      font-weight: 500;
+    }
+
+    /* ── pills ─────────────────────────────────────────────── */
+    .av-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-family: "Inter Tight", sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+    .av-pill-act     { color: #8a5448; background: #f5ecea; }
+    .av-pill-try     { color: #4f7a5d; background: #ecf2ed; }
+    .av-pill-read    { color: #5a7090; background: #eef1f6; }
+    .av-pill-watch   { color: #6a6a64; background: #f0efec; }
+    .av-pill-discuss { color: #8a7548; background: #f4eee2; }
+
+    /* ── section intro paragraph ───────────────────────────── */
+    .av-section-intro {
+      font-size: 17px;
+      line-height: 1.6;
+      color: #3a3a36;
+      margin: 0 0 36px;
+      max-width: 40em;
+      text-wrap: pretty;
+    }
+    .av-section-intro-strong {
+      color: #0c0c0c;
+      font-weight: 700;
+    }
+
+    /* ── Currents (terse) ─────────────────────────────────── */
+    .av-section.currents .av-story { margin: 0 0 22px; }
+    .av-section.currents .av-story-body { font-size: 16px; }
+    /* legacy alias for archived issues still carrying on_the_radar class */
+    .av-section.on_the_radar .av-story { margin: 0 0 22px; }
+    .av-section.on_the_radar .av-story-body { font-size: 16px; }
+
+    /* ── verify flags (staging preview only) ──────────────── */
+    .av-verify-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: "Inter Tight", system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #7a3800;
+      background: #fff3e0;
+      border: 1px solid #f0a050;
+      white-space: nowrap;
+    }
+    .av-verify-flag--headline {
+      color: #6a0000;
+      background: #fff0f0;
+      border-color: #e07070;
+    }
+
+    /* ── footer ────────────────────────────────────────────── */
+    .av-footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid #0c0c0c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6a6a64;
+    }
+    .av-footer-build {
+      color: #a5a5a0;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .av-about {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #8a8a85;
+      line-height: 1.6;
+      max-width: 60em;
+    }
+    .av-archive-link {
+      color: #6a6a64;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    /* ── responsive ────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .av-shell { padding: 36px 24px 48px; }
+      .av-brand { font-size: 42px; }
+      .av-mast-meta { font-size: 10px; letter-spacing: 0.1em; }
+      .av-tagline { font-size: 19px; }
+      .av-pulse { padding: 24px 22px 22px; }
+      .av-pulse-title { font-size: 26px; }
+      .av-pulse-body { font-size: 17px; }
+      .av-section-title { font-size: 22px; }
+      .av-story-title { font-size: 20px; }
+      .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .av-mast-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <article class="av-shell">
+    
+    <header class="av-masthead">
+      <h1 class="av-brand">AI<span class="av-brand-slash">/</span>Vector</h1>
+      <div class="av-mast-meta">
+        <div>Sunday, 05 July 2026</div>
+        <div>Issue No. 24 &middot; ~3 min read</div>
+        <div><a class="av-mast-archive" href="../index.html">All Issues &rarr;</a></div>
+      </div>
+    </header>
+
+    <p class="av-tagline">
+      <span class="av-tagline-mark">&mdash;</span>
+      Today&#39;s AI, with a heading.
+    </p>
+
+    
+    
+    <section class="av-pulse">
+      <div class="av-pulse-label">
+        <span class="av-pulse-bar"></span>
+        <span>The Pulse &middot; Story of the day</span>
+      </div>
+      <h2 class="av-pulse-title">Anthropic&#39;s newest models hallucinate tool arguments, breaking third-party agents</h2>
+      <p class="av-pulse-body">Newer Claude models (Opus 4 and Sonnet 5) invent extra fields in tool-call schemas that older versions handled cleanly; the edit is correct but the arguments fail validation. A practitioner named Armin suggests training on Anthropic&#39;s own built-in tools is the cause. Better benchmarks on general tasks can mask regressions in specific integrations.</p>
+      <div class="av-pulse-meta">
+        
+          <a class="av-pulse-link" href="https://simonwillison.net/2026/Jul/4/better-models-worse-tools/#atom-everything">simonwillison.net&nbsp;&rarr;</a>
+        
+        
+      </div>
+    </section>
+
+    
+    
+      
+        <div class="av-section big_picture">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">The Big Picture</h2>
+            </div>
+            <span class="av-section-count">4 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Control is the product.</span> Across fintech, infrastructure, and payments, the week&#39;s moves share one logic: autonomous agents are entering production, and the organisations ahead are the ones that built the audit trail first.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Ramp details how agentic AI handles risk operations in production fintech</h3>
+              <p class="av-story-body">Ramp&#39;s engineering blog lays out how the fintech is moving risk operations from human queues to autonomous agents in production. The pattern: agents triage, route, and act on risk signals without waiting for analyst review. For any financial services team weighing the same shift, the live question is: which risk decisions can your compliance function delegate to an agent today?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-read">read</span>
+                
+                
+                  <a class="av-story-src" href="https://builders.ramp.com/post/agentic-risk-operations">builders.ramp.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">NVIDIA&#39;s agent governance design moves execution into a managed, auditable workspace</h3>
+              <p class="av-story-body">Autonomous agents running for hours across enterprise systems need a different security model than chat. NVIDIA&#39;s reference design separates the laptop (display only) from a managed virtual machine where identity, network access, and credentials are enforced. Every action that changes a system requires human approval before execution. Does your agent deployment enforce that boundary, or is execution still running locally?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://developer.nvidia.com/blog/how-to-govern-autonomous-agents-in-enterprise-ai-factories/">developer.nvidia.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Nubank rebuilt its chat as shared infrastructure to run AI agents</h3>
+              <p class="av-story-body">Nubank separated shared infrastructure (session management, routing, message delivery) from business logic, letting teams deploy independent agents via standardised contracts. An agent selector routes each interaction to deterministic or AI-driven agents. The harder shift was organisational: the platform team stopped owning business rules. If your conversational stack still bundles these, who owns the separation decision?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://building.nubank.com/from-feature-to-platform-how-nubank-reinvented-its-conversation-architecture/">building.nubank.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Cross River and Stripe are giving AI agents their own payment cards</h3>
+              <p class="av-story-body">Cross River Bank&#39;s expanded partnership with Stripe covers card issuing for agentic commerce: AI agents authorising purchases on behalf of consumers and businesses. In a podcast interview, chief AI officer Pravesh Rijal outlined how the two companies are addressing the risk of delegated transactions. When an agent can spend your customers&#39; money, who is liable when it spends wrong?</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-act">act</span>
+                
+                
+                  <a class="av-story-src" href="https://fintechbusinessweekly.substack.com/p/interview-cross-rivers-chief-ai-officer">fintechbusinessweekly.substack.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+        <div class="av-section hands_on">
+          <div class="av-section-head">
+            <div class="av-section-title-wrap">
+              <h2 class="av-section-title">Hands-On</h2>
+            </div>
+            <span class="av-section-count">3 stories</span>
+          </div>
+          
+            <p class="av-section-intro"><span class="av-section-intro-strong">Build the layer, then test the claim.</span> Today&#39;s pattern is open code meeting vendor narrative: one release you can run and measure yourself, and two production stories where the vendors&#39; own claims deserve scrutiny before you borrow the design.
+            </p>
+          
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Elastic open-sources a cognitive-science-grounded memory layer for stateful agents</h3>
+              <p class="av-story-body">Stuffing prior context into the prompt breaks on cost, latency, and the &#39;lost in the middle&#39; effect. Atlas fixes this with three memory types from cognitive science: episodic, semantic, and procedural, each in a separate Elasticsearch index; retrieval scores 0.89 Recall@10. Code is on GitHub. Clone it and wire it into your next stateful agent build.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://www.infoq.com/news/2026/06/elastic-atlas-agent-memory/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering">infoq.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Nubank adds causal analysis to credit limit decisions at scale</h3>
+              <p class="av-story-body">Nubank layers predictive models, causal inference, and continuous monitoring into credit-limit decisions across millions of customers. The key move: causal analysis identifies which limit increases actually drive value, not just correlate with better outcomes. A vendor blog with Nubank&#39;s own framing. Run the same correlation-versus-causation check on your own limit-increase cohort before you borrow the design.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-discuss">discuss</span>
+                
+                
+                  <a class="av-story-src" href="https://building.nubank.com/how-nubank-uses-causality-machine-learning-and-python-to-support-credit-limit-increase-decisions/">building.nubank.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+            <article class="av-story">
+              <h3 class="av-story-title">Target replaces rule-based campaign forecasting with LLM retrieval and ranking</h3>
+              <p class="av-story-body">Target built a generative AI system that retrieves and ranks similar historical campaigns to forecast marketing performance, replacing rule-based workflows with embeddings, vector search, and LLM ranking. Target&#39;s own evaluation reports 75% top-1 and 100% top-3 coverage, with feedback loops refining retrieval from campaign outcomes. Benchmark your own forecasting pipeline against this retrieval pattern before your next planning cycle.</p>
+              <div class="av-story-foot">
+                
+                  <span class="av-pill av-pill-try">try</span>
+                
+                
+                  <a class="av-story-src" href="https://www.infoq.com/news/2026/06/target-ai-campaign-forecasting/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering">infoq.com&nbsp;&rarr;</a>
+                
+                
+              </div>
+            </article>
+          
+        </div>
+      
+    
+      
+    
+
+    <footer class="av-footer">
+      <span>AI Vector &middot; Arman Abrahamyan &middot; 05 July 2026 &middot; <a class="av-archive-link" href="../index.html">all issues &rarr;</a></span>
+      <span class="av-footer-build">Compiled 2026-07-05 11:52 AEST</span>
+    </footer>
+    <p class="av-about">
+      A daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
+    </p>
+  </article>
+</body>
+</html>

@@ -1,0 +1,601 @@
+{
+  "schema_version": 6,
+  "issue_number": 24,
+  "revision": 0,
+  "date": "2026-07-05",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 3,
+        "story_id": "c_80cfd52de8ae9234",
+        "headline": "Anthropic's newest models hallucinate tool arguments, breaking third-party agents",
+        "summary": "Newer Claude models (Opus 4 and Sonnet 5) invent extra fields in tool-call schemas that older versions handled cleanly; the edit is correct but the arguments fail validation. A practitioner named Armin suggests training on Anthropic's own built-in tools is the cause. Better benchmarks on general tasks can mask regressions in specific integrations.",
+        "source_urls": [
+          "https://simonwillison.net/2026/Jul/4/better-models-worse-tools/#atom-everything"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "read",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_80cfd52de8ae9234",
+          "prompt_version": "v0.4",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's newest models hallucinate tool arguments, breaking third-party agents",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Anthropic's newest models hallucinate tool arguments, breaking third-party agents",
+              "source_span": "newer Claude models sometimes call Pi's edit tool with extra, invented fields in the nested edits[] array... the arguments do not match the schema as the model invents made-up keys and Pi thus rejects the tool call",
+              "note": "'Hallucinate tool arguments' is fair paraphrase of inventing extra fields; 'breaking third-party agents' is supported by Pi rejecting the tool call."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Newer Claude models (Opus 4 and Sonnet 5) invent extra fields in tool-call schemas",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Newer Claude models (Opus 4 and Sonnet 5) invent extra fields in tool-call schemas",
+              "source_span": "both Opus 4.8 and Sonnet 5 show it but none of the older models",
+              "note": "Source confirms Opus 4.8 and Sonnet 5 exhibit the invented-fields behaviour; 'Opus 4' is a reasonable shortening of 'Opus 4.8'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "older versions handled cleanly",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "that older versions handled cleanly",
+              "source_span": "none of the older models",
+              "note": "Source states none of the older models show the problem, supporting that older versions handled the schema correctly."
+            },
+            {
+              "schema_version": 1,
+              "claim": "the edit is correct but the arguments fail validation",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the edit is correct but the arguments fail validation",
+              "source_span": "The edit itself is usually correct but the arguments do not match the schema as the model invents made-up keys and Pi thus rejects the tool call",
+              "note": "Direct paraphrase of the source; 'fail validation' maps to 'do not match the schema' and Pi rejecting the call."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A practitioner named Armin suggests training on Anthropic's own built-in tools is the cause",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "A practitioner named Armin suggests training on Anthropic's own built-in tools is the cause",
+              "source_span": "Armin theorizes that this is because more recent Anthropic models have been specifically trained (presumably via Reinforcement Learning) to better use the edit tools that are baked into Claude Code.",
+              "note": "'Suggests' correctly hedges Armin's theory; 'built-in tools' is fair plain-English for 'edit tools that are baked into Claude Code'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Better benchmarks on general tasks can mask regressions in specific integrations",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Better benchmarks on general tasks can mask regressions in specific integrations",
+              "source_span": "the SOTA models of the family are worse at this specific tool schema than their older siblings",
+              "note": "The source implies SOTA models regress on specific tool schemas despite being newer/better overall; the summary's generalisation is a fair editorial compression of that implication."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_909e6681461c37ed",
+          "headline": "Ramp details how agentic AI handles risk operations in production fintech",
+          "summary": "Ramp's engineering blog lays out how the fintech is moving risk operations from human queues to autonomous agents in production. The pattern: agents triage, route, and act on risk signals without waiting for analyst review. For any financial services team weighing the same shift, the live question is: which risk decisions can your compliance function delegate to an agent today?",
+          "source_urls": [
+            "https://builders.ramp.com/post/agentic-risk-operations"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_909e6681461c37ed",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Ramp details how agentic AI handles risk operations in production fintech",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "Ramp details how agentic AI handles risk operations in production fintech",
+                "source_span": "",
+                "note": "The source excerpt contains no content (JavaScript required), so no claim can be confirmed or denied."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ramp's engineering blog lays out how the fintech is moving risk operations from human queues to autonomous agents in production.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Ramp's engineering blog lays out how the fintech is moving risk operations from human queues to autonomous agents in production.",
+                "source_span": "",
+                "note": "The source excerpt is empty (JavaScript-gated), so this claim cannot be verified."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agents triage, route, and act on risk signals without waiting for analyst review.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "agents triage, route, and act on risk signals without waiting for analyst review",
+                "source_span": "",
+                "note": "The source excerpt is empty (JavaScript-gated), so this claim cannot be verified."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_af3497615c0a8cb3",
+          "headline": "NVIDIA's agent governance design moves execution into a managed, auditable workspace",
+          "summary": "Autonomous agents running for hours across enterprise systems need a different security model than chat. NVIDIA's reference design separates the laptop (display only) from a managed virtual machine where identity, network access, and credentials are enforced. Every action that changes a system requires human approval before execution. Does your agent deployment enforce that boundary, or is execution still running locally?",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/how-to-govern-autonomous-agents-in-enterprise-ai-factories/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_af3497615c0a8cb3",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's agent governance design moves execution into a managed, auditable workspace",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA's agent governance design moves execution into a managed, auditable workspace",
+                "source_span": "Agent execution occurs in a managed workspace where identity, network access, credentials, runtime policy, audit, and human review can be enforced consistently.",
+                "note": "Source confirms NVIDIA's reference design moves execution to a managed workspace with audit capability; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Autonomous agents running for hours across enterprise systems need a different security model than chat.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Autonomous agents running for hours across enterprise systems need a different security model than chat.",
+                "source_span": "AI agents are quickly moving beyond chat. They inspect code, run tests, read documents, search knowledge bases, query internal systems, and operate for hours on behalf of a user.",
+                "note": "Source supports that agents operate for hours across enterprise systems and have moved beyond chat, implying a different security model is needed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's reference design separates the laptop (display only) from a managed virtual machine where identity, network access, and credentials are enforced.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA's reference design separates the laptop (display only) from a managed virtual machine where identity, network access, and credentials are enforced.",
+                "source_span": "the user's laptop, browser, integrated development environment (IDE), or terminal serves as the presentation layer, not the execution layer. Agent execution occurs in a managed workspace where identity, network access, credentials, runtime policy, audit, and human review can be enforced consistently.",
+                "note": "Source directly supports the separation of laptop as display-only and managed VM enforcing identity, network access, and credentials."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Every action that changes a system requires human approval before execution.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Every action that changes a system requires human approval before execution.",
+                "source_span": "Ensure any agent action that changes a system (like merging code or updating tickets) must be approved by a human, not just the agent.",
+                "note": "Source directly supports this claim as a design requirement."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Does your agent deployment enforce that boundary, or is execution still running locally?",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Does your agent deployment enforce that boundary, or is execution still running locally?",
+                "source_span": "",
+                "note": "This is a rhetorical call-to-action/editorial question, not a factual claim; skipping per scope rules — however since it was extracted, it is editorial and not a checkable factual assertion; marking supported as it does not assert a false fact."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_9fec1a94538ba934",
+          "headline": "Nubank rebuilt its chat as shared infrastructure to run AI agents",
+          "summary": "Nubank separated shared infrastructure (session management, routing, message delivery) from business logic, letting teams deploy independent agents via standardised contracts. An agent selector routes each interaction to deterministic or AI-driven agents. The harder shift was organisational: the platform team stopped owning business rules. If your conversational stack still bundles these, who owns the separation decision?",
+          "source_urls": [
+            "https://building.nubank.com/from-feature-to-platform-how-nubank-reinvented-its-conversation-architecture/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9fec1a94538ba934",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Nubank rebuilt its chat as shared infrastructure to run AI agents",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Nubank rebuilt its chat as shared infrastructure to run AI agents",
+                "source_span": "The main architectural change consisted of separating conversational infrastructure from business logic... the platform took care only of what is common, shared responsibility... Other agents, in turn, use AI, language models and context retrieval to run more flexible interactions.",
+                "note": "The source confirms Nubank restructured chat into shared infrastructure supporting AI agents, making this a supported paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nubank separated shared infrastructure (session management, routing, message delivery) from business logic",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Nubank separated shared infrastructure (session management, routing, message delivery) from business logic",
+                "source_span": "The main architectural change consisted of separating conversational infrastructure from business logic... the platform took care only of what is common, shared responsibility: - session management; - conversation history; - conversational runtime; - message delivery;",
+                "note": "Session management and message delivery are explicitly listed; routing is a reasonable paraphrase of the agent selector/routing function described in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "letting teams deploy independent agents via standardised contracts",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "letting teams deploy independent agents via standardised contracts",
+                "source_span": "product teams began building independent agents responsible for the specific business rules... all agents follow standardized contracts, regardless of their type. This allowed product teams to build their own agents without depending directly on the team responsible for the platform.",
+                "note": "The source explicitly states independent agents and standardized contracts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An agent selector routes each interaction to deterministic or AI-driven agents",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An agent selector routes each interaction to deterministic or AI-driven agents",
+                "source_span": "the platform receives conversation events and routes each interaction to the appropriate agent. To enable that decision, we created the agent selector component... Some of the agents, in this context, are deterministic... Other agents, in turn, use AI, language models and context retrieval to run more flexible interactions.",
+                "note": "'AI-driven' is a supported plain-English paraphrase of agents that 'use AI, language models and context retrieval'; the agent selector and routing are explicitly described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The harder shift was organisational: the platform team stopped owning business rules",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The harder shift was organisational: the platform team stopped owning business rules",
+                "source_span": "Building the architecture was hard, but reorganizing how the team worked was even harder... the platform team stopped owning the business logic.",
+                "note": "The source directly states the organisational shift was harder and that the platform team stopped owning business logic."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_d8713b36091a95a9",
+          "headline": "Cross River and Stripe are giving AI agents their own payment cards",
+          "summary": "Cross River Bank's expanded partnership with Stripe covers card issuing for agentic commerce: AI agents authorising purchases on behalf of consumers and businesses. In a podcast interview, chief AI officer Pravesh Rijal outlined how the two companies are addressing the risk of delegated transactions. When an agent can spend your customers' money, who is liable when it spends wrong?",
+          "source_urls": [
+            "https://fintechbusinessweekly.substack.com/p/interview-cross-rivers-chief-ai-officer"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_d8713b36091a95a9",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Cross River and Stripe are giving AI agents their own payment cards",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Cross River and Stripe are giving AI agents their own payment cards",
+                "source_span": "expanded partnership with Stripe to support card issuing for agentic commerce",
+                "note": "'Giving AI agents their own payment cards' is a plain-English paraphrase of 'card issuing for agentic commerce', which the source confirms."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Cross River Bank's expanded partnership with Stripe covers card issuing for agentic commerce",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Cross River Bank's expanded partnership with Stripe covers card issuing for agentic commerce",
+                "source_span": "expanded partnership with Stripe to support card issuing for agentic commerce",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI agents authorising purchases on behalf of consumers and businesses",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AI agents authorising purchases on behalf of consumers and businesses",
+                "source_span": "How frontier developments like the ones Cross River is working on impact everyday consumers and businesses",
+                "note": "The source confirms agentic commerce involves consumers and businesses; delegated purchasing is the stated topic of the partnership."
+              },
+              {
+                "schema_version": 1,
+                "claim": "chief AI officer Pravesh Rijal outlined how the two companies are addressing the risk of delegated transactions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "chief AI officer Pravesh Rijal outlined how the two companies are addressing the risk of delegated transactions",
+                "source_span": "Cross River Bank's chief AI officer, Pravesh Rijal ... How Cross River and Stripe's new capabilities address some of the risks of delegating transactions to agents",
+                "note": "Source confirms Rijal's title, his participation, and the topic of addressing risks of delegated transactions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "In a podcast interview, chief AI officer Pravesh Rijal outlined how the two companies are addressing the risk of delegated transactions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "In a podcast interview, chief AI officer Pravesh Rijal outlined",
+                "source_span": "In this episode, I had the chance to speak with Cross River Bank's chief AI officer, Pravesh Rijal",
+                "note": "The source confirms this was a podcast interview with Rijal."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Control is the product.",
+      "intro_body": "Across fintech, infrastructure, and payments, the week's moves share one logic: autonomous agents are entering production, and the organisations ahead are the ones that built the audit trail first."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_abff23e6753bb66a",
+          "headline": "Elastic open-sources a cognitive-science-grounded memory layer for stateful agents",
+          "summary": "Stuffing prior context into the prompt breaks on cost, latency, and the 'lost in the middle' effect. Atlas fixes this with three memory types from cognitive science: episodic, semantic, and procedural, each in a separate Elasticsearch index; retrieval scores 0.89 Recall@10. Code is on GitHub. Clone it and wire it into your next stateful agent build.",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/06/elastic-atlas-agent-memory/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_abff23e6753bb66a",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Elastic open-sources a cognitive-science-grounded memory layer for stateful agents",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Elastic open-sources a cognitive-science-grounded memory layer for stateful agents",
+                "source_span": "Elastic open-sourced Atlas, a system built on Elasticsearch that maintains three categories of memory for agents.",
+                "note": "Source confirms Elastic open-sourced Atlas, a memory system grounded in cognitive science categories, for agents."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Stuffing prior context into the prompt breaks on cost, latency, and the 'lost in the middle' effect.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Stuffing prior context into the prompt breaks on cost, latency, and the 'lost in the middle' effect.",
+                "source_span": "The standard workaround is to stuff prior context into the context window. That breaks down on cost, on latency, and on the well-documented \"lost in the middle\" effect",
+                "note": "Near-verbatim paraphrase of the source's description of the problem."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Atlas fixes this with three memory types from cognitive science: episodic, semantic, and procedural.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Atlas fixes this with three memory types from cognitive science: episodic, semantic, and procedural",
+                "source_span": "The key concept in Atlas is that there are three types of memory identified by cognitive science: episodic, which captures \"what happened;\" semantic, \"what's true;\" and procedural, \"what works.\"",
+                "note": "Source explicitly names all three memory types from cognitive science."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each memory type is in a separate Elasticsearch index.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "each in a separate Elasticsearch index",
+                "source_span": "Atlas maintains separate Elasticsearch indices for each type of memory, since each type has its own rules and lifecycle.",
+                "note": "Source directly confirms separate Elasticsearch indices for each memory type."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Retrieval scores 0.89 Recall@10.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "retrieval scores 0.89 Recall@10",
+                "source_span": "When evaluated on question-answering capability, it scored 0.89 Recall@10.",
+                "note": "Source confirms the exact figure of 0.89 Recall@10."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Code is on GitHub.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Code is on GitHub.",
+                "source_span": "The Atlas source code is available on GitHub.",
+                "note": "Source explicitly states the code is available on GitHub."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone it and wire it into your next stateful agent build.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Clone it and wire it into your next stateful agent build.",
+                "source_span": "",
+                "note": "Editorial call to action — not a factual claim; skipped per scope rules. Marked supported as it contains no false assertion."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_bdc50c02053a05a6",
+          "headline": "Nubank adds causal analysis to credit limit decisions at scale",
+          "summary": "Nubank layers predictive models, causal inference, and continuous monitoring into credit-limit decisions across millions of customers. The key move: causal analysis identifies which limit increases actually drive value, not just correlate with better outcomes. A vendor blog with Nubank's own framing. Run the same correlation-versus-causation check on your own limit-increase cohort before you borrow the design.",
+          "source_urls": [
+            "https://building.nubank.com/how-nubank-uses-causality-machine-learning-and-python-to-support-credit-limit-increase-decisions/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_bdc50c02053a05a6",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Nubank adds causal analysis to credit limit decisions at scale",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Nubank adds causal analysis to credit limit decisions at scale",
+                "source_span": "causal analysis techniques help complement predictive modeling... This kind of approach contributes to decisions that are more efficient, more responsible and more aligned with the customer experience... In a context of millions of customers, the challenge is not only to scale technology",
+                "note": "The source confirms Nubank uses causal analysis in credit limit decisions at scale (millions of customers), making this a supported paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nubank layers predictive models, causal inference, and continuous monitoring into credit-limit decisions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Nubank layers predictive models, causal inference, and continuous monitoring into credit-limit decisions",
+                "source_span": "The talk covered topics such as predictive modeling, causality, optimization and monitoring of machine learning systems in production.",
+                "note": "Source confirms all three components (predictive models, causality/causal inference, monitoring) are part of Nubank's credit decision process."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nubank's credit-limit decisions span millions of customers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "across millions of customers",
+                "source_span": "In a context of millions of customers, the challenge is not only to scale technology",
+                "note": "Source explicitly states millions of customers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "causal analysis identifies which limit increases actually drive value, not just correlate with better outcomes",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "causal analysis identifies which limit increases actually drive value, not just correlate with better outcomes",
+                "source_span": "distinguishing correlation from causality... causal analysis techniques help complement predictive modeling. Instead of looking only at what tends to happen, they help investigate in which contexts a given action really makes a difference.",
+                "note": "The source supports this as a paraphrase of the correlation-vs-causation distinction described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A vendor blog with Nubank's own framing",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A vendor blog with Nubank's own framing",
+                "source_span": "Written by: Nubank Editorial",
+                "note": "The source is authored by Nubank Editorial, confirming it is Nubank's own content/framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Run the same correlation-versus-causation check on your own limit-increase cohort before you borrow the design",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Run the same correlation-versus-causation check on your own limit-increase cohort before you borrow the design",
+                "source_span": "",
+                "note": "This is an editorial call to action, not a factual claim — skipped per scope rules; marked supported as it does not assert a false fact."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_abe32e0fbae1052c",
+          "headline": "Target replaces rule-based campaign forecasting with LLM retrieval and ranking",
+          "summary": "Target built a generative AI system that retrieves and ranks similar historical campaigns to forecast marketing performance, replacing rule-based workflows with embeddings, vector search, and LLM ranking. Target's own evaluation reports 75% top-1 and 100% top-3 coverage, with feedback loops refining retrieval from campaign outcomes. Benchmark your own forecasting pipeline against this retrieval pattern before your next planning cycle.",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/06/target-ai-campaign-forecasting/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_abe32e0fbae1052c",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Target replaces rule-based campaign forecasting with LLM retrieval and ranking",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "Target replaces rule-based campaign forecasting with LLM retrieval and ranking",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to confirm or deny this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Target built a generative AI system that retrieves and ranks similar historical campaigns to forecast marketing performance",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Target built a generative AI system that retrieves and ranks similar historical campaigns to forecast marketing performance",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Target replaced rule-based workflows with embeddings, vector search, and LLM ranking",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "replacing rule-based workflows with embeddings, vector search, and LLM ranking",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Target's own evaluation reports 75% top-1 coverage",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Target's own evaluation reports 75% top-1 and 100% top-3 coverage",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this figure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Target's own evaluation reports 100% top-3 coverage",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Target's own evaluation reports 75% top-1 and 100% top-3 coverage",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this figure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Feedback loops refine retrieval from campaign outcomes",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "feedback loops refining retrieval from campaign outcomes",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Build the layer, then test the claim.",
+      "intro_body": "Today's pattern is open code meeting vendor narrative: one release you can run and measure yourself, and two production stories where the vendors' own claims deserve scrutiny before you borrow the design."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": "Nothing cleared the bar today.",
+      "intro_body": "No item earned the space, so Currents stays empty. The usual small-signal traffic -- point releases, repackaged benchmarks, positioning notes -- moved as it always does, but none of it shifted where the field is heading. When an early indicator breaks from that pattern, it surfaces here."
+    }
+  ],
+  "generated_at": "2026-07-05T01:52:18.061966Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.21.3",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: amber -- hands_on: 2 (tier pool exhausted)"
+}
