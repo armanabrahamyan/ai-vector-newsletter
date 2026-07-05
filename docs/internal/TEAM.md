@@ -97,6 +97,12 @@ No Haiku in v0. No sub-agent spawning in v0.
   `config/rubric.yaml`, and LLM
   Engineer's prompts. Mechanism: CI runs the harness (`aiv eval`);
   non-zero exit blocks merge.
+- **Eval governance (2026-07-04): gates always run; eval changes only on
+  ratification.** Every LLM-stage prompt/model change runs its eval gate
+  before merge, results recorded in the PR. Changes to `evals/` itself
+  (thresholds, fixtures, gate scope, harness semantics) require Arman's
+  explicit ratification before commit — the Eval Engineer proposes; the
+  meaning of the gates moves only on ratification.
 - **Test Engineer — hard veto** on PRs touching anything under `tests/`.
   Mechanism: `tests/CONVENTIONS.md` compliance review; the suite's green
   bar in CI.
