@@ -36,6 +36,7 @@ import argparse
 import json
 import math
 import os
+import re
 import sys
 import warnings
 from dataclasses import dataclass, field
@@ -3003,6 +3004,248 @@ def _fa_fixture_summary() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Eval 8 — Reading-experience regression lint (R-8 / R-9, deterministic)
+# STATUS: READY
+#
+# Cheap, no-LLM code checks over an issue.json, encoding the deterministic
+# halves of the 2026-07-04 rulings in docs/internal/READING_EXPERIENCE.md:
+#
+#   (a) R-8  — banned absence-form trust flags ("No code is public yet",
+#       "no independent replication yet", "peer review pending", …) must
+#       not appear in story summaries or section intros. Boundary note in
+#       R-8 is honoured: "no action yet" in a direction-note is a
+#       recommendation, not an evidence inventory — allowed.
+#   (b) R-9  — "A new + generic noun" headline opener is banned
+#       (framework / method / tool / benchmark / system).
+#   (c) R-9  — density guardrail: at most two "A/An"-led headlines per
+#       issue. (The per-story prompt states this as a preference; the
+#       deterministic count lives here, per No Token Wasted.)
+#
+# Enforcement window: the rulings were ratified 2026-07-04. Datasets dated
+# BEFORE that run the same counts but report status="informational" and
+# never fail — the released archive up to #23 legitimately predates the
+# rule and must stay green. Datasets whose name is not a date (synthetic
+# fixtures) are also informational-only.
+# ---------------------------------------------------------------------------
+
+READING_LINT_EFFECTIVE_DATE = date(2026, 7, 4)
+"""First issue date the R-8/R-9 lint gates. Earlier days: informational."""
+
+A_AN_HEADLINE_CAP = 2
+"""R-9 density guardrail: max "A/An"-led headlines per issue."""
+
+# R-8 absence-inventory forms. Each pattern is one observed family from the
+# audit in READING_EXPERIENCE.md R-8; the catch-all "no X … yet" covers the
+# unbounded-set exotics ("No regulatory framework yet", "no stable tag yet").
+_ABSENCE_FORM_PATTERNS: list[tuple[str, "re.Pattern[str]"]] = [
+    ("no-X-yet", re.compile(r"\bno\s+(?:\w+[-'’]?\w*\s+){0,4}?yet\b", re.IGNORECASE)),
+    ("no-code", re.compile(r"\bno\s+(?:public\s+|open[- ]source\s+)?code\b", re.IGNORECASE)),
+    ("no-independent-X", re.compile(r"\bno\s+independent\s+\w+", re.IGNORECASE)),
+    ("peer-review-pending", re.compile(r"\bpeer[- ]review\s+(?:is\s+|still\s+)?pending\b", re.IGNORECASE)),
+    ("no-benchmarks", re.compile(r"\bno\s+(?:benchmark(?:s|\s+data)?|replication|validation)\b", re.IGNORECASE)),
+]
+
+# R-8 boundary note: "no action yet" in a direction-note is a
+# recommendation to the reader (a different speech act) — allowed.
+_ABSENCE_ALLOWED = re.compile(r"\bno action(?:\s+(?:needed|required))?(?:\s+yet)?\b", re.IGNORECASE)
+
+# R-8 boundary (calibrated 2026-07-05, first live-gated day): a
+# negative-existential NEWS claim that the SAME SENTENCE resolves with
+# "until now" is a novelty assertion — presence-in-disguise, the source's
+# own "first of its kind" claim — not an evidence inventory about the
+# story's sourcing. Observed misfire: "No benchmark has tested language
+# models on native Word, Excel, and PowerPoint files until now."
+# (2026-07-04 staged; verifier verdict: supported, source span "the first
+# public benchmark to jointly evaluate..."; rubric v0.2 cites this story's
+# calibration beats as trust-flag pass exemplars.) The exemption is
+# deliberately narrow: the resolution must appear before the next sentence
+# terminator, so "No code is public. Until now..." still counts as R-8.
+_NOVELTY_RESOLVED = re.compile(r"\buntil\s+now\b", re.IGNORECASE)
+_SENTENCE_END = re.compile(r"[.!?]")
+
+# R-9: "A new + generic noun" opener ban. Exactly the five generics named
+# in the ruling — do not widen without a new ratification.
+_BANNED_NEW_GENERIC_OPENER = re.compile(
+    r"^(?:A|An)\s+new\s+(?:framework|method|tool|benchmark|system)\b",
+    re.IGNORECASE,
+)
+
+# R-9 density count: headlines whose first word is the indefinite article.
+_A_AN_OPENER = re.compile(r"^(?:A|An)\b")
+
+
+def _find_absence_forms(text: str) -> list[str]:
+    """Return deduplicated banned absence-form snippets found in ``text``.
+
+    Overlapping matches from different patterns (e.g. "No code is public
+    yet" hits both no-code and no-X-yet) are merged: the longest span
+    covering each region is kept, so one written defect counts once.
+    """
+    if not text:
+        return []
+    spans: list[tuple[int, int]] = []
+    for _label, pattern in _ABSENCE_FORM_PATTERNS:
+        for m in pattern.finditer(text):
+            if _ABSENCE_ALLOWED.match(text, m.start()):
+                continue  # R-8 boundary: "no action yet" is a recommendation
+            # R-8 boundary: novelty claim resolved by "until now" in the
+            # same sentence is presence-in-disguise, not an inventory.
+            terminator = _SENTENCE_END.search(text, m.end())
+            sentence_end = terminator.start() if terminator else len(text)
+            if _NOVELTY_RESOLVED.search(text, m.start(), sentence_end):
+                continue
+            spans.append((m.start(), m.end()))
+    if not spans:
+        return []
+    # Merge overlapping spans so each defect is reported once.
+    spans.sort()
+    merged: list[tuple[int, int]] = [spans[0]]
+    for start, end in spans[1:]:
+        last_start, last_end = merged[-1]
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
+        else:
+            merged.append((start, end))
+    return [text[s:e] for s, e in merged]
+
+
+def _iter_issue_texts(issue: dict) -> list[tuple[str, str, str]]:
+    """Yield ``(location_id, kind, text)`` for every linted text unit.
+
+    kind ∈ {"headline", "summary", "intro"}. Locations are story_ids for
+    stories and ``section:<name>`` for intros, so a failure names the
+    exact unit to fix.
+    """
+    units: list[tuple[str, str, str]] = []
+    pulse = issue.get("pulse", {}) or {}
+    sections = [pulse] + list(issue.get("sections", []) or [])
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        name = section.get("name", "unknown")
+        for story in section.get("stories", []) or []:
+            sid = story.get("story_id", "unknown")
+            units.append((sid, "headline", story.get("headline") or ""))
+            units.append((sid, "summary", story.get("summary") or ""))
+        for field_name in ("intro_lead", "intro_body"):
+            val = section.get(field_name)
+            if val:
+                units.append((f"section:{name}", "intro", val))
+    return units
+
+
+def eval_reading_experience_lint(dataset_dir: Optional[Path]) -> EvalResult:
+    """Deterministic R-8/R-9 regression lint over a dataset's issue.json.
+
+    FAIL conditions (datasets dated >= READING_LINT_EFFECTIVE_DATE only):
+      - any banned absence-form in a story summary or section intro (R-8);
+      - any "A new + generic noun" headline opener (R-9);
+      - more than A_AN_HEADLINE_CAP "A/An"-led headlines (R-9 density).
+
+    Pre-ruling and non-dated datasets report the same counts with
+    status="informational" and always pass.
+    """
+    if dataset_dir is None or not dataset_dir.exists():
+        return EvalResult(
+            name="reading_experience_lint",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Dataset directory not found: {dataset_dir}"},
+        )
+
+    issue = _load_json(dataset_dir / "issue.json")
+    if issue is None:
+        return EvalResult(
+            name="reading_experience_lint",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"issue.json not found in {dataset_dir}"},
+        )
+
+    # Enforcement window: gate only dated datasets on/after the ruling.
+    dataset_name = dataset_dir.name
+    try:
+        dataset_date = date.fromisoformat(dataset_name[:10])
+        enforced = dataset_date >= READING_LINT_EFFECTIVE_DATE
+    except ValueError:
+        dataset_date = None
+        enforced = False  # synthetic fixtures: informational only
+
+    absence_hits: list[dict] = []
+    banned_openers: list[dict] = []
+    a_an_headlines: list[str] = []
+
+    for location, kind, text in _iter_issue_texts(issue):
+        if kind in ("summary", "intro"):
+            for snippet in _find_absence_forms(text):
+                absence_hits.append({
+                    "location": location,
+                    "kind": kind,
+                    "matched": snippet,
+                })
+        if kind == "headline":
+            if _BANNED_NEW_GENERIC_OPENER.match(text):
+                banned_openers.append({"location": location, "headline": text})
+            if _A_AN_OPENER.match(text):
+                a_an_headlines.append(text)
+
+    failures: list[str] = []
+    if absence_hits:
+        failures.append(
+            f"R-8: {len(absence_hits)} banned absence-form flag(s) found: "
+            + "; ".join(
+                f"{h['location']} ({h['kind']}): \"{h['matched']}\""
+                for h in absence_hits[:5]
+            )
+        )
+    if banned_openers:
+        failures.append(
+            f"R-9: {len(banned_openers)} banned \"A new + generic noun\" "
+            "opener(s): "
+            + "; ".join(f"{b['location']}: \"{b['headline']}\"" for b in banned_openers)
+        )
+    if len(a_an_headlines) > A_AN_HEADLINE_CAP:
+        failures.append(
+            f"R-9 density: {len(a_an_headlines)} \"A/An\"-led headlines "
+            f"> cap {A_AN_HEADLINE_CAP}: "
+            + "; ".join(f"\"{h}\"" for h in a_an_headlines)
+        )
+
+    violation_count = (
+        len(absence_hits)
+        + len(banned_openers)
+        + max(0, len(a_an_headlines) - A_AN_HEADLINE_CAP)
+    )
+
+    if enforced:
+        passed = len(failures) == 0
+        status = "pass" if passed else "fail"
+    else:
+        passed = True
+        status = "informational"
+
+    return EvalResult(
+        name="reading_experience_lint",
+        passed=passed,
+        metric=float(violation_count),
+        status=status,
+        details={
+            "dataset": dataset_name,
+            "enforced": enforced,
+            "effective_date": READING_LINT_EFFECTIVE_DATE.isoformat(),
+            "absence_form_hits": absence_hits,
+            "banned_new_generic_openers": banned_openers,
+            "a_an_headline_count": len(a_an_headlines),
+            "a_an_headline_cap": A_AN_HEADLINE_CAP,
+            "a_an_headlines": a_an_headlines,
+            "failures": failures,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # Aggregation and reporting
 # ---------------------------------------------------------------------------
 
@@ -3047,6 +3290,7 @@ def _print_pretty(report: dict) -> None:
             "skipped": "[SKIP]",
             "insufficient_baseline": "[DEGRADED]",
             "verifier_not_wired": "[SEAM]",   # Eval 7: fixture-ready, verifier pending
+            "informational": "[INFO]",        # Eval 8: pre-ruling day, counts only
         }.get(r["status"], "[?]")
         metric_str = f" metric={r['metric']:.3f}" if r["metric"] is not None else ""
         print(f"  {icon} {r['name']}{metric_str}")
@@ -3191,6 +3435,7 @@ _REFERENCE_EVALS = {
     "module_integrity",
     "drift_detection",
     "factual_accuracy",   # Eval 7: verifier calibration (seam: green until verifier wired)
+    "reading_experience_lint",  # Eval 8: deterministic R-8/R-9 lint (no LLM)
 }
 
 
@@ -3283,6 +3528,10 @@ def run_evals(
             # verifier, pass it via the VERIFIER_CALLABLE environment variable or
             # by importing and calling eval_factual_accuracy(verifier=my_fn) directly.
             "factual_accuracy": lambda: eval_factual_accuracy(verifier=None),
+            # Eval 8: deterministic R-8/R-9 reading-experience lint (no LLM).
+            # Gates only datasets dated >= READING_LINT_EFFECTIVE_DATE;
+            # earlier days and synthetic fixtures report informational counts.
+            "reading_experience_lint": lambda: eval_reading_experience_lint(dataset_dir),
         }
 
         for name, fn in dispatch.items():

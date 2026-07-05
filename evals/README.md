@@ -25,6 +25,7 @@ consistently produce what it was designed for?
 | **Module-level integrity** | Every artifact in `data/YYYY-MM-DD/` schema-validates against DESIGN.md contracts | Ready — runs on any archive day |
 | **Drift detection** | Scores, tier mix, voice signatures, summary length drifting from rolling 14-day baseline? | Stub — needs a corpus to detect drift against |
 | **Behavioural integrity** | Is the team following its own rules? PRs reviewed, postmortems filed, labels accumulating? | Manual — Eval Engineer writes weekly note |
+| **Reading-experience lint (Eval 8)** | Deterministic R-8/R-9 checks over `issue.json`: banned absence-form trust flags, "A new + generic noun" headline openers, "A/An"-led headline density (cap 2). No LLM. Gates datasets dated ≥ 2026-07-04; earlier days report counts as `informational`. | Ready — unit checks in `evals/test_reading_experience_lint.py` |
 
 "Stub" means: function signature and structure are real; implementation is
 TODO with graceful not-yet-implemented output. The harness is runnable and

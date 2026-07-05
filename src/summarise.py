@@ -91,9 +91,132 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.20"
+SUMMARISE_PROMPT_VERSION = "v0.21.3"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.20-2026-07-04``. v0.20 (third gate: informative vs class
+``summarise-v0.21.3-2026-07-05``. v0.21.3 (structural fix for the
+thrice-failed Hands-On close-mould veto; root cause finally
+identified): close-variety is a CROSS-STORY property, but stories are
+summarised independently -- the model writing story 3 has never seen
+stories 1-2's closes, so "consecutive stories must never share the
+scaffold" was physically unfollowable however it was phrased.
+Evidence: three regens under three different prompt emphases (v0.21
+variety list, v0.21.1 reorder, v0.21.2 write-site reminder) all
+produced 3/3 "before X" tails in Hands-On, while every PER-story rule
+(BP turn-type, trigger support) bound fine. Fix: feed-forward close
+context -- close-variety is cross-story; per-story prompting cannot
+coordinate it -- feed prior section closes into each subsequent story
+prompt (durable home for this property class is the future polish
+stage). Mechanics: the per-story loop in ``summarise()`` was already
+sequential; as each hands_on / currents summary is accepted, its
+closing sentence (``_extract_closing_sentence``) is collected per
+tier, and the NEXT story in the SAME tier gets a "CLOSES ALREADY
+WRITTEN IN THIS SECTION" block (``_render_prior_closes_block``,
+closing sentences only, token-lean) injected immediately before the
+close reminder tail; the v0.21.2 HANDS-ON CLOSE (FINAL REMINDER) now
+references the list ("vary against the closes listed above") when it
+is present. big_picture is NOT fed forward (its strategic-question
+turn-type bound fine per-story); the Pulse override never is.
+v0.21.2 (gate re-run on v0.21.1,
+condition-2 finding: Hands-On close-moulds did NOT move -- 3/3 closes
+still "[imperative on artefact] + before + [milestone]"; reordering
+the SURFACE VARIETY list was not enough, while the write-site FINAL
+REMINDER mechanism DID bind for Big Picture (4/4 strategic questions)
+and Pulse):
+  - the close_reminder_tail mechanism extended with a HANDS-ON CLOSE
+    (FINAL REMINDER) branch for tier == "hands_on", injected
+    immediately before the JSON schema: imperative with a named
+    artefact and a source-supported trigger; the "... before
+    [milestone]" scaffold capped at ~2/section, never on consecutive
+    stories; trigger-first ("Before X, do Y") counts as the SAME
+    scaffold -- vary the FRAME (condition-first, bare imperative with
+    stakes), not just word order.
+  - invented-trigger rule (the v0.21.1 regen fabricated "before your
+    token budget resets" for a one-time price change): the TRIGGER in
+    a close is a factual claim -- an event the source supports or a
+    generic practitioner milestone, never an invented source-specific
+    cadence.
+v0.21.1 (voice-eval gate VETO surgery
+on v0.21, 2026-07-04 nightly run; exactly the three veto grounds, all
+else preserved verbatim):
+  - Big Picture closes collapsed to imperatives (3/4 against a 3/3
+    strategic-question baseline; the model reproduced the closing-shape
+    block's own DON'T example nearly verbatim, twice -- attractive
+    concrete phrasings inside negative examples get imitated regardless
+    of the DON'T framing, same mechanism as the v0.17 trust-hedge
+    decoration). Structural fix, not more emphasis: (a) the quotable
+    imperative inside the negative example REMOVED -- the violation is
+    now described abstractly (closing on an instruction to the reader
+    instead of a question) with a positive question-mark cue; the block
+    still ends on strategic-question examples (recency wins); (b) the
+    SIGNAL "discuss" example's quotable direct-speech imperative
+    ("raise this at your next architecture review") rewritten abstract
+    -- same attractor; (c) the BP turn-type RESTATED at the per-story
+    instruction site as a FINAL REMINDER tail (same recency mechanism
+    as the v0.12 Pulse plain-take tail), because the generic "close
+    tied to a SPECIFIC decision" body rule otherwise wins recency.
+  - "before X" close-mould density (5/8 stories, Hands-On 3/3
+    consecutive, against the prompt's own ~2/section cap and
+    no-consecutive rule; first-listed realisations get over-sampled):
+    the Hands-On SURFACE VARIETY block now LEADS with the alternative
+    realisations and lists the classic "[do X] before [milestone]"
+    mould LAST with its cap stated inline; the condition-first example
+    no longer carries a "before [milestone]" tail.
+  - Sharper-than-source (the Pulse upgraded "listed first among five
+    values", supportable, to "authority sits above safety",
+    unsupported): one line added to the REGENERATION INVARIANT --
+    sharper is the only acceptable direction AND sharper must remain
+    source-supported; a vivid claim the source doesn't state is a
+    factual error, not sharpness (composes with, and references, the
+    HONESTY + TRUST HEDGES rules).
+v0.21 (regeneration quality: the
+headline-opener contract + prose sharpness under constraint + the
+empty-Currents quiet-day intro; READING_EXPERIENCE.md §3 "The
+headline-opener contract" + "Prose sharpness under constraint", R-9 +
+R-10; the three BETTER/WORSE calibration pairs ratified by Arman
+2026-07-04):
+  - HEADLINE RULES rule 1 fused with the OPENER LADDER so the
+    recognition rule and the article policy cannot fight (R-9). Rungs:
+    (1) recognised anchor first, including VENUE-DERIVED attribution
+    (a microsoft.com/research post is Microsoft's work; a first-party
+    vendor blog is the vendor's; third-party coverage does NOT
+    transfer its name); a regeneration must NEVER trade a recognised
+    anchor for an abstract benefit ("your coding agent" for "Claude
+    Code" is a regression). (2) Plural class-finding when the finding
+    holds for the class. (3) Single unnamed artifact keeps "A/An" --
+    NEVER delete the article from a full-sentence headline (wire
+    headlinese is off-voice) -- with every word between article and
+    verb identifying the artifact; "A new + generic noun"
+    (framework/method/tool/benchmark/system) BANNED as an opener.
+    (4) "The" only as a semantic operator. The old "A new benchmark
+    finds..." in-voice example replaced (it taught the banned opener);
+    the "'A new tool' is acceptable" escape hatch now requires
+    identifying modifiers.
+  - Rule 3's colon ban amended: a GENRE LABEL on a recognised anchor
+    ("Claude Code tip: ...") is the ONE licensed exception -- only
+    when a declarative would oversell a small practical move as news;
+    at most one labelled headline per issue; tiny label vocabulary.
+  - Density preference: at most two "A/An"-opening headlines per
+    issue, stated in-prompt as a preference only. No LLM self-counting
+    machinery; deterministic counting belongs in review/eval code per
+    No Token Wasted.
+  - PROSE SHARPNESS UNDER CONSTRAINT block added to the body teaching
+    (anti-flattening contract, R-10): direct over reported speech;
+    quote the replaced thing verbatim on stop-X-do-Y stories; keep
+    contrast pairs where the insight IS a contrast; recognised names
+    and hard numbers survive regeneration. REGENERATION INVARIANT: a
+    rewrite must not net-lose verbatim quotes, recognised names, hard
+    numbers, or contrast beats relative to the draft it replaces --
+    sharper is the only acceptable direction.
+  - Empty-Currents quiet-day intro (template-integrity fix; the null
+    intros defect shipped three times): when Currents has zero
+    stories, the section-intro pass now still runs and MUST emit
+    intro_lead + intro_body acknowledging the quiet day in the
+    Currents register (wording varied day to day), and a DETERMINISTIC
+    code fallback (``_ensure_quiet_day_currents_intro``) injects a
+    default quiet-day intro when the intros still land null/empty, so
+    the template contract can never break. The fallback is code, not
+    another LLM call, per No Token Wasted.
+v0.20 (third gate: informative vs class
 default + affirmative-presence obligation (reader-needs study, R-8)):
   - The source-class attribution in the body ("an arXiv preprint",
     "Anthropic's release notes", "a Reddit thread") carries the
@@ -814,6 +937,52 @@ CALIBRATION (body):
            bodies should open declaratively. Cap rhetorical-question
            openers at roughly ONE per issue.
 
+PROSE SHARPNESS UNDER CONSTRAINT -- the anti-flattening contract
+
+The rules above say what the prose must NOT do. These four moves are
+what it MUST KEEP DOING. Vividness IS clarity; compliance bought with
+flat prose is a regression, not an improvement.
+
+  1. DIRECT OVER REPORTED SPEECH. "The Claude Code team's tip: give
+     [the agent] a goal, not a rulebook" -- not "The Claude Code team
+     recommends telling your agent to judge when...". Indirect
+     discourse ("recommends / suggests / notes that") adds a hedging
+     frame the reader must unwrap; the direct form hands over the
+     insight itself.
+  2. QUOTE THE REPLACED THING VERBATIM. When a story's point is STOP
+     doing X, do Y, X appears in quotation marks: 'Instead of "run
+     tests only for large features," tell it to use its own
+     judgement.' The before/after lands in one glance; the abstraction
+     ("rather than encoding rules") makes the reader reconstruct the
+     example the writer already had.
+  3. KEEP CONTRAST PAIRS WHERE THE INSIGHT IS A CONTRAST. "A goal, not
+     a rulebook" / "a first-order constraint, not a safety layer
+     bolted on after the fact" / "an audit problem, not an
+     architectural one". The X-not-Y frame is the fastest encoding of
+     a reframe, and it is the beat readers quote when they forward the
+     issue. (The headline "X, NOT Y" tic rule still applies; this is
+     about the BODY, where a genuine reframe earns the frame.)
+  4. RECOGNISED NAMES AND HARD NUMBERS SURVIVE. "Fable", "OpenClaw and
+     Hermes Agent", "58.8 to 82.3" stay in the prose; "your agent",
+     "two open-source agents", and a vanished number are flattening,
+     not compression. (Distinct from the trust-flag gates: those
+     govern HEDGES; names and numbers are CONTENT.)
+
+REGENERATION INVARIANT: a rewrite may restructure, but it must not
+net-lose verbatim quotes, recognised names, hard numbers, or contrast
+beats relative to the draft it replaces. Sharper is the only
+acceptable direction, AND sharper must remain SOURCE-SUPPORTED: a
+vivid claim the source doesn't state is a factual error, not
+sharpness (the HONESTY + TRUST HEDGES rules govern).
+
+CALIBRATION (prose sharpness -- ratified by Arman, 2026-07-04; same
+story, two renders):
+  BETTER: "The Claude Code team's tip: give [the agent] a goal, not a
+          rulebook"
+  WORSE:  "The Claude Code team recommends telling your agent to judge
+          when..." -- reported speech wraps the insight in a frame; the
+          verbatim quote and the contrast pair vanish.
+
 DON'T do these
   - Don't open with "In the fast-paced world of AI..." or any cousin.
   - Don't say "in conclusion," "moreover," "furthermore," "notably."
@@ -896,13 +1065,23 @@ BEFORE FINALISING, CHECK (mandatory -- run these counts before returning)
 # rules in that subsection. Triggered by a 2026-06-02 reader-decode
 # failure on the colleague.skill story where the headline dropped both
 # the COLLEAGUE.SKILL paper name and the existing dot-skill repo name.
+#
+# v0.21 (2026-07-04): rule 1 fused with the OPENER LADDER from
+# READING_EXPERIENCE.md §3 "The headline-opener contract" (R-9) so the
+# recognition rule and the article policy cannot fight. The ladder's
+# density caps (<= 2 "A/An" openers, <= 1 genre-labelled headline per
+# issue) are stated in-prompt as PREFERENCES only -- the per-story prompt
+# cannot count across the issue, and we do not build LLM self-counting
+# machinery. Deterministic per-issue counting belongs in review/eval
+# code, per No Token Wasted.
 _HEADLINE_RULES_BLOCK = """\
 HEADLINE RULES (apply to every story -- head-tier and currents-tier alike)
 
-1. RECOGNITION DECIDES NAMING. Names belong in the headline ONLY when a
-   senior practitioner reads them and immediately connects to a mental
-   model they already have. Widely-recognised names earn the headline:
-   OpenAI, Anthropic, Claude, GPT-5, Llama, vLLM, EU AI Act, Nvidia,
+1. RECOGNITION DECIDES NAMING; THE OPENER LADDER DECIDES THE SUBJECT.
+   Names belong in the headline ONLY when a senior practitioner reads
+   them and immediately connects to a mental model they already have.
+   Widely-recognised names earn the headline: OpenAI, Anthropic, Claude,
+   Claude Code, GPT-5, Llama, vLLM, EU AI Act, Nvidia, Microsoft,
    PyTorch, etc. New tools, new papers, new benchmarks, new methods, new
    datasets do NOT earn the headline -- their names do not yet trigger
    recognition. Examples that should be DESCRIBED in the headline (with
@@ -919,18 +1098,84 @@ HEADLINE RULES (apply to every story -- head-tier and currents-tier alike)
    earn their place -- by then the reader has the mental model to attach
    the name to.
 
-   Examples:
-   - In voice (known name): "Anthropic ships a more honest flagship model"
-   - In voice (unknown name, described not named): "A Shanghai AI Lab
-     paper turns a departing engineer's traces into an editable skill
-     file"
-   - In voice (unknown name, described not named): "A new benchmark finds
-     pairwise scoring beats rubrics for judging language-model output"
-   - Off voice: "COLLEAGUE.SKILL packages a departing engineer's judgment
-     as a skill file" -- reader does not know what COLLEAGUE.SKILL is
+   THE OPENER LADDER. The first three words are the reader's hottest
+   fixation window. Choose the headline subject from the HIGHEST rung
+   available:
 
-   If the source does not name a thing at all, do NOT invent one. "A new
-   tool" or "a new paper" is acceptable when there is no name available.
+   RUNG 1 -- RECOGNISED ANCHOR FIRST, AND NEVER TRADE IT AWAY. If a
+   recognised tool, vendor, lab, or regulation anchors the story, it
+   opens the headline ("Claude Code tip: ...", "Microsoft trains...",
+   "Vercel redesigns..."). Attribution derivable from the SOURCE VENUE
+   counts as recognition material: a post on microsoft.com/research is
+   Microsoft's work; a first-party vendor blog is the vendor's.
+   Third-party coverage and aggregators do NOT transfer their name to
+   the work they cover. When rewriting or regenerating a headline,
+   NEVER drop an existing recognised anchor for an abstract benefit --
+   swapping "Claude Code" for "your coding agent" is a regression, not
+   a polish.
+
+   RUNG 2 -- GENERAL FINDING, PLURAL SUBJECT. If no recognised name and
+   the finding holds for the class, state it as the class:
+   "Character-level tricks bypass safety filters in most open models
+   tested." Plural subjects need no article and remain full sentences.
+
+   RUNG 3 -- SINGLE UNNAMED ARTIFACT: "A/An" + IDENTIFYING MODIFIERS.
+   Keep the article. NEVER delete an article from a full-sentence
+   headline -- "Small open safety classifier beats..." is wire
+   headlinese, off-voice. But every word between the article and the
+   verb must IDENTIFY the artifact: "A 9-millisecond CPU model", "A
+   CUDA-free kernel", "A character-level trick" are in voice. BANNED
+   OPENER: "A new" + a generic noun (framework / method / tool /
+   benchmark / system) -- "new" is entailed by appearing in today's
+   issue, and the empty subject wastes the fixation window.
+
+   RUNG 4 -- "THE" ONLY AS A SEMANTIC OPERATOR: superlative ("The best
+   AI systems score under 60%..."), unique referent ("The UK financial
+   regulator..."), definite scope, or a restrictive relative ("The
+   benchmark reproducibility guide that most evals quietly violate").
+   Never as decoration.
+
+   DENSITY PREFERENCE: an issue carries at most two "A/An"-opening
+   headlines. Before settling on rung 3, check whether rung 1 or 2 is
+   available -- it usually is.
+
+   Examples:
+   - In voice (rung 1, known name): "Anthropic ships a more honest
+     flagship model"
+   - In voice (rung 1, venue-derived anchor): "Microsoft trains agent
+     instruction files instead of rewriting them by hand"
+   - In voice (rung 3, unknown name, identifying modifiers): "A
+     Shanghai AI Lab paper turns a departing engineer's traces into an
+     editable skill file"
+   - In voice (rung 3): "A pairwise-scoring benchmark finds
+     head-to-head comparison beats rubrics"
+   - Off voice: "COLLEAGUE.SKILL packages a departing engineer's
+     judgment as a skill file" -- reader does not know what
+     COLLEAGUE.SKILL is
+   - Off voice (banned opener): "A new benchmark finds pairwise scoring
+     beats rubrics for judging language-model output" -- "A new
+     benchmark" is an empty subject; identify the artifact instead
+
+   CALIBRATION PAIRS (ratified by Arman, 2026-07-04 -- same stories,
+   two renders):
+   - BETTER: "Claude Code tip: let the agent decide when to write
+     tests" / WORSE: "Let your coding agent choose its own tools and
+     save tokens" -- the regeneration dropped the recognised anchor,
+     oversold the genre, and displaced the actual insight with an
+     abstract benefit; an unanchored imperative opener is also
+     off-voice under rule 3.
+   - BETTER: "Microsoft trains agent instruction files instead of
+     rewriting them by hand" / WORSE: "SkillOpt trains an agent's
+     instruction file without touching the model" -- SkillOpt is
+     unrecognised, a parked string in position 1; the venue supplies
+     the recognised actor; the artifact name belongs in the body's
+     first sentences.
+
+   If the source does not name a thing at all, do NOT invent one -- and
+   do NOT fall back to a bare "A new tool" or "a new paper" either.
+   Pick identifying modifiers from what the source DOES state ("A
+   CUDA-free kernel", "A 9-millisecond CPU model"). The artifact may
+   stay unnamed; it never stays unidentified.
 
 2. PRESERVE DISTINCTIONS IN THE SOURCE. If the source distinguishes
    between an existing artifact and a new one (an existing repo vs a new
@@ -948,7 +1193,14 @@ HEADLINE RULES (apply to every story -- head-tier and currents-tier alike)
        for tacit knowledge").
      - One core idea. If the headline needs a colon, semicolon, or
        em-dash to hold two ideas together, it is two headlines -- pick
-       the more important one.
+       the more important one. ONE licensed exception: a GENRE LABEL on
+       a recognised anchor ("Claude Code tip: let the agent decide when
+       to write tests") -- that colon declares the genre, it does not
+       join a second idea. Use it ONLY when the item is a small
+       practical move a declarative headline would oversell as news,
+       ONLY with a recognised anchor, and at most ONE labelled headline
+       per issue. The label vocabulary stays tiny ("tip" today); do not
+       coin new labels casually.
      - No words that need an editorial dictionary lookup. "Versioned"
        -> "tracked"; "operationalise" -> "make routine"; "primitives"
        -> "building blocks"; "instrumentation" -> "monitoring".
@@ -1070,8 +1322,9 @@ _CLOSING_SHAPE_PER_SECTION: dict[str, str] = {
         "has to take a position. This OVERRIDES the generic body-close\n"
         "rule above (\"close with a judgement tied to a specific decision\")\n"
         "for Big Picture stories: the question IS the decision-tied close.\n"
-        "Do NOT also append an imperative (\"Raise this at your next\n"
-        "review\") -- the question alone is the landing. NOT a rhetorical\n"
+        "Closing on an instruction to the reader instead of a question\n"
+        "FAILS this shape; the question alone is the landing, and the\n"
+        "final sentence ends in a question mark. NOT a rhetorical\n"
         "question with an obvious answer; NOT a prescription dressed as a\n"
         "question (\"shouldn't you test X?\"); NOT a vague \"what does\n"
         "this mean?\". Anchor the question to a specific role, decision,\n"
@@ -1099,17 +1352,15 @@ _CLOSING_SHAPE_PER_SECTION: dict[str, str] = {
         "    if you confirm even half the 28.9% claim, ship the upgrade --\n"
         "    the cost-per-token math justifies the migration.\"\n"
         "SURFACE VARIETY (the imperative turn-type is FIXED; its grammar is\n"
-        "NOT). The \"[do X] before [milestone]\" mould is ONE realisation,\n"
-        "not the default -- cap it at ~2 per section. Vary the construction\n"
-        "story to story:\n"
-        "  - trigger-first: \"Before your next eval cycle, install it and\n"
-        "    diff the guardrail scores against your current stack.\"\n"
-        "  - condition-first: \"Already on the older CLI? Upgrade before\n"
-        "    your next batch job; the token savings compound.\"\n"
+        "NOT). Vary the construction story to story:\n"
         "  - bare imperative with stakes: \"Pull the weights and run your\n"
         "    own guardrail eval; the vendor's F1 numbers won't transfer.\"\n"
-        "  - the classic \"[do X] before [milestone]\" -- one option among\n"
-        "    these, not the reflex.\n"
+        "  - trigger-first: \"Before your next eval cycle, install it and\n"
+        "    diff the guardrail scores against your current stack.\"\n"
+        "  - condition-first: \"Already on the older CLI? Upgrade this\n"
+        "    week; the token savings compound on every batch job.\"\n"
+        "  - the classic \"[do X] before [milestone]\" -- at most ~2 per\n"
+        "    section across the issue, never the reflex.\n"
         "Within an issue, consecutive Hands-On stories must NOT share the\n"
         "same closing mould; vary the grammar story to story."
     ),
@@ -1335,7 +1586,18 @@ def summarise(date: _dt.date | None = None) -> Issue:
         )
 
     # --- Per-story summarisation -----------------------------------------
+    # This loop is SEQUENTIAL by construction (one blocking LLM call per
+    # story) -- the v0.21.3 feed-forward close context depends on that:
+    # close-variety is a cross-story property, so each hands_on / currents
+    # story's prompt carries the closes already accepted for its tier.
+    # If this loop is ever parallelised, keep the two mould-prone tiers
+    # serial (or move close coordination to a post-pass polish stage).
+    # Note: some summarised stories are later dropped by the section caps
+    # in _assemble_sections; feeding closes at generation time is the best
+    # available approximation, and a dropped story's close in the list is
+    # harmless (it only widens the do-not-reuse set).
     blocks: list[tuple[RankedStory, SummaryBlock]] = []
+    closes_by_tier: dict[str, list[str]] = {}
     for story in top:
         cluster = clusters_by_id.get(story.cluster_id)
         if cluster is None:
@@ -1348,10 +1610,15 @@ def summarise(date: _dt.date | None = None) -> Issue:
         callbacks = []
         if cluster.prior_coverage_ref:
             callbacks = callbacks_by_root.get(cluster.prior_coverage_ref, [])
+        prior_section_closes = (
+            list(closes_by_tier.get(story.tier, []))
+            if story.tier in _CLOSE_FEEDFORWARD_TIERS else []
+        )
         try:
             block = _summarise_one(
                 story=story, cluster=cluster, items=items, callbacks=callbacks,
                 voice_diversity_block=voice_diversity_block,
+                prior_section_closes=prior_section_closes,
             )
         except Exception:  # noqa: BLE001 -- never crash the issue on one bad story
             _LOG.exception(
@@ -1361,6 +1628,10 @@ def summarise(date: _dt.date | None = None) -> Issue:
             continue
         if block is None:
             continue
+        if story.tier in _CLOSE_FEEDFORWARD_TIERS:
+            close = _extract_closing_sentence(block.summary)
+            if close:
+                closes_by_tier.setdefault(story.tier, []).append(close)
         blocks.append((story, block))
 
     if not blocks:
@@ -1408,6 +1679,10 @@ def summarise(date: _dt.date | None = None) -> Issue:
     _populate_section_intro(big_picture_section, voice_diversity_block)
     _populate_section_intro(hands_on_section, voice_diversity_block)
     _populate_section_intro(currents_section, voice_diversity_block)
+    # v0.21: template-contract guard -- an empty Currents section must
+    # never ship with null intros (three shipped defects). Deterministic
+    # code fallback; no-op when the LLM quiet-day intro landed.
+    _ensure_quiet_day_currents_intro(currents_section)
 
     # --- Shape post-condition (schema v3, 2026-05-30) -------------------
     # With tier as authority in section routing, an under-fed section is
@@ -1952,15 +2227,69 @@ class _SummaryDraft:
     signal: str | None = None
 
 
+_CLOSE_FEEDFORWARD_TIERS = ("hands_on", "currents")
+"""Tiers whose closes are fed forward into subsequent same-tier story
+prompts (v0.21.3). These are the two mould-prone sections (Hands-On
+imperative closes, Currents calibrated stakes); big_picture's
+strategic-question turn-type binds fine per-story and is not fed."""
+
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+"""Sentence-boundary splitter for ``_extract_closing_sentence``. Splits
+after ., ! or ? followed by whitespace. Abbreviations with internal
+stops ("9 a.m. tomorrow") can over-split; acceptable here -- the output
+feeds a do-not-reuse list, never published prose."""
+
+
+def _extract_closing_sentence(summary: str) -> str:
+    """Return the last sentence of a summary body (the close).
+
+    Deterministic code, no LLM (No Token Wasted). Used by the v0.21.3
+    feed-forward mechanism: the close of each accepted hands_on /
+    currents summary is injected into the NEXT same-tier story's prompt
+    so the model can actually vary against it -- close-variety is a
+    cross-story property that per-story prompting cannot coordinate.
+    Empty / whitespace-only input returns "".
+    """
+    text = (summary or "").strip()
+    if not text:
+        return ""
+    parts = [p.strip() for p in _SENTENCE_SPLIT_RE.split(text) if p.strip()]
+    return parts[-1] if parts else text
+
+
+def _render_prior_closes_block(prior_closes: list[str]) -> str:
+    """Render the CLOSES ALREADY WRITTEN prompt block (v0.21.3).
+
+    Closing sentences only, numbered and quoted -- not whole summaries;
+    the model needs the constructions to vary against, nothing more.
+    Empty input renders to "" (first story in a section sees no block).
+    """
+    if not prior_closes:
+        return ""
+    lines = [
+        "CLOSES ALREADY WRITTEN IN THIS SECTION (do not reuse their "
+        "closing construction or scaffold):"
+    ]
+    for i, close in enumerate(prior_closes, start=1):
+        lines.append(f'  {i}. "{close}"')
+    return "\n".join(lines)
+
+
 def _summarise_one(
     story: RankedStory,
     cluster: Cluster,
     items: list[Item],
     callbacks: list[_CallbackRef],
     voice_diversity_block: str = "",
+    prior_section_closes: list[str] | None = None,
 ) -> SummaryBlock | None:
     """One LLM call. Returns a validated ``SummaryBlock`` or ``None`` if
-    the call / parse / validation failed after the retry budget."""
+    the call / parse / validation failed after the retry budget.
+
+    ``prior_section_closes`` (v0.21.3): closing sentences of summaries
+    already accepted for the SAME tier in this run, threaded into the
+    prompt so the close-variety rules become followable (feed-forward
+    close context). ``None`` / empty means no block is injected."""
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
 
     # v0.4: fetch the article body for up to the top-3 items so the LLM
@@ -1975,6 +2304,7 @@ def _summarise_one(
     prompt = _build_summary_prompt(
         story, cluster, items, callbacks, excerpts,
         voice_diversity_block=voice_diversity_block,
+        prior_section_closes=prior_section_closes,
     )
 
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
@@ -2164,6 +2494,7 @@ def _build_summary_prompt(
     excerpts: dict[str, str] | None = None,
     section_override: str | None = None,
     voice_diversity_block: str = "",
+    prior_section_closes: list[str] | None = None,
 ) -> str:
     """Assemble the per-story summarisation prompt with voice + skills
     inlined and callback context attached when present.
@@ -2185,6 +2516,13 @@ def _build_summary_prompt(
         the LLM's attention.
     Anything other than ``"pulse"`` is ignored (degrades to tier-derived
     routing) so a stray override value can't silently disable voice.
+
+    ``prior_section_closes`` (v0.21.3): closing sentences already written
+    for the same tier in this run. When non-empty, a CLOSES ALREADY
+    WRITTEN block is injected immediately before the close reminder tail
+    (write-site recency is the mechanism that binds, per the v0.21.1/2
+    findings), and the Hands-On FINAL REMINDER references it. Ignored
+    under the Pulse override (the plain take has no scaffold to vary).
     """
     excerpts = excerpts or {}
     item_lines: list[str] = []
@@ -2295,8 +2633,15 @@ def _build_summary_prompt(
     # pipeline review.") because the body-rules block earlier in the prompt
     # said "close tied to a SPECIFIC DECISION." This terse final reminder
     # makes the override stick.
+    #
+    # v0.21.1 (2026-07-04): the same recency mechanism now covers Big
+    # Picture stories -- the gate caught 3/4 BP closes landing as
+    # imperatives because the generic "close tied to a SPECIFIC decision"
+    # body rule was the instruction nearest the schema. Restating the BP
+    # turn-type here, at the site where the model writes the close, is
+    # the structural fix.
     if section_override == "pulse":
-        pulse_override_tail = (
+        close_reminder_tail = (
             "\n- PULSE OVERRIDE (FINAL REMINDER): this is The Pulse. The "
             "close MUST be a PLAIN TAKE -- a short editorial JUDGEMENT "
             "(1-2 declarative sentences) naming what is TRUE NOW given "
@@ -2306,8 +2651,61 @@ def _build_summary_prompt(
             "the field moved today; the rest of the issue is for "
             "decisions to make about it.\n"
         )
+    elif story.tier == "big_picture":
+        close_reminder_tail = (
+            "\n- BIG PICTURE CLOSE (FINAL REMINDER): this story closes on "
+            "the STRATEGIC QUESTION shape above; the final sentence ends "
+            "in a question mark. For this tier the question IS the "
+            "decision-tied close; closing on an instruction to the reader "
+            "instead of a question FAILS the shape. (If the picker later "
+            "elevates this story to The Pulse, it is re-summarised under "
+            "Pulse rules in a separate pass.)\n"
+        )
+    elif story.tier == "hands_on":
+        # v0.21.2 (2026-07-05): the gate re-run showed the v0.21.1
+        # variety-list reorder alone did NOT move Hands-On closes (3/3
+        # still "[imperative on artefact] + before + [milestone]"); the
+        # write-site FINAL REMINDER is the mechanism that binds.
+        # v0.21.3: when prior same-section closes are fed forward, the
+        # reminder points at the concrete list -- the model can now SEE
+        # what "consecutive stories must never share" refers to.
+        vary_reference = (
+            " against the CLOSES ALREADY WRITTEN list above (reuse NONE "
+            "of their closing constructions or scaffolds)"
+            if prior_section_closes else ""
+        )
+        close_reminder_tail = (
+            "\n- HANDS-ON CLOSE (FINAL REMINDER): the close is an "
+            "imperative with a NAMED artefact and a source-supported "
+            "trigger. VARY THE CONSTRUCTION" + vary_reference +
+            ": the trailing \"... before "
+            "[milestone]\" scaffold is capped at ~2 per section and "
+            "consecutive stories must NEVER share it. Trigger-first "
+            "(\"Before X, do Y\") is the SAME scaffold -- vary the "
+            "FRAME, not just the word order. When the scaffold is "
+            "already used, prefer: condition-first (\"Already on "
+            "N? ...\") or a bare imperative with stakes (\"...; the "
+            "vendor numbers won't transfer\"). The TRIGGER is a factual "
+            "claim: an event the source supports or a generic "
+            "practitioner milestone (\"your next eval cycle\", \"before "
+            "you rely on it in production\") -- NEVER an invented "
+            "source-specific cadence.\n"
+        )
     else:
-        pulse_override_tail = ""
+        close_reminder_tail = ""
+
+    # v0.21.3: feed-forward close context. Closes already accepted for
+    # the SAME tier in this run, injected at the write site (immediately
+    # before the close reminder tail / JSON schema -- recency binds).
+    # Suppressed under the Pulse override: the plain take is a different
+    # speech act with no scaffold to vary against.
+    prior_closes_segment = ""
+    if section_override != "pulse" and prior_section_closes:
+        prior_closes_block = _render_prior_closes_block(
+            list(prior_section_closes)
+        )
+        if prior_closes_block:
+            prior_closes_segment = f"\n{prior_closes_block}\n"
 
     return f"""\
 You are writing one story for AI Vector -- a daily newsletter about
@@ -2453,9 +2851,9 @@ ITEMS:
     * "discuss" -- design concept worth raising at a review, not yet
                    shippable. Right call for single-source frameworks
                    without code / benchmarks.
-  Choose by what the body actually argues. If the body says "raise this
-  at your next architecture review", that's "discuss", not "act".
-{pulse_override_tail}
+  Choose by what the body actually argues. A body whose close sends the
+  design to a review rather than to production is "discuss", not "act".
+{prior_closes_segment}{close_reminder_tail}
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
@@ -3721,8 +4119,19 @@ def _populate_section_intro(
     (we'd rather render Currents without an intro than abort the whole
     issue), but the audit trail records that the aggregate-direction lead
     was unavailable today. Other sections continue to degrade silently
-    (the template hides missing intros)."""
-    if not section.stories:
+    (the template hides missing intros).
+
+    v0.21 (2026-07-04): a zero-story Currents section no longer skips the
+    intro pass. Three shipped issues carried an empty Currents with null
+    intros (template-integrity failure per review); the quiet-day branch
+    below still asks the LLM for a lead + body acknowledging the quiet
+    day in the Currents register, and ``_ensure_quiet_day_currents_intro``
+    (deterministic code, called by the pipeline after this function)
+    guarantees the intros are non-null even if the LLM misses twice."""
+    quiet_day = not section.stories
+    if quiet_day and section.name != "currents":
+        # Big Picture / Hands-On never render empty; only Currents has a
+        # quiet-day contract with the template.
         return
     hint = _SECTION_INTRO_HINTS.get(section.name)
     if hint is None:
@@ -3730,17 +4139,36 @@ def _populate_section_intro(
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
     mandatory = section.name in _SECTIONS_WITH_MANDATORY_INTRO
 
-    story_lines: list[str] = []
-    for st in section.stories:
-        body = st.summary if len(st.summary) <= 280 else st.summary[:280] + "..."
-        story_lines.append(f"- HEADLINE: {st.headline}\n  BODY: {body}")
-    stories_block = "\n".join(story_lines)
+    if quiet_day:
+        stories_block = "(none -- zero Currents items today)"
+    else:
+        story_lines: list[str] = []
+        for st in section.stories:
+            body = st.summary if len(st.summary) <= 280 else st.summary[:280] + "..."
+            story_lines.append(f"- HEADLINE: {st.headline}\n  BODY: {body}")
+        stories_block = "\n".join(story_lines)
 
     # Phase 2: Currents intros get an extra prose nudge so the LEAD names
     # the AGGREGATE DIRECTION rather than a generic posture phrase. Other
     # sections retain the existing 2-5-word bold-phrase shape.
+    # v0.21: on a quiet day (zero Currents items) the addendum swaps to the
+    # quiet-day contract -- the intro is still mandatory, it acknowledges
+    # the quiet rather than naming a direction.
     currents_lead_addendum = ""
-    if section.name == "currents":
+    if section.name == "currents" and quiet_day:
+        currents_lead_addendum = (
+            "\n- QUIET DAY (zero Currents items today): you MUST still "
+            "return both LEAD and BODY. Acknowledge the quiet day in the "
+            "Currents register: calm, watchful, lightly wry; never "
+            "apologetic. Do NOT invent items or imply stories exist "
+            "below. VARY the wording day to day; two prior renders (do "
+            "not copy either verbatim): \"A quiet day in the "
+            "undercurrents.\" / \"Still waters below the fold.\" The "
+            "BODY (one short sentence is fine) says the day's signal "
+            "sits in the sections above and the watch resumes when the "
+            "early signals return."
+        )
+    elif section.name == "currents":
         currents_lead_addendum = (
             "\n- CURRENTS LEAD: name the AGGREGATE DIRECTION today's items "
             "point at, not just a posture. \"For awareness only.\" is "
@@ -3827,15 +4255,28 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
             "retrying once (Phase 2)",
             section.name,
         )
-        corrective = (
-            "Your previous response was missing or malformed. The Currents "
-            "intro is EDITORIALLY MANDATORY: the LEAD must name the "
-            "aggregate direction these items point at (a directional "
-            "claim, not a posture), and both LEAD and BODY are required. "
-            "Return ONLY a JSON object with non-empty string fields "
-            "'lead' and 'body'. Original request follows.\n\n"
-            + prompt
-        )
+        if quiet_day:
+            corrective = (
+                "Your previous response was missing or malformed. The "
+                "Currents intro is EDITORIALLY MANDATORY even on a "
+                "zero-item day: the LEAD acknowledges the quiet day in "
+                "the Currents register, and both LEAD and BODY are "
+                "required. Return ONLY a JSON object with non-empty "
+                "string fields 'lead' and 'body'. Original request "
+                "follows.\n\n"
+                + prompt
+            )
+        else:
+            corrective = (
+                "Your previous response was missing or malformed. The "
+                "Currents intro is EDITORIALLY MANDATORY: the LEAD must "
+                "name the aggregate direction these items point at (a "
+                "directional claim, not a posture), and both LEAD and "
+                "BODY are required. Return ONLY a JSON object with "
+                "non-empty string fields 'lead' and 'body'. Original "
+                "request follows.\n\n"
+                + prompt
+            )
         result = _attempt_once(corrective)
 
     if result is None:
@@ -3859,6 +4300,55 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
             "(lead=%r, body=%r)",
             section.name, lead[:80], body[:80],
         )
+
+
+# v0.21 (2026-07-04): deterministic quiet-day intro for an empty Currents
+# section. Three shipped issues carried an empty Currents with null intros
+# and needed a manual fix (template-integrity failure per review). The LLM
+# quiet-day branch in ``_populate_section_intro`` is the voice path; THIS
+# is the contract guard -- plain code, not another LLM call, per No Token
+# Wasted. The wording intentionally reuses the ratified quiet-day register
+# ("A quiet day in the undercurrents." is the archive empty-state line).
+_QUIET_DAY_CURRENTS_INTRO_LEAD = "A quiet day in the undercurrents."
+"""Deterministic fallback ``intro_lead`` for a zero-story Currents
+section. Only used when the LLM quiet-day intro landed null/empty."""
+
+_QUIET_DAY_CURRENTS_INTRO_BODY = (
+    "Nothing below the fold cleared the bar today. The day's signal sits "
+    "in the sections above; the watch resumes when the early signals do."
+)
+"""Deterministic fallback ``intro_body`` companion to the lead above."""
+
+
+def _ensure_quiet_day_currents_intro(section: IssueSection) -> None:
+    """Template-contract guard (v0.21): a zero-story Currents section must
+    NEVER ship with null/empty intros.
+
+    Called by the pipeline after ``_populate_section_intro``. When the
+    section is Currents, has zero stories, and either intro field is still
+    null/empty (LLM failed twice, or its output failed validation), inject
+    the deterministic quiet-day default. No-op in every other case -- a
+    successful LLM quiet-day intro is left untouched, and sections with
+    stories keep whatever the intro pass produced.
+    """
+    if section.name != "currents" or section.stories:
+        return
+    lead = (section.intro_lead or "").strip()
+    body = (section.intro_body or "").strip()
+    if lead and body:
+        return
+    if not lead:
+        section.intro_lead = _QUIET_DAY_CURRENTS_INTRO_LEAD
+    if not body:
+        section.intro_body = _QUIET_DAY_CURRENTS_INTRO_BODY
+    _LOG.warning(
+        "summarise: empty Currents landed with null/empty intro fields -- "
+        "injected the deterministic quiet-day intro (lead was %s, body "
+        "was %s). Editor / Arman: the LLM quiet-day intro did not land; "
+        "the default wording shipped instead.",
+        "missing" if not lead else "present",
+        "missing" if not body else "present",
+    )
 
 
 # ---------------------------------------------------------------------------
