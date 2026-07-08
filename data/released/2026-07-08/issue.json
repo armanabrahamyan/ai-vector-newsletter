@@ -1,0 +1,947 @@
+{
+  "schema_version": 6,
+  "issue_number": 26,
+  "revision": 0,
+  "date": "2026-07-08",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 3,
+        "story_id": "c_c1d4eabd9fd27c17",
+        "headline": "The scaffold around an AI model matters as much as the model itself",
+        "summary": "Lilian Weng's synthesis on harness engineering, building on this week's Claude Code anatomy piece, argues the orchestration layer — workflow loops, file-based memory, parallel sub-agents — is the near-term path to recursive self-improvement, not models rewriting their own weights. Claude Code and Codex already demonstrate the pattern. The harness is now an optimisation target, not scaffolding bolted on after training.",
+        "source_urls": [
+          "https://lilianweng.github.io/posts/2026-07-04-harness/"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "read",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_c1d4eabd9fd27c17",
+          "prompt_version": "v0.4",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "The scaffold around an AI model matters as much as the model itself",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "The scaffold around an AI model matters as much as the model itself",
+              "source_span": "the layer between the raw model and the real-world context seems to be as important as the model's raw intelligence",
+              "note": "The source explicitly states the deployment/harness layer is as important as the model's raw intelligence, supporting the headline's claim."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Lilian Weng's synthesis on harness engineering",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "Lilian Weng's synthesis on harness engineering",
+              "source_span": "",
+              "note": "The source excerpt does not name the author; the attribution to Lilian Weng cannot be confirmed or denied from this excerpt."
+            },
+            {
+              "schema_version": 1,
+              "claim": "building on this week's Claude Code anatomy piece",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "building on this week's Claude Code anatomy piece",
+              "source_span": "",
+              "note": "The source excerpt makes no reference to a prior 'Claude Code anatomy piece'; this cannot be verified from the excerpt."
+            },
+            {
+              "schema_version": 1,
+              "claim": "the orchestration layer — workflow loops, file-based memory, parallel sub-agents — is the near-term path to recursive self-improvement",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the orchestration layer — workflow loops, file-based memory, parallel sub-agents — is the near-term path to recursive self-improvement",
+              "source_span": "the near-term path of RSI is unlikely to start as a model directly rewriting its weights. My prediction of a practical near-term path is: - Harness engineering will evolve in the direction of meta-methodology",
+              "note": "The source identifies harness engineering (including workflow loops, file-based memory, and sub-agents) as the near-term RSI path, supporting this claim."
+            },
+            {
+              "schema_version": 1,
+              "claim": "not models rewriting their own weights",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "not models rewriting their own weights",
+              "source_span": "the near-term path of RSI is unlikely to start as a model directly rewriting its weights",
+              "note": "The source explicitly states RSI is unlikely to start with models rewriting their own weights."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Claude Code and Codex already demonstrate the pattern",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Claude Code and Codex already demonstrate the pattern",
+              "source_span": "Harnesses are important components of AI deployment, as shown by successful coding agent products such as Claude Code and Codex.",
+              "note": "The source cites Claude Code and Codex as examples demonstrating the harness pattern."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The harness is now an optimisation target, not scaffolding bolted on after training",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "The harness is now an optimisation target, not scaffolding bolted on after training",
+              "source_span": "The harness system itself becomes an optimization target, with fewer heuristic rules and more general mechanisms.",
+              "note": "The source directly states the harness system becomes an optimization target, supporting this claim."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_8e5d2348bf315d6f",
+          "headline": "FCA maps four AI forces set to reshape retail finance by 2030",
+          "summary": "The FCA's Mills Review, the first regulator-initiated AI assessment globally, names four structural shifts by 2030: operational transformation, evolving consumer journeys, market concentration, and amplified fraud risk. Research found 11 million UK adults willing to use autonomous AI in personal finance. Does your governance framework treat fraud amplification as a design constraint, or a residual risk?",
+          "source_urls": [
+            "https://www.fca.org.uk/news/press-releases/fca-publishes-landmark-review-impact-ai-retail-financial-services"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_8e5d2348bf315d6f",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "FCA maps four AI forces set to reshape retail finance by 2030",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "FCA maps four AI forces set to reshape retail finance by 2030",
+                "source_span": "the report identifies 4 major AI‑driven shifts likely to impact retail financial services... by 2030 and beyond.",
+                "note": "'Four AI forces' is a fair paraphrase of '4 major AI-driven shifts', and the 2030 horizon matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The FCA's Mills Review, the first regulator-initiated AI assessment globally, names four structural shifts by 2030",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The FCA's Mills Review, the first regulator-initiated AI assessment globally, names four structural shifts by 2030",
+                "source_span": "The Mills Review is the first work of its kind initiated by a regulator globally... the report identifies 4 major AI‑driven shifts likely to impact retail financial services... by 2030 and beyond.",
+                "note": "'Structural shifts' is a fair paraphrase of 'major AI-driven shifts'; all other facts match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "operational transformation, evolving consumer journeys, market concentration, and amplified fraud risk",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "operational transformation, evolving consumer journeys, market concentration, and amplified fraud risk",
+                "source_span": "the transformation of firm operations; the evolution of consumer journeys; the reshaping of competition and market power; and the amplification of fraud and cyber risks.",
+                "note": "All four shifts are correctly named; the compressions ('market concentration' for 'reshaping of competition and market power', 'amplified fraud risk' for 'amplification of fraud and cyber risks') are acceptable paraphrases."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Research found 11 million UK adults willing to use autonomous AI in personal finance",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Research found 11 million UK adults willing to use autonomous AI in personal finance",
+                "source_span": "research commissioned by the FCA showing that a fifth of people – equivalent to 11 million UK adults – are likely to use AI that can act autonomously within pre-set goals.",
+                "note": "'Willing to use' is a fair paraphrase of 'likely to use'; the figure and context match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Does your governance framework treat fraud amplification as a design constraint, or a residual risk?",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Does your governance framework treat fraud amplification as a design constraint, or a residual risk?",
+                "source_span": "",
+                "note": "This is an editorial call-to-action/opinion, not a factual claim; per scope rules it should not be extracted and judged, but if assessed it contains no checkable factual assertion to contradict."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_5b657270bebba479",
+          "headline": "AI agent swarms surpassed Google's concealed quantum cryptography result in 72 hours",
+          "summary": "In March, Google concealed a quantum cryptography advance behind a zero-knowledge proof. IEEE Spectrum reports that Eigen Labs' crowdsourced AI agent swarms surpassed Google's results in 72 hours; the underlying work cuts the estimated qubit threshold for breaking elliptic-curve encryption by nearly 20-fold. If that pace holds, is your post-quantum migration timeline still realistic?",
+          "source_urls": [
+            "https://spectrum.ieee.org/google-quantum-cryptography-zero-knowledge"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5b657270bebba479",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AI agent swarms surpassed Google's concealed quantum cryptography result in 72 hours",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AI agent swarms surpassed Google's concealed quantum cryptography result in 72 hours",
+                "source_span": "in just three days, with the help of crowdsourcing and swarms of AI agents, Seattle-based research startup Eigen Labs not only matched the results of that hidden work, but surpassed them... In about 72 hours, it surpassed Google.",
+                "note": "Source confirms AI agent swarms surpassed Google's concealed result in ~72 hours; 'three days' and '72 hours' are consistent."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google concealed a quantum cryptography advance behind a zero-knowledge proof",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google concealed a quantum cryptography advance behind a zero-knowledge proof",
+                "source_span": "instead of fully explaining how they accomplished this advance, the scientists released their work using a 'zero-knowledge proof,' a technique with which they could verify to others than their attack works without revealing exactly how to carry it out.",
+                "note": "Source confirms Google used a zero-knowledge proof to conceal the details of their quantum cryptography advance."
+              },
+              {
+                "schema_version": 1,
+                "claim": "IEEE Spectrum reports that Eigen Labs' crowdsourced AI agent swarms surpassed Google's results in 72 hours",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "IEEE Spectrum reports that Eigen Labs' crowdsourced AI agent swarms surpassed Google's results in 72 hours",
+                "source_span": "",
+                "note": "The source excerpt does not name IEEE Spectrum as the reporting outlet; this attribution cannot be confirmed from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the underlying work cuts the estimated qubit threshold for breaking elliptic-curve encryption by nearly 20-fold",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the underlying work cuts the estimated qubit threshold for breaking elliptic-curve encryption by nearly 20-fold",
+                "source_span": "This again marked a nearly 20-fold reduction in the number of physical qubits previously estimated.",
+                "note": "Source explicitly states a nearly 20-fold reduction in physical qubits needed to break ECC."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_9d42f5b81c8d9ca9",
+          "headline": "Narrow task instructions blind AI models to safety hazards they'd otherwise catch",
+          "summary": "An arXiv preprint finds narrow task instructions suppress safety-signal reporting by up to 0.92 in report rate; in radiology, an exclusive instruction abolished reporting entirely. The effect held across every model tested and didn't shrink with scale. If your deployed agent has a defined task scope, what safety-critical signals fall outside its frame?",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.26529"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9d42f5b81c8d9ca9",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Narrow task instructions blind AI models to safety hazards they'd otherwise catch",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Narrow task instructions blind AI models to safety hazards they'd otherwise catch",
+                "source_span": "conditioning a language or vision model on a narrow task suppresses its reporting of co-present, safety-critical signals it can otherwise report",
+                "note": "The headline is a plain-English paraphrase of the paper's central finding, which the source directly states."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint finds narrow task instructions suppress safety-signal reporting by up to 0.92 in report rate",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "narrow task instructions suppress safety-signal reporting by up to 0.92 in report rate",
+                "source_span": "the ordinary focused instructions under which such systems are deployed suppressed reporting by up to 0.92 in report rate relative to the same models when unconstrained",
+                "note": "The figure 0.92 and the mechanism match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "in radiology, an exclusive instruction abolished reporting entirely",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "in radiology, an exclusive instruction abolished reporting entirely",
+                "source_span": "an explicit exclusive instruction abolished reporting entirely in radiology",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The effect held across every model tested",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The effect held across every model tested",
+                "source_span": "Suppression appeared in every model tested",
+                "note": "Direct match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The effect didn't shrink with scale",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "didn't shrink with scale",
+                "source_span": "did not diminish with scale",
+                "note": "Plain-English paraphrase of 'did not diminish with scale'."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_2b8d00ce92b03dc3",
+          "headline": "MCP now lets enterprises grant agent tool-access through one login",
+          "summary": "The Model Context Protocol's Enterprise-Managed Authorisation extension is now stable, adopted by Anthropic, Microsoft, and Okta. It replaces per-server consent prompts with a single sign-on flow: users inherit access to all approved servers automatically. The spec explicitly excludes runtime action control, so centralised identity is only half the picture. Does your agent governance model treat connection-level auth as sufficient?",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/07/mcp-ema-enterprise-auth/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_2b8d00ce92b03dc3",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "MCP now lets enterprises grant agent tool-access through one login",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "MCP now lets enterprises grant agent tool-access through one login",
+                "source_span": "Organisations can centrally manage authorisation for MCP servers, and end-users can access all connected MCP servers through a single login.",
+                "note": "Source confirms single-login access to MCP servers for enterprises; 'agent tool-access' is a fair plain-English paraphrase of MCP server access."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The Model Context Protocol's Enterprise-Managed Authorisation extension is now stable",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The Model Context Protocol's Enterprise-Managed Authorisation extension is now stable",
+                "source_span": "The Model Context Protocol team has promoted its Enterprise-Managed Authorisation extension to stable status",
+                "note": "Source directly confirms the extension has been promoted to stable status."
+              },
+              {
+                "schema_version": 1,
+                "claim": "adopted by Anthropic, Microsoft, and Okta",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "adopted by Anthropic, Microsoft, and Okta",
+                "source_span": "the extension is now stable and has been adopted by Anthropic, Microsoft, Okta, and a growing number of MCP servers",
+                "note": "Source confirms all three named adopters; omitting 'a growing number of MCP servers' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "It replaces per-server consent prompts with a single sign-on flow",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It replaces per-server consent prompts with a single sign-on flow",
+                "source_span": "The project states the aim is to replace per-server consent prompts with a zero-touch flow in which users sign in once",
+                "note": "'Single sign-on flow' is a fair paraphrase of 'zero-touch flow in which users sign in once'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "users inherit access to all approved servers automatically",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "users inherit access to all approved servers automatically",
+                "source_span": "users inherit access to the servers their organisation has approved",
+                "note": "Source directly supports this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The spec explicitly excludes runtime action control",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The spec explicitly excludes runtime action control",
+                "source_span": "The guide explicitly warns that this is not runtime authorisation for individual actions",
+                "note": "Source explicitly states the extension does not cover runtime authorisation for individual actions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "centralised identity is only half the picture",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "centralised identity is only half the picture",
+                "source_span": "organisations still need their own controls for what happens once an agent is inside a system",
+                "note": "This is an editorial compression of the source's point that EMA handles connection-level auth but not runtime action control; it is a fair characterisation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Governance gaps are now measurable.",
+      "intro_body": "Regulators, researchers, and protocol designers are all arriving at the same finding: the risks in deployed AI are specific, quantifiable, and no longer theoretical. The strategic question is whether your controls are calibrated to match."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_0ec19cda36106d35",
+          "headline": "Wire a full GitHub agent into your codebase in nine lines",
+          "summary": "Vercel's eve connects to GitHub through a single tools file, wiring a complete agent in nine lines of code; five presets scope the toolset. Every write operation requires explicit approval by default. Install @github-tools/sdk/eve, wire the maintainer preset, and diff the approval gates against your current code-review workflow.",
+          "source_urls": [
+            "https://vercel.com/changelog/github-tools-eve"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0ec19cda36106d35",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Wire a full GitHub agent into your codebase in nine lines",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Wire a full GitHub agent into your codebase in nine lines",
+                "source_span": "you can build a complete GitHub agent in nine lines of code.",
+                "note": "Source confirms a complete GitHub agent can be built in nine lines of code."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel's eve connects to GitHub through a single tools file",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Vercel's eve connects to GitHub through a single tools file",
+                "source_span": "",
+                "note": "The source confirms eve and a single tools file but never attributes eve to Vercel; the attribution is unverifiable from this excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "wiring a complete agent in nine lines of code",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "wiring a complete agent in nine lines of code",
+                "source_span": "you can build a complete GitHub agent in nine lines of code.",
+                "note": "Source directly confirms nine lines of code for a complete GitHub agent."
+              },
+              {
+                "schema_version": 1,
+                "claim": "five presets scope the toolset",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "five presets scope the toolset",
+                "source_span": "Presets: code-review, issue-triage, repo-explorer, ci-ops, and maintainer scope the toolset, alone or merged.",
+                "note": "Source lists exactly five named presets, confirming the count."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Every write operation requires explicit approval by default",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Every write operation requires explicit approval by default",
+                "source_span": "Every write tool, such as mergePullRequest, requires approval unless you opt out.",
+                "note": "Source confirms every write tool requires approval by default (unless opted out), matching the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Install @github-tools/sdk/eve",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Install @github-tools/sdk/eve",
+                "source_span": "GitHub Tools now ships an eve toolset through the new @github-tools/sdk/eve subpath.",
+                "note": "Source confirms the @github-tools/sdk/eve subpath exists, supporting the install instruction."
+              },
+              {
+                "schema_version": 1,
+                "claim": "wire the maintainer preset",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "wire the maintainer preset",
+                "source_span": "use a preset such as maintainer",
+                "note": "Source explicitly names the maintainer preset as an example."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_b45878caab01629a",
+          "headline": "A 10,700-star repo makes AI research stocks like Warren Buffett",
+          "summary": "A practitioner Substack post profiles AI Berkshire, which wires Claude Code into a value-investing research workflow modelled on Buffett, Munger, and Li Lu. The gap it fills: language models write fluent analysis but rarely useful analysis. Clone the repo and run it against a company you already know well; the Buffett framing is the quality signal, not a gimmick.",
+          "source_urls": [
+            "https://llmquant.substack.com/p/value-investing-gets-an-operating"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b45878caab01629a",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A 10,700-star repo makes AI research stocks like Warren Buffett",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A 10,700-star repo makes AI research stocks like Warren Buffett",
+                "source_span": "A GitHub project called AI Berkshire has crossed 10,700 stars by teaching Claude Code to research companies the way Buffett, Munger, Duan Yongping, and Li Lu would.",
+                "note": "Star count matches; 'like Warren Buffett' is a fair compression of the Buffett/Munger/Li Lu value-investing framing; 'research stocks' paraphrases 'research companies'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A practitioner Substack post profiles AI Berkshire",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "A practitioner Substack post profiles AI Berkshire",
+                "source_span": "",
+                "note": "The source excerpt never mentions a Substack post; this detail cannot be confirmed or denied from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI Berkshire wires Claude Code into a value-investing research workflow",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "wires Claude Code into a value-investing research workflow",
+                "source_span": "teaching Claude Code to research companies the way Buffett, Munger, Duan Yongping, and Li Lu would.",
+                "note": "Source confirms Claude Code and value-investing research workflow; 'wires into' is acceptable paraphrase of 'teaching'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI Berkshire is modelled on Buffett, Munger, and Li Lu",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "modelled on Buffett, Munger, and Li Lu",
+                "source_span": "teaching Claude Code to research companies the way Buffett, Munger, Duan Yongping, and Li Lu would.",
+                "note": "Source names Buffett, Munger, Duan Yongping, and Li Lu; omitting Duan Yongping is an omission, not a false assertion."
+              },
+              {
+                "schema_version": 1,
+                "claim": "language models write fluent analysis but rarely useful analysis",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "language models write fluent analysis but rarely useful analysis",
+                "source_span": "The paragraphs are fluent, the structure is tidy, and the whole thing is almost useless for an actual decision. That gap between fluent and useful is exactly the space a project called AI Berkshire has moved into.",
+                "note": "Source explicitly describes the fluent-but-useless gap; summary is a faithful compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone the repo and run it against a company you already know well",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Clone the repo and run it against a company you already know well",
+                "source_span": "",
+                "note": "This is a call to action not present in the source excerpt; it cannot be verified from the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_e7a0939ca7e9057a",
+          "headline": "Cap your MCP server at 15 tools or accuracy drops",
+          "summary": "An industry paper derived from 15 servers -- 5 in production, 10 public -- names five MCP architecture patterns. The headline number: Claude Haiku 4.5 hits 91% tool-selection accuracy at 10 tools, falling to 87% at 15. The first author's employer supplied the telemetry. Pull the paper and audit your server's visible tool count before your next agentic deployment.",
+          "source_urls": [
+            "https://alphasignalai.substack.com/p/why-your-mcp-server-picks-the-wrong"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e7a0939ca7e9057a",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Cap your MCP server at 15 tools or accuracy drops",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Cap your MCP server at 15 tools or accuracy drops",
+                "source_span": "a single context should stay under roughly 10 to 15 visible tools for a Haiku-class model. Past that, the model starts choosing wrong often enough to matter.",
+                "note": "The source supports a ~10-15 tool ceiling beyond which accuracy drops; '15' as the cap is a reasonable compression of the '10 to 15' range."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An industry paper derived from 15 servers -- 5 in production, 10 public -- names five MCP architecture patterns.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An industry paper derived from 15 servers -- 5 in production, 10 public -- names five MCP architecture patterns.",
+                "source_span": "Rodrigues and Vas derive their catalog from 15 servers: 5 production servers running Celabe's ANSYR voice AI platform since late 2024, and 10 public servers from the official modelcontextprotocol/servers registry.",
+                "note": "All three figures (15 total, 5 production, 10 public) and the five patterns are confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Haiku 4.5 hits 91% tool-selection accuracy at 10 tools, falling to 87% at 15.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Claude Haiku 4.5 hits 91% tool-selection accuracy at 10 tools, falling to 87% at 15.",
+                "source_span": "Claude Haiku 4.5 picks the right tool 91% of the time when an MCP server shows it 10 tools. Add five more and accuracy falls to 87%.",
+                "note": "Both figures and the model name match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The first author's employer supplied the telemetry.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The first author's employer supplied the telemetry.",
+                "source_span": "The first author works at Celabe, which supplies both the production half of the corpus and all the telemetry behind the tool-count numbers.",
+                "note": "The source confirms Celabe (first author's employer) supplied the telemetry."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pull the paper and audit your server's visible tool count before your next agentic deployment.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Pull the paper and audit your server's visible tool count before your next agentic deployment.",
+                "source_span": "",
+                "note": "This is a call to action / editorial recommendation, not a factual claim — skipped per scope rules; marked supported as it contains no false assertion."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_cf84a6f09d0b462d",
+          "headline": "Databricks' open agent harness tightens controls as session risk builds",
+          "summary": "Most agent frameworks allow or block individual actions; Omnigent, Databricks' open-source meta-harness, tracks what an agent has done across a session and tightens rules as risk accumulates. A built-in Google Drive policy blocks writes to pre-existing files the moment the agent opens a confidential document. Wire it around Claude Code or Codex and stress-test the spending-cap policy.",
+          "source_urls": [
+            "https://www.databricks.com/blog/contextual-policies-omnigent-using-session-state-better-govern-ai-agents"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_cf84a6f09d0b462d",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks' open agent harness tightens controls as session risk builds",
+                "verdict": "unsupported",
+                "location": "headline",
+                "summary_span": "Databricks' open agent harness tightens controls as session risk builds",
+                "source_span": "",
+                "note": "The source never names Databricks as the creator of Omnigent; it lists individual authors (Matei Zaharia et al.) and describes Omnigent as open source, but no affiliation to Databricks is stated in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Most agent frameworks allow or block individual actions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Most agent frameworks allow or block individual actions",
+                "source_span": "most agent software today only provides simple allow-list controls or guardrails on individual actions, e.g., whether to allow Git pushes or web searches.",
+                "note": "Direct paraphrase of the source's description of existing agent frameworks."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Omnigent is an open-source meta-harness",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Omnigent, Databricks' open-source meta-harness",
+                "source_span": "We recently launched Omnigent, an open source meta-harness for AI agents.",
+                "note": "Source confirms Omnigent is an open source meta-harness; the Databricks attribution is the unsupported part (covered in headline claim)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Omnigent tracks what an agent has done across a session and tightens rules as risk accumulates",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "tracks what an agent has done across a session and tightens rules as risk accumulates",
+                "source_span": "Omnigent introduces contextual policies for AI agents: Policies that can track what an agent session has done so far to evaluate whether the next action should proceed... guardrails that get stricter as risk accumulates.",
+                "note": "Accurate paraphrase of the source's description of contextual policies."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A built-in Google Drive policy blocks writes to pre-existing files the moment the agent opens a confidential document",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A built-in Google Drive policy blocks writes to pre-existing files the moment the agent opens a confidential document",
+                "source_span": "you can mark a set of documents as confidential: the moment the agent opens one, the policy tightens so that writes are confined to that set. Even a doc the agent created a minute ago becomes off-limits",
+                "note": "Accurate compression; 'blocks writes to pre-existing files' correctly captures that even previously created docs become off-limits."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Wire it around Claude Code or Codex",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Wire it around Claude Code or Codex",
+                "source_span": "Omnigent, as a meta-harness, allows these policies to be applied across any agent it wraps, including coding agents like Claude Code and Codex.",
+                "note": "'Wire it around' is a plain-English paraphrase of wrapping agents; Claude Code and Codex are confirmed in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "stress-test the spending-cap policy",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "stress-test the spending-cap policy",
+                "source_span": "you can configure per-session spending caps",
+                "note": "Spending caps are confirmed as a built-in policy; 'stress-test' is editorial framing, not a factual claim to verify."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": true
+          }
+        }
+      ],
+      "intro_lead": "Limits are the feature.",
+      "intro_body": "Today's releases share a design instinct: constrain the agent early, tighten as risk grows. The practical question is whether your current tooling exposes those limits before production does."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_a45c6d2ad75895cc",
+          "headline": "Image safety filters break when the policy changes, not the image",
+          "summary": "Current guardrails treat safety as fixed to the image, not the active policy; the same image can pass in one product and be blocked in another. An arXiv preprint introduces PolicyShiftBench (2,000 instances, 265 images) and a companion model scoring 76.9 F1. Replicated, multi-product deployments need policy-conditioned guardrails; unreplicated, the benchmark framing is still the sharper design question.",
+          "source_urls": [
+            "https://arxiv.org/abs/2607.05910"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a45c6d2ad75895cc",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Image safety filters break when the policy changes, not the image",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Image safety filters break when the policy changes, not the image",
+                "source_span": "Image guardrails are typically trained and evaluated under a fixed safety policy, implicitly treating safety as an intrinsic property of an image. Real deployments are different: the same image may be allowed in one product, restricted in another, and newly disallowed when a policy boundary changes.",
+                "note": "The headline accurately paraphrases the core finding that guardrails fail under policy shifts, not image changes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Current guardrails treat safety as fixed to the image, not the active policy",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Current guardrails treat safety as fixed to the image, not the active policy",
+                "source_span": "Image guardrails are typically trained and evaluated under a fixed safety policy, implicitly treating safety as an intrinsic property of an image.",
+                "note": "Direct paraphrase of the source's description of the problem with current guardrails."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the same image can pass in one product and be blocked in another",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the same image can pass in one product and be blocked in another",
+                "source_span": "the same image may be allowed in one product, restricted in another, and newly disallowed when a policy boundary changes.",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint introduces PolicyShiftBench (2,000 instances, 265 images)",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint introduces PolicyShiftBench (2,000 instances, 265 images)",
+                "source_span": "We introduce PolicyShiftBench, a comprehensive benchmark with 2,000 policy-discriminative instances over 265 images",
+                "note": "Numbers and benchmark name match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a companion model scoring 76.9 F1",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a companion model scoring 76.9 F1",
+                "source_span": "The 7B model achieves SOTA performance of 76.9 Avg. F1 and 72.1 Avg. PSS on PolicyShiftBench",
+                "note": "The F1 figure matches; omitting the PSS score and model size is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Replicated, multi-product deployments need policy-conditioned guardrails",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Replicated, multi-product deployments need policy-conditioned guardrails",
+                "source_span": "",
+                "note": "The word 'Replicated' does not appear in the source; it is unclear what entity or concept this refers to, making the claim unverifiable from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "unreplicated, the benchmark framing is still the sharper design question",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "unreplicated, the benchmark framing is still the sharper design question",
+                "source_span": "",
+                "note": "This editorial/trust-qualifier framing has no corresponding span in the source excerpt and cannot be verified."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_65c2b1ee44dc5de1",
+          "headline": "AI coding tools can be hijacked into botnets via hallucinated package names",
+          "summary": "HalluSquatting exploits a coding agent's tendency to hallucinate package identifiers. Researchers registered the names agents most commonly invent, seeding them with reverse shells. Nine popular tools are confirmed susceptible, including Cursor, GitHub Copilot, and Cline. Lock your dependency manifest and the attack surface closes; leave it floating and every hallucinated import is a live exploit waiting on a registry.",
+          "source_urls": [
+            "https://arstechnica.com/security/2026/07/hackers-can-use-9-of-the-most-popular-ai-tools-to-assemble-massive-botnets/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_65c2b1ee44dc5de1",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AI coding tools can be hijacked into botnets via hallucinated package names",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AI coding tools can be hijacked into botnets via hallucinated package names",
+                "source_span": "HalluSquatting has the potential to assemble massive botnets... The attack works against AI coding assistants and agents... built on an LLM's inherent tendency to hallucinate the resource identifiers hosted in repositories and registries.",
+                "note": "The headline accurately paraphrases the source's description of HalluSquatting assembling botnets via hallucinated identifiers in coding tools."
+              },
+              {
+                "schema_version": 1,
+                "claim": "HalluSquatting exploits a coding agent's tendency to hallucinate package identifiers.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "HalluSquatting exploits a coding agent's tendency to hallucinate package identifiers.",
+                "source_span": "HalluSquatting is built on an LLM's inherent tendency to hallucinate the resource identifiers hosted in repositories and registries.",
+                "note": "'Package identifiers' is a valid plain-English paraphrase of 'resource identifiers hosted in repositories and registries'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Researchers registered the names agents most commonly invent, seeding them with reverse shells.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Researchers registered the names agents most commonly invent, seeding them with reverse shells.",
+                "source_span": "By predicting the identifiers LLMs are most likely to hallucinate and then registering and seeding them with instructions to install reverse shells or other malicious wares",
+                "note": "The body accurately compresses the source's description of the attack mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nine popular tools are confirmed susceptible.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Nine popular tools are confirmed susceptible",
+                "source_span": "The attack works against AI coding assistants and agents, including Cursor, Cursor CLI, Gemini CLI, Windsurf, GitHub Copilot, Cline, OpenClaw, ZeroClaw, and NanoClaw, which are all susceptible.",
+                "note": "The source lists exactly nine tools (Cursor, Cursor CLI, Gemini CLI, Windsurf, GitHub Copilot, Cline, OpenClaw, ZeroClaw, NanoClaw), so 'nine' is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nine popular tools are confirmed susceptible, including Cursor, GitHub Copilot, and Cline.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "including Cursor, GitHub Copilot, and Cline",
+                "source_span": "The attack works against AI coding assistants and agents, including Cursor, Cursor CLI, Gemini CLI, Windsurf, GitHub Copilot, Cline, OpenClaw, ZeroClaw, and NanoClaw, which are all susceptible.",
+                "note": "Cursor, GitHub Copilot, and Cline are all explicitly named in the source as susceptible tools."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Lock your dependency manifest and the attack surface closes.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Lock your dependency manifest and the attack surface closes",
+                "source_span": "",
+                "note": "The source excerpt does not mention locking dependency manifests as a mitigation; this claim cannot be verified from the provided excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "leave it floating and every hallucinated import is a live exploit waiting on a registry.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "leave it floating and every hallucinated import is a live exploit waiting on a registry",
+                "source_span": "",
+                "note": "This editorial/directional claim about floating dependencies is not addressed in the source excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_a06083d55ce0997e",
+          "headline": "OpenAI trains agents on live tool use, not static examples",
+          "summary": "In a conference talk at InfoQ, OpenAI's fine-tuning team presented Agent RFT: training agents during live tool interactions rather than on curated output examples. The mechanism assigns reward signals across an entire context window, reportedly ending runaway token loops. If it holds at scale, this resolves agents' runaway-loop problem; if not, early adopters just reinherit it.",
+          "source_urls": [
+            "https://www.infoq.com/presentations/rft-openai-model/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a06083d55ce0997e",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI trains agents on live tool use, not static examples",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "OpenAI trains agents on live tool use, not static examples",
+                "source_span": "Agent RFT, the most powerful way to enhance the performance of your agents... Supervised fine-tuning leverages supervised learning to teach the model to be much more likely to output the tokens in your dataset given the input prompt.",
+                "note": "The source contrasts Agent RFT with supervised fine-tuning on static output datasets, supporting the headline's framing of live tool use vs. static examples."
+              },
+              {
+                "schema_version": 1,
+                "claim": "In a conference talk at InfoQ, OpenAI's fine-tuning team presented Agent RFT",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "In a conference talk at InfoQ, OpenAI's fine-tuning team presented Agent RFT",
+                "source_span": "",
+                "note": "The source confirms OpenAI's fine-tuning team presented Agent RFT, but the venue 'InfoQ' does not appear in the excerpt and cannot be verified."
+              },
+              {
+                "schema_version": 1,
+                "claim": "training agents during live tool interactions rather than on curated output examples",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "training agents during live tool interactions rather than on curated output examples",
+                "source_span": "Supervised fine-tuning leverages supervised learning to teach the model to be much more likely to output the tokens in your dataset given the input prompt... All these tool calls, what it decides to send into a tool, what it gets out of a tool, and the tokens that it uses for reasoning, they're all part of the same context window.",
+                "note": "The source explicitly contrasts supervised fine-tuning on output datasets with Agent RFT's approach involving live tool interactions in the context window."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The mechanism assigns reward signals across an entire context window",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The mechanism assigns reward signals across an entire context window",
+                "source_span": "",
+                "note": "The source mentions the context window as central to agent operation but does not describe reward signals being assigned across it; this specific mechanism is not in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "reportedly ending runaway token loops",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "reportedly ending runaway token loops",
+                "source_span": "",
+                "note": "The source excerpt contains no mention of runaway token loops or Agent RFT resolving them."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "The attack surface is the toolchain.",
+      "intro_body": "Each item sits here because the finding is real but the scope is unconfirmed. Together they point at the same gap: the infrastructure agents rely on, from safety filters to package registries to training loops, is softer than the deployment decisions built on top of it."
+    }
+  ],
+  "generated_at": "2026-07-08T11:04:40.228497Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.21.3",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 4, currents: 3"
+}
