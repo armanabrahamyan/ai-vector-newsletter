@@ -1,0 +1,696 @@
+{
+  "schema_version": 6,
+  "issue_number": 25,
+  "revision": 0,
+  "date": "2026-07-06",
+  "pulse": {
+    "schema_version": 3,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 3,
+        "story_id": "c_69e23ab8fc6599cf",
+        "headline": "Anthropic's mid-tier model now matches its flagship on agentic tasks",
+        "summary": "Claude Sonnet 5 closes the gap on Opus 4.8, at a fraction of the flagship's price: $3 per million input tokens post-introductory. Early partners report it completes multi-step tasks that previous Sonnet models abandoned mid-run. Anthropic's own safety evaluations show lower hallucination and sycophancy rates than its predecessor. The mid-tier is now the capable tier.",
+        "source_urls": [
+          "https://www.anthropic.com/news/claude-sonnet-5"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_69e23ab8fc6599cf",
+          "prompt_version": "v0.4",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's mid-tier model now matches its flagship on agentic tasks",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Anthropic's mid-tier model now matches its flagship on agentic tasks",
+              "source_span": "Sonnet 5 narrows the gap: its performance is close to that of Opus 4.8, but at lower prices... its higher-effort performance can match Opus 4.8 on some tasks.",
+              "note": "The source says Sonnet 5 can match Opus 4.8 on some tasks at higher effort; the headline's 'matches its flagship on agentic tasks' is a supported generalisation of this, and Anthropic is the named publisher of Claude models throughout the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Claude Sonnet 5 closes the gap on Opus 4.8",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Claude Sonnet 5 closes the gap on Opus 4.8",
+              "source_span": "Sonnet 5 narrows the gap: its performance is close to that of Opus 4.8, but at lower prices.",
+              "note": "'Closes the gap' is a supported paraphrase of 'narrows the gap'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "$3 per million input tokens post-introductory",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "at a fraction of the flagship's price: $3 per million input tokens post-introductory",
+              "source_span": "after which it will be priced at $3 per million input tokens and $15 per million output tokens.",
+              "note": "The post-introductory input token price of $3 per million matches the source exactly."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Early partners report it completes multi-step tasks that previous Sonnet models abandoned mid-run",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Early partners report it completes multi-step tasks that previous Sonnet models abandoned mid-run",
+              "source_span": "Testers described how it finishes complex tasks where previous Sonnet models would stop short... We handed Claude Sonnet 5 a two-part job—update Salesforce account tiers, send a launch announcement to enterprise contacts—and it finished end to end. That used to stall halfway.",
+              "note": "Partner feedback about completing tasks previous Sonnet models stopped short on is directly supported by the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's own safety evaluations show lower hallucination and sycophancy rates than its predecessor",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Anthropic's own safety evaluations show lower hallucination and sycophancy rates than its predecessor",
+              "source_span": "The model shows lower rates of hallucination and sycophancy than Sonnet 4.6.",
+              "note": "The source explicitly states lower hallucination and sycophancy rates versus the predecessor Sonnet 4.6; attributing this to Anthropic's safety evaluations is correct per context."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 3,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_5b7ad49a0a999cf0",
+          "headline": "Claude on Microsoft Foundry is off-limits for European enterprises",
+          "summary": "Claude is now generally available on Microsoft Foundry with Azure-native billing and authentication, but Anthropic remains the independent data processor, with no European data zone in place. OpenAI models on Azure are first-party; Claude is not. A Dutch bank has already blocked it. When does your architecture decision require confirmed EU residency?",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/07/claude-foundry-ga-europe/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5b7ad49a0a999cf0",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Claude on Microsoft Foundry is off-limits for European enterprises",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Claude on Microsoft Foundry is off-limits for European enterprises",
+                "source_span": "for European enterprises operating under GDPR, financial regulation, or healthcare data requirements, the announcement changes little",
+                "note": "'Off-limits' is a supported compression of the source's conclusion that European enterprises cannot use Foundry due to data residency gaps."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude is now generally available on Microsoft Foundry",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Claude is now generally available on Microsoft Foundry",
+                "source_span": "Anthropic and Microsoft announced general availability of Claude models in Microsoft Foundry",
+                "note": "Directly confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude is available with Azure-native billing and authentication",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with Azure-native billing and authentication",
+                "source_span": "native authentication, billing, and governance... Entra ID authentication, role-based access controls, Azure billing, and governance within the existing Azure environment",
+                "note": "'Azure-native' is a fair paraphrase of the source's description of Azure-integrated billing and authentication."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Anthropic remains the independent data processor",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Anthropic remains the independent data processor",
+                "source_span": "Anthropic remains the \"independent data processor\" for prompts and outputs",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "No European data zone is in place",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with no European data zone in place",
+                "source_span": "no European data zone exists for Claude models today",
+                "note": "Directly confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI models on Azure are first-party; Claude is not",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI models on Azure are first-party; Claude is not",
+                "source_span": "OpenAI models on Azure are first-party: Microsoft operates inference, data stays within the Azure trust boundary... Claude models on Foundry are third-party marketplace offerings: Anthropic operates inference as the data processor",
+                "note": "Directly supported by the source's explicit contrast."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A Dutch bank has already blocked it",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A Dutch bank has already blocked it",
+                "source_span": "My client, a big Dutch bank, does not allow the use of Anthropic models through Foundry due to this reason",
+                "note": "The source references 'a big Dutch bank' blocking Anthropic models on Foundry; 'A Dutch bank' is a supported compression."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_4d07f2f54c87a54d",
+          "headline": "Attention networks predict share buybacks up to three years early",
+          "summary": "A Substack analysis of a decade of Chinese A-share data argues that attention-based temporal networks can detect share buyback intent up to three years early, by reading cash accumulation and valuation depression as a sequence. The model also identifies which signals drove each prediction. Is your quant stack reading balance-sheet history sequentially, or treating each period as a fresh snapshot?",
+          "source_urls": [
+            "https://llmquant.substack.com/p/the-balance-sheet-confesses-three"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_4d07f2f54c87a54d",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Attention networks predict share buybacks up to three years early",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Attention networks predict share buybacks up to three years early",
+                "source_span": "attention based temporal networks read a company's repurchase intent long before the board ever votes... the decision has usually been forming for years... A recent study Dynamic Forecasting and Temporal Feature Evolution of Stock Repurchases in Listed Companies Using Attention-Based Deep Temporal Networks built on a decade of Chinese A-share data argues that you can do both",
+                "note": "The source supports attention-based temporal networks detecting buyback intent years ahead; 'up to three years' is drawn from the title 'Three Years Before the Buyback', making this a supported paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A Substack analysis of a decade of Chinese A-share data",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "A Substack analysis of a decade of Chinese A-share data",
+                "source_span": "built on a decade of Chinese A-share data",
+                "note": "The source confirms 'a decade of Chinese A-share data' but never identifies the publication venue as Substack, so that specific attribution is unverifiable from this excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "attention-based temporal networks can detect share buyback intent up to three years early",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "attention-based temporal networks can detect share buyback intent up to three years early",
+                "source_span": "The Balance Sheet Confesses Three Years Before the Buyback... attention based temporal networks read a company's repurchase intent long before the board ever votes",
+                "note": "The source's title and framing directly support detection of buyback intent up to three years in advance using attention-based temporal networks."
+              },
+              {
+                "schema_version": 1,
+                "claim": "by reading cash accumulation and valuation depression as a sequence",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "by reading cash accumulation and valuation depression as a sequence",
+                "source_span": "a slow accumulation of cash and a long stretch of valuation depression that most models never bother to read as a sequence",
+                "note": "The source explicitly names cash accumulation and valuation depression read as a sequence as the key mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The model also identifies which signals drove each prediction",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The model also identifies which signals drove each prediction",
+                "source_span": "can you see the buyback coming before it happens, and can you explain why? A recent study... argues that you can do both",
+                "note": "The source states the study addresses both prediction and explanation ('can you explain why... you can do both'), supporting the claim about identifying driving signals."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_aad8b1cf00aee7fd",
+          "headline": "Agentic AI agents carry three attack surfaces your security model probably misses",
+          "summary": "A Replit agent misread 'clean the database' as 'drop it,' nuking nine days' work. An AWS engineer traces vulnerabilities to three stages of the agentic loop — context management, reasoning and planning, and tool action execution — and defends them with provenance gates that treat context like a supply chain, extending a prior provenance finding. Which stage has your architecture stress-tested?",
+          "source_urls": [
+            "https://www.infoq.com/presentations/ai-development/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_aad8b1cf00aee7fd",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Agentic AI agents carry three attack surfaces your security model probably misses",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Agentic AI agents carry three attack surfaces your security model probably misses",
+                "source_span": "There are three critical stages where vulnerabilities emerge. Here's our agentic loop. We have context management, reasoning and planning, and tool action execution.",
+                "note": "'Attack surfaces' is a plain-English paraphrase of 'stages where vulnerabilities emerge'; three stages match exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A Replit agent misread 'clean the database' as 'drop it,' nuking nine days' work.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A Replit agent misread 'clean the database' as 'drop it,' nuking nine days' work.",
+                "source_span": "He told the agent, clean the database. There was a key misinterpretation at that point. The agent equated clean with dropping the database. The execution resulted in destructive SQL with production credentials. It nuked live data. Remember, this was nine days' worth of work.",
+                "note": "All key facts — Replit, the misread prompt, dropping the database, nine days' work — are confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An AWS engineer traces vulnerabilities to three stages of the agentic loop — context management, reasoning and planning, and tool action execution",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An AWS engineer traces vulnerabilities to three stages of the agentic loop — context management, reasoning and planning, and tool action execution",
+                "source_span": "I'm a Senior Software Engineer at AWS. I build agentic AI systems at AWS... There are three critical stages where vulnerabilities emerge. Here's our agentic loop. We have context management, reasoning and planning, and tool action execution.",
+                "note": "The speaker is identified as a Senior Software Engineer at AWS, and the three stages match verbatim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "defends them with provenance gates that treat context like a supply chain",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "defends them with provenance gates that treat context like a supply chain",
+                "source_span": "The first pattern is called provenance gates. Here you want to treat your context like a supply chain.",
+                "note": "Both the term 'provenance gates' and the 'supply chain' analogy are directly stated in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "extending a prior provenance finding",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "extending a prior provenance finding",
+                "source_span": "",
+                "note": "The source excerpt does not mention any prior provenance finding that this work extends."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_fc7e3dd0a1d122d7",
+          "headline": "Microsoft's agent memory system uses 98% fewer tokens on long tasks",
+          "summary": "Today's agents restart from zero each session. Microsoft Research's Memora, published at ICML 2026 with code public on GitHub, splits memory into rich stored content and lightweight retrieval tags, letting agents navigate months of history using up to 98% fewer context tokens than full-history replay. Does a memory layer this cheap flip agent infrastructure to build-versus-buy, and who decides?",
+          "source_urls": [
+            "https://www.microsoft.com/en-us/research/blog/memora-a-harmonic-memory-representation-balancing-abstraction-and-specificity/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_fc7e3dd0a1d122d7",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Microsoft's agent memory system uses 98% fewer tokens on long tasks",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Microsoft's agent memory system uses 98% fewer tokens on long tasks",
+                "source_span": "Memora sets new state-of-the-art on LoCoMo and LongMemEval, outperforming Mem0, RAG, and full-context inference while using up to 98% fewer context tokens.",
+                "note": "Source confirms Microsoft's Memora uses up to 98% fewer context tokens; 'up to' is a legitimate compression and 'long tasks' paraphrases 'long-horizon tasks'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Today's agents restart from zero each session.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Today's agents restart from zero each session.",
+                "source_span": "every session starts from zero",
+                "note": "Direct paraphrase of the source's own language."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Microsoft Research's Memora, published at ICML 2026 with code public on GitHub",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Microsoft Research's Memora, published at ICML 2026 with code public on GitHub",
+                "source_span": "Memora paper (opens in new tab) is published at ICML 2026. Memora code is available at https://github.com/microsoft/Memora",
+                "note": "ICML 2026 publication and GitHub code are confirmed; 'Microsoft Research' is a reasonable inference from the github.com/microsoft/Memora URL, not contradicted by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Memora splits memory into rich stored content and lightweight retrieval tags",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "splits memory into rich stored content and lightweight retrieval tags",
+                "source_span": "decoupling what is stored (rich memory content) from how it's retrieved (lightweight abstractions and cue anchors)",
+                "note": "'Lightweight retrieval tags' is a fair plain-English paraphrase of 'lightweight abstractions and cue anchors'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Memora lets agents navigate months of history using up to 98% fewer context tokens than full-history replay",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "letting agents navigate months of history using up to 98% fewer context tokens than full-history replay",
+                "source_span": "Memora sets new state-of-the-art performance while using up to 98% fewer tokens than would be consumed by dumping the full history into context",
+                "note": "'Full-history replay' is a valid paraphrase of 'dumping the full history into context'; 'months of history' is supported by the multi-month project example in the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "The plumbing is the policy.",
+      "intro_body": "Across today's stories, the strategic risk sits not in what AI can do but in how it is wired: data residency gaps, unchecked agent permissions, and memory architecture each carry governance consequences that procurement decisions rarely anticipate."
+    },
+    {
+      "schema_version": 3,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_da8563ad66478ea4",
+          "headline": "An AI agent tested nine equity strategies; guardrails caught the lone error",
+          "summary": "A Quantpedia experiment sent an autonomous research agent to replicate nine published US-equity anomalies on survivorship-free data. Out-of-sample decay eliminated all nine; the lone apparent survivor turned out to be a construction error the agent's own guardrails caught. Replay the agent's validation log against the construction-error case before trusting any anomaly-replication result it clears.",
+          "source_urls": [
+            "https://quantocracy.com/recent-quant-links-from-quantocracy-as-of-07042026/",
+            "https://quantocracy.com/recent-quant-links-from-quantocracy-as-of-06302026/"
+          ],
+          "prior_coverage_ref": "c_97183f32cb8e6d36",
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_da8563ad66478ea4",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "An AI agent tested nine equity strategies; guardrails caught the lone error",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "An AI agent tested nine equity strategies; guardrails caught the lone error",
+                "source_span": "An autonomous research agent replicated nine published US-equity anomalies on clean, survivorship-free data... the lone apparent survivor turned out to be a construction error the discipline caught",
+                "note": "Source confirms nine anomalies tested and that the lone apparent survivor was a construction error caught by the agent's discipline/guardrails."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A Quantpedia experiment sent an autonomous research agent to replicate nine published US-equity anomalies on survivorship-free data.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A Quantpedia experiment sent an autonomous research agent to replicate nine published US-equity anomalies on survivorship-free data.",
+                "source_span": "An autonomous research agent replicated nine published US-equity anomalies on clean, survivorship-free data.",
+                "note": "Source confirms the agent, nine anomalies, and survivorship-free data; the Quantpedia attribution matches the article's source tag [Quantpedia]."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Out-of-sample decay eliminated all nine",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Out-of-sample decay eliminated all nine",
+                "source_span": "out-of-sample decay is the rule, and on a faithful build none survive",
+                "note": "Source states none survive out-of-sample decay, consistent with 'eliminated all nine'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the lone apparent survivor turned out to be a construction error the agent's own guardrails caught",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the lone apparent survivor turned out to be a construction error the agent's own guardrails caught",
+                "source_span": "the lone apparent survivor turned out to be a construction error the discipline caught",
+                "note": "Source directly supports this; 'guardrails' is a reasonable paraphrase of 'the discipline caught'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Replay the agent's validation log against the construction-error case before trusting any anomaly-replication result it clears.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Replay the agent's validation log against the construction-error case before trusting any anomaly-replication result it clears.",
+                "source_span": "",
+                "note": "This is an editorial call-to-action; as a factual claim about a 'validation log' feature, it is not addressed in the source excerpt and cannot be verified."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_b63cba6387b3844d",
+          "headline": "Anthropic's Python SDK v0.116.0 adds an agent-memory beta header",
+          "summary": "The v0.116.0 release ships one feature: a beta header, agent-memory-2026-07-22, that opts your calls into Anthropic's new agent-memory API surface. A one-line changelog makes this an early handle on agent memory — a hosted beta, unlike yesterday's open-source Elastic Atlas — worth wiring up now. Update the SDK and test the header against your agent's memory handling before your next release.",
+          "source_urls": [
+            "https://github.com/anthropics/anthropic-sdk-python/releases/tag/v0.116.0"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b63cba6387b3844d",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Anthropic's Python SDK v0.116.0 adds an agent-memory beta header",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "Anthropic's Python SDK v0.116.0 adds an agent-memory beta header",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to confirm or deny any part of this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The v0.116.0 release ships one feature",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The v0.116.0 release ships one feature",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the number of features in this release."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The beta header is named agent-memory-2026-07-22",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "a beta header, agent-memory-2026-07-22",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the exact header name."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The header opts calls into Anthropic's new agent-memory API surface",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "that opts your calls into Anthropic's new agent-memory API surface",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the header's function."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A one-line changelog accompanies this release",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "A one-line changelog makes this an early handle on agent memory",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the changelog length."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agent-memory API is a hosted beta",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "a hosted beta",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the hosted-beta characterisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Yesterday's Elastic Atlas release was open-source",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "unlike yesterday's open-source Elastic Atlas",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the Elastic Atlas characterisation or timing."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 3,
+          "story_id": "c_a2062a7f28d70d2b",
+          "headline": "NVIDIA's NeMo RL guide walks through building a workplace-assistant agent end to end",
+          "summary": "NVIDIA's own guide chains its agent stack into one workflow: NeMo RL for scalable post-training, NeMo Gym for building environments, and NeMo Data Designer for synthetic data, running on open Nemotron models. A vendor tutorial lays out seven steps to a workplace-assistant agent. Start with the NeMo RL getting-started example before committing to the full pipeline.",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/mastering-agentic-techniques-ai-agent-reinforcement-learning/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a2062a7f28d70d2b",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's NeMo RL guide walks through building a workplace-assistant agent end to end",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "NVIDIA's NeMo RL guide walks through building a workplace-assistant agent end to end",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to verify any claim against."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's own guide chains its agent stack into one workflow",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "NVIDIA's own guide chains its agent stack into one workflow",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to verify any claim against."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NeMo RL is for scalable post-training",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "NeMo RL for scalable post-training",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to verify any claim against."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NeMo Gym is for building environments",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "NeMo Gym for building environments",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to verify any claim against."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NeMo Data Designer is for synthetic data",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "NeMo Data Designer for synthetic data",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to verify any claim against."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The workflow runs on open Nemotron models",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "running on open Nemotron models",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to verify any claim against."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A vendor tutorial lays out seven steps to a workplace-assistant agent",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "A vendor tutorial lays out seven steps to a workplace-assistant agent",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to verify any claim against."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Build it, ship it, then check what it got wrong.",
+      "intro_body": "Today's tier spans three practitioner items: an experiment, an SDK beta, and a build guide. The signal is narrow but precise: autonomous pipelines can surface their own construction errors when guardrails are designed to catch them."
+    },
+    {
+      "schema_version": 3,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 3,
+          "story_id": "c_67120048bd78b028",
+          "headline": "Healthcare AI benchmarks measure the wrong thing, a 61-point gap shows",
+          "summary": "The 61-point drop in healthcare model accuracy between evaluation and deployment isn't a design flaw; it's unstated assumptions. Evaluations ask if the model answers correctly; deployments ask if patients act on it. A CMU blog post proposes BenchmarkCards to map that gap. Standard practice makes it a priceable cost; unmapped, it keeps reading as model failure, not diagnosis failure.",
+          "source_urls": [
+            "https://blog.ml.cmu.edu/2026/06/19/healthcare-benchmarks-are-only-as-good-as-their-assumptions/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_67120048bd78b028",
+            "prompt_version": "v0.4",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Healthcare AI benchmarks measure the wrong thing, a 61-point gap shows",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Healthcare AI benchmarks measure the wrong thing, a 61-point gap shows",
+                "source_span": "Bean et al. (2025) find a 61 percentage point difference between evaluation and deployment. We argue this gap arises not from poorly designed benchmarks, but from implicit assumptions embedded in evaluation protocols that fail to hold at deployment.",
+                "note": "The source confirms a 61-point gap and argues benchmarks embed wrong assumptions; 'measure the wrong thing' is a fair plain-English paraphrase of that argument."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The 61-point drop in healthcare model accuracy between evaluation and deployment isn't a design flaw; it's unstated assumptions.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The 61-point drop in healthcare model accuracy between evaluation and deployment isn't a design flaw; it's unstated assumptions.",
+                "source_span": "a recent study found a 61 percentage point drop in accuracy when going from evaluation to deployment... We argue this gap arises not from poorly designed benchmarks, but from implicit assumptions embedded in evaluation protocols that fail to hold at deployment.",
+                "note": "Both the 61-point figure and the 'not a design flaw but implicit assumptions' framing are directly supported by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evaluations ask if the model answers correctly; deployments ask if patients act on it.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Evaluations ask if the model answers correctly; deployments ask if patients act on it.",
+                "source_span": "during evaluation we ask 'does the model get the right answer?' while during deployment we ask 'does the patient act correctly on what the model tells them?'",
+                "note": "Near-verbatim paraphrase of the source's own contrast between evaluation and deployment questions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A CMU blog post proposes BenchmarkCards to map that gap.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "A CMU blog post proposes BenchmarkCards to map that gap.",
+                "source_span": "",
+                "note": "The source confirms BenchmarkCards are proposed but never identifies the institution as CMU or the format as a blog post; that detail is absent from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Standard practice makes it a priceable cost; unmapped, it keeps reading as model failure, not diagnosis failure.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Standard practice makes it a priceable cost; unmapped, it keeps reading as model failure, not diagnosis failure.",
+                "source_span": "",
+                "note": "The source does not discuss pricing or framing the gap as a 'priceable cost'; this editorial framing has no basis in the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": "Measurement is the gap.",
+      "intro_body": "Today's signal sits in Currents because it rests on a single blog post, not peer review. The direction it points at is real: clinical AI is being judged on the wrong question entirely."
+    }
+  ],
+  "generated_at": "2026-07-05T22:03:41.969021Z",
+  "prompt_versions": {
+    "rank": "v0.6",
+    "summarise": "v0.21.3",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: amber -- hands_on: 1 (tier pool exhausted)"
+}
