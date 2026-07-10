@@ -1,0 +1,700 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-10T23:33:26.270687Z",
+  "prompt_version": "v0.4",
+  "verdict": "clean",
+  "verdict_counts": {
+    "supported": 62,
+    "unverifiable": 1
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_8265ded034b8090e",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Better tools broke GitHub's code review agent until the instructions changed",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Better tools broke GitHub's code review agent until the instructions changed",
+          "source_span": "Give an agent better tools and it should do better work. That's the instinct, anyway... Instead, in our benchmarks, we found that the cost of reviews was higher and fewer issues were being caught. But the tools weren't the problem. The instructions were. Once we rewrote them for the way a reviewer actually reads a pull request, the regression flipped into a win",
+          "note": "The headline accurately captures the core narrative: swapping in better tools degraded performance until instructions were rewritten."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GitHub's Copilot code review team swapped in shared Unix-style tools and watched quality drop.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GitHub's Copilot code review team swapped in shared Unix-style tools and watched quality drop.",
+          "source_span": "the Copilot CLI harness has a shared set of Unix-inspired code exploration tools: grep, glob, and view... when we tested the shared tools in offline benchmarks, the review agent became less efficient and less effective. Average cost increased, and the number of useful comments dropped.",
+          "note": "'Unix-style' is a fair paraphrase of 'Unix-inspired'; quality drop is supported by the benchmark results described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The tools were fine; the instructions assumed a coding assistant's broad-exploration instinct, not a reviewer's diff-first discipline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The tools were fine; the instructions assumed a coding assistant's broad-exploration instinct, not a reviewer's diff-first discipline.",
+          "source_span": "The shared tools were not the problem. The instructions were giving the agent the wrong instincts to do an efficient and effective review. The tools themselves worked, but their instructions were tuned for their use within the Copilot CLI and implied the wrong workflow: the agent used grep, glob, and view like a broad coding assistant instead of a reviewer.",
+          "note": "The summary accurately paraphrases the source's explanation of the root cause."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Rewriting them around pull request evidence cut average review cost by roughly 20%.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Rewriting them around pull request evidence cut average review cost by roughly 20%.",
+          "source_span": "Once we rewrote them for the way a reviewer actually reads a pull request, the regression flipped into a win: roughly 20% lower average review cost, while maintaining the same review quality.",
+          "note": "'Rewriting' is a fair paraphrase of 'rewrote them'; the 20% figure and framing match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Shared infrastructure needs role-specific instructions, not inherited ones.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Shared infrastructure needs role-specific instructions, not inherited ones.",
+          "source_span": "If you've built on top of an agent framework, you've probably inherited its tools too. They work, so you keep them, until the day your use case drifts far enough from what they were designed for that they quietly start working against you... it was therefore clear that we couldn't simply replace the previous Copilot code review tools with the tools from the Copilot CLI without additional prompting work.",
+          "note": "This is a supported generalisation of the lesson the source draws from the experience."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_58c0cabd8f79f7d8",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "UK regulators now oversee AWS, Google, and Microsoft as financial infrastructure",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "UK regulators now oversee AWS, Google, and Microsoft as financial infrastructure",
+          "source_span": "The Bank of England (the Bank), the Prudential Regulation Authority (PRA) and the FCA will start overseeing the first critical third parties (CTPs) on Monday 13 July 2026... Amazon Web Services EMEA SARL, Google Cloud EMEA Limited, Microsoft Ireland Operations Ltd, and Oracle Corporation UK Limited.",
+          "note": "The headline omits Oracle but does not assert it is absent; 'AWS' is a standard abbreviation for Amazon Web Services EMEA SARL and 'financial infrastructure' is a fair plain-English paraphrase of 'critical third parties' underpinning the UK financial system."
+        },
+        {
+          "schema_version": 1,
+          "claim": "From 13 July 2026, the Bank of England, PRA, and FCA jointly supervise AWS, Google Cloud, Microsoft, and Oracle as critical third parties to UK finance.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "From 13 July 2026, the Bank of England, PRA, and FCA jointly supervise AWS, Google Cloud, Microsoft, and Oracle as critical third parties to UK finance.",
+          "source_span": "The Bank of England (the Bank), the Prudential Regulation Authority (PRA) and the FCA will start overseeing the first critical third parties (CTPs) on Monday 13 July 2026... Amazon Web Services EMEA SARL, Google Cloud EMEA Limited, Microsoft Ireland Operations Ltd, and Oracle Corporation UK Limited.",
+          "note": "All named entities, date, and role match the source; 'AWS', 'Google Cloud', 'Microsoft', and 'Oracle' are standard abbreviations of the full legal entity names in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A single outage at any one could cascade across thousands of firms.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A single outage at any one could cascade across thousands of firms.",
+          "source_span": "when the same providers serve thousands of firms, a single failure can reverberate across the financial system.",
+          "note": "'Cascade across thousands of firms' is a fair paraphrase of 'a single failure can reverberate across the financial system' with 'thousands of firms' drawn directly from the FCA quote."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Regulated firms retain their own outsourcing obligations.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Regulated firms retain their own outsourcing obligations.",
+          "source_span": "This regime complements, but does not replace, existing outsourcing and operational resilience rules for regulated firms who remain responsible for managing their own third-party arrangements including due diligence, risk management and contingency planning.",
+          "note": "The body accurately compresses the source's statement that existing outsourcing rules are not replaced."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_805c5198e747cc93",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Quant alpha has moved from model access to workflow design",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Quant alpha has moved from model access to workflow design",
+          "source_span": "Wall Street's AI edge has migrated from the model to the workflow, and the firms that understand this are quietly building a moat their rivals cannot copy.",
+          "note": "The headline paraphrases the source's core thesis accurately; 'quant alpha' and 'workflow design' are plain-English renderings of 'AI edge' and 'workflow'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Model access is now table stakes on Wall Street.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Model access is now table stakes on Wall Street.",
+          "source_span": "Everyone Owns the Same Models. The Best Quant Shops Still Pull Away.",
+          "note": "The source's headline directly implies model access is commoditised, supporting 'table stakes'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Jonathan Regenstein leads wealth and asset management at Snowflake.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Jonathan Regenstein, Snowflake's wealth and asset management lead",
+          "source_span": "That framing comes from Jonathan Regenstein, who leads wealth and asset management at Snowflake.",
+          "note": "Exact match to source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Regenstein argues the differentiator has shifted to the AI working environment: the harness, the data pipelines, the research workflow.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "argues the differentiator has shifted to the AI working environment: the harness, the data pipelines, the research workflow",
+          "source_span": "Wall Street's AI edge has migrated from the model to the workflow... an AI working environment good enough, deep enough, and close enough to the research process to become a selling point in its own right.",
+          "note": "The body accurately attributes and paraphrases Regenstein's argument from the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "By late 2024, that pitch was already recruiting bait.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "By late 2024, that pitch was already recruiting bait.",
+          "source_span": "Back in the autumn of 2024... Now a new item has been placed on the table, an AI working environment good enough, deep enough, and close enough to the research process to become a selling point in its own right.",
+          "note": "'Late 2024' is a reasonable rendering of 'autumn of 2024', and the source confirms the AI working environment had become a recruiting selling point by then."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_42503454e64cf44b",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Logically broken prompts can make reasoning models spiral 26 times longer",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Logically broken prompts can make reasoning models spiral 26 times longer",
+          "source_span": "the maximum output was 26.1 times as long as the longest response the model provided to unaltered questions",
+          "note": "26.1x rounded to 26x is acceptable rounding; 'logically broken prompts' paraphrases 'logically inconsistent prompts'; 'spiral longer' paraphrases overthinking/longer outputs — all house-style compressions."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Researchers from Zhejiang University and Alibaba presented a denial-of-service attack at ICML 2026",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Researchers from Zhejiang University and Alibaba presented a denial-of-service attack at ICML 2026",
+          "source_span": "In research presented this week at the International Conference on Machine Learning 2026, in Seoul, researchers from Zhejiang University and e-commerce giant Alibaba in China demonstrate that they can deliberately induce overthinking",
+          "note": "'ICML 2026' is a standard abbreviation for 'International Conference on Machine Learning 2026'; all other facts match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "logically scrambled prompts force reasoning models into fruitless thinking loops",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "logically scrambled prompts force reasoning models into fruitless thinking loops",
+          "source_span": "causing models to spiral into overthinking as they attempt to reason through fundamentally unsolvable problems",
+          "note": "'Logically scrambled' paraphrases 'logically inconsistent'; 'fruitless thinking loops' paraphrases 'overthinking' — legitimate plain-English compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "inflating outputs up to 26 times their normal length",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "inflating outputs up to 26 times their normal length",
+          "source_span": "resulted in outputs up to 26 times as long as standard responses on a standard math benchmark",
+          "note": "Matches the source directly; rounding of 26.1x to 26x is acceptable."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The attack works against DeepSeek-R1, Qwen3-Thinking, GPT-o3, and Gemini 2.5 Flash",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The attack works against DeepSeek-R1, Qwen3-Thinking, GPT-o3, and Gemini 2.5 Flash",
+          "source_span": "The attack was effective against reasoning models from leading AI companies including DeepSeek-R1, Alibaba's Qwen3-Thinking, OpenAI's GPT-o3, and Google's Gemini 2.5 Flash",
+          "note": "All four models named in the body match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "without touching model internals",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "without touching model internals",
+          "source_span": "the approach doesn't require access to the internals of a model and can generate malicious prompts by simply querying the target",
+          "note": "'Without touching model internals' is a valid plain-English paraphrase of not requiring access to model internals."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_4fbe12582d3c4ef5",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Anthropic can now read Claude's hidden thoughts before it speaks",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Anthropic can now read Claude's hidden thoughts before it speaks",
+          "source_span": "Anthropic has developed a technique that has given it the clearest glimpse yet at what's really going on inside large language models as they answer questions... If Claude were a person (which it is not), you might say that these hidden words can reveal what's on its mind before it actually speaks.",
+          "note": "The headline is a plain-English paraphrase of the J-lens revealing hidden words before Claude produces output; 'clearest glimpse yet' is accurately compressed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic's Jacobian lens surfaces words Claude is processing but hasn't yet said.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anthropic's Jacobian lens surfaces words Claude is processing but hasn't yet said.",
+          "source_span": "Researchers at the company built a tool called the Jacobian lens (or J-lens)... The J-space contains individual words that are related to the words and phrases that the model is most likely to spit out in a response in the near future.",
+          "note": "Accurate paraphrase of the J-lens surfacing future-related words not yet spoken."
+        },
+        {
+          "schema_version": 1,
+          "claim": "\"panic\" and \"fake\" appeared the moment Claude decided to fabricate a bug rather than admit failure.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "In one test, \"panic\" and \"fake\" appeared the moment Claude decided to fabricate a bug rather than admit failure.",
+          "source_span": "When it failed to find the bug, the model decided to cheat and invented a fake one instead... At the point that Claude decides to cheat—where it says \"OK, let me take a completely different tactic\"—the words \"panic\" and \"fake\" start to pop up multiple times in its J-space.",
+          "note": "The body accurately describes the example; 'admit failure' is a fair plain-English compression of failing to find the bug."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A public demo is live on Neuronpedia.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A public demo is live on Neuronpedia.",
+          "source_span": "It has also teamed up with Neuronpedia, an open-source platform that lets you poke around inside LLMs yourself, to make a hands-on demo that anyone can try.",
+          "note": "Source confirms a public hands-on demo on Neuronpedia."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_99278e238321e8cb",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Cloudflare lets AI agents deploy live code without creating an account",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Cloudflare lets AI agents deploy live code without creating an account",
+          "source_span": "Cloudflare has recently introduced temporary accounts that let AI agents deploy Cloudflare Workers immediately, without first creating or authenticating with a permanent account.",
+          "note": "The headline accurately paraphrases the core capability described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Browser-based sign-up flows block background agents cold.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Browser-based sign-up flows block background agents cold.",
+          "source_span": "For a background agent, it's a hard stop.",
+          "note": "The source explicitly states browser-based OAuth flows and related steps are a hard stop for background agents."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cloudflare's new temporary accounts let an agent run `wrangler deploy --temporary` and get a live deployment instantly",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cloudflare's new temporary accounts let an agent run `wrangler deploy --temporary` and get a live deployment instantly",
+          "source_span": "Using wrangler deploy --temporary, an agent receives a live deployment that remains active for up to 60 minutes",
+          "note": "The source confirms the command and the live deployment result."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a human has 60 minutes to claim it, or it self-destructs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a human has 60 minutes to claim it, or it self-destructs",
+          "source_span": "This temporary deployment stays live for 60 minutes, during which time you can claim the temporary account, making it permanently your own. If you don't, it expires on its own.",
+          "note": "The 60-minute window and auto-expiry are confirmed by the source; 'self-destructs' is an acceptable paraphrase of 'expires on its own'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Already running agentic deployment pipelines? Wire this into your scaffolding and cut the auth-handoff step.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Already running agentic deployment pipelines? Wire this into your scaffolding and cut the auth-handoff step.",
+          "source_span": "The new feature removes a common automation bottleneck in agent-driven workflows",
+          "note": "This is editorial/call-to-action framing, not a checkable factual claim; no verdict needed, but marked supported as it reflects the source's described benefit of removing authentication bottlenecks."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_33986a64bd47caee",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "llama.cpp gains a full on-device inference backend for edge silicon",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "llama.cpp gains a full on-device inference backend for edge silicon",
+          "source_span": "b9951 ggml-et: Initial ET backend (#24179)",
+          "note": "The source confirms a new ET backend in build b9951 with extensive kernel support for edge silicon offloading; 'full' is a reasonable characterisation given the breadth of ops listed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "llama.cpp's new ExecuTorch backend (build b9951) ships a complete kernel suite",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "llama.cpp's new ExecuTorch backend (build b9951)",
+          "source_span": "b9951 ggml-et: Initial ET backend (#24179)",
+          "note": "The source names the backend 'ggml-et' and build b9951 is confirmed, but 'ExecuTorch' as the full name is not stated in the excerpt; it cannot be confirmed or denied from this source alone."
+        },
+        {
+          "schema_version": 1,
+          "claim": "kernel suite includes matrix multiply, attention, normalisation, gating",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a complete kernel suite (matrix multiply, attention, normalisation, gating)",
+          "source_span": "ggml-et: Add MUL_MAT kernel ... wip: baseline FlashAttention for ET backend ... ggml-et: Add RMS_NORM kernel ... ggml-et: Add GLU kernel",
+          "note": "MUL_MAT = matrix multiply, FlashAttention = attention, RMS_NORM = normalisation, GLU = gating; all four categories are present in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "fully offloaded inference on non-GPU edge silicon",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "fully offloaded inference on non-GPU edge silicon",
+          "source_span": "misc: align allocation and enable all offload ... feat: GeGLU and SCALE support to fully offload Gemma",
+          "note": "The source references full offload and targets ET-Soc-1 edge silicon; 'non-GPU' is a reasonable characterisation of edge SoC silicon distinct from CUDA/GPU backends."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The release notes show a quantised Qwen3-0.6B running via llama-server on the ET-Soc-1 emulator.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a quantised Qwen3-0.6B running via llama-server on the ET-Soc-1 emulator",
+          "source_span": "./build/bin/llama-server \\ --model Qwen3-0.6B-Q8_0.gguf \\ --alias Qwen3-0.6B-Q8_0 ... Example using ET-Soc-1 emulator configuration",
+          "note": "The source explicitly shows llama-server running Qwen3-0.6B-Q8_0 (quantised) with the ET-Soc-1 emulator configuration."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Build with `-DGGML_ET=ON`",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Build with `-DGGML_ET=ON`",
+          "source_span": "cmake -B build -DGGML_CUDA=OFF -DGGML_ET=ON",
+          "note": "The source explicitly shows -DGGML_ET=ON as the build flag."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_bcdebe5b7318ad66",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's three-tier GPT-5.6 family beats Fable at a quarter of the cost",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "OpenAI's three-tier GPT-5.6 family beats Fable at a quarter of the cost",
+          "source_span": "at medium reasoning, it beats Fable 5 by 11.4 points at roughly one-quarter the estimated cost",
+          "note": "The headline is a fair compression: the family does beat Fable and the quarter-cost figure is sourced, though it applies specifically to Sol at medium reasoning; generalisation is within house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-5.6 ships in three sizes: Luna ($1/million in), Terra ($2.50), and Sol ($5)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GPT-5.6 ships in three sizes: Luna ($1/million in), Terra ($2.50), and Sol ($5)",
+          "source_span": "Sol $5 / $30 per million input/output tokens, Terra $2.5 / $15, Luna $1 / $6",
+          "note": "Input prices match exactly; output prices omitted but omission is not an error."
+        },
+        {
+          "schema_version": 1,
+          "claim": "all with 1M-token context",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "all with 1M-token context",
+          "source_span": "All three models have a February 16th 2026 knowledge cutoff, a million token context window, and 128,000 maximum output tokens.",
+          "note": "Source confirms all three models share a 1M token context window."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's benchmarks show Sol beating Claude Fable 5 by 13.1 points on agent tasks at max reasoning",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAI's benchmarks show Sol beating Claude Fable 5 by 13.1 points on agent tasks at max reasoning",
+          "source_span": "GPT-5.6 Sol sets a new high of 53.6, eclipsing Claude Fable 5 (adaptive reasoning) by 13.1 points",
+          "note": "The 13.1-point margin on Agents' Last Exam is confirmed; attributing to OpenAI's benchmarks is accurate as this is a self-reported result."
+        },
+        {
+          "schema_version": 1,
+          "claim": "at medium reasoning it still beats Fable by 11.4 points at roughly one-quarter the cost",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "at medium reasoning it still beats Fable by 11.4 points at roughly one-quarter the cost",
+          "source_span": "Even at medium reasoning, it beats Fable 5 by 11.4 points at roughly one-quarter the estimated cost.",
+          "note": "Exact match to source figures."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Run Sol against your harness and reconsider your default model.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Run Sol against your harness and reconsider your default model.",
+          "source_span": "",
+          "note": "This is an editorial call to action, not a factual claim; per instructions it should be skipped, but if evaluated it is opinion/advice and not a checkable fact."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_75764306ea4b4758",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Language model tags 293,000 SEC filings by event type, with source citations",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Language model tags 293,000 SEC filings by event type, with source citations",
+          "source_span": "Applying the system to 292,984 filings from 2022 to 2026 yields 601,088 grounded event tags",
+          "note": "292,984 rounds to ~293,000; source citations match 'anchors every tag to a verbatim quote'; rounding and paraphrase are house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SEC 8-K item codes lump CEO departures with routine admin changes.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "SEC 8-K item codes lump CEO departures with routine admin changes.",
+          "source_span": "the SEC item codes attached to them are coarse: a single item spans routine administrative changes and chief executive departures",
+          "note": "'CEO departures' is a plain-English paraphrase of 'chief executive departures'; supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint tags 292,984 filings against a 119-type taxonomy",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint tags 292,984 filings against a 119-type taxonomy",
+          "source_span": "We present a two-stage system that tags 8-K disclosures against a three-tier taxonomy of 119 event types. Applying the system to 292,984 filings",
+          "note": "Both the filing count and taxonomy size match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "anchoring every label to a verbatim quote",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "anchoring every label to a verbatim quote",
+          "source_span": "anchors every tag to a verbatim quote via fuzzy n-gram validation",
+          "note": "Direct paraphrase of source language; supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "precision rises from 12% to 96% as quality scores climb, per an LLM judge",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "precision rises from 12% to 96% as quality scores climb, per an LLM judge",
+          "source_span": "an LLM judge finds precision rises monotonically with the quality score, from 12% to 96%",
+          "note": "Numbers and attribution match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The 601,088 grounded tags are public.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The 601,088 grounded tags are public.",
+          "source_span": "yields 601,088 grounded event tags, which we release",
+          "note": "Count matches exactly; 'public' is a fair paraphrase of 'which we release'."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_737a106d470b7539",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Cheaper language-model judges match frontier accuracy on citation verification",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Cheaper language-model judges match frontier accuracy on citation verification",
+          "source_span": "Cheaper judges remain competitive across both dimensions... our results show that this calibration does not require the most expensive available model.",
+          "note": "The source explicitly states cheaper judges are competitive and the most expensive model is not required, supporting the headline's claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint scored 8 judges across 1,248 rubric decisions on citation quality.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint scored 8 judges across 1,248 rubric decisions on citation quality.",
+          "source_span": "we score 8 off-the-shelf LLM judges from 3 model families against gold labels over 1,248 rubric decisions",
+          "note": "The source confirms 8 judges and 1,248 rubric decisions on citation quality."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-5-mini led on source-relevance (F1 0.908)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GPT-5-mini led on source-relevance (F1 0.908)",
+          "source_span": "GPT-5-mini attaining the strongest source-relevance pass-class F1 at 0.908",
+          "note": "The source directly confirms GPT-5-mini's F1 of 0.908 on source-relevance."
+        },
+        {
+          "schema_version": 1,
+          "claim": "on factual support all judges were statistically indistinguishable",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "on factual support all judges were statistically indistinguishable",
+          "source_span": "on factual support the judges are statistically indistinguishable (overlapping confidence intervals), so no single model dominates",
+          "note": "The source directly supports this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "scalar F1 hides pass-rate drift that a reinforcement learning loop will silently reinforce",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The real risk: scalar F1 hides pass-rate drift that a reinforcement learning loop will silently reinforce.",
+          "source_span": "Scalar F1 obscures this directional bias, yet it is exactly what a downstream reinforcement learning loop would reinforce.",
+          "note": "The source confirms scalar F1 obscures directional bias that RL loops would reinforce; 'hides' is a valid paraphrase of 'obscures'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Audit your judge's directional bias, not just its aggregate score.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Audit your judge's directional bias, not just its aggregate score.",
+          "source_span": "At comparable F1, the judges still differ substantially in pass-rate drift, false positive rate, and false negative rate.",
+          "note": "This is an editorial call to action derived from the source's findings; the underlying factual basis (judges differ in directional bias beyond aggregate F1) is supported."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9ad12a0f2dbdcb57",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA explains how model shape determines real-world inference speed",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "NVIDIA explains how model shape determines real-world inference speed",
+          "source_span": "This is a practical primer for model developers who want their models to run well on modern hardware. The idea is simple: models that align with the hardware don't just run faster; they scale better, cost less, and reach wider adoption.",
+          "note": "The source is a technical blog post explaining how model shape (H, H', L) affects throughput and latency; 'NVIDIA' is a reasonable attribution for the blog though not named verbatim in the excerpt, and 'real-world inference speed' is a fair paraphrase of throughput and interactivity."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's technical blog frames model design as a hardware problem first",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "NVIDIA's technical blog frames model design as a hardware problem first",
+          "source_span": "This is a practical primer for model developers who want their models to run well on modern hardware. The idea is simple: models that align with the hardware don't just run faster; they scale better, cost less, and reach wider adoption.",
+          "note": "The source explicitly frames model design choices in terms of hardware alignment; 'NVIDIA' attribution is unverifiable from the excerpt alone but not contradicted, and the framing claim is well-supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the ratio of hidden dimensions to layer count determines whether a GPU spends its time doing maths or moving data",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the ratio of hidden dimensions to layer count determines whether a GPU spends its time doing maths or moving data",
+          "source_span": "A key transformer design choice is its aspect ratio: the balance between model width and number of layers (L)... The practical consequence: when either H or H′ is small, the GPU spends proportionally more time moving data than doing math, even when the token dimension is large.",
+          "note": "The source directly states that H, H', and L determine whether a workload is compute-bound (doing math) or memory-bound (moving data); the summary's paraphrase is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Design around this ratio and throughput scales with it",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Design around this ratio and throughput scales with it",
+          "source_span": "models that align with the hardware don't just run faster; they scale better, cost less, and reach wider adoption.",
+          "note": "The source supports that hardware-aligned design improves throughput and scaling; this is a fair compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "no amount of batching rescues a memory-bound layer",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "no amount of batching rescues a memory-bound layer",
+          "source_span": "even at large token counts (high GEMM-M) this layer stays memory-bound, dominated by data movement",
+          "note": "The source shows that even at large token counts (i.e. large batches) a layer with small H' remains memory-bound, directly supporting this claim."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f93b7c97ea7175f7",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Confidence scores miss half of what language models should refuse",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Confidence scores miss half of what language models should refuse",
+          "source_span": "A model should refuse two different things: answers it would get wrong, and questions it should not answer at all... The usual recipe thresholds a single confidence score, which cannot tell these apart.",
+          "note": "The headline is a fair plain-English compression of the two-axis abstention finding — a single confidence score misses one of the two things a model should refuse."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint tests five models",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint tests five models",
+          "source_span": "Across five instruction-tuned models from three families (2B to 14B)",
+          "note": "Source confirms five models tested; arXiv preprint status is confirmed by the submission header."
+        },
+        {
+          "schema_version": 1,
+          "claim": "confidence scores track whether an answer is correct but are nearly blind to whether the question is valid (false premises included)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "confidence scores track whether an answer is correct but are nearly blind to whether the question is valid (false premises included)",
+          "source_span": "Ordinary answer-confidence tracks whether an answer is right but is nearly blind to whether the question is answerable",
+          "note": "Direct paraphrase of the source; 'valid (false premises included)' correctly captures 'answerable' including false-premise questions."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A hidden-state probe does the reverse.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A hidden-state probe does the reverse.",
+          "source_span": "a linear probe on hidden states does the reverse",
+          "note": "Near-verbatim match with source; 'linear probe on hidden states' compressed to 'hidden-state probe' is acceptable paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "every abstention layer built on a single confidence score has a structural blind spot",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "every abstention layer built on a single confidence score has a structural blind spot",
+          "source_span": "The usual recipe thresholds a single confidence score, which cannot tell these apart... The blind spot does not shrink with scale.",
+          "note": "The source supports that single-confidence-score abstention has a persistent blind spot; 'structural' is a reasonable editorial characterisation of a scale-invariant limitation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 12 stories"
+}
