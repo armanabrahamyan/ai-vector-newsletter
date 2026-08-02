@@ -1,19 +1,21 @@
 """Unit tests for src/review.py and the run.py wiring around it.
 
 Scope. The deterministic plumbing in review: prompt assembly, prior-issue
-lookup, frontmatter parsing, artifact write, pipeline integration, the
-``--no-review`` escape hatch, the unavailable-fallback when the LLM call
-fails, and the standalone ``aiv review`` CLI.
+lookup, the threshold table, the verbatim-quote filter, finding-id
+assignment, the model split, review.md rendering, frontmatter parsing,
+artifact write, pipeline integration, the ``--no-review`` escape hatch, the
+unavailable/unparseable fallbacks, and the standalone ``aiv review`` CLI.
 
-We mock the boundary -- ``src.review._call_review_llm`` -- and assert on
-the unit's own transformations (file contents, verdict surfacing,
-pipeline-stage list shape). We do NOT mock the unit under test. Per
-``tests/CONVENTIONS.md``.
+We mock the boundary -- ``src.review._call_review_llm`` (or, where the
+env-handling seam is the thing under test, ``src.rank._llm_call``) -- and
+assert on the unit's own transformations. We do NOT mock the unit under
+test. Per ``tests/CONVENTIONS.md``.
 """
 from __future__ import annotations
 
 import datetime as _dt
 import json
+import os
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -27,10 +29,15 @@ from src import run as run_mod
 from src.review import (
     REVIEW_PROMPT_VERSION,
     ReviewArtifact,
+    ReviewThresholdError,
     _build_review_prompt,
     _extract_frontmatter_summary,
     _load_recent_released_issues,
     _write_review_artifact,
+    compute_verdict,
+    load_thresholds,
+    quote_present,
+    render_review_markdown,
     run_review,
 )
 
@@ -38,6 +45,11 @@ from src.review import (
 # ---------------------------------------------------------------------------
 # Test data helpers.
 # ---------------------------------------------------------------------------
+
+def _story_id(ix: int) -> str:
+    """Synthetic cluster id matching the ``^c_[0-9a-f]{12,}$`` pattern."""
+    return f"c_{'a' * 12}{ix:02x}"
+
 
 def _make_issue_payload(
     date_str: str = "2026-05-29",
@@ -47,6 +59,7 @@ def _make_issue_payload(
     hands_on_headlines: list[str] | None = None,
     currents_headlines: list[str] | None = None,
     big_picture_intro: str = "Systems beat single points.",
+    verification: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a minimal staged-issue payload that matches the fields the
     review module reads. We work from raw dicts rather than pydantic
@@ -58,16 +71,17 @@ def _make_issue_payload(
 
     def _story(hl: str, ix: int) -> dict[str, Any]:
         return {
-            "story_id": f"c_{'a' * 12}{ix:02x}",
+            "story_id": _story_id(ix),
             "headline": hl,
             "summary": f"Summary for {hl}.",
             "source_urls": [f"https://example.com/{ix}"],
             "prior_coverage_ref": None,
             "signal": "watch",
+            "verification": verification if ix == 1 else None,
         }
 
     return {
-        "schema_version": 5,
+        "schema_version": 6,
         "issue_number": None,
         "revision": 0,
         "date": date_str,
@@ -107,7 +121,47 @@ def _make_issue_payload(
     }
 
 
-_FAKE_LLM_RESPONSE = """\
+def _finding(
+    *,
+    story_id: str | None = None,
+    section: str | None = "big_picture",
+    kind: str = "story",
+    field: str = "summary",
+    criterion: str = "closing_shape",
+    severity: str = "minor",
+    quote: str = "Summary for BP story one.",
+    fix_kind: str = "text_edit",
+    instruction: str = "Close on a strategic question.",
+) -> dict[str, Any]:
+    """One raw finding dict as the reviewer LLM would emit it."""
+    target: dict[str, Any] = {"kind": kind, "field": field}
+    if kind == "story":
+        target["story_id"] = story_id or _story_id(1)
+    if section is not None:
+        target["section"] = section
+    return {
+        "target": target,
+        "criterion": criterion,
+        "severity": severity,
+        "quote": quote,
+        "fix_kind": fix_kind,
+        "instruction": instruction,
+    }
+
+
+def _fake_response(
+    findings: list[dict[str, Any]] | None = None,
+    summary: str = "Strong day; closing shapes hold across sections",
+) -> str:
+    """The reviewer's JSON response, as raw text."""
+    return json.dumps({"findings": findings or [], "summary": summary})
+
+
+_FAKE_LLM_RESPONSE = _fake_response()
+"""The default stubbed reviewer response: no findings -> green."""
+
+
+_REVIEW_MD_WITH_FRONTMATTER = """\
 ---
 verdict: green
 one_line: Strong day; closing shapes hold across sections
@@ -119,50 +173,419 @@ issue_shape: green
 
 **Verdict**: GREEN. The shape holds and the Pulse carries the day.
 
-## Shape
-Green is right; sections are within caps.
-
-## Pulse
-**Pick**: "Today's defining story"
-- Editorial fit: lands
-- Closing shape: plain take
-- Sourcing: thin but adequate
-- No concerns.
-
-## Big Picture
-**Intro**: "Systems beat single points."
-- Distinct register: yes
-- Closing shapes: 1 of 1 strategic questions
-
-### Stories
-1. "BP story one" -- in voice.
-
-## Hands-On
-**Intro**: "Verify before you deploy."
-- Distinct register: yes
-- Closing shapes: 1 of 1 imperative actions
-
-### Stories
-1. "HO story one" -- in voice.
-
-## Currents
-**Intro**: "Benchmarks are under pressure."
-- Aggregate direction: named yes
-- Closing shapes: 1 of 1 calibrated stakes
-
-### Stories
-1. "Currents story one" -- in voice.
-
-## Drift watch
-- No drift concerns this issue.
-
 ## Recommendations before release
 - Ratify as-is.
-
-## Ratification call
-**Editor recommends**: RATIFY
-**Arman's call**: ___
 """
+"""A rendered review document, used by the frontmatter-reader and
+artifact-write tests (which are about the Markdown surface, not the LLM)."""
+
+
+# ---------------------------------------------------------------------------
+# The threshold table.
+# ---------------------------------------------------------------------------
+
+class TestLoadThresholds:
+    """The table is the difference between "the editor found three things"
+    and "hold the issue". A malformed table must fail the stage closed, not
+    fall back to a default nobody ratified -- so every rejection below is
+    load-bearing."""
+
+    def test_shipped_table_loads(self) -> None:
+        """The committed config must parse. If it doesn't, every review in
+        production silently degrades to ``unavailable``."""
+        table = load_thresholds()
+        assert table["version"]
+        assert table["rules"]
+
+    def test_missing_file_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(ReviewThresholdError):
+            load_thresholds(tmp_path / "nope.yaml")
+
+    def test_unknown_severity_is_rejected(self, tmp_path: Path) -> None:
+        """A severity we don't recognise means a rule that would never fire.
+        Silently ignoring it would remove a hold nobody noticed removing."""
+        path = tmp_path / "t.yaml"
+        path.write_text(
+            "version: v1\ndefault_verdict: green\n"
+            "rules:\n  - verdict: red\n    when:\n      catastrophic: {min: 1}\n"
+        )
+        with pytest.raises(ReviewThresholdError, match="unknown severity"):
+            load_thresholds(path)
+
+    def test_machine_state_as_default_verdict_is_rejected(
+        self, tmp_path: Path
+    ) -> None:
+        """``unavailable`` is a code-authored state meaning "no judgement
+        was recorded". A table must not be able to make it an outcome."""
+        path = tmp_path / "t.yaml"
+        path.write_text(
+            "version: v1\ndefault_verdict: unavailable\n"
+            "rules:\n  - verdict: red\n    when:\n      blocking: {min: 1}\n"
+        )
+        with pytest.raises(ReviewThresholdError, match="default_verdict"):
+            load_thresholds(path)
+
+    def test_zero_minimum_is_rejected(self, tmp_path: Path) -> None:
+        """A rule with ``min: 0`` fires on every issue ever published."""
+        path = tmp_path / "t.yaml"
+        path.write_text(
+            "version: v1\ndefault_verdict: green\n"
+            "rules:\n  - verdict: red\n    when:\n      major: {min: 0}\n"
+        )
+        with pytest.raises(ReviewThresholdError, match=">= 1"):
+            load_thresholds(path)
+
+    def test_missing_version_is_rejected(self, tmp_path: Path) -> None:
+        """A verdict must be attributable to a specific ratified table."""
+        path = tmp_path / "t.yaml"
+        path.write_text(
+            "default_verdict: green\n"
+            "rules:\n  - verdict: red\n    when:\n      blocking: {min: 1}\n"
+        )
+        with pytest.raises(ReviewThresholdError, match="version"):
+            load_thresholds(path)
+
+    def test_empty_rules_is_rejected(self, tmp_path: Path) -> None:
+        path = tmp_path / "t.yaml"
+        path.write_text("version: v1\ndefault_verdict: green\nrules: []\n")
+        with pytest.raises(ReviewThresholdError, match="rules"):
+            load_thresholds(path)
+
+
+class TestComputeVerdict:
+    """The ratified policy, exercised against the SHIPPED table: any
+    blocking -> red; three majors -> red; one major or one minor -> amber;
+    notes only -> green."""
+
+    @pytest.fixture
+    def table(self) -> dict[str, Any]:
+        return load_thresholds()
+
+    @pytest.mark.parametrize(
+        "counts,expected",
+        [
+            ({"blocking": 1}, "red"),
+            ({"major": 3}, "red"),
+            ({"major": 1}, "amber"),
+            ({"minor": 1}, "amber"),
+            ({"note": 9}, "green"),
+            ({}, "green"),
+        ],
+    )
+    def test_policy(
+        self, table: dict[str, Any], counts: dict[str, int], expected: str
+    ) -> None:
+        verdict, _reason = compute_verdict(counts, table)
+        assert verdict == expected
+
+    def test_blocking_outranks_a_matching_amber_rule(
+        self, table: dict[str, Any]
+    ) -> None:
+        """Rule ORDER is the mechanism. One blocking finding alongside five
+        minors must still be red -- if the amber rule were consulted first,
+        a liability finding would ship with a note."""
+        verdict, _ = compute_verdict({"blocking": 1, "minor": 5}, table)
+        assert verdict == "red"
+
+    def test_notes_never_escalate(self, table: dict[str, Any]) -> None:
+        """Notes are observations. Twenty of them is still a clean issue the
+        editor had things to say about."""
+        verdict, _ = compute_verdict({"note": 20}, table)
+        assert verdict == "green"
+
+
+# ---------------------------------------------------------------------------
+# The verbatim-quote filter -- the deterministic misfire kill.
+# ---------------------------------------------------------------------------
+
+class TestQuoteMatching:
+    """``quote_present`` decides whether a finding has evidence. Too strict
+    and we discard real complaints over a straightened apostrophe; too loose
+    and a hallucinated quote passes."""
+
+    def test_exact_span_matches(self) -> None:
+        assert quote_present("beat single points", "Systems beat single points.")
+
+    def test_rewrapped_whitespace_still_matches(self) -> None:
+        assert quote_present("beat  single\npoints", "Systems beat single points.")
+
+    def test_curly_apostrophe_matches_straight(self) -> None:
+        assert quote_present("today’s pick", "The story is today's pick.")
+
+    def test_absent_text_does_not_match(self) -> None:
+        assert not quote_present(
+            "no independent replication yet", "Systems beat single points."
+        )
+
+    def test_empty_quote_never_matches(self) -> None:
+        """A finding with nothing to point at has no evidence."""
+        assert not quote_present("", "Systems beat single points.")
+
+
+class TestFindingFilter:
+    """The reviewer's two documented misfire classes (2026-07-04) were both
+    complaints about text that was not in the issue. These tests pin the
+    check that ends that class of error."""
+
+    def _run(
+        self, tmp_data_root: Path, findings: list[dict[str, Any]]
+    ) -> ReviewArtifact:
+        date = _dt.date(2026, 5, 29)
+        target = paths.staging_dir(date)
+        target.mkdir(parents=True)
+        (target / "issue.json").write_text(
+            json.dumps(_make_issue_payload(date_str=date.isoformat()))
+        )
+        with patch(
+            "src.review._call_review_llm",
+            return_value=_fake_response(findings),
+        ):
+            return run_review(date=date)
+
+    def test_hallucinated_quote_is_dropped(self, tmp_data_root: Path) -> None:
+        artifact = self._run(tmp_data_root, [
+            _finding(quote="no independent replication yet"),
+        ])
+        assert artifact.report is not None
+        assert artifact.report.findings == []
+        assert len(artifact.report.dropped_findings) == 1
+
+    def test_dropped_finding_cannot_move_the_verdict(
+        self, tmp_data_root: Path
+    ) -> None:
+        """The whole point: a BLOCKING finding whose quote is not in the
+        issue must not hold the issue. Evidence first, then severity."""
+        artifact = self._run(tmp_data_root, [
+            _finding(
+                severity="blocking",
+                criterion="reputational_liability",
+                quote="Acme Bank was found liable for fraud",
+            ),
+        ])
+        assert artifact.verdict == "green"
+
+    def test_real_quote_survives_the_filter(self, tmp_data_root: Path) -> None:
+        artifact = self._run(tmp_data_root, [
+            _finding(quote="Summary for BP story one."),
+        ])
+        assert artifact.report is not None
+        assert len(artifact.report.findings) == 1
+        assert artifact.verdict == "amber"
+
+    def test_finding_against_an_unknown_story_is_dropped(
+        self, tmp_data_root: Path
+    ) -> None:
+        """A target the issue does not contain cannot be checked or acted
+        on -- and a review that names a story we never published is a
+        review of some other issue."""
+        artifact = self._run(tmp_data_root, [
+            _finding(story_id="c_" + "f" * 12, quote="Summary for BP story one."),
+        ])
+        assert artifact.report is not None
+        assert artifact.report.findings == []
+        assert len(artifact.report.dropped_findings) == 1
+
+    def test_malformed_finding_is_skipped_without_losing_the_others(
+        self, tmp_data_root: Path
+    ) -> None:
+        """One bad entry must not cost the review its good ones."""
+        artifact = self._run(tmp_data_root, [
+            {"target": {"kind": "story"}, "criterion": "voice_adherence"},
+            _finding(quote="Summary for BP story one."),
+        ])
+        assert artifact.report is not None
+        assert len(artifact.report.findings) == 1
+
+    def test_section_finding_resolves_against_the_intro(
+        self, tmp_data_root: Path
+    ) -> None:
+        artifact = self._run(tmp_data_root, [
+            _finding(
+                kind="section", section="big_picture", field="intro_lead",
+                quote="Systems beat single points.",
+                criterion="section_intro", severity="major",
+            ),
+        ])
+        assert artifact.report is not None
+        assert len(artifact.report.findings) == 1
+        assert artifact.verdict == "amber"
+
+    def test_finding_ids_are_assigned_by_code_and_unique(
+        self, tmp_data_root: Path
+    ) -> None:
+        """``RevisionChange.finding_ids`` references these. A model-authored
+        duplicate would attribute an edit to the wrong concern."""
+        artifact = self._run(tmp_data_root, [
+            _finding(quote="Summary for BP story one."),
+            _finding(quote="Summary for HO story one.", story_id=_story_id(10),
+                     section="hands_on"),
+            _finding(quote="not in the issue at all"),
+        ])
+        assert artifact.report is not None
+        ids = [f.finding_id for f in artifact.report.findings]
+        ids += [f.finding_id for f in artifact.report.dropped_findings]
+        assert len(ids) == len(set(ids))
+        assert all(i.startswith("f") for i in ids)
+
+
+# ---------------------------------------------------------------------------
+# Contract invariants on the new models.
+# ---------------------------------------------------------------------------
+
+class TestReviewContractInvariants:
+    """The invariants this work added to src/models.py. Each one rejects a
+    shape that would be uninterpretable downstream -- pydantic's own type
+    checking would let all of them through."""
+
+    def test_story_target_requires_a_story_id(self) -> None:
+        """A story finding that names no story cannot be resolved to text on
+        disk, which is exactly the misfire class the shape exists to kill."""
+        from pydantic import ValidationError
+        from src.models import ReviewTarget
+
+        with pytest.raises(ValidationError, match="requires story_id"):
+            ReviewTarget(kind="story", field="summary")
+
+    def test_section_target_cannot_point_at_a_headline(self) -> None:
+        from pydantic import ValidationError
+        from src.models import ReviewTarget
+
+        with pytest.raises(ValidationError, match="intro_lead"):
+            ReviewTarget(kind="section", section="hands_on", field="headline")
+
+    def test_section_target_must_not_carry_a_story_id(self) -> None:
+        from pydantic import ValidationError
+        from src.models import ReviewTarget
+
+        with pytest.raises(ValidationError, match="must not carry a story_id"):
+            ReviewTarget(
+                kind="section", section="hands_on", field="intro_lead",
+                story_id=_story_id(1),
+            )
+
+    def test_machine_state_cannot_carry_findings(self) -> None:
+        """``unavailable`` means no judgement was recorded. Findings attached
+        to one would let a reader believe a review happened."""
+        from pydantic import ValidationError
+        from src.models import ReviewFinding, ReviewReport, ReviewTarget
+
+        finding = ReviewFinding(
+            finding_id="f001",
+            target=ReviewTarget(
+                kind="story", story_id=_story_id(1), field="summary",
+            ),
+            criterion="voice_adherence", severity="minor",
+            quote="text", fix_kind="text_edit", instruction="fix it",
+        )
+        with pytest.raises(ValidationError, match="empty findings"):
+            ReviewReport(
+                generated_at=_dt.datetime(2026, 5, 29, tzinfo=_dt.timezone.utc),
+                computed_verdict="unavailable",
+                findings=[finding],
+                prompt_version="v1.0",
+            )
+
+    def test_duplicate_finding_ids_are_rejected(self) -> None:
+        """``RevisionChange.finding_ids`` references these; a duplicate would
+        attribute an edit to the wrong concern."""
+        from pydantic import ValidationError
+        from src.models import ReviewFinding, ReviewReport, ReviewTarget
+
+        def _f() -> ReviewFinding:
+            return ReviewFinding(
+                finding_id="f001",
+                target=ReviewTarget(
+                    kind="story", story_id=_story_id(1), field="summary",
+                ),
+                criterion="voice_adherence", severity="minor",
+                quote="text", fix_kind="text_edit", instruction="fix it",
+            )
+
+        with pytest.raises(ValidationError, match="duplicate finding_id"):
+            ReviewReport(
+                generated_at=_dt.datetime(2026, 5, 29, tzinfo=_dt.timezone.utc),
+                computed_verdict="amber",
+                findings=[_f(), _f()],
+                prompt_version="v1.0",
+            )
+
+
+# ---------------------------------------------------------------------------
+# The model split.
+# ---------------------------------------------------------------------------
+
+class TestReviewModelSplit:
+    """A reviewer running the same model as the writer is measurably softer
+    on it. The env plumbing that lets them differ is worth pinning, as is
+    the restore -- a leaked LLM_MODEL would silently re-point every later
+    stage in the same process."""
+
+    def test_review_model_overrides_llm_model_for_the_call(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("LLM_MODEL", "writer-model")
+        monkeypatch.setenv("REVIEW_MODEL", "judge-model")
+        seen: dict[str, Any] = {}
+
+        def _fake(prompt: str, *, temperature: float, max_tokens: int) -> str:
+            seen["model"] = os.environ["LLM_MODEL"]
+            seen["temperature"] = temperature
+            return "{}"
+
+        monkeypatch.setattr("src.rank._llm_call", _fake)
+        review_mod._call_review_llm("prompt", timeout=5.0)
+        assert seen["model"] == "judge-model"
+
+    def test_llm_model_is_restored_after_the_call(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("LLM_MODEL", "writer-model")
+        monkeypatch.setenv("REVIEW_MODEL", "judge-model")
+        monkeypatch.setattr(
+            "src.rank._llm_call",
+            lambda *a, **k: "{}",
+        )
+        review_mod._call_review_llm("prompt", timeout=5.0)
+        assert os.environ["LLM_MODEL"] == "writer-model"
+
+    def test_falls_back_to_llm_model_when_unset(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("LLM_MODEL", "writer-model")
+        monkeypatch.delenv("REVIEW_MODEL", raising=False)
+        assert review_mod._resolve_review_model() == "writer-model"
+
+    def test_temperature_is_zero(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The verdict is computed downstream, so run-to-run variance in the
+        findings buys nothing and costs verdict stability."""
+        monkeypatch.setenv("LLM_MODEL", "writer-model")
+        seen: dict[str, Any] = {}
+
+        def _fake(prompt: str, *, temperature: float, max_tokens: int) -> str:
+            seen["temperature"] = temperature
+            return "{}"
+
+        monkeypatch.setattr("src.rank._llm_call", _fake)
+        review_mod._call_review_llm("prompt", timeout=5.0)
+        assert seen["temperature"] == 0.0
+
+    def test_recorded_model_is_the_reviewer_not_the_writer(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("LLM_MODEL", "writer-model")
+        monkeypatch.setenv("REVIEW_MODEL", "judge-model")
+        date = _dt.date(2026, 5, 29)
+        target = paths.staging_dir(date)
+        target.mkdir(parents=True)
+        (target / "issue.json").write_text(
+            json.dumps(_make_issue_payload(date_str=date.isoformat()))
+        )
+        with patch("src.review._call_review_llm", return_value=_FAKE_LLM_RESPONSE):
+            artifact = run_review(date=date)
+        assert artifact.report is not None
+        assert artifact.report.llm_model == "judge-model"
 
 
 # ---------------------------------------------------------------------------
@@ -171,9 +594,10 @@ Green is right; sections are within caps.
 
 class TestBuildReviewPrompt:
     """Pins what the prompt actually contains -- the LLM needs the staged
-    issue's headlines, the Pulse pick, and any prior-issue context.
-    Without these the editor can't do its job; with too much, we burn
-    tokens on noise. The shape is load-bearing."""
+    issue's headlines, the Pulse pick, each story's id (so findings can
+    target it), the fact-check block, and any prior-issue context. Without
+    these the editor can't do its job; with too much, we burn tokens on
+    noise. The shape is load-bearing."""
 
     def test_includes_staged_headline(self) -> None:
         issue = _make_issue_payload(
@@ -195,6 +619,46 @@ class TestBuildReviewPrompt:
         )
         prompt = _build_review_prompt(issue, [])
         assert "Today the regulators moved first." in prompt
+
+    def test_includes_story_ids(self) -> None:
+        """A finding targets a story by id. Without the id in the prompt the
+        model cannot produce a resolvable target, and every finding would be
+        dropped by the filter."""
+        issue = _make_issue_payload()
+        prompt = _build_review_prompt(issue, [])
+        assert f"story_id: {_story_id(1)}" in prompt
+
+    def test_includes_flagged_verification_claims(self) -> None:
+        """The editor judges the prose knowing what the fact-checker found.
+        A contradicted claim the reviewer cannot see is a contradicted claim
+        that ships."""
+        issue = _make_issue_payload(verification={
+            "schema_version": 1,
+            "story_id": _story_id(1),
+            "prompt_version": "v0.4",
+            "claims": [{
+                "schema_version": 1,
+                "claim": "The model runs on a single H100",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "runs on a single H100",
+                "source_span": "requires an eight-GPU node",
+                "note": "source says otherwise",
+            }],
+            "has_contradiction": True,
+            "has_unsupported": False,
+            "headline_flagged": False,
+        })
+        prompt = _build_review_prompt(issue, [])
+        assert "contradicted" in prompt
+        assert "requires an eight-GPU node" in prompt
+
+    def test_unverified_story_says_nothing_about_verification(self) -> None:
+        """Absent verification is NOT a clean bill of health. Rendering one
+        would tell the editor a check happened that did not."""
+        issue = _make_issue_payload()
+        prompt = _build_review_prompt(issue, [])
+        assert "verification:" not in prompt
 
     def test_no_prior_issues_signals_skip(self) -> None:
         issue = _make_issue_payload()
@@ -223,6 +687,17 @@ class TestBuildReviewPrompt:
         prompt = _build_review_prompt(issue, priors)
         assert "Only prior" in prompt
         assert "Skip the drift-watch comparison" not in prompt
+
+    def test_asks_for_findings_before_summary(self) -> None:
+        """Key order is deliberate: the model commits to evidence before it
+        characterises the day, not the other way round."""
+        prompt = _build_review_prompt(_make_issue_payload(), [])
+        assert prompt.index('"findings"') < prompt.index('"summary"')
+
+    def test_names_the_reputational_liability_criterion(self) -> None:
+        prompt = _build_review_prompt(_make_issue_payload(), [])
+        assert "reputational_liability" in prompt
+        assert "INVESTMENT ADVICE" in prompt
 
 
 # ---------------------------------------------------------------------------
@@ -278,14 +753,94 @@ class TestLoadRecentReleasedIssues:
 
 
 # ---------------------------------------------------------------------------
+# review.md rendering -- code writes it, from the report.
+# ---------------------------------------------------------------------------
+
+class TestRenderReviewMarkdown:
+    """The rendered document is what Arman reads at 06:00. It must carry the
+    evidence next to the complaint and collect the actionable items in one
+    place."""
+
+    def _report(self, findings: list[dict[str, Any]]) -> Any:
+        from src.review import _resolve_and_filter_findings
+        from src.models import ReviewReport
+
+        issue = _make_issue_payload()
+        kept, dropped, _ = _resolve_and_filter_findings(findings, issue)
+        return ReviewReport(
+            generated_at=_dt.datetime(2026, 5, 29, tzinfo=_dt.timezone.utc),
+            computed_verdict="amber",
+            one_line="one major, one note",
+            findings=kept,
+            dropped_findings=dropped,
+            prompt_version=REVIEW_PROMPT_VERSION,
+            thresholds_version="v1.0-test",
+        ), issue
+
+    def test_quote_appears_next_to_the_finding(self) -> None:
+        report, issue = self._report([
+            _finding(quote="Summary for BP story one.", severity="major"),
+        ])
+        md = render_review_markdown(report, _dt.date(2026, 5, 29), issue)
+        assert "Summary for BP story one." in md
+
+    def test_findings_are_grouped_under_their_section(self) -> None:
+        report, issue = self._report([
+            _finding(quote="Summary for BP story one.", severity="major"),
+            _finding(quote="Summary for HO story one.", story_id=_story_id(10),
+                     section="hands_on", severity="minor"),
+        ])
+        md = render_review_markdown(report, _dt.date(2026, 5, 29), issue)
+        assert "## The Big Picture" in md
+        assert "## Hands-On" in md
+
+    def test_recommendations_exclude_notes(self) -> None:
+        """A note is an observation. Listing it under "before release" would
+        train the reader to skim the list that exists to be acted on."""
+        report, issue = self._report([
+            _finding(quote="Summary for BP story one.", severity="note",
+                     instruction="Worth watching the pattern tomorrow."),
+        ])
+        md = render_review_markdown(report, _dt.date(2026, 5, 29), issue)
+        recommendations = md.split("## Recommendations before release")[1]
+        assert "Ratify as-is." in recommendations
+        assert "Worth watching the pattern tomorrow." not in recommendations
+
+    def test_recommendations_list_actionable_findings(self) -> None:
+        report, issue = self._report([
+            _finding(quote="Summary for BP story one.", severity="major",
+                     instruction="Close on a strategic question."),
+        ])
+        md = render_review_markdown(report, _dt.date(2026, 5, 29), issue)
+        recommendations = md.split("## Recommendations before release")[1]
+        assert "Close on a strategic question." in recommendations
+
+    def test_dropped_findings_are_surfaced_separately(self) -> None:
+        """The reviewer's misfire rate is a number worth watching, and it
+        was invisible before v1.0."""
+        report, issue = self._report([
+            _finding(quote="text that is not in the issue"),
+        ])
+        md = render_review_markdown(report, _dt.date(2026, 5, 29), issue)
+        assert "Dropped findings" in md
+        assert "text that is not in the issue" in md
+
+    def test_names_the_story_not_the_cluster_id(self) -> None:
+        report, issue = self._report([
+            _finding(quote="Summary for BP story one.", severity="major"),
+        ])
+        md = render_review_markdown(report, _dt.date(2026, 5, 29), issue)
+        assert "BP story one" in md
+
+
+# ---------------------------------------------------------------------------
 # Frontmatter parsing.
 # ---------------------------------------------------------------------------
 
 class TestExtractFrontmatterSummary:
-    """The terminal one-line and the downstream parsers both depend on
-    pulling ``verdict`` + ``one_line`` cleanly from the LLM's response.
-    If this is wrong, the pipeline prints garbage even when the LLM
-    nailed the review.
+    """The terminal one-line and the downstream parsers (``src/gate.py``)
+    both depend on pulling ``verdict`` + ``one_line`` cleanly out of
+    review.md.
 
     The parser is strict on purpose: anything it cannot read with
     certainty returns ``unparseable``, never a verdict that looks like a
@@ -293,7 +848,9 @@ class TestExtractFrontmatterSummary:
     apart from "we could not read what the editor said"."""
 
     def test_parses_valid_frontmatter(self) -> None:
-        verdict, one_line = _extract_frontmatter_summary(_FAKE_LLM_RESPONSE)
+        verdict, one_line = _extract_frontmatter_summary(
+            _REVIEW_MD_WITH_FRONTMATTER
+        )
         assert verdict == "green"
         assert "Strong day" in one_line
 
@@ -303,8 +860,8 @@ class TestExtractFrontmatterSummary:
         assert verdict == "unparseable"
         assert "maybe" in one_line
 
-    def test_code_reserved_verdict_from_llm_is_unparseable(self) -> None:
-        # The model does not get to claim a machine state it doesn't own.
+    def test_code_reserved_verdict_in_the_block_is_unparseable(self) -> None:
+        # Only the three editorial tokens are readable as a judgement.
         for token in ("unavailable", "not_run", "unparseable"):
             raw = f"---\nverdict: {token}\none_line: ok\n---\n\nbody"
             verdict, _ = _extract_frontmatter_summary(raw)
@@ -344,7 +901,7 @@ class TestExtractFrontmatterSummary:
         assert verdict == "unparseable"
 
     def test_strips_code_fence_wrapper(self) -> None:
-        raw = "```markdown\n" + _FAKE_LLM_RESPONSE + "\n```"
+        raw = "```markdown\n" + _REVIEW_MD_WITH_FRONTMATTER + "\n```"
         verdict, _ = _extract_frontmatter_summary(raw)
         assert verdict == "green"
 
@@ -354,14 +911,14 @@ class TestExtractFrontmatterSummary:
 # ---------------------------------------------------------------------------
 
 class TestWriteReviewArtifact:
-    """The on-disk format is what Arman reads and what downstream tooling
+    """The on-disk format is what Arman reads and what ``src/gate.py``
     parses. If the path is wrong or the frontmatter is missing keys, the
     rest of the contract collapses."""
 
     def test_writes_to_correct_path(self, tmp_data_root: Path) -> None:
         date = _dt.date(2026, 5, 29)
         out = _write_review_artifact(
-            date, _FAKE_LLM_RESPONSE,
+            date, _REVIEW_MD_WITH_FRONTMATTER,
             llm_metadata={"llm_model": "claude-opus-4-7"},
             verdict="green",
             one_line="strong",
@@ -378,7 +935,7 @@ class TestWriteReviewArtifact:
     ) -> None:
         date = _dt.date(2026, 5, 29)
         path = _write_review_artifact(
-            date, _FAKE_LLM_RESPONSE,
+            date, _REVIEW_MD_WITH_FRONTMATTER,
             llm_metadata={"llm_model": "claude-opus-4-7"},
             verdict="green",
             one_line="strong",
@@ -393,15 +950,15 @@ class TestWriteReviewArtifact:
         assert "issue_date: 2026-05-29" in content
         assert f"issue_sha256: {'a' * 64}" in content
 
-    def test_code_authored_verdict_replaces_the_llms(
+    def test_code_authored_verdict_replaces_any_in_the_body(
         self, tmp_data_root: Path,
     ) -> None:
-        """The file must state the verdict the caller decided on, not the
-        one the model typed -- otherwise a strict-parse rejection would be
+        """The file must state the verdict the caller decided on, not one
+        found in the body -- otherwise a strict-parse rejection would be
         recorded on disk as a clean green."""
         date = _dt.date(2026, 5, 29)
         path = _write_review_artifact(
-            date, _FAKE_LLM_RESPONSE,  # its frontmatter says verdict: green
+            date, _REVIEW_MD_WITH_FRONTMATTER,  # its frontmatter says green
             llm_metadata={"llm_model": "claude-opus-4-7"},
             verdict="unparseable",
             one_line="<verdict token not recognised>",
@@ -412,17 +969,15 @@ class TestWriteReviewArtifact:
         fm_lines = [ln.strip() for ln in frontmatter.splitlines()]
         assert "verdict: unparseable" in fm_lines
         assert "verdict: green" not in fm_lines
-        # The model's own claim survives for the audit trail, and its prose
-        # is untouched.
+        # The disagreement survives for the audit trail.
         assert "llm_reported_verdict: green" in frontmatter
-        assert "**Verdict**: GREEN." in content
 
     def test_frontmatter_has_exactly_one_verdict_key(
         self, tmp_data_root: Path,
     ) -> None:
         date = _dt.date(2026, 5, 29)
         path = _write_review_artifact(
-            date, _FAKE_LLM_RESPONSE,
+            date, _REVIEW_MD_WITH_FRONTMATTER,
             llm_metadata={"llm_model": "claude-opus-4-7"},
             verdict="amber",
             one_line="notes",
@@ -439,12 +994,11 @@ class TestWriteReviewArtifact:
         self, tmp_data_root: Path,
     ) -> None:
         """Round-trip: whatever we write must read back through the strict
-        parser as the same verdict, for every token in the vocabulary the
-        LLM can produce."""
+        parser as the same verdict, for every editorial token."""
         date = _dt.date(2026, 5, 29)
         for token in ("green", "amber", "red"):
             path = _write_review_artifact(
-                date, _FAKE_LLM_RESPONSE,
+                date, _REVIEW_MD_WITH_FRONTMATTER,
                 llm_metadata={"llm_model": "claude-opus-4-7"},
                 verdict=token,
                 one_line="round trip",
@@ -455,7 +1009,7 @@ class TestWriteReviewArtifact:
             )
             assert reparsed == token
 
-    def test_missing_llm_frontmatter_is_synthesised(
+    def test_body_without_frontmatter_gets_one_synthesised(
         self, tmp_data_root: Path,
     ) -> None:
         date = _dt.date(2026, 5, 29)
@@ -468,8 +1022,24 @@ class TestWriteReviewArtifact:
         )
         content = path.read_text(encoding="utf-8")
         assert content.startswith("---\nverdict: unparseable\n")
-        # The model's output is preserved as the body rather than dropped.
         assert "No frontmatter at all." in content
+
+    def test_frontmatter_stays_flat_scalars(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """``src/gate.py`` parses this block with a hand-rolled ``key:
+        value`` splitter that has no notion of nesting. A nested mapping
+        would read back as stray top-level keys."""
+        date = _dt.date(2026, 5, 29)
+        path = _write_review_artifact(
+            date, _REVIEW_MD_WITH_FRONTMATTER,
+            llm_metadata={"llm_model": "m"},
+            verdict="green", one_line="ok", issue_date="2026-05-29",
+            extra_frontmatter={"findings_by_severity": "blocking=0 major=1"},
+        )
+        frontmatter = path.read_text(encoding="utf-8").split("---", 2)[1]
+        for line in frontmatter.strip().splitlines():
+            assert not line.startswith(" "), f"nested frontmatter line: {line!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -487,7 +1057,7 @@ class TestRunReview:
             json.dumps(_make_issue_payload(date_str=date.isoformat()))
         )
 
-    def test_happy_path_writes_review_md_and_returns_verdict(
+    def test_happy_path_writes_both_artifacts(
         self, tmp_data_root: Path,
     ) -> None:
         date = _dt.date(2026, 5, 29)
@@ -497,6 +1067,49 @@ class TestRunReview:
         assert artifact.verdict == "green"
         assert artifact.path == paths.staging_dir(date) / "review.md"
         assert artifact.path.exists()
+        assert (paths.staging_dir(date) / "review.json").exists()
+
+    def test_review_json_reparses_as_a_report(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """``src/revise.py`` reads this file. If it does not validate, the
+        revision engine refuses to act on a review that was actually fine."""
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        with patch(
+            "src.review._call_review_llm",
+            return_value=_fake_response([
+                _finding(quote="Summary for BP story one.")
+            ]),
+        ):
+            run_review(date=date)
+        report = review_mod.read_report(date)
+        assert report is not None
+        assert len(report.findings) == 1
+
+    def test_verdict_agrees_across_artifact_json_and_markdown(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Three surfaces, one value. A consumer reading any of them must
+        see the same thing."""
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        with patch(
+            "src.review._call_review_llm",
+            return_value=_fake_response([
+                _finding(quote="Summary for BP story one.", severity="blocking",
+                         criterion="reputational_liability"),
+            ]),
+        ):
+            artifact = run_review(date=date)
+        on_disk, _ = _extract_frontmatter_summary(
+            artifact.path.read_text(encoding="utf-8")
+        )
+        report = review_mod.read_report(date)
+        assert report is not None
+        assert artifact.verdict == "red"
+        assert on_disk == "red"
+        assert report.computed_verdict == "red"
 
     def test_missing_staged_issue_writes_unavailable(
         self, tmp_data_root: Path,
@@ -514,6 +1127,34 @@ class TestRunReview:
         # in tests/test_gate.py.
         assert "issue_sha256: unknown" in content
 
+    def test_malformed_threshold_table_writes_unavailable(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Fail closed. A verdict computed under a table we could not read
+        is not a verdict -- and must never degrade to green."""
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        with patch(
+            "src.review.load_thresholds",
+            side_effect=ReviewThresholdError("bad table"),
+        ):
+            artifact = run_review(date=date)
+        assert artifact.verdict == "unavailable"
+        assert "bad table" in artifact.path.read_text(encoding="utf-8")
+
+    def test_malformed_threshold_table_spends_no_llm_call(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """No Token Wasted: the answer would be discarded, so don't buy it."""
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        with patch(
+            "src.review.load_thresholds",
+            side_effect=ReviewThresholdError("bad table"),
+        ), patch("src.review._call_review_llm") as call:
+            run_review(date=date)
+        call.assert_not_called()
+
     def test_llm_failure_writes_unavailable_without_raising(
         self, tmp_data_root: Path,
     ) -> None:
@@ -526,7 +1167,9 @@ class TestRunReview:
         with patch("src.review._call_review_llm", side_effect=_boom):
             artifact = run_review(date=date)
         assert artifact.verdict == "unavailable"
-        assert "simulated transport failure" in artifact.path.read_text(encoding="utf-8")
+        assert "simulated transport failure" in artifact.path.read_text(
+            encoding="utf-8"
+        )
 
     def test_dry_run_writes_nothing(self, tmp_data_root: Path) -> None:
         date = _dt.date(2026, 5, 29)
@@ -580,17 +1223,34 @@ class TestRunReview:
         assert artifact.verdict == "unparseable"
         assert "verdict: unparseable" in artifact.path.read_text(encoding="utf-8")
 
-    def test_artifact_and_file_agree_on_verdict(
+    def test_unparseable_output_is_retried_once(
         self, tmp_data_root: Path,
     ) -> None:
+        """One corrective retry, then stop. A model that returns prose twice
+        will not return JSON on the third ask."""
         date = _dt.date(2026, 5, 29)
         self._stage_issue(date)
-        with patch("src.review._call_review_llm", return_value=_FAKE_LLM_RESPONSE):
+        responses = ["not json at all", _FAKE_LLM_RESPONSE]
+        with patch(
+            "src.review._call_review_llm",
+            side_effect=responses,
+        ):
             artifact = run_review(date=date)
-        on_disk, _ = _extract_frontmatter_summary(
-            artifact.path.read_text(encoding="utf-8")
-        )
-        assert on_disk == artifact.verdict
+        assert artifact.verdict == "green"
+
+    def test_empty_findings_list_is_a_successful_green(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """"Nothing to flag" is a real editorial answer and must not be
+        confused with a broken response."""
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        with patch(
+            "src.review._call_review_llm",
+            return_value='{"findings": [], "summary": "clean day"}',
+        ):
+            artifact = run_review(date=date)
+        assert artifact.verdict == "green"
 
     def test_failed_unavailable_write_raises(
         self, tmp_data_root: Path,
@@ -723,8 +1383,6 @@ class TestAdvisoryGuardVerify:
     def test_unexpected_raise_in_verify_returns_ok_true(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import datetime as _dt
-
         def _boom(_date: _dt.date) -> str:
             raise RuntimeError("completely unexpected crash")
 

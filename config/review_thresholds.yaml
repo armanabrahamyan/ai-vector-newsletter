@@ -1,0 +1,72 @@
+# config/review_thresholds.yaml -- how finding severities become a verdict.
+#
+# The editorial reviewer (src/review.py, review prompt v1.0+) emits
+# FINDINGS, not a verdict. This table is what turns those findings into
+# green / amber / red. Code applies it; the LLM never sees it.
+#
+# Why the split. A model asked for both the evidence and the conclusion can
+# quietly move the conclusion without moving the evidence -- and nobody
+# reviewing the artifact a week later can tell which happened. With the
+# table outside the prompt, a verdict is re-derivable from `findings` plus
+# this file, and a change in publishing standards is a diff here rather
+# than a prompt rewrite.
+#
+# Decision rights (docs/internal/TEAM.md): LLM Engineer proposes; Editor +
+# Eval Engineer review; Arman ratifies. Moving a number here moves what
+# gets held, so it moves only on ratification.
+#
+# Fail-closed: src/review.py PARSES AND VALIDATES this file on every run.
+# A malformed table does not fall back to a default -- it yields
+# `verdict: unavailable`, because a verdict computed under a table we could
+# not read is not a verdict.
+
+schema_version: 1
+version: "v1.0-2026-08-02"
+
+# ---------------------------------------------------------------------------
+# Rules, evaluated IN ORDER. The first rule whose condition holds wins;
+# when none holds, `default_verdict` applies.
+#
+# A rule fires when EVERY severity named in `when` meets its `min` count,
+# counting only findings that survived the verbatim-quote check (dropped
+# findings never reach the verdict). Severity vocabulary:
+# blocking | major | minor | note.
+#
+# Ordering is load-bearing: the red rules come first so a blocking finding
+# cannot be talked down by an amber rule that also matches.
+# ---------------------------------------------------------------------------
+
+rules:
+  - verdict: red
+    when:
+      blocking: {min: 1}
+    reason: >-
+      A blocking finding is reputational or liability exposure, or a
+      factual claim the issue cannot stand behind. One is enough; there is
+      no volume at which it becomes acceptable.
+
+  - verdict: red
+    when:
+      major: {min: 3}
+    reason: >-
+      Three substantive editorial defects is not three fixes, it is a draft
+      that did not come out right. Re-summarise beats patching.
+
+  - verdict: amber
+    when:
+      major: {min: 1}
+    reason: >-
+      A reader would notice this. Ratifiable with notes, and worth a look
+      before it ships.
+
+  - verdict: amber
+    when:
+      minor: {min: 1}
+    reason: >-
+      Real improvements exist. Amber is "read the notes", not "hold" -- it
+      surfaces them without implying the issue is broken.
+
+default_verdict: green
+# Reached when the findings are notes only, or there are none. Notes are
+# observations, not defects: an issue carrying five notes and nothing else
+# is a clean issue that the editor had things to say about.

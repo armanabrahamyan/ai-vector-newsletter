@@ -1,0 +1,308 @@
+name: Revise command
+
+# ChatOps entry point for the auto-publish gate's revise loop (Phase 2).
+# A `/revise <instruction>` comment on an open release PR rebuilds that
+# day's draft with a targeted fix, in AIV_REVISE_MODE=live (src/revise.py),
+# then commits the result back onto the same branch for re-review.
+#
+# This workflow NEVER runs for anyone but the repo owner. It is a public
+# repo -- any GitHub user can comment on a PR -- so the author-association
+# guard below is load-bearing, not advisory. It is enforced at the job
+# `if:` level so that no step, no checkout, no code of any kind executes
+# for a comment that fails it.
+#
+# The one guard that cannot live in the job `if:` (no GitHub Actions
+# context expression exposes a PR's head branch on an issue_comment event)
+# is "head branch starts with release/". That check runs as the very
+# first step -- before the reaction, before checkout, before anything else
+# -- and hard-fails the job if it doesn't hold.
+#
+# Untrusted input handling: the comment body is attacker-controlled (any
+# GitHub user can write it). It is NEVER interpolated into a shell command
+# string. It travels from the event payload into a step `env:` var (the
+# GitHub-documented mitigation for untrusted input in `run:` blocks), and
+# from there into `aiv revise` via `subprocess.run([...])` with an argument
+# list -- never through a shell at all.
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# One /revise at a time per PR: a second comment queues behind the first
+# rather than racing it for the same branch (mirrors daily.yml's
+# cancel-in-progress: false rationale -- avoid overlapping pushes to the
+# same ref).
+concurrency:
+  group: revise-command-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  revise:
+    # Load-bearing security guard. All three conditions must hold before
+    # GitHub Actions schedules a single step. `author_association == 'OWNER'`
+    # is the hard stop against arbitrary public commenters; the other two
+    # keep the job from firing on unrelated comments (issues, non-/revise
+    # PR chatter).
+    # `state == 'open'` restricts /revise to unmerged PRs: pre-merge branch
+    # edits are ordinary draft revisions; post-merge corrections go through
+    # the documented re-release path (revision bump), never this command.
+    if: >
+      github.event.issue.pull_request != null &&
+      github.event.issue.state == 'open' &&
+      startsWith(github.event.comment.body, '/revise') &&
+      github.event.comment.author_association == 'OWNER'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+      LLM_ENDPOINT: ${{ vars.LLM_ENDPOINT }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      # Resolve the PR head branch. Needed before anything else runs, and
+      # not available as a bare context expression on issue_comment events.
+      - name: Resolve PR head branch
+        id: pr
+        run: |
+          HEAD_REF=$(gh pr view "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" --json headRefName --jq .headRefName)
+          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+
+      # Second guard that can't live in the job `if:`. Hard-fails before any
+      # further step (no reaction, no checkout, no install, no LLM call).
+      - name: "Guard: PR head branch must be a release branch"
+        run: |
+          HEAD_REF="${{ steps.pr.outputs.head_ref }}"
+          case "$HEAD_REF" in
+            release/*) ;;
+            *)
+              echo "::error::/revise only operates on release/* branches (got '${HEAD_REF}')."
+              exit 1
+              ;;
+          esac
+
+      - name: React to comment
+        run: |
+          gh api "repos/${{ github.repository }}/issues/comments/${{ github.event.comment.id }}/reactions" \
+            -f content='eyes' --silent
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head_ref }}
+
+      # release/ branches are named release/<date>-issue-<N>[.<rev>] by
+      # daily.yml. The date is the source of truth for `aiv revise --date`.
+      - name: Resolve issue date from branch name
+        id: when
+        env:
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+        run: |
+          python <<'PY'
+          import os
+          import re
+
+          head_ref = os.environ["HEAD_REF"]
+          m = re.match(r"release/(\d{4}-\d{2}-\d{2})-issue-\d+(?:\.\d+)?$", head_ref)
+          if not m:
+              print(f"::error::could not parse a date out of branch '{head_ref}'")
+              raise SystemExit(1)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"date={m.group(1)}\n")
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Same cache as daily.yml -- keeps a `/revise` re-run from re-downloading
+      # ~900MB of pinned embedding + verifier models on every comment.
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-v2-${{ runner.os }}-${{ hashFiles('src/cluster.py') }}
+          restore-keys: |
+            hf-models-v2-${{ runner.os }}-
+
+      - name: Cache released centroids
+        uses: actions/cache@v4
+        with:
+          path: data/released/*/embeddings
+          key: released-embeddings-${{ github.run_id }}
+          restore-keys: |
+            released-embeddings-
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Warm embedding models
+        run: |
+          python - <<'PY'
+          from sentence_transformers import CrossEncoder, SentenceTransformer
+
+          from src.cluster import (
+              EMBEDDING_MODEL_NAME,
+              EMBEDDING_MODEL_REVISION,
+              VERIFIER_MODEL_NAME,
+              VERIFIER_MODEL_REVISION,
+          )
+
+          SentenceTransformer(EMBEDDING_MODEL_NAME, revision=EMBEDDING_MODEL_REVISION)
+          CrossEncoder(VERIFIER_MODEL_NAME, revision=VERIFIER_MODEL_REVISION)
+          PY
+
+      # Injection-safety step 1 of 2: the comment body (attacker-controlled)
+      # goes into an env var here -- GitHub's documented mitigation for
+      # untrusted input in run: blocks -- never inline into the script text.
+      # The heredoc delimiter is quoted ('PY'), so bash does no substitution
+      # inside it either; the python step reads the value only via
+      # os.environ, never via shell expansion.
+      - name: Extract instruction text
+        env:
+          REVISE_COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          python <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          body = os.environ["REVISE_COMMENT_BODY"]
+          # Strip the leading "/revise" token only; keep everything else
+          # (including punctuation, quotes, newlines) verbatim as the
+          # instruction text.
+          instruction = re.sub(r"^/revise\b[ \t]*", "", body, count=1, flags=re.IGNORECASE)
+          Path("revise_instruction.txt").write_text(instruction.strip())
+          PY
+
+      # Injection-safety step 2 of 2: the instruction is passed to `aiv
+      # revise` via subprocess.run() with an explicit argument list -- no
+      # shell=True, no string formatting into a command line. The instruction
+      # text is data to the argv array, never source for a shell to parse.
+      - name: Run aiv revise --live
+        id: revise
+        env:
+          REVISE_DATE: ${{ steps.when.outputs.date }}
+        run: |
+          python <<'PY'
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          date = os.environ["REVISE_DATE"]
+          instruction = Path("revise_instruction.txt").read_text()
+
+          # --released: a release-PR checkout carries only data/released/<date>/
+          # (staging is gitignored). Safe here because the state==open guard
+          # means this branch is an unmerged draft, not a published issue.
+          result = subprocess.run(
+              ["aiv", "revise", "--date", date, "--live", "--released",
+               "--instruction", instruction],
+              check=False,
+          )
+          sys.exit(result.returncode)
+          PY
+
+      # Runs only when the step above succeeded (GitHub Actions default:
+      # a failed step skips subsequent normal steps). If aiv revise applied
+      # changes but didn't itself re-render, this is where docs/ catches up;
+      # if it already re-rendered, `git add` + `diff --cached --quiet` below
+      # is a no-op for those paths and the commit still captures whatever
+      # did change.
+      - name: Re-render and commit revision
+        env:
+          REVISE_DATE: ${{ steps.when.outputs.date }}
+        run: |
+          DATE="$REVISE_DATE"
+          if find "data/released/${DATE}" -name '*.tmp' | grep -q .; then
+            echo "::error::Stale .tmp file in data/released/${DATE} — atomic write did not complete."
+            exit 1
+          fi
+          git config user.name "aivector-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -- "data/released/${DATE}" docs/index.html "docs/released/${DATE}.html"
+          if git diff --cached --quiet; then
+            echo "::error::aiv revise exited 0 but produced no file changes -- nothing to commit."
+            exit 1
+          fi
+          git commit -m "chore(revise): apply /revise for ${DATE}"
+          git push origin "HEAD:${{ steps.pr.outputs.head_ref }}"
+
+      # Summarise what was applied/rejected. revisions.jsonl's on-disk
+      # location in --live mode is not yet pinned down by the revise
+      # contract at time of writing; check both the staging path (the
+      # documented shadow location) and the released path (the more likely
+      # live-mode location, since this checkout only has data/released/
+      # committed) and use whichever exists.
+      - name: Reply with revision summary
+        env:
+          REVISE_DATE: ${{ steps.when.outputs.date }}
+        run: |
+          python <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          date = os.environ["REVISE_DATE"]
+          candidates = [
+              Path(f"data/released/{date}/revisions.jsonl"),
+              Path(f"data/staging/{date}/revisions.jsonl"),
+          ]
+          path = next((p for p in candidates if p.exists()), None)
+
+          lines = ["Applied `/revise` for **" + date + "**.", ""]
+          if path is None:
+              lines.append("No `revisions.jsonl` found -- unable to summarise "
+                            "individual field changes. Check the rendered diff "
+                            "in this commit directly.")
+          else:
+              entries = []
+              for raw in path.read_text().splitlines():
+                  if not raw.strip():
+                      continue
+                  try:
+                      entries.append(json.loads(raw))
+                  except json.JSONDecodeError:
+                      continue
+              applied = [e for e in entries if e.get("status") == "applied"]
+              rejected = [e for e in entries if e.get("status") not in ("applied",)]
+              if applied:
+                  lines.append(f"**Applied ({len(applied)}):**")
+                  for e in applied:
+                      lines.append(f"- `{e.get('target', '?')}` / `{e.get('field', '?')}`")
+                  lines.append("")
+              if rejected:
+                  lines.append(f"**Not applied ({len(rejected)}):**")
+                  for e in rejected:
+                      reason = e.get("recommendation") or e.get("status", "?")
+                      lines.append(f"- `{e.get('target', '?')}` / `{e.get('field', '?')}` -- {reason}")
+                  lines.append("")
+              if not applied and not rejected:
+                  lines.append("`revisions.jsonl` was empty -- no fields were changed.")
+
+          lines.append("Pushed to this branch. Re-review the preview and merge/close as usual.")
+          Path("revise_summary.md").write_text("\n".join(lines) + "\n")
+          PY
+          gh pr comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" --body-file revise_summary.md
+
+      # Covers a failure at any prior step (guard, revise, commit/push).
+      # Touches nothing else -- the commit/push step above only runs on
+      # success, so a failure here means no branch changes were made.
+      - name: Reply with failure
+        if: failure()
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh pr comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "\`/revise\` failed -- no changes were made to this branch. See the [workflow run](${RUN_URL}) for details."

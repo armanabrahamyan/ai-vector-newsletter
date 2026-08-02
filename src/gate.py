@@ -7,11 +7,11 @@ published without a human in the loop?** The answer is written to
 decides what to do with it according to the rollout phase.
 
 Nothing in this module calls an LLM. The gate is deterministic code reading
-artifacts that judgment already produced -- the editor's ``review.md`` and
-the verifier's ``verify.json``. Per the No Token Wasted principle, asking a
-model "should we publish?" when the inputs are two verdict tokens and a hash
-comparison would be paying for non-determinism we do not want anywhere near
-a publish decision.
+artifacts that judgment already produced -- the editor's ``review.json``
+(``review.md`` for older days) and the verifier's ``verify.json``. Per the
+No Token Wasted principle, asking a model "should we publish?" when the
+inputs are two verdict tokens and a hash comparison would be paying for
+non-determinism we do not want anywhere near a publish decision.
 
 Owner: Architect. The checks encode ratified policy (2026-08-02); changing
 which checks block, or adding one, is a contract change -- bump
@@ -32,12 +32,30 @@ Design invariants
    exits 0 whether it decided ``auto_merge`` or ``hold``, so a non-zero
    exit unambiguously means "the gate itself failed to run" -- a state the
    workflow must also treat as a hold.
-4. **Advisory stays advisory.** This module reads ``review.md`` and
+4. **Advisory stays advisory.** This module reads the review artifact and
    ``verify.json``; it does not change their contracts. Both remain
    non-blocking for a HUMAN-ratified ``aiv release``. The gate governs the
-   unattended path only.
+   unattended path only. The slogan the team uses for this: the advisory
+   stages are *advisory to the pipeline, decisive to the gate*.
 
-Audit tag: gate-v1-2026-08-02.
+Policy v2 (2026-08-02) adds two things and removes none:
+
+* **``review.json`` is the primary review artifact.** The structured
+  reviewer writes a ``ReviewReport`` with a ``computed_verdict`` and an
+  ``issue_sha256``; ``review.md`` is rendered from it. The gate reads the
+  structured file when it is there and falls back to ``review.md``
+  frontmatter when it is not, so days archived under policy v1 still
+  evaluate. The fallback is for ABSENCE only -- a ``review.json`` that is
+  present but unreadable holds, it does not fall back. Falling back from a
+  corrupt primary to a secondary is how you end up publishing on evidence
+  nobody checked.
+* **A non-blocking ``revision_status`` check** reports what the revision
+  loop did (cycles run, findings applied, findings rejected, from
+  ``revisions.jsonl``). It is informational by design: the loop's *output*
+  is already judged by the re-review it triggers, so judging the loop again
+  here would be double-counting the same evidence.
+
+Audit tag: gate-v2-2026-08-02.
 """
 
 from __future__ import annotations
@@ -48,7 +66,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from src import paths
 from src.models import (
@@ -63,12 +81,18 @@ from src.models import (
 # Policy constants.
 # ---------------------------------------------------------------------------
 
-GATE_VERSION = "v1"
+GATE_VERSION = "v2"
 """Version of the POLICY (which checks exist and which of them block).
 Written into every `GateDecision`. Bump on any change to the check set,
 their blocking flags, or the hold-reason vocabulary -- and record the diff
 in DESIGN.md. Distinct from `GateDecision.schema_version`, which versions
-the SHAPE."""
+the SHAPE.
+
+v1 -> v2 (2026-08-02): `review.json` became the primary review artifact
+(`review.md` frontmatter is the fallback), and the non-blocking
+`revision_status` check was added. No blocking check changed its behaviour,
+and no hold-reason token was added, removed, or renamed -- a day that held
+under v1 holds under v2 for the same reason."""
 
 PHASE_ENV_VAR = "AIV_AUTO_PUBLISH_PHASE"
 """Repository variable / environment variable naming the rollout phase."""
@@ -144,6 +168,18 @@ def review_md_path(date: _dt.date, *, canonical: bool = False) -> Path:
     """Path to ``review.md`` for the given date and archive state."""
     base = paths.released_dir(date) if canonical else paths.staging_dir(date)
     return base / "review.md"
+
+
+def review_json_path(date: _dt.date, *, canonical: bool = False) -> Path:
+    """Path to ``review.json`` -- the structured `ReviewReport` (policy v2)."""
+    base = paths.released_dir(date) if canonical else paths.staging_dir(date)
+    return base / "review.json"
+
+
+def revisions_path(date: _dt.date, *, canonical: bool = False) -> Path:
+    """Path to ``revisions.jsonl`` -- the revision loop's per-action log."""
+    base = paths.released_dir(date) if canonical else paths.staging_dir(date)
+    return base / "revisions.jsonl"
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +302,200 @@ def _read_frontmatter(path: Path) -> tuple[dict[str, str] | None, str]:
     return mapping, "ok"
 
 
+class ReviewRead(NamedTuple):
+    """What the gate managed to learn about the editorial review for a date.
+
+    One shape for both artifacts, so every consumer (the gate itself, and
+    `run.py`'s revision loop) asks the same question and gets the same
+    answer regardless of which file supplied it.
+    """
+
+    verdict: str | None
+    """Normalised lower-case verdict token, or ``None`` when unreadable."""
+
+    issue_sha256: str | None
+    """The hash of the `issue.json` the reviewer read, per the freshness
+    contract. ``None`` when the artifact does not record one."""
+
+    prompt_version: str | None
+    """The review prompt version, for audit correlation."""
+
+    source: str | None
+    """``"review.json"`` | ``"review.md"`` | ``None`` -- which artifact
+    supplied the answer. ``None`` when neither exists."""
+
+    status: str
+    """``"ok"`` | ``"missing"`` | ``"unparseable"``."""
+
+    path: Path
+    """The file the gate read, or -- when nothing was readable -- the file it
+    would have preferred to read. Named so the operator can go look."""
+
+
+def _read_review_json(path: Path) -> tuple[dict[str, Any] | None, str]:
+    """Read ``review.json`` as a plain mapping.
+
+    Returns ``(payload, status)`` with status ``"ok"``, ``"missing"``, or
+    ``"unparseable"``. Not pydantic-validated, for the same reason
+    `_read_verify` is not: the gate needs two facts out of this file, and
+    holding a publication because an unrelated field drifted would be the
+    gate failing at its own job.
+
+    ``computed_verdict`` is the ONE accepted key for the verdict. A second
+    accepted spelling would be a second contract, and the two could
+    disagree; when they did, the gate would have to pick a winner, which is
+    a policy decision hiding inside a parser. A writer using a different key
+    trips ``hold:review-unparseable`` -- loud, safe, and fixed in an hour.
+    """
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
+        return None, "missing"
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        return None, "unparseable"
+    if not isinstance(payload, dict):
+        return None, "unparseable"
+    verdict = payload.get("computed_verdict")
+    if not isinstance(verdict, str) or not verdict.strip():
+        return None, "unparseable"
+    return payload, "ok"
+
+
+def read_review_state(date: _dt.date, *, canonical: bool = False) -> ReviewRead:
+    """Read the editorial verdict for ``date``, preferring ``review.json``.
+
+    The precedence rule, and the reason for it:
+
+    1. ``review.json`` exists and parses -> use it. It is what the reviewer
+       actually computed; ``review.md`` is rendered from it.
+    2. ``review.json`` exists and does NOT parse -> ``unparseable``. **No
+       fallback.** A corrupt primary with a readable secondary is the worst
+       case to paper over: the two could say different things, and the gate
+       would be choosing the more convenient one.
+    3. ``review.json`` is absent -> fall back to ``review.md`` frontmatter.
+       This is the backward-compatibility path for days archived under gate
+       policy v1, and for any future day where only the Markdown was
+       written.
+
+    Never raises. A reader that raised would turn "the gate holds" into "the
+    gate crashed", and the workflow would have to guess which happened.
+    """
+    json_path = review_json_path(date, canonical=canonical)
+    payload, status = _read_review_json(json_path)
+    if status == "ok" and payload is not None:
+        raw_verdict = payload.get("computed_verdict")
+        verdict = raw_verdict.strip().lower() if isinstance(raw_verdict, str) else None
+        recorded_hash = payload.get("issue_sha256")
+        prompt_version = payload.get("prompt_version")
+        return ReviewRead(
+            verdict=verdict or None,
+            issue_sha256=recorded_hash if isinstance(recorded_hash, str) and recorded_hash else None,
+            prompt_version=prompt_version if isinstance(prompt_version, str) and prompt_version else None,
+            source="review.json",
+            status="ok",
+            path=json_path,
+        )
+    if status == "unparseable":
+        _LOG.warning(
+            "gate: %s is present but not a readable ReviewReport; holding "
+            "rather than falling back to review.md", json_path,
+        )
+        return ReviewRead(None, None, None, "review.json", "unparseable", json_path)
+
+    md_path = review_md_path(date, canonical=canonical)
+    frontmatter, md_status = _read_frontmatter(md_path)
+    if md_status == "missing":
+        # Name review.json as the path: it is the artifact we would rather
+        # have had, so it is the one the operator should go create.
+        return ReviewRead(None, None, None, None, "missing", json_path)
+    if frontmatter is None:
+        return ReviewRead(None, None, None, "review.md", "unparseable", md_path)
+    verdict = (frontmatter.get("verdict") or "").strip().lower() or None
+    return ReviewRead(
+        verdict=verdict,
+        issue_sha256=frontmatter.get("issue_sha256") or None,
+        prompt_version=frontmatter.get("prompt_version") or None,
+        source="review.md",
+        status="ok" if verdict else "unparseable",
+        path=md_path,
+    )
+
+
+class RevisionRead(NamedTuple):
+    """What the gate observed in ``revisions.jsonl``. Informational only."""
+
+    present: bool
+    cycles: int
+    applied: int
+    rejected: int
+    proposed: int
+    records: int
+    bad_lines: int
+    path: Path
+
+
+def read_revision_state(date: _dt.date, *, canonical: bool = False) -> RevisionRead:
+    """Summarise the revision engine's log for ``date``. Never raises.
+
+    ``revisions.jsonl`` carries one `RevisionCycle` per line -- one line per
+    invocation of the engine, each with a ``changes`` list of
+    `RevisionChange` records whose ``status`` is ``applied``, ``rejected``,
+    or ``proposed`` (shadow mode).
+
+    The gate reads a deliberately tiny subset: the ``cycle`` number and each
+    change's ``status``. Everything else -- the before/after text, the
+    rationale, the reject reasons -- belongs to the writer and to the human
+    reading the audit trail. A gate that parsed the whole record would
+    couple the publish decision to fields it has no opinion about, and every
+    later field addition would become a gate change.
+    """
+    path = revisions_path(date, canonical=canonical)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return RevisionRead(False, 0, 0, 0, 0, 0, 0, path)
+
+    cycles = 0
+    tally = {"applied": 0, "rejected": 0, "proposed": 0}
+    records = 0
+    bad_lines = 0
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            bad_lines += 1
+            continue
+        if not isinstance(record, dict):
+            bad_lines += 1
+            continue
+        records += 1
+        cycle = record.get("cycle")
+        if isinstance(cycle, int) and cycle > cycles:
+            cycles = cycle
+        changes = record.get("changes")
+        if not isinstance(changes, list):
+            continue
+        for change in changes:
+            if not isinstance(change, dict):
+                continue
+            status = change.get("status")
+            if status in tally:
+                tally[status] += 1
+    if cycles == 0 and records:
+        # A writer that omitted `cycle` still ran; count the lines instead of
+        # reporting zero cycles alongside a non-empty log.
+        cycles = records
+    return RevisionRead(
+        True, cycles, tally["applied"], tally["rejected"], tally["proposed"],
+        records, bad_lines, path,
+    )
+
+
 def _read_verify(path: Path) -> tuple[dict[str, Any] | None, str]:
     """Read ``verify.json`` as a plain mapping.
 
@@ -354,9 +584,10 @@ def _issue_verification_blocks(issue: Issue) -> list[dict[str, Any]]:
 def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
     """Compute the unattended-publish decision for ``date``. Pure function.
 
-    Reads ``data/staging/<date>/{issue.json, review.md, verify.json}``,
-    evaluates the policy checks in order, and returns a `GateDecision`.
-    Writes nothing -- use `write_decision` (or `run_gate`) to persist.
+    Reads ``data/staging/<date>/{issue.json, review.json (or review.md),
+    verify.json, revisions.jsonl}``, evaluates the policy checks in order,
+    and returns a `GateDecision`. Writes nothing -- use `write_decision`
+    (or `run_gate`) to persist.
 
     The checks, in evaluation order:
 
@@ -365,16 +596,18 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
         Everything downstream is a statement about this file; if we cannot
         read it, we have nothing to publish unattended.
     ``review_present`` (blocking)
-        ``review.md`` exists.
+        A review artifact exists -- ``review.json`` preferred,
+        ``review.md`` accepted.
     ``review_verdict`` (blocking)
-        The frontmatter verdict is in the accepted set for the active phase.
-        Missing frontmatter, ``unavailable``, ``red``, and any unrecognised
-        token all hold.
+        The recorded verdict is in the accepted set for the active phase.
+        An unreadable artifact, ``unavailable``, ``red``, and any
+        unrecognised token all hold.
     ``review_freshness`` (blocking)
-        The frontmatter ``issue_sha256`` matches a fresh hash of the current
+        The recorded ``issue_sha256`` matches a fresh hash of the current
         ``issue.json``. A review of a superseded draft is not evidence about
         the draft we are publishing. An absent key holds too -- we cannot
-        confirm what the editor read.
+        confirm what the editor read. This is also what catches a revision
+        loop that rewrote the issue and then failed to re-review it.
     ``verify_readable`` (blocking)
         ``verify.json`` exists and parses.
     ``verify_available`` (blocking)
@@ -389,6 +622,13 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
     ``verify_no_unsupported`` (NON-blocking)
         Informational. "The source does not assert this" is an editorial
         concern worth surfacing, not a factual error worth blocking on.
+    ``revision_status`` (NON-blocking, policy v2)
+        Informational. Reports how many revision cycles ran and how many
+        findings were applied or rejected, from ``revisions.jsonl``. It does
+        not judge: whatever the reviser changed was re-reviewed, and that
+        re-review is already the blocking evidence. The check fails (still
+        non-blocking) only when the log itself is partly unreadable, which
+        is a "someone should look at this" signal, not a publish decision.
     """
     active_phase, phase_note = resolve_phase(phase)
     accepted = ACCEPTED_REVIEW_VERDICTS[active_phase]
@@ -423,24 +663,21 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
 
     computed_hash = sha256_of_file(issue_file)
 
-    # --- review.md --------------------------------------------------------
-    review_file = review_md_path(date)
-    frontmatter, review_status = _read_frontmatter(review_file)
-    review_verdict: str | None = None
-    recorded_hash: str | None = None
-    review_prompt_version: str | None = None
-    if frontmatter is not None:
-        raw_verdict = frontmatter.get("verdict", "").strip().lower()
-        review_verdict = raw_verdict or None
-        recorded_hash = frontmatter.get("issue_sha256") or None
-        review_prompt_version = frontmatter.get("prompt_version") or None
+    # --- review.json (preferred) / review.md (fallback) -------------------
+    review = read_review_state(date)
+    review_file = review.path
+    review_verdict = review.verdict
+    recorded_hash = review.issue_sha256
+    review_prompt_version = review.prompt_version
+    review_status = review.status
+    source_label = review.source or "review artifact"
 
     review_present = review_status != "missing"
     checks.append(GateCheck(
         name="review_present", passed=review_present, blocking=True,
         detail=(
-            f"review.md found at {review_file}" if review_present
-            else f"no review.md at {review_file}"
+            f"{source_label} found at {review_file}" if review_present
+            else f"no review.json or review.md in {review_file.parent}"
         ),
         hold_reason=None if review_present else HOLD_REVIEW_MISSING,
     ))
@@ -448,20 +685,21 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
     if not review_present:
         checks.append(GateCheck(
             name="review_verdict", passed=False, blocking=False,
-            detail=f"{_NOT_EVALUATED}review.md is missing",
+            detail=f"{_NOT_EVALUATED}no review artifact for this date",
         ))
     elif review_status == "unparseable" or not review_verdict:
         checks.append(GateCheck(
             name="review_verdict", passed=False, blocking=True,
-            detail="review.md carries no parseable frontmatter verdict",
+            detail=f"{source_label} carries no readable verdict",
             hold_reason=HOLD_REVIEW_UNPARSEABLE,
         ))
     elif review_verdict in accepted:
         checks.append(GateCheck(
             name="review_verdict", passed=True, blocking=True,
             detail=(
-                f"review verdict {review_verdict!r} is accepted in phase "
-                f"{active_phase!r} (accepted: {', '.join(sorted(accepted))})"
+                f"review verdict {review_verdict!r} (from {source_label}) is "
+                f"accepted in phase {active_phase!r} (accepted: "
+                f"{', '.join(sorted(accepted))})"
             ),
         ))
     else:
@@ -476,10 +714,10 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
 
     # --- review freshness -------------------------------------------------
     fresh = bool(recorded_hash) and recorded_hash == computed_hash
-    if not review_present or frontmatter is None:
+    if review_status != "ok":
         checks.append(GateCheck(
             name="review_freshness", passed=False, blocking=False,
-            detail=f"{_NOT_EVALUATED}no review frontmatter to read a hash from",
+            detail=f"{_NOT_EVALUATED}no readable review artifact to read a hash from",
         ))
     elif computed_hash is None:
         checks.append(GateCheck(
@@ -490,7 +728,7 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
         checks.append(GateCheck(
             name="review_freshness", passed=False, blocking=True,
             detail=(
-                "review.md frontmatter carries no issue_sha256; cannot confirm "
+                f"{source_label} carries no issue_sha256; cannot confirm "
                 "the review read the issue we are about to publish"
             ),
             hold_reason=HOLD_STALE_REVIEW,
@@ -499,7 +737,7 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
         checks.append(GateCheck(
             name="review_freshness", passed=False, blocking=True,
             detail=(
-                f"review.md was written against issue_sha256="
+                f"{source_label} was written against issue_sha256="
                 f"{recorded_hash[:12]}... but issue.json now hashes to "
                 f"{computed_hash[:12]}...; the issue changed after the review"
             ),
@@ -605,6 +843,29 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
         ),
     ))
 
+    # --- revision status (informational, policy v2) -----------------------
+    # Surfaces what the revision loop did so the operator reading gate.json
+    # at 06:00 knows whether the issue in front of them is the one the
+    # pipeline first drafted or one the reviser edited. It does not judge:
+    # anything the reviser changed was re-reviewed, and that re-review is
+    # already the blocking evidence via review_verdict + review_freshness.
+    revisions = read_revision_state(date)
+    if not revisions.present:
+        revision_detail = "no revision loop ran for this date"
+    else:
+        revision_detail = (
+            f"{revisions.cycles} revision cycle(s), "
+            f"{revisions.applied} applied / {revisions.rejected} rejected"
+        )
+        if revisions.proposed:
+            revision_detail += f" / {revisions.proposed} proposed (shadow)"
+        if revisions.bad_lines:
+            revision_detail += f"; {revisions.bad_lines} unreadable line(s)"
+    checks.append(GateCheck(
+        name="revision_status", passed=revisions.bad_lines == 0, blocking=False,
+        detail=revision_detail,
+    ))
+
     # --- roll up ----------------------------------------------------------
     hold_reasons: list[str] = []
     for check in checks:
@@ -641,8 +902,9 @@ def decide(date: _dt.date, *, phase: str | None = None) -> GateDecision:
         note=phase_note,
     )
     _LOG.info(
-        "gate: %s decision=%s phase=%s reasons=%s",
+        "gate: %s decision=%s phase=%s review_source=%s revisions=%d reasons=%s",
         date.isoformat(), decision.decision, active_phase,
+        review.source or "(none)", revisions.applied,
         ",".join(hold_reasons) or "(none)",
     )
     return decision
@@ -721,6 +983,12 @@ __all__ = [
     "KNOWN_REVIEW_VERDICTS",
     "gate_path",
     "review_md_path",
+    "review_json_path",
+    "revisions_path",
+    "ReviewRead",
+    "RevisionRead",
+    "read_review_state",
+    "read_revision_state",
     "sha256_of_file",
     "issue_sha256",
     "resolve_phase",

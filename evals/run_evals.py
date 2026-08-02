@@ -1906,6 +1906,17 @@ def _extract_feature_vector(
         except Exception:  # noqa: BLE001
             pass  # sidecar malformed; leave None rather than crashing drift
 
+    # reviewer_verdict / reviewer_verdict_ordinal (Eval 9, PROPOSAL pending
+    # ratification 2026-08-02) — the editorial review's own verdict for this
+    # date, denormalised the same way verifier_flag_rate is: read the
+    # released gate.json first (the canonical, machine-readable copy once
+    # src/gate.py has run for this date), falling back to a direct read of
+    # review.md's frontmatter when gate.json is absent (e.g. a date released
+    # before gate.py existed, but review.py already fired). None until either
+    # artifact exists for this date — same graceful-absence contract as
+    # verifier_flag_rate before the verify stage landed.
+    reviewer_verdict, reviewer_verdict_ordinal = _read_reviewer_verdict(_issue_date)
+
     return {
         "story_count": story_count,
         "avg_summary_length": avg_summary_length,
@@ -1913,7 +1924,57 @@ def _extract_feature_vector(
         "signal_pill_distribution": signal_pill_distribution,
         "audience_tag_distribution": audience_tag_distribution,
         "verifier_flag_rate": verifier_flag_rate,  # None until verify stage lands
+        "reviewer_verdict": reviewer_verdict,  # None until gate.py/review.py has run for this date
+        "reviewer_verdict_ordinal": reviewer_verdict_ordinal,  # green=0, amber=1, red=2; None otherwise
     }
+
+
+_REVIEWER_VERDICT_ORDINAL = {"green": 0, "amber": 1, "red": 2}
+"""Ordinal encoding for z-score purposes only. "unavailable"/"unparseable"
+and any unrecognised token map to ordinal=None (excluded from the mean/
+stdev, exactly like other None readings) — they are absence-of-evidence
+states, not a point on a green-amber-red severity scale."""
+
+
+def _read_reviewer_verdict(issue_date: Optional[str]) -> tuple[Optional[str], Optional[float]]:
+    """Return ``(verdict, ordinal)`` for the review of *issue_date*.
+
+    Reads ``data/released/<date>/gate.json`` first (``review.verdict``, the
+    canonical machine-readable copy once src/gate.py has run). Falls back to
+    a minimal, LOCAL frontmatter read of ``data/released/<date>/review.md``
+    when gate.json is absent — deliberately NOT importing src.review's
+    parser here: the eval harness reads artifacts independently of the
+    module that produces them, the same independence discipline as every
+    other eval in this file. Returns ``(None, None)`` when neither artifact
+    exists or parses.
+    """
+    if not issue_date:
+        return None, None
+    date_dir = DATA_DIR / "released" / issue_date
+
+    gate_path = date_dir / "gate.json"
+    gate_doc = _load_json(gate_path)
+    if gate_doc is not None:
+        verdict = (gate_doc.get("review") or {}).get("verdict")
+        if verdict:
+            return verdict, _REVIEWER_VERDICT_ORDINAL.get(verdict)
+
+    review_md_path = date_dir / "review.md"
+    if review_md_path.exists():
+        try:
+            text = review_md_path.read_text(encoding="utf-8")
+        except OSError:
+            return None, None
+        # Minimal frontmatter read: first "verdict: <token>" line inside the
+        # leading "---" block. Deliberately tolerant — a malformed file
+        # yields (None, None) rather than raising, matching the rest of
+        # drift detection's "never crash on an advisory artifact" contract.
+        m = re.search(r"^verdict:\s*(\S+)\s*$", text, re.MULTILINE)
+        if m:
+            verdict = m.group(1).strip().lower()
+            return verdict, _REVIEWER_VERDICT_ORDINAL.get(verdict)
+
+    return None, None
 
 
 def _js_divergence(p: dict[str, float], q: dict[str, float]) -> float:
@@ -1966,6 +2027,7 @@ def _write_drift_snapshot(
     z_scores: dict[str, float],
     js_divergences: dict[str, float],
     flags: list[str],
+    reviewer_red_floor: Optional[dict[str, Any]] = None,
 ) -> None:
     """Write a drift snapshot to evals/drift/baselines/<date>.json atomically."""
     DRIFT_BASELINES_DIR.mkdir(parents=True, exist_ok=True)
@@ -1976,6 +2038,7 @@ def _write_drift_snapshot(
         "z_scores": z_scores,
         "js_divergences": js_divergences,
         "flags": flags,
+        "reviewer_red_floor": reviewer_red_floor or {},
     }
     target = DRIFT_BASELINES_DIR / f"{candidate_date}.json"
     tmp = target.with_suffix(".tmp")
@@ -2145,6 +2208,25 @@ def check_drift(
         z = (_vfr_candidate - mean) / effective_stdev
         z_scores["verifier_flag_rate"] = round(z, 4)
 
+    # reviewer_verdict_ordinal (Eval 9, PROPOSAL pending ratification):
+    # same "enough non-None baseline data" gate as verifier_flag_rate above.
+    # Included once gate.py/review.py has produced enough released history
+    # for the ordinal mean/stdev to mean anything.
+    _rvo_baseline = [
+        fv.get("reviewer_verdict_ordinal")
+        for fv in baseline_fvs
+        if fv.get("reviewer_verdict_ordinal") is not None
+    ]
+    _rvo_candidate = candidate_fv.get("reviewer_verdict_ordinal")
+    if len(_rvo_baseline) >= max(1, len(baseline_fvs) // 2) and _rvo_candidate is not None:
+        n = len(_rvo_baseline)
+        mean = sum(_rvo_baseline) / n
+        variance = sum((v - mean) ** 2 for v in _rvo_baseline) / n
+        stdev = math.sqrt(variance)
+        effective_stdev = max(stdev, _DRIFT_STDEV_FLOOR)
+        z = (_rvo_candidate - mean) / effective_stdev
+        z_scores["reviewer_verdict_ordinal"] = round(z, 4)
+
     # ------------------------------------------------------------------
     # 5. Compute Jensen-Shannon divergences for distribution metrics.
     # ------------------------------------------------------------------
@@ -2183,6 +2265,51 @@ def check_drift(
             )
 
     # ------------------------------------------------------------------
+    # 6a. Reviewer red-floor rule (Eval 9, PROPOSAL pending ratification).
+    #
+    # WHY THIS IS NOT A Z-SCORE: z-scores measure "is today unusual relative
+    # to the recent baseline". A rolling window in which the reviewer NEVER
+    # produces a "red" verdict is, by construction, its OWN baseline — the
+    # mean is 0 (on the green=0/amber=1/red=2 ordinal scale) with near-zero
+    # variance, so there is nothing for a single day's z-score to deviate
+    # FROM. A real defect that should have earned "red" every so often simply
+    # not happening is invisible to any window-relative statistic; it needs
+    # an absolute floor check instead. This mirrors FM-14's own recall-decay
+    # framing (the verifier that stops catching real errors looks identical
+    # to a verifier that never had errors to catch) applied to the reviewer.
+    #
+    # Scope note: this check runs over a WIDER 30-day window, independent of
+    # the 14-day _DRIFT_WINDOW_DAYS used for the z-score/JS-divergence
+    # metrics above — a floor rule needs more history to distinguish "a
+    # genuinely quiet month" from "the reviewer stopped emitting red" and
+    # the two windows are not required to agree.
+    # ------------------------------------------------------------------
+    _RED_FLOOR_WINDOW_DAYS = 30
+    _RED_FLOOR_MIN_SAMPLES = 10  # below this, "no reds" is just sparse history
+
+    floor_window_start = candidate_date - __import__("datetime").timedelta(days=_RED_FLOOR_WINDOW_DAYS)
+    floor_dates = [d for d in all_released if floor_window_start <= d <= candidate_date]
+    floor_verdicts = [
+        _read_reviewer_verdict(d.isoformat())[0] for d in floor_dates
+    ]
+    floor_verdicts = [v for v in floor_verdicts if v is not None]
+
+    reviewer_red_floor: dict[str, Any] = {
+        "window_days": _RED_FLOOR_WINDOW_DAYS,
+        "min_samples": _RED_FLOOR_MIN_SAMPLES,
+        "samples": len(floor_verdicts),
+        "red_count": floor_verdicts.count("red"),
+        "escalate": False,
+    }
+    if len(floor_verdicts) >= _RED_FLOOR_MIN_SAMPLES and reviewer_red_floor["red_count"] == 0:
+        reviewer_red_floor["escalate"] = True
+        flags.append(
+            f"floor:no_red_in_{_RED_FLOOR_WINDOW_DAYS}d "
+            f"({len(floor_verdicts)} reviewed days, 0 red) -- escalate for a "
+            "reviewer calibration check; z-score is blind to a constant series."
+        )
+
+    # ------------------------------------------------------------------
     # 7. Write snapshot.
     # ------------------------------------------------------------------
     try:
@@ -2193,6 +2320,7 @@ def check_drift(
             z_scores=z_scores,
             js_divergences=js_divergences,
             flags=flags,
+            reviewer_red_floor=reviewer_red_floor,
         )
     except OSError:
         # Snapshot write failure is non-fatal — log in details.
@@ -2210,6 +2338,7 @@ def check_drift(
             "candidate_feature_vector": candidate_fv,
             "z_scores": z_scores,
             "js_divergences": js_divergences,
+            "reviewer_red_floor": reviewer_red_floor,
             "flags": flags,
             "flag_count": len(flags),
             "thresholds": {
@@ -3246,6 +3375,546 @@ def eval_reading_experience_lint(dataset_dir: Optional[Path]) -> EvalResult:
 
 
 # ---------------------------------------------------------------------------
+# Eval 9 — reviewer-gate calibration (Phase 2 auto-publish gate).
+#
+# STATUS: PROPOSAL, pending ratification (2026-08-02). Built against the
+# interface the LLM Engineer's reviewer restructure is expected to expose
+# (src/review.py, src/models.py): the LLM emits ReviewFinding JSON
+# (severity: blocking|major|minor|note, a required verbatim quote, and a
+# fix_kind); CODE turns the finding list into a verdict via
+# config/review_thresholds.yaml (proposed: any blocking -> red; >= 3 major
+# -> red; >= 1 major/minor -> amber; notes only -> green). That reviewer
+# does not exist in the tree yet as of this eval's authoring — this harness
+# runs in seam mode (reviewer=None) until it does, exactly like Eval 7 ran
+# in seam mode before the verifier was wired.
+#
+# See evals/fixtures/reviewer-gate/README.md for the fixture taxonomy (25
+# seeded-defect cases across 5 classes, 15 lightly-modified real-issue clean
+# cases, 2 real-bug replays) and the severity-modelling assumptions baked
+# into the labels — those assumptions are exactly what needs ratifying
+# alongside the numeric thresholds below.
+# ---------------------------------------------------------------------------
+
+class ReviewerCallable(Protocol):
+    """Type protocol for the (in-progress) structured editorial reviewer.
+
+    This harness calls the reviewer's FULL pipeline (LLM finding generation
+    + the threshold code that turns findings into a verdict) and reads back
+    the already-computed verdict. Eval 9 does not re-implement the
+    threshold mapping itself — that stays owned by review_thresholds.yaml
+    and src/review.py — so this eval measures whether the end-to-end
+    reviewer lands on the right ANSWER (hold vs. publish) per labelled
+    fixture, decoupled from how the threshold code gets there.
+    """
+
+    def __call__(self, issue: dict) -> dict:
+        """Return ``{"verdict": str, "findings": list[dict]}`` for *issue*
+        (a parsed issue.json payload).
+
+        ``verdict`` must be one of ``green | amber | red | unparseable |
+        unavailable`` — the same vocabulary gate.py already reads from
+        review.md. ``findings`` is optional (default treated as ``[]``)
+        and, when present, is a list of ReviewFinding-shaped dicts with at
+        least a ``severity`` key — used only for the per-severity
+        diagnostics in the report, never for the pass/fail computation.
+
+        Must be pure / side-effect-free per call so the harness can call it
+        ``rerun_n`` times per fixture for the gate_stability measurement
+        without interference (mirrors VerifierCallable's purity contract).
+        """
+        ...
+
+
+_REVIEWER_GATE_FIXTURE_DIR = FIXTURES_DIR / "reviewer-gate"
+_REVIEWER_GATE_CASES_PATH = _REVIEWER_GATE_FIXTURE_DIR / "cases.yaml"
+_REVIEWER_GATE_ISSUES_DIR = _REVIEWER_GATE_FIXTURE_DIR / "issues"
+
+# PROPOSED hard gate (pending ratification): the reviewer must not let a
+# hold-worthy issue through more than 5% of the time. Mirrors Eval 7's
+# recall_contradicted hard gate in spirit — under-holding is the dangerous
+# direction for an auto-publish gate (over-holding just costs a human a
+# look; under-holding ships a defect unattended).
+_REVIEWER_GATE_RECALL_THRESHOLD = 0.95
+
+# PROPOSED advisory floor (NOT a hard gate initially): precision on the
+# "safe to publish" prediction. Reported and watched; promote to a hard
+# gate once there is a track record — mirrors how Eval 7's own precision
+# gate was only added after v0 calibration data existed.
+_REVIEWER_GATE_PRECISION_ADVISORY_THRESHOLD = 0.75
+
+# Verdict tokens that map to a HOLD decision. Fail-closed, matching
+# gate.py's own philosophy: an unparseable or unavailable review is not
+# evidence of safety, so it holds exactly like "red" does.
+_REVIEWER_GATE_HOLD_VERDICTS = frozenset({"red", "unparseable", "unavailable"})
+
+# Default rerun count for gate_stability. COST NOTE: each rerun is one full
+# reviewer call (one LLM pass) per fixture, and the first rerun doubles as
+# the primary recall/precision call (verdicts[0]) -- reruns are not on top
+# of a separate primary pass. rerun_n=3 over 42 fixtures is 126 reviewer
+# calls total per full Eval 9 run at the default. A deliberate rerun_n=10
+# stability audit is 420 calls -- an opt-in the operator chooses, not the
+# routine CI default.
+_REVIEWER_GATE_DEFAULT_RERUNS = 3
+
+
+def _load_reviewer_gate_fixtures() -> list[dict]:
+    """Load the Eval 9 fixture manifest + issue payloads.
+
+    Returns a list of case dicts, each carrying every ``cases.yaml`` field
+    plus an ``issue`` key holding the parsed issue.json payload. Returns []
+    if the manifest is missing or PyYAML is unavailable (graceful seam,
+    mirrors ``_load_fa_fixtures``).
+    """
+    try:
+        import yaml
+    except ImportError:
+        return []
+    if not _REVIEWER_GATE_CASES_PATH.exists():
+        return []
+    with _REVIEWER_GATE_CASES_PATH.open("r", encoding="utf-8") as fh:
+        manifest = yaml.safe_load(fh) or {}
+    cases = manifest.get("cases", [])
+    loaded: list[dict] = []
+    for case in cases:
+        issue_path = _REVIEWER_GATE_ISSUES_DIR / f"{case['id']}.json"
+        issue_payload = _load_json(issue_path)
+        if issue_payload is None:
+            continue  # malformed manifest entry — skip rather than crash the eval
+        loaded.append({**case, "issue": issue_payload})
+    return loaded
+
+
+def _threshold_consistency_check(cases: list[dict]) -> Optional[dict]:
+    """Independent, credential-free sanity check of the REAL, landed
+    ``config/review_thresholds.yaml`` + ``src.review.compute_verdict``
+    against this fixture set's severity-model labels.
+
+    This is NOT a substitute for eval_reviewer_gate's real recall/precision
+    (which requires the LLM to actually generate findings from issue text —
+    the judgment half of the reviewer). It answers a narrower, but fully
+    real and executable, question: "given the finding-severity COUNTS each
+    fixture's label assumes the reviewer would produce (see
+    build_fixtures.py's severity_model field), does the real, ratified-
+    pending threshold table compute the verdict this eval's ground truth
+    expects?" A mismatch here means either the fixture's severity-model
+    assumption or the threshold table itself needs revisiting BEFORE
+    spending an LLM call on it.
+
+    Returns None (silently) when src.review or the threshold file are not
+    importable/loadable — this must never be the reason eval_reviewer_gate
+    itself fails; it only enriches the seam-mode report when it can.
+    """
+    try:
+        from src.review import compute_verdict, load_thresholds, ReviewThresholdError
+    except ImportError:
+        return None
+    try:
+        table = load_thresholds()
+    except ReviewThresholdError as exc:
+        return {"available": False, "reason": f"threshold table unusable: {exc}"}
+    except Exception:  # noqa: BLE001 — never let a diagnostic crash the eval
+        return None
+
+    def _counts_for(case: dict) -> dict[str, int]:
+        sm = case.get("severity_model")
+        if sm == "single_instance_blocking":
+            return {"blocking": 1}
+        if sm == "pattern_3x_major":
+            return {"major": 3}
+        return {}  # clean cases: no findings assumed
+
+    tp = fn = fp = tn = 0
+    mismatches: list[dict] = []
+    for case in cases:
+        counts = _counts_for(case)
+        verdict, reason = compute_verdict(counts, table)
+        predicted = "hold" if verdict in _REVIEWER_GATE_HOLD_VERDICTS else "publish"
+        truth = case.get("ground_truth_gate")
+        if truth == "hold" and predicted == "hold":
+            tp += 1
+        elif truth == "hold" and predicted == "publish":
+            fn += 1
+            mismatches.append({"id": case["id"], "truth": truth, "predicted": predicted, "verdict": verdict})
+        elif truth == "publish" and predicted == "hold":
+            fp += 1
+            mismatches.append({"id": case["id"], "truth": truth, "predicted": predicted, "verdict": verdict})
+        elif truth == "publish" and predicted == "publish":
+            tn += 1
+
+    return {
+        "available": True,
+        "thresholds_version": table.get("version"),
+        "note": (
+            "Threshold-computation consistency only -- assumes each fixture's "
+            "severity_model label (single_instance_blocking -> 1 blocking "
+            "finding, pattern_3x_major -> 3 major findings), NOT real "
+            "LLM-generated findings. See docstring for what this does and "
+            "does not prove."
+        ),
+        "recall_hold_worthy": round(tp / (tp + fn), 4) if (tp + fn) > 0 else None,
+        "precision_publish_safe": round(tn / (tn + fn), 4) if (tn + fn) > 0 else None,
+        "raw_counts": {"tp": tp, "fn": fn, "fp": fp, "tn": tn},
+        "mismatches": mismatches,
+    }
+
+
+def eval_reviewer_gate(
+    reviewer: Optional[Callable] = None,
+    *,
+    rerun_n: int = _REVIEWER_GATE_DEFAULT_RERUNS,
+) -> EvalResult:
+    """Eval 9 (PROPOSAL, pending ratification). Reviewer-gate calibration.
+
+    Runs *reviewer* against every labelled fixture in
+    evals/fixtures/reviewer-gate/cases.yaml and computes:
+
+        - recall_hold_worthy: of fixtures labelled ground_truth_gate="hold",
+          the fraction the reviewer's PRIMARY (first) call also holds.
+          PROPOSED HARD GATE >= 0.95.
+        - precision_publish_safe: of fixtures the reviewer's primary call
+          predicts "publish", the fraction truly safe to publish
+          (ground_truth_gate="publish"). PROPOSED ADVISORY floor >= 0.75,
+          NOT a hard gate initially — reported every run, not yet blocking.
+        - per_class_recall: recall_hold_worthy broken out by defect_class,
+          so a class-specific regression (e.g. the reviewer stops catching
+          shape_integrity_routing_failure specifically) is visible instead
+          of averaged away.
+        - gate_stability: reruns the reviewer rerun_n times per fixture and
+          reports the fraction of fixtures where every rerun's binarized
+          hold/publish decision agrees. Non-determinism here means the
+          reviewer's answer depends on which LLM sample happened to land —
+          exactly the FM-06 (prompt/endpoint drift) canary pattern, applied
+          per-fixture instead of to one canary cluster.
+
+    A "hold" prediction is any verdict in _REVIEWER_GATE_HOLD_VERDICTS
+    (red, unparseable, unavailable); anything else (green, amber) predicts
+    "publish". This mirrors gate.py's own fail-closed mapping.
+
+    SEAM BEHAVIOUR: when reviewer is None (or the fixture manifest is
+    missing/empty), returns status="reviewer_not_wired", passed=True. CI
+    stays green. This is intentional — the fixtures define the goal; the
+    reviewer is built to pass them.
+
+    Args:
+        reviewer: The end-to-end reviewer callable to evaluate (LLM finding
+            generation + threshold code). Pass None (or omit) when it does
+            not yet exist.
+        rerun_n: Number of reruns per fixture for gate_stability. Defaults
+            to _REVIEWER_GATE_DEFAULT_RERUNS (3); pass a larger value (e.g.
+            10) for a deliberate stability audit. See the cost note on
+            _REVIEWER_GATE_DEFAULT_RERUNS.
+
+    Returns:
+        EvalResult with name="reviewer_gate", metric=recall_hold_worthy
+        (None when seam), status in {"reviewer_not_wired", "pass", "fail"}.
+    """
+    cases = _load_reviewer_gate_fixtures()
+
+    if reviewer is None or not cases:
+        by_category: dict[str, int] = {}
+        by_class: dict[str, int] = {}
+        for c in cases:
+            by_category[c["category"]] = by_category.get(c["category"], 0) + 1
+            if c.get("defect_class"):
+                by_class[c["defect_class"]] = by_class.get(c["defect_class"], 0) + 1
+        return EvalResult(
+            name="reviewer_gate",
+            passed=True,
+            metric=None,
+            status="reviewer_not_wired",
+            details={
+                "message": (
+                    "Reviewer callable not wired (or fixture manifest missing). "
+                    "Implement the ReviewerCallable protocol and pass it as "
+                    "reviewer=... to eval_reviewer_gate(). Eval 9 is a PROPOSAL "
+                    "pending ratification (see evals/fixtures/reviewer-gate/README.md); "
+                    "the fixture set is built and loads cleanly. "
+                    "Fixture counts are reported below."
+                ),
+                "fixture_dir": str(_REVIEWER_GATE_FIXTURE_DIR),
+                "fixture_manifest_exists": _REVIEWER_GATE_CASES_PATH.exists(),
+                "total_cases": len(cases),
+                "cases_by_category": by_category,
+                "cases_by_defect_class": by_class,
+                "thresholds": {
+                    "recall_hold_worthy": _REVIEWER_GATE_RECALL_THRESHOLD,
+                    "precision_publish_safe": (
+                        f"{_REVIEWER_GATE_PRECISION_ADVISORY_THRESHOLD} (advisory, not a hard gate)"
+                    ),
+                    "hold_verdicts": sorted(_REVIEWER_GATE_HOLD_VERDICTS),
+                },
+                "default_rerun_n": _REVIEWER_GATE_DEFAULT_RERUNS,
+                "threshold_consistency_check": _threshold_consistency_check(cases),
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Run the reviewer against every fixture, rerun_n times each.
+    # ------------------------------------------------------------------
+    tp = fn = fp = tn = 0
+    per_class: dict[str, dict[str, int]] = {}
+    stable_count = 0
+    unstable_cases: list[str] = []
+    failures: list[str] = []
+    case_results: list[dict] = []
+
+    for case in cases:
+        case_id = case["id"]
+        issue_payload = case["issue"]
+        truth = case.get("ground_truth_gate")
+
+        verdicts: list[str] = []
+        for _ in range(max(1, rerun_n)):
+            try:
+                result = reviewer(issue_payload)
+                verdict = (result or {}).get("verdict", "unparseable")
+            except Exception as exc:  # noqa: BLE001
+                verdict = "unavailable"
+                failures.append(f"Case {case_id}: reviewer raised {type(exc).__name__}: {exc}")
+            verdicts.append(verdict)
+
+        primary_verdict = verdicts[0]
+        predicted = "hold" if primary_verdict in _REVIEWER_GATE_HOLD_VERDICTS else "publish"
+
+        if truth == "hold" and predicted == "hold":
+            tp += 1
+        elif truth == "hold" and predicted == "publish":
+            fn += 1
+        elif truth == "publish" and predicted == "hold":
+            fp += 1
+        elif truth == "publish" and predicted == "publish":
+            tn += 1
+
+        defect_class = case.get("defect_class")
+        if truth == "hold" and defect_class:
+            bucket = per_class.setdefault(defect_class, {"tp": 0, "fn": 0})
+            if predicted == "hold":
+                bucket["tp"] += 1
+            else:
+                bucket["fn"] += 1
+
+        binarized = [
+            "hold" if v in _REVIEWER_GATE_HOLD_VERDICTS else "publish"
+            for v in verdicts
+        ]
+        stable = len(set(binarized)) == 1
+        if stable:
+            stable_count += 1
+        else:
+            unstable_cases.append(case_id)
+
+        case_results.append({
+            "id": case_id,
+            "category": case.get("category"),
+            "defect_class": defect_class,
+            "ground_truth_gate": truth,
+            "predicted_gate": predicted,
+            "primary_verdict": primary_verdict,
+            "verdicts_across_reruns": verdicts,
+            "stable": stable,
+            "correct": predicted == truth,
+        })
+
+    # ------------------------------------------------------------------
+    # Aggregate metrics.
+    # ------------------------------------------------------------------
+    recall_hold_worthy = (tp / (tp + fn)) if (tp + fn) > 0 else None
+    precision_publish_safe = (tn / (tn + fn)) if (tn + fn) > 0 else None
+    gate_stability = (stable_count / len(cases)) if cases else None
+
+    per_class_recall = {
+        cls: {
+            "recall": round(b["tp"] / (b["tp"] + b["fn"]), 4) if (b["tp"] + b["fn"]) > 0 else None,
+            "tp": b["tp"],
+            "fn": b["fn"],
+        }
+        for cls, b in per_class.items()
+    }
+
+    if recall_hold_worthy is not None and recall_hold_worthy < _REVIEWER_GATE_RECALL_THRESHOLD:
+        failures.append(
+            f"recall_hold_worthy {recall_hold_worthy:.4f} < threshold "
+            f"{_REVIEWER_GATE_RECALL_THRESHOLD} ({tp}/{tp + fn} hold-worthy cases caught)"
+        )
+
+    # precision_publish_safe is ADVISORY ONLY at this stage — reported, does
+    # NOT contribute to `failures` / `passed`. Promote to a hard gate only
+    # after ratification once there is a track record (see threshold note).
+    precision_below_advisory = (
+        precision_publish_safe is not None
+        and precision_publish_safe < _REVIEWER_GATE_PRECISION_ADVISORY_THRESHOLD
+    )
+
+    passed = len(failures) == 0
+
+    return EvalResult(
+        name="reviewer_gate",
+        passed=passed,
+        metric=round(recall_hold_worthy, 4) if recall_hold_worthy is not None else None,
+        status="pass" if passed else "fail",
+        details={
+            "fixture_dir": str(_REVIEWER_GATE_FIXTURE_DIR),
+            "total_cases": len(cases),
+            "rerun_n": rerun_n,
+            "recall_hold_worthy": round(recall_hold_worthy, 4) if recall_hold_worthy is not None else None,
+            "precision_publish_safe": round(precision_publish_safe, 4) if precision_publish_safe is not None else None,
+            "precision_publish_safe_below_advisory_floor": precision_below_advisory,
+            "gate_stability": round(gate_stability, 4) if gate_stability is not None else None,
+            "unstable_case_ids": unstable_cases,
+            "per_class_recall": per_class_recall,
+            "raw_counts": {"tp": tp, "fn": fn, "fp": fp, "tn": tn},
+            "thresholds": {
+                "recall_hold_worthy": _REVIEWER_GATE_RECALL_THRESHOLD,
+                "precision_publish_safe": (
+                    f"{_REVIEWER_GATE_PRECISION_ADVISORY_THRESHOLD} (advisory, not a hard gate)"
+                ),
+                "hold_verdicts": sorted(_REVIEWER_GATE_HOLD_VERDICTS),
+            },
+            "failures": failures,
+            "case_results": case_results,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Eval 9, phase C evidence — gate/PR-merge agreement.
+#
+# STATUS: PROPOSAL, pending ratification. Designs the join between
+# gate.json's recorded decision and what actually happened at merge time,
+# and implements what is runnable locally today. No released date carries
+# a gate.json yet (src/gate.py landed 2026-08-02, Phase 1/shadow, and has
+# not run against a real release), so this currently reports
+# status="insufficient_data" against the real archive — the join logic
+# itself is real and runnable, not a stub awaiting implementation.
+#
+# The join (once gate.json exists for released dates):
+#   released_gate = data/released/<date>/gate.json  (GateDecision: auto_merge | hold)
+#   pr_state      = git log for the commit that published <date>
+#                   ("chore(release): publish <date> as #N[.M]")
+#
+# A disagreement worth surfacing:
+#   - gate said "auto_merge" (would have shipped unattended) but the
+#     publishing commit message or its distance from the gate's
+#     decided_at timestamp indicates a human held it anyway (e.g. a
+#     large gap between decided_at and the publish commit, a `--revise`
+#     flag in the commit body, or an accompanying postmortem entry for
+#     that date) — the gate said "safe to auto-ship" and a human
+#     disagreed. This is the single most important disagreement direction
+#     to catch: it means the gate is MORE PERMISSIVE than Arman's own
+#     judgment, which is exactly the failure an auto-publish rollout must
+#     not have.
+#   - gate said "hold" but the date still published same-day with no
+#     documented override — less dangerous (a human looked and shipped
+#     anyway) but still worth a note if it happens often, since it means
+#     the gate is noisier than useful and holds get rubber-stamped.
+# ---------------------------------------------------------------------------
+
+def _git_log_for_publish_commit(date_str: str) -> Optional[str]:
+    """Return the subject line of the commit that published *date_str*, or
+    None if no such commit is found. Read-only `git log` call; never raises
+    (a git failure is treated the same as "no commit found")."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "log", "--all", "--oneline", "--grep", f"publish {date_str}"],
+            cwd=REPO_ROOT, capture_output=True, text=True, timeout=10,
+        )
+    except Exception:  # noqa: BLE001
+        return None
+    lines = [l for l in result.stdout.splitlines() if l.strip()]
+    return lines[0] if lines else None
+
+
+def check_gate_agreement(candidate_date: date) -> EvalResult:
+    """Join gate.json's recorded decision against the publish-commit history
+    for *candidate_date*. See the module-level design note above.
+
+    Returns status="insufficient_data" (passed=True, never blocks — this is
+    evidence-gathering, not a gate) when no gate.json exists for the date.
+    """
+    date_dir = DATA_DIR / "released" / candidate_date.isoformat()
+    gate_doc = _load_json(date_dir / "gate.json")
+    if gate_doc is None:
+        return EvalResult(
+            name="gate_agreement",
+            passed=True,
+            metric=None,
+            status="insufficient_data",
+            details={
+                "message": (
+                    f"No gate.json found for {candidate_date.isoformat()} -- "
+                    "src/gate.py has not produced a decision for this date "
+                    "(expected while Phase 1/shadow has not yet run against a "
+                    "real release). The join logic below is real; this date "
+                    "just has nothing to join against yet."
+                ),
+                "candidate_date": candidate_date.isoformat(),
+            },
+        )
+
+    commit_subject = _git_log_for_publish_commit(candidate_date.isoformat())
+    gate_decision = gate_doc.get("decision")
+    disagreement: Optional[str] = None
+    if gate_decision == "auto_merge" and commit_subject and "--force" in commit_subject:
+        disagreement = (
+            "gate said auto_merge but the publish commit carries --force -- "
+            "a human intervened despite the gate's green light. This is the "
+            "dangerous direction: the gate was MORE PERMISSIVE than Arman's "
+            "own judgment."
+        )
+    elif gate_decision == "hold" and commit_subject and "--force" not in commit_subject:
+        disagreement = (
+            "gate said hold but the date published without a --force marker "
+            "-- either a documented override happened outside the commit "
+            "subject, or the hold was noisy."
+        )
+
+    return EvalResult(
+        name="gate_agreement",
+        passed=True,  # evidence-gathering; never blocks on its own
+        metric=None,
+        status="pass" if disagreement is None else "disagreement_found",
+        details={
+            "candidate_date": candidate_date.isoformat(),
+            "gate_decision": gate_decision,
+            "gate_hold_reasons": gate_doc.get("hold_reasons", []),
+            "publish_commit_subject": commit_subject,
+            "disagreement": disagreement,
+        },
+    )
+
+
+def eval_gate_agreement(dataset_dir: Optional[Path]) -> EvalResult:
+    """Thin wrapper deriving *candidate_date* from dataset_dir.name and
+    delegating to check_gate_agreement(). Mirrors eval_drift_detection()'s
+    shape exactly."""
+    if dataset_dir is None:
+        return EvalResult(
+            name="gate_agreement",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": "No dataset directory provided."},
+        )
+    try:
+        candidate_date = date.fromisoformat(dataset_dir.name)
+    except ValueError:
+        return EvalResult(
+            name="gate_agreement",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={
+                "message": (
+                    f"Cannot derive a date from dataset directory name "
+                    f"{dataset_dir.name!r}; gate agreement requires YYYY-MM-DD."
+                )
+            },
+        )
+    return check_gate_agreement(candidate_date)
+
+
+# ---------------------------------------------------------------------------
 # Aggregation and reporting
 # ---------------------------------------------------------------------------
 
@@ -3291,6 +3960,8 @@ def _print_pretty(report: dict) -> None:
             "insufficient_baseline": "[DEGRADED]",
             "verifier_not_wired": "[SEAM]",   # Eval 7: fixture-ready, verifier pending
             "informational": "[INFO]",        # Eval 8: pre-ruling day, counts only
+            "reviewer_not_wired": "[SEAM]",    # Eval 9: fixture-ready, reviewer pending
+            "insufficient_data": "[DEGRADED]", # Eval 9 phase C: no gate.json to join yet
         }.get(r["status"], "[?]")
         metric_str = f" metric={r['metric']:.3f}" if r["metric"] is not None else ""
         print(f"  {icon} {r['name']}{metric_str}")
@@ -3436,6 +4107,8 @@ _REFERENCE_EVALS = {
     "drift_detection",
     "factual_accuracy",   # Eval 7: verifier calibration (seam: green until verifier wired)
     "reading_experience_lint",  # Eval 8: deterministic R-8/R-9 lint (no LLM)
+    "reviewer_gate",      # Eval 9 (PROPOSAL): reviewer-gate calibration (seam: green until reviewer wired)
+    "gate_agreement",     # Eval 9 phase C (PROPOSAL): gate.json vs. publish-commit join
 }
 
 
@@ -3532,6 +4205,18 @@ def run_evals(
             # Gates only datasets dated >= READING_LINT_EFFECTIVE_DATE;
             # earlier days and synthetic fixtures report informational counts.
             "reading_experience_lint": lambda: eval_reading_experience_lint(dataset_dir),
+            # Eval 9 (PROPOSAL, pending ratification): reviewer-gate calibration.
+            # The reviewer=None seam means this runs green (status=reviewer_not_wired)
+            # until the LLM Engineer's reviewer restructure lands and the LLM Engineer
+            # or Eval Engineer wires it in, by calling
+            # eval_reviewer_gate(reviewer=my_fn) directly. Not dataset-scoped (like
+            # factual_accuracy); reruns identically per dataset in the loop below.
+            "reviewer_gate": lambda: eval_reviewer_gate(reviewer=None),
+            # Eval 9 phase C (PROPOSAL): gate.json vs. publish-commit join.
+            # Dataset-scoped (derives a candidate_date from dataset_dir.name, like
+            # drift_detection). Reports status="insufficient_data" until gate.json
+            # exists for released dates.
+            "gate_agreement": lambda: eval_gate_agreement(dataset_dir),
         }
 
         for name, fn in dispatch.items():
@@ -3580,9 +4265,11 @@ def run_evals(
     # manual) trips a non-zero exit. By design this is loud -- the user
     # opted in.
     if strict and exit_code == 0:
-        # "verifier_not_wired" is excluded from warning_states intentionally:
-        # the fixture set is complete and the seam is by design. --strict
-        # should not penalise this state (it is not a gap; it's a planned seam).
+        # "verifier_not_wired" / "reviewer_not_wired" / "insufficient_data" are
+        # excluded from warning_states intentionally: each fixture/design set
+        # is complete and the seam is by design. --strict should not penalise
+        # these states (they are not gaps; they are planned seams pending an
+        # upstream module or enough archive history).
         warning_states = {"not_yet_implemented", "skipped", "insufficient_baseline"}
         if any(r["status"] in warning_states for r in report["results"]):
             exit_code = 1

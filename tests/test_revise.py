@@ -1,0 +1,1217 @@
+"""Unit tests for src/revise.py -- the revision engine.
+
+Scope. The parts that must not be wrong, in order of what they cost when
+they are:
+
+  * **The validation gate.** Everything downstream of it trusts that a
+    replacement did not invent a number, drop a link, or quietly become a
+    different sentence. Each rule gets a test that fails if the rule is
+    deleted.
+  * **Containment.** One LLM call per field, and that call sees ONLY that
+    field. A containment breach means one finding can rewrite the issue.
+  * **Freshness.** The engine must refuse to edit against a review of a
+    superseded draft -- it would be editing sentences the reviewer never
+    read.
+  * **Shadow vs live.** Shadow computes and records; it must not touch
+    ``issue.json``. Live applies and clears the now-invalid fact-check.
+
+We mock exactly one boundary -- ``src.revise._call_revise_llm`` -- and
+assert on the unit's own work. Per ``tests/CONVENTIONS.md``.
+"""
+from __future__ import annotations
+
+import datetime as _dt
+import hashlib
+import json
+from pathlib import Path
+from typing import Any
+from unittest.mock import patch
+
+import pytest
+
+from src import gate as gate_mod
+from src import paths
+from src import review as review_mod
+from src import revise as revise_mod
+from src.models import ReviewFinding, ReviewReport, ReviewTarget
+from src.revise import (
+    REVISE_PROMPT_VERSION,
+    _FieldGroup,
+    revise_day,
+    revisions_path,
+    validate_replacement,
+)
+
+
+DATE = _dt.date(2026, 8, 2)
+STORY_A = "c_" + "a" * 12
+STORY_B = "c_" + "b" * 12
+
+_BODY_A = (
+    "The release cuts inference latency by 30 percent across the fleet, and "
+    "the team says the gain holds under sustained load."
+)
+_BODY_B = (
+    "A second lab replicated the throughput result on commodity hardware "
+    "without vendor tooling."
+)
+
+
+# ---------------------------------------------------------------------------
+# Fixtures / helpers.
+# ---------------------------------------------------------------------------
+
+def _issue_payload() -> dict[str, Any]:
+    """Two stories in two sections, plus section intros -- enough surface to
+    prove containment (an edit to one must not see or touch the other)."""
+    return {
+        "schema_version": 6,
+        "issue_number": None,
+        "revision": 0,
+        "date": DATE.isoformat(),
+        "pulse": {
+            "schema_version": 3,
+            "name": "pulse",
+            "stories": [{
+                "story_id": STORY_A,
+                "headline": "Latency drops on the fleet",
+                "summary": _BODY_A,
+                "source_urls": ["https://example.com/a"],
+                "prior_coverage_ref": None,
+                "signal": "read",
+                "verification": {
+                    "schema_version": 1,
+                    "story_id": STORY_A,
+                    "prompt_version": "v0.4",
+                    "claims": [],
+                    "has_contradiction": False,
+                    "has_unsupported": False,
+                    "headline_flagged": False,
+                },
+            }],
+            "intro_lead": None,
+            "intro_body": None,
+        },
+        "sections": [{
+            "schema_version": 3,
+            "name": "big_picture",
+            "stories": [{
+                "story_id": STORY_B,
+                "headline": "A second lab replicates the result",
+                "summary": _BODY_B,
+                "source_urls": ["https://example.com/b"],
+                "prior_coverage_ref": None,
+                "signal": "read",
+                "verification": {
+                    "schema_version": 1,
+                    "story_id": STORY_B,
+                    "prompt_version": "v0.4",
+                    "claims": [],
+                    "has_contradiction": False,
+                    "has_unsupported": False,
+                    "headline_flagged": False,
+                },
+            }],
+            "intro_lead": "Trust, but verify.",
+            "intro_body": "Across the day, the same shape repeats.",
+        }],
+        "generated_at": "2026-08-02T05:55:26Z",
+        "prompt_versions": {"rank": "v0.7", "summarise": "v0.20"},
+        "notes": "shape: green -- pulse: 1, big_picture: 1",
+    }
+
+
+def _finding(
+    finding_id: str = "f001",
+    *,
+    story_id: str | None = STORY_A,
+    section: str | None = "pulse",
+    kind: str = "story",
+    field: str = "summary",
+    quote: str = "the gain holds under sustained load",
+    instruction: str = "Close on a plain take instead of a hedge.",
+    fix_kind: str = "text_edit",
+    severity: str = "major",
+) -> ReviewFinding:
+    target = (
+        ReviewTarget(kind="story", story_id=story_id, section=section, field=field)
+        if kind == "story"
+        else ReviewTarget(kind="section", section=section, field=field)
+    )
+    return ReviewFinding(
+        finding_id=finding_id,
+        target=target,
+        criterion="closing_shape",
+        severity=severity,  # type: ignore[arg-type]
+        quote=quote,
+        fix_kind=fix_kind,  # type: ignore[arg-type]
+        instruction=instruction,
+    )
+
+
+def _stage(
+    tmp_data_root: Path,
+    findings: list[ReviewFinding],
+    *,
+    issue: dict[str, Any] | None = None,
+    stale: bool = False,
+) -> Path:
+    """Write a staged issue.json + a matching review.json.
+
+    ``stale=True`` rewrites issue.json AFTER hashing it, so the review's
+    ``issue_sha256`` no longer describes the file -- exactly the state the
+    freshness check exists to catch.
+    """
+    payload = issue if issue is not None else _issue_payload()
+    target = paths.staging_dir(DATE)
+    target.mkdir(parents=True, exist_ok=True)
+    issue_path = target / "issue.json"
+    body = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+    issue_path.write_text(body, encoding="utf-8")
+    sha = hashlib.sha256(issue_path.read_bytes()).hexdigest()
+
+    report = ReviewReport(
+        generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+        computed_verdict="amber",
+        one_line="one thing to fix",
+        findings=findings,
+        prompt_version="v1.0",
+        thresholds_version="v1.0-2026-08-02",
+        llm_model="judge-model",
+        issue_sha256=sha,
+    )
+    review_mod._write_report_json(review_mod.review_json_path(DATE), report)
+
+    if stale:
+        payload["notes"] = "shape: amber -- edited after the review"
+        issue_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    return issue_path
+
+
+def _group(
+    text: str,
+    *,
+    field: str = "summary",
+    findings: list[ReviewFinding] | None = None,
+    operator: list[str] | None = None,
+) -> _FieldGroup:
+    target = ReviewTarget(
+        kind="story", story_id=STORY_A, section="pulse", field=field,  # type: ignore[arg-type]
+    ) if field in ("headline", "summary") else ReviewTarget(
+        kind="section", section="big_picture", field=field,  # type: ignore[arg-type]
+    )
+    return _FieldGroup(
+        target=target,
+        text=text,
+        findings=findings if findings is not None else [],
+        operator_instructions=operator or [],
+    )
+
+
+# ---------------------------------------------------------------------------
+# The validation gate.
+# ---------------------------------------------------------------------------
+
+class TestNumeralDiscipline:
+    """The most dangerous edit class: a number changes while the sentence
+    around it still reads fine. Nothing downstream would catch it -- the
+    fact-check already ran, and the reader has no reason to doubt a
+    plausible figure."""
+
+    def test_invented_numeral_is_rejected(self) -> None:
+        after = _BODY_A.replace(
+            "under sustained load.", "under sustained load for 12 hours.",
+        )
+        assert validate_replacement(
+            _group(_BODY_A, findings=[_finding()]), after,
+        ) == "numeral_invented"
+
+    def test_dropped_numeral_is_rejected(self) -> None:
+        after = _BODY_A.replace("by 30 percent ", "")
+        assert validate_replacement(
+            _group(_BODY_A, findings=[_finding()]), after,
+        ) == "numeral_dropped"
+
+    def test_numeral_change_named_in_the_finding_is_allowed(self) -> None:
+        """A finding that says "the source says 45, not 30" is licensing
+        exactly that change. The licence has to be written down."""
+        finding = _finding(
+            quote="by 30 percent",
+            instruction="The source says 45 percent, not 30 percent. Correct it.",
+        )
+        after = _BODY_A.replace("30 percent", "45 percent")
+        assert validate_replacement(_group(_BODY_A, findings=[finding]), after) == ""
+
+    def test_formatting_only_numeral_change_is_allowed(self) -> None:
+        """A thousands separator is a formatting choice, not a factual one.
+        Flagging it would train operators to ignore the check."""
+        before = "The index tracked 1,200 releases across the quarter window."
+        after = "The index tracked 1200 releases across the quarter window."
+        assert validate_replacement(_group(before, findings=[_finding()]), after) == ""
+
+    def test_operator_instruction_can_license_a_numeral(self) -> None:
+        after = _BODY_A.replace("30 percent", "45 percent")
+        group = _group(
+            _BODY_A, findings=[],
+            operator=["Change 30 percent to 45 percent -- the source was misread."],
+        )
+        assert validate_replacement(group, after) == ""
+
+
+class TestSourceUrlSurvival:
+    """A dropped link is a dropped attribution. The publication links out
+    rather than reproducing; losing the link loses the source."""
+
+    def test_dropped_url_is_rejected(self) -> None:
+        before = "The write-up at https://example.com/paper covers the method."
+        after = "The write-up covers the method in detail."
+        assert validate_replacement(
+            _group(before, findings=[_finding(quote="covers the method")]), after,
+        ) == "url_dropped"
+
+    def test_retained_url_passes(self) -> None:
+        before = "The write-up at https://example.com/paper covers the method."
+        after = "The write-up at https://example.com/paper explains the method."
+        assert validate_replacement(
+            _group(before, findings=[_finding(quote="covers the method")]), after,
+        ) == ""
+
+
+class TestEditContainment:
+    """Above the edit ceiling a "revision" is a rewrite, and the story is no
+    longer the one that was ranked, summarised, and fact-checked."""
+
+    def test_wholesale_rewrite_is_rejected(self) -> None:
+        after = (
+            "Everything about this story is different now and none of the "
+            "original wording survives the replacement at all here."
+        )
+        assert validate_replacement(
+            _group(_BODY_A, findings=[_finding()]), after,
+        ) == "edit_distance_exceeded"
+
+    def test_targeted_edit_passes(self) -> None:
+        after = _BODY_A.replace(
+            "the team says the gain holds under sustained load.",
+            "the gain holds under sustained load.",
+        )
+        assert validate_replacement(
+            _group(_BODY_A, findings=[_finding()]), after,
+        ) == ""
+
+    def test_short_field_may_be_replaced_outright(self) -> None:
+        """The absolute floor exists for exactly this: "Trust, but verify."
+        is the single most-cited anti-pattern in EDITORIAL.md, and a pure
+        percentage budget would make it unfixable."""
+        group = _group(
+            "Trust, but verify.", field="intro_lead",
+            findings=[_finding(
+                kind="section", section="big_picture", field="intro_lead",
+                quote="Trust, but verify.",
+                instruction="Replace this cliche with a specific pattern.",
+            )],
+        )
+        assert validate_replacement(group, "Costs land before clarity does.") == ""
+
+
+class TestDeletionDiscipline:
+    """When a finding says "delete X", only X's absence proves it was done.
+    A model that rewords a flagged phrase has not done what was asked."""
+
+    def test_surviving_deletion_quote_is_rejected(self) -> None:
+        finding = _finding(
+            quote="the team says",
+            instruction="Delete the attribution hedge 'the team says'.",
+        )
+        after = _BODY_A  # unchanged -- the quote is still there
+        assert validate_replacement(
+            _group(_BODY_A, findings=[finding]), after,
+        ) == "deletion_quote_survived"
+
+    def test_honoured_deletion_passes(self) -> None:
+        finding = _finding(
+            quote="the team says",
+            instruction="Delete the attribution hedge 'the team says'.",
+        )
+        after = _BODY_A.replace("the team says the gain", "the gain")
+        assert validate_replacement(
+            _group(_BODY_A, findings=[finding]), after,
+        ) == ""
+
+    def test_rewording_a_deletion_target_is_rejected(self) -> None:
+        """The subtle case: the model edits around the flagged phrase and
+        leaves it standing. Only the quote check catches this."""
+        finding = _finding(
+            quote="the team says",
+            instruction="Remove 'the team says' -- it is an attribution hedge.",
+        )
+        after = _BODY_A.replace("sustained load.", "load.")
+        assert validate_replacement(
+            _group(_BODY_A, findings=[finding]), after,
+        ) == "deletion_quote_survived"
+
+
+# ---------------------------------------------------------------------------
+# Containment -- what the model is allowed to see.
+# ---------------------------------------------------------------------------
+
+class TestPromptContainment:
+    """One call per field, and the call sees only that field. A breach means
+    one finding can drift text nobody flagged."""
+
+    def test_prompt_carries_only_the_target_field(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        prompts: list[str] = []
+
+        def _capture(prompt: str) -> str:
+            prompts.append(prompt)
+            return _BODY_A.replace("sustained load.", "load.")
+
+        with patch("src.revise._call_revise_llm", side_effect=_capture):
+            revise_day(DATE, shadow=True)
+
+        assert len(prompts) == 1
+        assert _BODY_A in prompts[0]
+        assert _BODY_B not in prompts[0], (
+            "containment breach: the revise prompt showed the model another "
+            "story's text"
+        )
+        assert "Trust, but verify." not in prompts[0]
+
+    def test_one_call_per_field_not_per_finding(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Two findings about the same field are answered together -- two
+        sequential rewrites of one field would have the second overwrite the
+        first's work."""
+        _stage(tmp_data_root, [
+            _finding("f001", quote="the gain holds under sustained load"),
+            _finding("f002", quote="cuts inference latency",
+                     instruction="Name the actor before the effect."),
+        ])
+        calls: list[str] = []
+
+        def _capture(prompt: str) -> str:
+            calls.append(prompt)
+            return _BODY_A.replace("sustained load.", "load.")
+
+        with patch("src.revise._call_revise_llm", side_effect=_capture):
+            revise_day(DATE, shadow=True)
+        assert len(calls) == 1
+
+    def test_two_fields_get_two_calls(self, tmp_data_root: Path) -> None:
+        _stage(tmp_data_root, [
+            _finding("f001", quote="the gain holds under sustained load"),
+            _finding("f002", field="headline", quote="Latency drops on the fleet",
+                     instruction="Name the artefact."),
+        ])
+        calls: list[str] = []
+
+        def _capture(prompt: str) -> str:
+            calls.append(prompt)
+            return "Fleet latency drops after the release lands"
+
+        with patch("src.revise._call_revise_llm", side_effect=_capture):
+            revise_day(DATE, shadow=True)
+        assert len(calls) == 2
+
+
+# ---------------------------------------------------------------------------
+# Fix-kind routing.
+# ---------------------------------------------------------------------------
+
+class TestFixKindRouting:
+    """The engine acts on ``text_edit`` and only on ``text_edit``. A finding
+    that needs a re-pick or a source cannot be fixed by rewriting prose, and
+    attempting it produces text that reads corrected while the problem
+    stands."""
+
+    def test_structural_finding_is_not_acted_on(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding(fix_kind="structural")])
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(DATE, shadow=True)
+        call.assert_not_called()
+        assert report.ran is False
+
+    def test_human_finding_is_not_acted_on(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding(fix_kind="human")])
+        with patch("src.revise._call_revise_llm") as call:
+            revise_day(DATE, shadow=True)
+        call.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Freshness.
+# ---------------------------------------------------------------------------
+
+class TestFreshness:
+    """A review of a superseded draft describes text that is no longer
+    there. Acting on it would edit the wrong sentences with high
+    confidence."""
+
+    def test_stale_review_refuses(self, tmp_data_root: Path) -> None:
+        _stage(tmp_data_root, [_finding()], stale=True)
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(DATE, shadow=False)
+        call.assert_not_called()
+        assert report.ran is False
+        assert "stale" in report.note
+
+    def test_stale_review_leaves_the_issue_untouched(
+        self, tmp_data_root: Path,
+    ) -> None:
+        issue_path = _stage(tmp_data_root, [_finding()], stale=True)
+        before = issue_path.read_bytes()
+        with patch("src.revise._call_revise_llm", return_value="anything"):
+            revise_day(DATE, shadow=False)
+        assert issue_path.read_bytes() == before
+
+    def test_missing_review_refuses(self, tmp_data_root: Path) -> None:
+        target = paths.staging_dir(DATE)
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "issue.json").write_text(json.dumps(_issue_payload()))
+        report = revise_day(DATE, shadow=True)
+        assert report.ran is False
+        assert "review.json" in report.note
+
+
+# ---------------------------------------------------------------------------
+# Shadow mode.
+# ---------------------------------------------------------------------------
+
+class TestShadowMode:
+    """Shadow is the observation contract: compute everything, write
+    nothing. A shadow run that edited the issue would be the worst possible
+    surprise."""
+
+    def test_issue_json_is_not_touched(self, tmp_data_root: Path) -> None:
+        issue_path = _stage(tmp_data_root, [_finding()])
+        before = issue_path.read_bytes()
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            revise_day(DATE, shadow=True)
+        assert issue_path.read_bytes() == before
+
+    def test_change_is_recorded_as_proposed(self, tmp_data_root: Path) -> None:
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(DATE, shadow=True)
+        assert report.proposed == 1
+        assert report.applied == 0
+        assert report.cycle is not None
+        assert report.cycle.changes[0].status == "proposed"
+
+    def test_shadow_still_reports_what_live_would_refuse(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A preview that hid the refusals would not be a preview."""
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace(
+                "under sustained load.", "under sustained load for 12 hours.",
+            ),
+        ):
+            report = revise_day(DATE, shadow=True)
+        assert report.rejected == 1
+        assert report.cycle is not None
+        assert report.cycle.changes[0].reject_reason == "numeral_invented"
+
+    def test_revisions_jsonl_is_written(self, tmp_data_root: Path) -> None:
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            revise_day(DATE, shadow=True)
+        lines = revisions_path(DATE).read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 1
+        record = json.loads(lines[0])
+        assert record["mode"] == "shadow"
+        assert record["prompt_version"] == REVISE_PROMPT_VERSION
+
+
+# ---------------------------------------------------------------------------
+# Live mode.
+# ---------------------------------------------------------------------------
+
+class TestLiveMode:
+    """Live writes. The two things that must be true afterwards: the text
+    changed, and the fact-check that described the old text is gone."""
+
+    def _apply(self, tmp_data_root: Path) -> dict[str, Any]:
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            revise_day(DATE, shadow=False)
+        return json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+
+    def test_field_is_rewritten(self, tmp_data_root: Path) -> None:
+        payload = self._apply(tmp_data_root)
+        assert payload["pulse"]["stories"][0]["summary"].endswith("under load.")
+
+    def test_verification_is_cleared_on_the_touched_story(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The fact-check was performed against text that no longer exists.
+        ``None`` correctly means "not verified"; a retained ``clean`` would
+        assert something nobody checked."""
+        payload = self._apply(tmp_data_root)
+        assert payload["pulse"]["stories"][0]["verification"] is None
+
+    def test_verification_survives_on_untouched_stories(
+        self, tmp_data_root: Path,
+    ) -> None:
+        payload = self._apply(tmp_data_root)
+        assert payload["sections"][0]["stories"][0]["verification"] is not None
+
+    def test_rejected_replacement_leaves_the_field_untouched(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace(
+                "under sustained load.", "under sustained load for 12 hours.",
+            ),
+        ):
+            report = revise_day(DATE, shadow=False)
+        payload = json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+        assert payload["pulse"]["stories"][0]["summary"] == _BODY_A
+        assert report.applied == 0
+        assert report.rejected == 1
+
+    def test_rejected_replacement_leaves_verification_intact(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Nothing changed, so nothing about the fact-check is stale."""
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace(
+                "under sustained load.", "under sustained load for 12 hours.",
+            ),
+        ):
+            revise_day(DATE, shadow=False)
+        payload = json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+        assert payload["pulse"]["stories"][0]["verification"] is not None
+
+    def test_section_intro_edit_applies(self, tmp_data_root: Path) -> None:
+        _stage(tmp_data_root, [_finding(
+            kind="section", section="big_picture", field="intro_lead",
+            quote="Trust, but verify.",
+            instruction="Replace this cliche with a specific pattern.",
+        )])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value="Costs land before clarity does.",
+        ):
+            revise_day(DATE, shadow=False)
+        payload = json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+        assert payload["sections"][0]["intro_lead"] == "Costs land before clarity does."
+
+    def test_applied_issue_no_longer_matches_the_review_hash(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Deliberate downstream consequence: an edited issue has not been
+        reviewed, so ``src/gate.py`` must hold with ``hold:stale-review``
+        until it is re-reviewed."""
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(DATE, shadow=False)
+        assert report.cycle is not None
+        assert report.cycle.issue_sha256_after is not None
+        assert report.cycle.issue_sha256_after != report.cycle.issue_sha256_before
+        current = hashlib.sha256(
+            paths.issue_path(DATE, canonical=False).read_bytes()
+        ).hexdigest()
+        assert current == report.cycle.issue_sha256_after
+
+    def test_over_long_replacement_is_rejected(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Length bounds come from the pydantic model, so a replacement that
+        pydantic would refuse never reaches issue.json."""
+        _stage(tmp_data_root, [_finding(
+            field="headline", quote="Latency drops on the fleet",
+            instruction="Name the artefact in the headline.",
+        )])
+        with patch("src.revise._call_revise_llm", return_value="x " * 300):
+            report = revise_day(DATE, shadow=False)
+        assert report.rejected == 1
+        payload = json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+        assert payload["pulse"]["stories"][0]["headline"] == "Latency drops on the fleet"
+
+
+# ---------------------------------------------------------------------------
+# The operator instruction.
+# ---------------------------------------------------------------------------
+
+class TestOperatorInstruction:
+    """The ``/revise`` PR command. One extra directive under exactly the
+    same containment as a finding -- including the validation gate."""
+
+    def test_targeted_instruction_opens_a_group(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [])  # no findings at all
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value="Costs land before clarity does.",
+        ):
+            report = revise_day(
+                DATE, shadow=False,
+                instruction="Replace the cliche.",
+                instruction_target="section:big_picture:intro_lead",
+            )
+        assert report.applied == 1
+        payload = json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+        assert payload["sections"][0]["intro_lead"] == "Costs land before clarity does."
+
+    def test_instruction_without_a_target_or_findings_is_refused(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """An instruction with no address is an edit with no address. Code
+        must not guess which field the operator meant."""
+        _stage(tmp_data_root, [])
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(
+                DATE, shadow=True, instruction="Tighten the prose.",
+            )
+        call.assert_not_called()
+        assert report.ran is False
+
+    def test_instruction_is_recorded_on_the_cycle(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """An operator directive is an editorial act and belongs in the
+        trail next to the findings it ran alongside."""
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(
+                DATE, shadow=True, instruction="Also tighten the close.",
+            )
+        assert report.cycle is not None
+        assert report.cycle.operator_instruction == "Also tighten the close."
+
+    def test_unparseable_target_does_not_block_the_findings(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A typo'd selector must not stop the reviewed findings from being
+        acted on."""
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(
+                DATE, shadow=True, instruction="Tighten it.",
+                instruction_target="nonsense",
+            )
+        assert report.proposed == 1
+
+
+# ---------------------------------------------------------------------------
+# The archive-copy seam.
+# ---------------------------------------------------------------------------
+
+class TestCanonicalSeam:
+    """``canonical=True`` points every read and write at
+    ``data/released/<date>/``. It exists because staging is gitignored, so a
+    release-PR checkout has only the released copy -- see the open question
+    at the end of src/revise.py. Pinned so the seam is known to work when
+    the Architect decides whether to use it."""
+
+    def _stage_released(self, findings: list[ReviewFinding]) -> Path:
+        payload = _issue_payload()
+        target = paths.released_dir(DATE)
+        target.mkdir(parents=True, exist_ok=True)
+        issue_path = target / "issue.json"
+        issue_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        sha = hashlib.sha256(issue_path.read_bytes()).hexdigest()
+        report = ReviewReport(
+            generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+            computed_verdict="amber", findings=findings,
+            prompt_version="v1.0", issue_sha256=sha,
+        )
+        review_mod._write_report_json(
+            review_mod.review_json_path(DATE, canonical=True), report,
+        )
+        return issue_path
+
+    def test_released_copy_is_revised(self, tmp_data_root: Path) -> None:
+        issue_path = self._stage_released([_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(DATE, shadow=False, canonical=True)
+        assert report.applied == 1
+        payload = json.loads(issue_path.read_text(encoding="utf-8"))
+        assert payload["pulse"]["stories"][0]["summary"].endswith("under load.")
+
+    def test_staging_default_does_not_see_the_released_copy(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The default must stay staging-only: silently falling back to the
+        released archive would let a draft-stage command edit a published
+        issue."""
+        self._stage_released([_finding()])
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(DATE, shadow=True)
+        call.assert_not_called()
+        assert report.ran is False
+
+
+# ---------------------------------------------------------------------------
+# The cycle log.
+# ---------------------------------------------------------------------------
+
+class TestCycleLog:
+    """``revisions.jsonl`` is an append-only history of what the engine did
+    to this draft. A cycle that overwrote its predecessor would lose the
+    record of the edit that actually shipped."""
+
+    def test_second_run_appends_rather_than_overwrites(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            revise_day(DATE, shadow=True)
+            revise_day(DATE, shadow=True)
+        lines = revisions_path(DATE).read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 2
+        assert [json.loads(line)["cycle"] for line in lines] == [1, 2]
+
+    def test_refusal_is_recorded_too(self, tmp_data_root: Path) -> None:
+        """"The engine ran and refused" and "the engine was never invoked"
+        are different states; only the artifact can tell them apart later."""
+        _stage(tmp_data_root, [_finding()], stale=True)
+        revise_day(DATE, shadow=True)
+        lines = revisions_path(DATE).read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 1
+        assert "refused" in json.loads(lines[0])["note"]
+
+
+# ---------------------------------------------------------------------------
+# Response cleaning.
+# ---------------------------------------------------------------------------
+
+class TestCleanReplacement:
+    """Models wrap their output. Every wrapper we fail to strip becomes
+    literal text in a published issue."""
+
+    def test_strips_code_fence(self) -> None:
+        cleaned = revise_mod._clean_replacement(
+            "```\nThe revised sentence.\n```", "summary",
+        )
+        assert cleaned == "The revised sentence."
+
+    def test_strips_leading_label(self) -> None:
+        cleaned = revise_mod._clean_replacement(
+            "Revised text: The revised sentence.", "summary",
+        )
+        assert cleaned == "The revised sentence."
+
+    def test_strips_wrapping_quotes(self) -> None:
+        cleaned = revise_mod._clean_replacement(
+            '"The revised sentence."', "summary",
+        )
+        assert cleaned == "The revised sentence."
+
+    def test_collapses_newlines(self) -> None:
+        """Every revisable field is a single paragraph in this schema; a
+        stray newline would render as one."""
+        cleaned = revise_mod._clean_replacement(
+            "First half\nsecond half.", "summary",
+        )
+        assert cleaned == "First half second half."
+
+
+# ---------------------------------------------------------------------------
+# Contract invariants on the revision models.
+# ---------------------------------------------------------------------------
+
+class TestRevisionContractInvariants:
+    """Shapes that would make ``revisions.jsonl`` lie about what happened.
+    Pydantic's type checking permits every one of them."""
+
+    def _change(self, **overrides: Any) -> dict[str, Any]:
+        base: dict[str, Any] = {
+            "target": ReviewTarget(
+                kind="story", story_id=STORY_A, field="summary",
+            ),
+            "before": "before text",
+            "after": "after text",
+            "recommendation": "do the thing",
+            "status": "applied",
+        }
+        base.update(overrides)
+        return base
+
+    def test_rejection_must_say_why(self) -> None:
+        from pydantic import ValidationError
+        from src.models import RevisionChange
+
+        with pytest.raises(ValidationError, match="reject_reason"):
+            RevisionChange(**self._change(status="rejected"))
+
+    def test_acceptance_must_not_carry_a_rejection_reason(self) -> None:
+        from pydantic import ValidationError
+        from src.models import RevisionChange
+
+        with pytest.raises(ValidationError, match="must not carry"):
+            RevisionChange(**self._change(reject_reason="numeral_invented"))
+
+    def test_applied_change_must_actually_change_something(self) -> None:
+        """Otherwise "applied" would include no-op writes and the trail
+        would overstate what the engine did."""
+        from pydantic import ValidationError
+        from src.models import RevisionChange
+
+        with pytest.raises(ValidationError, match="no-op"):
+            RevisionChange(**self._change(after="before text"))
+
+    def test_shadow_cycle_may_not_carry_an_applied_change(self) -> None:
+        from pydantic import ValidationError
+        from src.models import RevisionChange, RevisionCycle
+
+        with pytest.raises(ValidationError, match="must not carry 'applied'"):
+            RevisionCycle(
+                date=DATE, cycle=1, mode="shadow",
+                changes=[RevisionChange(**self._change())],
+                generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+                prompt_version=REVISE_PROMPT_VERSION,
+            )
+
+    def test_shadow_cycle_may_not_record_a_written_hash(self) -> None:
+        from pydantic import ValidationError
+        from src.models import RevisionCycle
+
+        with pytest.raises(ValidationError, match="issue_sha256_after"):
+            RevisionCycle(
+                date=DATE, cycle=1, mode="shadow", changes=[],
+                generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+                prompt_version=REVISE_PROMPT_VERSION,
+                issue_sha256_after="a" * 64,
+            )
+
+    def test_live_cycle_may_not_leave_a_change_merely_proposed(self) -> None:
+        from pydantic import ValidationError
+        from src.models import RevisionChange, RevisionCycle
+
+        with pytest.raises(ValidationError, match="resolve every change"):
+            RevisionCycle(
+                date=DATE, cycle=1, mode="live",
+                changes=[RevisionChange(**self._change(status="proposed"))],
+                generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+                prompt_version=REVISE_PROMPT_VERSION,
+            )
+
+
+# ---------------------------------------------------------------------------
+# Edit distance.
+# ---------------------------------------------------------------------------
+
+class TestTokenEditDistance:
+    """The containment measure itself. If it is wrong, every containment
+    decision built on it is wrong."""
+
+    @pytest.mark.parametrize(
+        "before,after,expected",
+        [
+            ("a b c", "a b c", 0),
+            ("a b c", "a b d", 1),
+            ("a b c", "a b", 1),
+            ("a b", "a b c", 1),
+            ("", "a b", 2),
+            ("a b", "", 2),
+        ],
+    )
+    def test_distance(self, before: str, after: str, expected: int) -> None:
+        assert revise_mod._token_edit_distance(
+            before.split(), after.split(),
+        ) == expected
+
+
+# ---------------------------------------------------------------------------
+# Cross-module seam: review -> revise -> re-review, for real.
+# ---------------------------------------------------------------------------
+
+class TestReviewReviseReReviewSeam:
+    """Every other test in this file (and in ``test_review.py``) checks one
+    stage against an artifact built BY HAND to look like the other stage's
+    output. That is the right grain for a unit suite, but none of it proves
+    the stages actually compose: that ``revise_day`` can read a
+    ``review.json`` that ``run_review`` really wrote, and that a second
+    ``run_review`` reads the ``issue.json`` that ``revise_day`` really wrote.
+
+    This test runs all three calls back to back with real file I/O, mocking
+    only the two LLM boundaries (``_call_review_llm``, ``_call_revise_llm``).
+    If a field rename on either side of the seam breaks the handoff, this is
+    the test that catches it -- the per-module tests above cannot, because
+    each of them holds the OTHER stage's contract fixed by hand.
+    """
+
+    def test_review_flags_revise_fixes_review_clears(
+        self, tmp_data_root: Path,
+    ) -> None:
+        issue_path = paths.staging_dir(DATE) / "issue.json"
+        issue_path.parent.mkdir(parents=True, exist_ok=True)
+        issue_path.write_text(
+            json.dumps(_issue_payload(), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        # --- 1. Real review: one mocked LLM call flags the hedge in the
+        # Pulse story's closing sentence. ---------------------------------
+        finding_json = {
+            "target": {
+                "kind": "story", "story_id": STORY_A, "field": "summary",
+            },
+            "criterion": "closing_shape",
+            "severity": "major",
+            "quote": "the team says",
+            "fix_kind": "text_edit",
+            "instruction": "Delete the attribution hedge 'the team says'.",
+        }
+        review_response = json.dumps({
+            "findings": [finding_json],
+            "summary": "One hedge to tighten before this ships.",
+        })
+        with patch("src.review._call_review_llm", return_value=review_response):
+            first = review_mod.run_review(DATE)
+
+        assert first.verdict == "amber"  # one major finding, real thresholds table
+        assert first.report is not None
+        first_sha = first.report.issue_sha256
+
+        # --- 2. Real revise: reads the review.json run_review just wrote,
+        # not a hand-built stand-in. One mocked LLM call applies the fix. ---
+        fixed_body = _BODY_A.replace("the team says the gain", "the gain")
+        with patch("src.revise._call_revise_llm", return_value=fixed_body):
+            revision = revise_mod.revise_day(DATE, shadow=False)
+
+        assert revision.applied == 1, revision.note
+        assert revision.rejected == 0
+        assert revision.cycle is not None
+        assert revision.cycle.issue_sha256_before == first_sha, (
+            "revise_day read a different issue than review.json was written "
+            "against -- the review -> revise handoff is broken"
+        )
+
+        payload = json.loads(issue_path.read_text(encoding="utf-8"))
+        assert payload["pulse"]["stories"][0]["summary"] == fixed_body
+        assert payload["pulse"]["stories"][0]["verification"] is None
+
+        # Between revise and the second review, the gate must see the
+        # recorded review as stale: it describes text that revise just
+        # replaced.
+        stale_state = gate_mod.read_review_state(DATE)
+        assert stale_state.issue_sha256 == first_sha
+        assert stale_state.issue_sha256 != gate_mod.issue_sha256(DATE)
+
+        # --- 3. Real re-review of the file revise actually wrote. The hedge
+        # is gone, so a reviewer with nothing left to flag returns clean. ---
+        clean_response = json.dumps({"findings": [], "summary": "Clean now."})
+        with patch("src.review._call_review_llm", return_value=clean_response):
+            second = review_mod.run_review(DATE)
+
+        assert second.verdict == "green"
+        assert second.report is not None
+        assert second.report.issue_sha256 == revision.cycle.issue_sha256_after, (
+            "the second review did not read the issue.json revise actually "
+            "wrote -- the revise -> re-review handoff is broken"
+        )
+        assert second.report.issue_sha256 != first_sha
+
+        # The gate no longer holds on staleness: the fresh review's hash
+        # matches the file on disk again.
+        fresh_state = gate_mod.read_review_state(DATE)
+        assert fresh_state.issue_sha256 == gate_mod.issue_sha256(DATE)
+
+
+# ---------------------------------------------------------------------------
+# The CLI entry point.
+# ---------------------------------------------------------------------------
+#
+# `revise_command` is the seam `.github/workflows/revise-command.yml` calls
+# (`aiv revise --date ... --live --released --instruction ...`) and is not
+# yet registered on `run.py`'s typer app -- see the hand-off note at the end
+# of src/revise.py. Before these tests, nothing proved `--released` or
+# `--target` actually reached `revise_day`, or that a bad `--date` fails
+# loudly instead of silently defaulting to today.
+#
+# We mock `revise_day` -- the CLI's only dependency -- and assert on the
+# CLI's own work: argument marshaling, the exit code, and the printed
+# summary. `revise_day` itself is exercised everywhere else in this file.
+# ---------------------------------------------------------------------------
+
+class TestReviseCommandArguments:
+    """Does each CLI flag reach `revise_day` as the flag it names?"""
+
+    @staticmethod
+    def _spy():
+        captured: dict[str, Any] = {}
+
+        def _fake(run_date, *, shadow, instruction, instruction_target, canonical):
+            captured.update(
+                run_date=run_date, shadow=shadow, instruction=instruction,
+                instruction_target=instruction_target, canonical=canonical,
+            )
+            return revise_mod.RevisionReport(
+                date=run_date, mode="shadow" if shadow else "live", ran=True,
+                applied=0, proposed=0, rejected=0,
+                path=Path("/tmp/revisions.jsonl"),
+            )
+
+        return captured, _fake
+
+    def test_released_flag_sets_canonical_true(self) -> None:
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(date=DATE.isoformat(), released=True)
+        assert captured["canonical"] is True
+
+    def test_default_leaves_canonical_false(self) -> None:
+        """The staging draft is what this stage is for; the released copy
+        is the exception, not the default, per revise_day's own docstring."""
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(date=DATE.isoformat())
+        assert captured["canonical"] is False
+
+    def test_target_reaches_revise_day_as_instruction_target(self) -> None:
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(
+                    date=DATE.isoformat(),
+                    target="story:c_abcabcabcabc:summary",
+                )
+        assert captured["instruction_target"] == "story:c_abcabcabcabc:summary"
+
+    def test_shadow_true_by_default(self) -> None:
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(date=DATE.isoformat())
+        assert captured["shadow"] is True
+
+    def test_shadow_false_reaches_revise_day_live(self) -> None:
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(date=DATE.isoformat(), shadow=False)
+        assert captured["shadow"] is False
+
+    def test_explicit_date_is_parsed(self) -> None:
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(date="2026-01-15")
+        assert captured["run_date"] == _dt.date(2026, 1, 15)
+
+
+class TestReviseCommandDateValidation:
+    def test_invalid_date_exits_with_usage_error(
+        self, capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """A typo'd --date must fail loudly, not silently fall back to
+        today and revise the wrong day's draft."""
+        with patch.object(revise_mod, "revise_day") as fake:
+            with pytest.raises(SystemExit) as exc:
+                revise_mod.revise_command(date="not-a-date")
+        fake.assert_not_called()
+        assert exc.value.code == 2
+        assert "YYYY-MM-DD" in capsys.readouterr().out
+
+
+class TestReviseCommandOutput:
+    """The printed summary is what an operator (or the /revise workflow's
+    PR-comment reply) reads -- it must name every change and why a rejected
+    one was refused."""
+
+    def test_reports_applied_and_rejected_changes(
+        self, capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        from src.models import RevisionChange, RevisionCycle
+
+        cycle = RevisionCycle(
+            date=DATE, cycle=1, mode="live",
+            changes=[
+                RevisionChange(
+                    target=ReviewTarget(
+                        kind="story", story_id=STORY_A, field="headline",
+                    ),
+                    before="old headline", after="new headline",
+                    recommendation="tighten it", status="applied",
+                ),
+                RevisionChange(
+                    target=ReviewTarget(
+                        kind="section", section="big_picture", field="intro_lead",
+                    ),
+                    before="Trust, but verify.", after="Trust, but verify.",
+                    recommendation="cut the cliche", status="rejected",
+                    reject_reason="edit_distance_exceeded",
+                ),
+            ],
+            generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+            prompt_version=REVISE_PROMPT_VERSION,
+        )
+        report = revise_mod.RevisionReport(
+            date=DATE, mode="live", ran=True, applied=1, proposed=0,
+            rejected=1, path=Path("/tmp/revisions.jsonl"), cycle=cycle,
+        )
+        with patch.object(revise_mod, "revise_day", return_value=report):
+            with pytest.raises(SystemExit) as exc:
+                revise_mod.revise_command(date=DATE.isoformat(), shadow=False)
+        assert exc.value.code == 0
+        out = capsys.readouterr().out
+        assert f"[APPLIED ] story:{STORY_A}:headline" in out
+        assert (
+            "[REJECTED] section:big_picture:intro_lead (edit_distance_exceeded)"
+            in out
+        )

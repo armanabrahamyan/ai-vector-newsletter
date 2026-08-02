@@ -1,0 +1,179 @@
+{
+  "schema_version": 5,
+  "issue_number": 3,
+  "revision": 1,
+  "date": "2026-05-25",
+  "pulse": {
+    "schema_version": 2,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_fffd4547f1842301",
+        "headline": "Run autonomous coding agents with full system access, safely isolated",
+        "summary": "Running autonomous agents with sudo access on a real machine is risky; one bad command wipes the host. This community-built sandbox threads that needle: GPU passthrough, browser automation, and persistent sessions inside an isolated environment. Single Reddit source, no published benchmarks. If you're running headless coding agents this week, clone it before the next sprint.",
+        "source_urls": [
+          "https://reddit.com/r/LocalLLaMA/comments/1tn3i55/i_built_a_computer_use_sandbox_framework_for"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 2,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_3ca20ed3f31ada64",
+          "headline": "A new framework gives banks live oversight of AI agents mid-action",
+          "summary": "Agentic AI acts in ways pre-deployment governance cannot fully anticipate. MI9, proposed in a Risk.net Cutting Edge paper, adds real-time telemetry and authorisation at the action layer. The paper is paywalled; no code or benchmarks are published. Raise it at your next architecture review before committing to a runtime-control design.",
+          "source_urls": [
+            "https://www.risk.net/cutting-edge/7963539/mi9-runtime-governance-for-agentic-ai-systems"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_f85894649a0f93e2",
+          "headline": "AI agents are about to execute payments without asking you first",
+          "summary": "The Bank of England's research arm flags that AI agents are moving from recommending purchases to owning entire payment lifecycles, including agent-to-agent negotiation. Today's infrastructure is fragmented across identity standards and payment rails. No regulatory framework yet exists. If you're building or procuring payment systems, raise agent authentication requirements before your next vendor contract.",
+          "source_urls": [
+            "https://bankunderground.co.uk/2026/05/21/agentic-commerce-and-the-battleground-for-new-payments-infrastructure/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_66cafdbc44177600",
+          "headline": "EU AI Act is live, and finance teams need to act now",
+          "summary": "The EU AI Act is now in force and applies to European finance functions, but the actual compliance steps sit behind a paywall in a single-author Substack post with no published artefacts. Thin sourcing. If you are deciding which AI tools need formal risk classification, treat this as a prompt to get legal counsel involved now.",
+          "source_urls": [
+            "https://aiinfinance.substack.com/p/eu-ai-act-for-finance-teams-what"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_da2a0f910999da60",
+          "headline": "Switching language reshapes which AI model is easiest to jailbreak",
+          "summary": "A study of 363 adversarial prompts across four frontier models found that safety rankings reverse between English and Spanish: Qwen Omni overtook Pixtral Large as the most vulnerable model under Spanish prompting, a shift no English-only score predicted. No benchmark or code is released yet. If you red-team deployed models, language coverage belongs in your test plan now.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.23157"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Governance is lagging action.",
+      "intro_body": "Across payments, compliance, and model safety, the week's signal is the same: AI systems are moving faster than the frameworks meant to contain them, and the gap is widening."
+    },
+    {
+      "schema_version": 2,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_6657ef5be92dc5a4",
+          "headline": "Precomputed rotation matrices halve local model memory without retraining",
+          "summary": "OSCAR compresses the key-value cache (the memory a model uses to track context) to 2 bits by rotating activations using offline covariance statistics. Rotation matrices and code are public on Hugging Face and GitHub. Single Reddit thread, no independent benchmarks yet. If you're hitting memory walls running large models locally, test it before your next hardware decision.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tn6v0r/oscar_rotationzoo_offline_spectral"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_fe4f729e91debc91",
+          "headline": "AI agents writing GPU code look fast in tests, fail in production",
+          "summary": "FastKernels (arXiv preprint, code public) tests language-model-based kernel agents against real inference stacks rather than sandboxes. The strongest agent achieved only 0.94x aggregate speedup over production baselines; weaker agents reached 0.53x. Benchmarks are self-reported by the authors. Before trusting agent-generated kernel optimisations, validate against your actual serving stack.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.23215"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_b2bad624a610e752",
+          "headline": "Bug fix stops local agentic sessions reprocessing 70,000 tokens from scratch",
+          "summary": "A merged pull request in llama.cpp fixes broken checkpoint creation that forced the server to reprocess the entire context, sometimes 70,000 tokens, after any edit to conversation history. Single Reddit thread, no independent benchmark. If you run agentic coding sessions locally, pull the latest llama.cpp build before your next long session.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tn0jyp/server_fix_checkpoints_creation_by_jacekpoplawski"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_401669128d59e1dd",
+          "headline": "Popular agent skills often fail the models meant to use them",
+          "summary": "Skills (structured workflow instructions for language model agents) are multiplying faster than anyone is vetting them. OpenSkillEval tested 30 open-source skills across 600 generated tasks; popular skills frequently underperformed a base agent with none at all. No code confirmed yet; raise this before committing to a skill library in your next agent build.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.23657"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_9d28d6f9aac4b5ed",
+          "headline": "Image-and-text models ace benchmarks while barely looking at the images",
+          "summary": "Researchers stripped a large fraction of image tokens from several open-source image-and-text models and found performance on a standard hallucination benchmark barely moved. No code is published yet. If you are selecting or comparing models on visual tasks, treat benchmark scores as unreliable proxies until you run your own degradation tests.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.22903"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Verify before you deploy.",
+      "intro_body": "Today's releases are heavy on promise, light on independent proof. Across memory tricks, agent tools, and visual models, the consistent finding is that reported gains rarely survive contact with production conditions."
+    },
+    {
+      "schema_version": 2,
+      "name": "on_the_radar",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_4a0d0ebc7e6f45de",
+          "headline": "A new framework cuts language model context costs by 25%",
+          "summary": "Choosing how much context to feed a language model is a cost decision. This arXiv paper frames it as an optimisation problem, jointly weighing performance and token spend. Deployment-aware selection cut token usage by 25% at comparable accuracy; memory compression achieved over 50% lower cost. No code released yet; raise this before locking in a context strategy.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.23071"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_a61b9158da675096",
+          "headline": "Watching entropy tells you when chain-of-thought reasoning actually helps",
+          "summary": "Chain-of-thought prompting often wastes tokens on tasks that don't need it. A new paper shows early entropy patterns during generation reliably predict which tasks benefit, and proposes a routing method that cuts token use by 41\u201355% while improving accuracy. No code released yet; raise this at your next inference-budget review.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.22873"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Worth a glance.",
+      "intro_body": "Both items point toward smarter token management, but neither has released code or independent validation yet. Promising direction; too early to act on."
+    }
+  ],
+  "generated_at": "2026-05-25T13:54:30.194838Z",
+  "prompt_versions": {
+    "rank": "v0.4",
+    "summarise": "v0.9",
+    "pulse": "v0.9"
+  },
+  "notes": ""
+}

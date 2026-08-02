@@ -132,7 +132,16 @@ _scratch/          Throwaway working notes — gitignored
 - **Commit messages use Conventional Commits:** `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `style:`, `test:`, `ci:`. No free-form prefixes, no trailing summaries.
 - No `Co-Authored-By: Claude` lines in commit messages.
 - `.env` is never committed. Use `.env.example` as the template.
-- Staging is never promoted automatically — Arman reviews and runs `--release`.
+- **Publishing is gated, and the gate is phased.** `src/gate.py` decides
+  whether a staged issue may publish without a human and writes the answer to
+  `data/staging/<date>/gate.json`. What acts on that answer depends on the
+  `AIV_AUTO_PUBLISH_PHASE` repository variable: `shadow` (the default —
+  compute and record only, nothing publishes unattended) → `green_only` →
+  `green_amber`. Unset or unrecognised resolves to `shadow`; the phase is
+  Arman's to advance. The gate fails closed: anything it cannot positively
+  confirm is a hold. **A local `aiv release` is always manual, in every
+  phase** — the gate governs the unattended path only, and never runs inside
+  `aiv run`.
 - **Eval governance (rule set 2026-07-04): evals always run; evals change only on ratification.** Any change to an LLM-stage prompt or model (rank, summarise, verify, review) runs its eval gate BEFORE merge — voice adherence for voice-bearing prompts, Eval 7 calibration for the verifier — with results recorded in the PR body. A gate noted but not executed is a process failure. Changes to `evals/` themselves (thresholds, fixtures, gate scope, harness semantics) require explicit ratification by Arman before commit — the eval-engineer proposes and maintains; the meaning of the gates moves only on ratification.
 - `docs/` serves GitHub Pages. The only markdown allowed at `docs/` root is `HANDBOOK.md` (operator-facing). Internal living docs go in `docs/internal/`.
 - **PR bodies follow `.github/pull_request_template.md`** — three questions, product-first: *What changes in tomorrow's issue / How we know it's better / If it's wrong.* Applies to API-created PRs too, where the template isn't auto-applied. On prompt/model changes, "how we know" means executed eval-gate results, never a promise. Doubts are raised in discussion before the PR exists, not parked in it.

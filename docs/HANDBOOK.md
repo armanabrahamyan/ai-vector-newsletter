@@ -18,8 +18,13 @@ aggregated**. Each morning the pipeline reads ~60 sources, deduplicates the
 inevitable cross-posts and re-reports, scores each story against an
 editorial rubric, drafts the ones that earn a slot, and renders a single
 readable HTML issue. Every story carries a *direction note* — where this
-is heading. A human reviews every draft and ships when ready. Nothing
-auto-publishes, by design.
+is heading.
+
+**Who ships it depends on the phase.** By default (`shadow`) a human reviews
+every draft and ships when ready, and the publish gate merely records what it
+*would* have decided. As the phase advances, the gate acts on its own
+`auto_merge` decisions and publishes unattended — but only on issues that
+pass every check, and it fails closed on anything it cannot confirm. See §18.
 
 > ### Principle: No Token Wasted
 >
@@ -33,7 +38,7 @@ auto-publishes, by design.
 > reliably?* If yes, code does it. The LLM is reserved for the calls
 > only judgment can make.
 
-### Why these six stages
+### Why these stages
 
 Each stage solves a problem the others can't.
 
@@ -43,8 +48,21 @@ Each stage solves a problem the others can't.
 | `cluster`   | Ten feeds produce ten copies of the same story |
 | `rank`      | The issue is a chronological list, not an edit |
 | `summarise` | The reader gets a link dump, not a newsletter |
-| `verify`    | Factual claims go unchecked before Arman reviews (advisory; never blocks) |
+| `verify`    | Factual claims go unchecked before anyone reviews (advisory; never blocks) |
 | `render`    | The output is JSON, not something a human reads |
+| `review`    | Nothing catches an off-voice or under-baked issue before it ships |
+
+Then two things that are **not stages**, because they don't fit the
+one-in-one-out shape:
+
+| Step | What would break without it | Where it runs |
+|---|---|---|
+| `revise` | The review's findings get recorded and never acted on | A loop after `review`, inside `aiv run` |
+| `gate`   | An unattended publish would ship whatever the pipeline produced, unread | After the pipeline, from the publish workflow (`aiv gate`) |
+
+`revise` is a loop over three stages that already ran, not a stage of its
+own — which is why `--stages revise` is not a thing. `gate` writes no issue
+content at all; it reads what the others wrote and answers one question.
 
 Each stage writes a typed file (`items.jsonl` → `clusters.jsonl` →
 `ranked.jsonl` → `issue.json`) that the next stage reads. That handoff
@@ -66,12 +84,18 @@ costs, and how long it takes — live in §2.
 | Re-process an earlier day | `aiv run --date YYYY-MM-DD` |
 | Re-run just verify | `aiv run --stage verify --date YYYY-MM-DD` |
 | Skip the verify pass | add `--no-verify` to `aiv run` |
+| Skip the revision loop | add `--no-revise` to `aiv run` |
+| See why an issue was held | `aiv gate --date YYYY-MM-DD --dry-run` |
+| Turn auto-publish off, now | set `AIV_AUTO_PUBLISH_PHASE` to `shadow` (§18.3) |
 | See what would happen | add `--dry-run` to any command |
 | Get more logging | add `--verbose` to any command |
 | Just check setup | `aiv check` |
 
 Pipeline stages, in order:
-`fetch` → `cluster` → `rank` → `summarise` → `verify` → `render`
+`fetch` → `cluster` → `rank` → `summarise` → `verify` → `render` → `review`
+
+Then, after the stages: the **revision loop** (inside `aiv run`) and the
+**publish gate** (`aiv gate`, run by the workflow).
 
 ---
 
@@ -139,6 +163,35 @@ its own — that's why you can re-run subsets cheaply.
 - **No LLM.** Cost = 0. Time < 1 s.
 - **When it goes wrong:** template syntax error or model-field mismatch after a contract change.
 
+### `review` — the editor's pre-release pass
+- **Reads:** `issue.json`, plus the last 3 released issues for drift-watch context
+- **Writes:** `data/staging/<date>/review.json` and its rendered `review.md`
+- **What it does:** reads the draft as the editor would and emits *findings*, each pinned to one editable field (a story's headline or summary, a section's intro). The **verdict is then computed by code** from the finding severities under `config/review_thresholds.yaml` — the model produces evidence, a ratified table turns evidence into `green` / `amber` / `red`. That is why you can re-derive a verdict from `review.json` without re-running the LLM.
+- **Uses LLM.** Cost ≈ $0.02-0.05. Time ≈ 20-40 s.
+- **Advisory to the pipeline, decisive to the gate.** An `unavailable` review never blocks *your* `aiv release`. It does hold an *unattended* publish, in every phase. A human who reads an unavailable review and ships anyway has made a judgment; a scheduler that ships past one has made none.
+- **When it goes wrong:** `review.json` says `unavailable` or `unparseable` with a note. Re-run alone: `aiv review --date <date>`.
+
+### `revise` — act on what the review flagged
+- **Reads:** `issue.json` + `review.json`
+- **Writes:** `data/staging/<date>/revisions.jsonl` (appends), and `issue.json` in live mode
+- **What it does:** takes the findings the reviewer marked as fixable text edits and rewrites those fields — one LLM call per field, with a code-side validation gate on every replacement (no invented numerals, no dropped URLs, no runaway rewrites). Every proposal, application and refusal is logged with the full before/after text.
+- **Modes**, from `AIV_REVISE_MODE` or `aiv run --revise-mode`:
+  - `shadow` (**default**) — one pass, proposals logged, `issue.json` untouched.
+  - `live` — up to **2 cycles** of [revise → re-verify the touched stories → render → review], stopping the moment the computed verdict stops improving (`red < amber < green`; equal is not improvement).
+  - `off` — doesn't run, spends nothing. Same as `--no-revise`.
+- **Uses LLM.** Cost in live mode ≈ $0.05-0.15 per cycle, depending on how many fields were flagged. Time ≈ 30-90 s per cycle.
+- **It never rolls back.** If a cycle makes the issue worse, the loop stops — but the edit stays. The publish gate is the backstop: a degraded verdict holds the release and you look at it.
+- **When it goes wrong:** the run continues regardless. Look for `revise: [advisory-guard]` in the log — the loop failed and the pipeline carried on with the issue as it stood.
+
+### `gate` — may this publish without a human?
+- **Reads:** `issue.json`, `review.json` (or `review.md`), `verify.json`, `revisions.jsonl`
+- **Writes:** `data/staging/<date>/gate.json`
+- **What it does:** runs a fixed list of checks and answers `auto_merge` or `hold`. **No LLM** — the inputs are two verdict tokens and a hash comparison, and a publish decision is the last place you want non-determinism.
+- **Not a pipeline stage.** `aiv run` never calls it. The publish workflow does, after the pipeline.
+- **Fails closed.** A missing review, an unparseable verdict, a verifier that didn't run, a review written against a *different* version of the issue — all hold. It never publishes on the absence of evidence.
+- **The decision lives in the file, not the exit code.** `aiv gate` exits 0 whether it decided `auto_merge` or `hold`, so a non-zero exit means one thing only: the gate itself broke. Treat that as a hold too.
+- **See §18** for what to do when it holds.
+
 ### The pipeline as a whole
 
 ```
@@ -146,12 +199,19 @@ config/sources.yaml ──► fetch ──► items.jsonl ──► cluster ─�
                                                                      │
                                                                      ▼
 docs/staging/<date>.html ◄── render ◄── verify ◄── issue.json ◄── summarise ◄── ranked.jsonl
-                                          │                          ▲              ▲
-                                     verify.json                     │              │
-                                                                  rank ─────────────┘
+            │                             │                          ▲              ▲
+            │                        verify.json                     │              │
+            ▼                                                     rank ─────────────┘
+         review ──► review.json ──► revise ──► revisions.jsonl
+                                       │
+                          (live mode: loops back to verify, ≤2 cycles)
+                                       ▼
+                                     gate ──► gate.json ──► publish, or hold
 ```
 
-Total: 2-5 minutes end-to-end. Most of it is `summarise`. `verify` adds 15-30 s.
+Total: 3-6 minutes end-to-end in the default `shadow` revise mode. Most of it
+is `summarise`. `verify` adds 15-30 s, `review` 20-40 s. A `live` revision
+cycle adds roughly a minute each.
 
 ---
 
@@ -169,6 +229,9 @@ its predecessor's file and writes its own. Touch the smallest surface.
 | A prompt in `src/summarise.py` | `summarise` onwards |
 | A prompt in `src/verify.py` | `verify` only |
 | `templates/issue.html.j2` | `render` only |
+| A prompt in `src/review.py`, or `config/review_thresholds.yaml` | `review` only |
+| A prompt in `src/revise.py` | `aiv revise --date <date>` (or re-run with `--revise-mode live`) |
+| **`issue.json` by hand** | `render`, **then `review`** — otherwise the gate holds it as `hold:stale-review` |
 
 Examples:
 
@@ -184,6 +247,13 @@ aiv run --stage render --date 2026-05-24
 ```
 
 Stages always run in pipeline order regardless of the order you pass them.
+
+**One trap worth naming.** Anything that rewrites `issue.json` — a hand edit,
+a re-summarise, even a re-run of `verify` (it writes the per-story flags back
+into the file) — makes the existing review stale, because the review records
+a hash of the exact bytes it read. The gate treats a stale review as a hold.
+Re-running `review` afterwards fixes it, and `aiv run` already does that for
+you whenever `render` is in scope.
 
 ---
 
@@ -548,8 +618,12 @@ guess — add the model's prices to unblock it.
 
 | File | Edit by hand? | Notes |
 |---|---|---|
-| `data/staging/*/issue.json` | Yes | Re-render after with `aiv run --stage render` |
+| `data/staging/*/issue.json` | Yes | Re-render **and re-review** after: `aiv run --stages render --date <date>` (review auto-fires). Skipping the re-review leaves a stale hash and the gate holds it |
 | `data/staging/*/verify.json` | No | Auto-written by verify stage; re-run `aiv run --stage verify` |
+| `data/staging/*/review.json` | No | Auto-written; the verdict is computed from findings, so hand-editing it forges evidence rather than recording a judgement. Re-run `aiv review --date <date>` |
+| `data/staging/*/review.md` | No | Rendered from `review.json`; edits are overwritten on the next review |
+| `data/staging/*/revisions.jsonl` | No | Append-only audit log. Editing it rewrites history |
+| `data/staging/*/gate.json` | No | Recomputed by `aiv gate` in seconds. To publish past a hold, use `aiv release` (§18.4) — not a hand-edited verdict |
 | `data/staging/*/ranked.jsonl` | Yes | Re-summarise after |
 | `data/staging/*/clusters.jsonl` | Cautious | Usually easier to re-cluster |
 | `data/staging/*/items.jsonl` | No | Re-run fetch instead |
@@ -665,9 +739,14 @@ The eval writes a timestamped JSON report to
 (generated outputs), but `evals/reports/weekly/` is tracked — it holds
 the Eval Engineer's curated weekly behavioural-integrity notes.
 
-### The publish gate (you can't accidentally ship a broken issue)
+### The staging-integrity gate (you can't accidentally ship a broken issue)
 
-`aiv release` now runs `check_integrity()` against the staging draft
+**Not the same thing as the publish gate in §18.** This one asks "is this
+draft structurally complete?" and runs inside `aiv release`, including when
+you run it by hand. The publish gate asks "may this go out unread?" and runs
+only on the unattended path. A draft can pass this and still be held by that.
+
+`aiv release` runs `check_integrity()` against the staging draft
 automatically. If staging has fewer than 3 hands_on stories, no pulse,
 a source fire rate below 0.80, or a `score ≥ 35` cluster wrongly
 tiered as `cut`, the release is **refused** with a clear list of
@@ -692,6 +771,181 @@ The gate was added after a 3-story draft shipped publicly because nothing
 prevented it (Issue #2.1 on 2026-05-24, postmortem in
 `evals/failure_modes.md` FM-13). The gate makes that class of mistake
 structurally impossible without explicit `--force`.
+
+---
+
+## 18. The unattended publish — living with the gate
+
+The nightly workflow builds the issue, promotes it on a
+`release/<date>-issue-<N>` branch, and opens a PR. `aiv gate` then writes
+`data/staging/<date>/gate.json` with one of two answers: `auto_merge` or
+`hold`.
+
+**What happens to that answer depends on one repository variable,
+`AIV_AUTO_PUBLISH_PHASE`:**
+
+| Phase | Which review verdicts may auto-merge | What the workflow does |
+|---|---|---|
+| `shadow` (**default**, and what unset means) | `green`, `amber` | Nothing. Records the decision so you can see what it *would* have done. |
+| `green_only` | `green` | Acts on `auto_merge`. |
+| `green_amber` | `green`, `amber` | Acts on `auto_merge`. The end state. |
+
+Two things that are true in **every** phase, `shadow` included. First, the
+hard blocks always hold: a contradicted fact-check claim, a verifier that
+could not run, and a review written against a different version of the issue
+stop the publish regardless of how good the editorial verdict looks. Second,
+a local `aiv release` is entirely manual. The gate governs the unattended
+path only and never runs inside `aiv run`.
+
+### 18.1 "The machine published overnight — where do I look?"
+
+Four places, in the order that answers the most with the least reading:
+
+```bash
+# 1. What went out, and as which issue number
+open docs/index.html
+git log --oneline -5
+
+# 2. Why the gate allowed it — every check, passes included
+cat data/released/$(date +%F)/gate.json | python -m json.tool
+
+# 3. What the editor thought of it
+cat data/released/$(date +%F)/review.md
+
+# 4. Whether the reviser changed anything before it shipped
+cat data/released/$(date +%F)/revisions.jsonl | python -m json.tool
+```
+
+`gate.json` is the one to read first. It records **every** check it ran, not
+just the failures, so it reads as an audit trail rather than a list of
+complaints. `decision`, `phase`, `hold_reasons`, and the `review` / `verify`
+blocks tell you what the gate saw without re-parsing anything.
+
+If the reviser edited the issue, `revisions.jsonl` has the full before-and-after
+text of every change, plus every change it *refused* and why. That refusal
+list is the most useful signal in the file — it is the revise prompt's
+misfire rate, and it is what you tune against.
+
+### 18.2 "A release is held — what do I do?"
+
+Start with the reason. It is a stable token, and each one has a specific
+remedy:
+
+```bash
+aiv gate --date YYYY-MM-DD --dry-run    # prints the decision + every hold reason
+```
+
+| Hold reason | What it means | What to do |
+|---|---|---|
+| `hold:review-verdict-red` | The editor's computed verdict is red | Read `review.json` findings. Fix and re-run, or publish as-is (§18.4) |
+| `hold:review-verdict-amber` | Amber, and the phase is `green_only` | Judgement call. Read the review; amber is usually shippable |
+| `hold:review-unavailable` | The review never ran (LLM/auth/timeout) | `aiv review --date <date>`, then re-gate |
+| `hold:review-missing` | No `review.json` or `review.md` at all | `aiv run --stage review --date <date>` |
+| `hold:stale-review` | The issue changed after the review | Re-review it: `aiv review --date <date>`. This is the common one after a hand edit |
+| `hold:verify-unavailable` | The fact-checker never ran | `aiv run --stage verify --date <date>`, then re-review (verify rewrites `issue.json`, so the old review goes stale) |
+| `hold:contradicted-claim` | A story says something its source contradicts | **Read this one properly.** `gate.json` names the story ids under `verify.contradicted_story_ids`. Fix the summary or drop the story |
+| `hold:issue-invalid` / `hold:issue-missing` | No readable draft | Something broke upstream. Check the run log; re-run the pipeline |
+
+A hold is not a failure of the day. It is the gate doing exactly what it was
+built for. The issue sits on its branch in a PR; nothing is lost.
+
+### 18.3 "Turn auto-publish off. Now."
+
+Set the repository variable to `shadow`:
+
+```bash
+gh variable set AIV_AUTO_PUBLISH_PHASE --body shadow
+gh variable list      # confirm
+```
+
+Or in the browser: **Settings → Secrets and variables → Actions → Variables
+→ `AIV_AUTO_PUBLISH_PHASE` → `shadow`**.
+
+That takes effect on the next scheduled run. The pipeline still builds the
+draft, the gate still computes and records its decision — nothing acts on
+it. To stop the build entirely as well, disable the workflow:
+
+```bash
+gh workflow disable "Daily publish"
+```
+
+**Deleting the variable is also safe.** Unset resolves to `shadow`, as does
+any value the gate doesn't recognise, and the fallback says so in
+`gate.json`'s `note`. A typo can only ever narrow the gate, never widen it.
+
+### 18.4 "The issue is held but it's fine. Publish it as-is."
+
+The hold is on the *unattended* path. You are not on it:
+
+```bash
+# Look at it first
+open docs/staging/YYYY-MM-DD.html
+
+# Ship it
+aiv release --date YYYY-MM-DD
+```
+
+`aiv release` does not read `gate.json` and never has. It runs its own
+staging-integrity check (§17), which is a different question — "is this
+draft structurally complete?" rather than "may this go out unread?".
+
+If the nightly workflow already opened a release PR for that date, merge the
+PR instead of running `aiv release` locally. Two paths to the same issue
+number is how you get a numbering collision.
+
+### 18.5 "Skip a day."
+
+Nothing needs skipping in the normal case: the schedule is weekdays only,
+and a day whose gate holds simply doesn't publish. Yesterday's issue stays
+live with its "as of" date. No silent skips, no empty issue.
+
+To deliberately skip a scheduled day:
+
+```bash
+# Close the release PR — the issue number is not consumed by a closed PR
+gh pr close <number>
+```
+
+To skip a stretch of days (a holiday, say), disable the workflow and
+re-enable it when you're back:
+
+```bash
+gh workflow disable "Daily publish"
+# ... later ...
+gh workflow enable "Daily publish"
+```
+
+Monday-after handles itself: the gap-aware fetch window widens each source's
+recency window by the days elapsed since the last release, so the next issue
+covers the gap rather than pretending it didn't happen.
+
+### 18.6 "/revise from the phone."
+
+You're on a train, the release PR is open, and one headline is wrong.
+Comment on the PR:
+
+```
+/revise The Pulse headline overstates the benchmark result — say "matched", not "beat".
+```
+
+The `Revise command` workflow picks it up, runs the reviser in live mode
+against that day's draft with your instruction, and commits the result back
+onto the same branch. The PR updates in place; re-read it and merge, or
+comment again.
+
+Three things worth knowing before you rely on it:
+
+- **Only you can trigger it.** The workflow requires
+  `author_association == 'OWNER'` at the job level, so for anyone else no
+  step runs at all — no checkout, no code. This is a public repo; that guard
+  is load-bearing.
+- **Only on `release/` branches**, checked as the very first step.
+- **Your comment text never touches a shell.** It travels through an
+  environment variable into an argument list, which is the documented way to
+  handle untrusted input in Actions.
+
+One `/revise` runs at a time per PR; a second comment queues behind the
+first rather than racing it for the same branch.
 
 ---
 

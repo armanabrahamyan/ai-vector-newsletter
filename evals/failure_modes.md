@@ -677,6 +677,68 @@ decision; tracked as diagnostic).
 
 ---
 
+### FM-15: Reviewer-gate calibration decay (PROPOSAL, seeded 2026-08-02)
+
+**What it is.** The Phase 2 auto-publish gate's editorial reviewer
+(`src/review.py`, verdict computed from `config/review_thresholds.yaml`)
+drifts away from its calibration baseline. Same two directions as FM-14,
+one level up the stack:
+
+- **Recall decay (under-holding):** the reviewer stops producing
+  `blocking`/enough `major` findings for issues that should hold —
+  voice-collapsed, factually contradicted, or structurally misrouted
+  issues start reading as green/amber and would auto-publish unattended.
+  This is the dangerous direction for an auto-publish gate specifically:
+  under-holding ships a defect with nobody in the loop.
+- **Precision decay (over-holding):** the reviewer starts finding
+  `blocking`/`major` issues in clean copy, and every issue holds for human
+  review — the gate stops being able to auto-publish anything, which
+  defeats its purpose just as thoroughly, more quietly.
+
+**Detection signal.**
+- Eval 9 (`eval_reviewer_gate`, PROPOSAL) goes red on `recall_hold_worthy
+  < 0.95` once ratified as a hard gate. `precision_publish_safe < 0.75` is
+  advisory initially — reported, not yet gating.
+- `per_class_recall` isolates which of the 5 defect classes the reviewer
+  stopped catching (mirrors FM-14's per-mutation-type breakdown).
+- `gate_stability` (rerun agreement) dropping means the reviewer's answer
+  depends on which LLM sample landed — a joint incident with FM-06 (prompt/
+  endpoint drift); pin the model version (`REVIEW_MODEL`).
+- Drift detection: `reviewer_verdict_ordinal` z-score outlier (informational),
+  and the dedicated `reviewer_red_floor` check — zero "red" verdicts across
+  a trailing 30-day window with enough samples escalates on its own,
+  independent of the z-score, because a constant all-green series has no
+  baseline to deviate from (see `check_drift`'s comment on this exact point).
+- `check_gate_agreement` (phase C, PROPOSAL): gate said `auto_merge` but the
+  publish commit carries a `--force` marker — a human overrode a green
+  light, meaning the gate is MORE PERMISSIVE than Arman's own judgment.
+
+**Eval mechanism.** `eval_reviewer_gate` (Eval 9, PROPOSAL) in
+`evals/run_evals.py`, against `evals/fixtures/reviewer-gate/cases.yaml` (42
+cases: 25 seeded-defect across 5 classes, 15 clean, 2 real-bug replays of
+FM-12/FM-13). Not yet wired to a live reviewer in this environment (no LLM
+credentials); a threshold-computation consistency check
+(`_threshold_consistency_check`) runs credential-free against the real
+`config/review_thresholds.yaml` and reports separately — see
+`evals/fixtures/reviewer-gate/README.md` for what that does and does not
+prove.
+
+**Mitigation.** Same shape as FM-14: check per-class recall first, isolate
+whether it's a prompt regression (`REVIEW_MODEL`/prompt version unchanged
+but findings shifted → FM-06) or a threshold-table change
+(`config/review_thresholds.yaml` version bump — re-run Eval 9 and confirm
+the gate before merging). Ratify Eval 9's hard gate on `src/review.py` and
+`config/review_thresholds.yaml` before Phase 2 moves past shadow mode.
+
+**Severity.** High once the gate is live (Phase 2 beyond shadow) — recall
+decay here means an unattended defect ships. Low/informational while gate
+phase is `shadow` (the gate computes but never acts).
+
+**Last occurrence.** Never (proposal seeded 2026-08-02; not yet ratified,
+not yet live).
+
+---
+
 ## Regression discipline
 
 Every bug that escapes to ratification gets three things added to this repo

@@ -52,6 +52,14 @@ jobs:
       LLM_MODEL: ${{ vars.LLM_MODEL }}
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       GH_TOKEN: ${{ github.token }}
+      # Pipeline-internal shadow/live switch for the revise loop (src/revise.py).
+      # Default (unset or anything other than "live") is shadow: proposals are
+      # written to revisions.jsonl but never applied. Flipping the repo
+      # variable to "live" moves the whole fleet -- no workflow edit needed.
+      # Applying revisions still requires the revise-command workflow (a
+      # ratified /revise comment); this variable does not by itself change
+      # what the nightly run publishes.
+      AIV_REVISE_MODE: ${{ vars.AIV_REVISE_MODE }}
 
     steps:
       # Hard requirement: two open release PRs would both derive the same
@@ -160,6 +168,85 @@ jobs:
           fi
           cat gate_output.txt
 
+      # Shadow-mode revise proposals (AIV_REVISE_MODE=shadow, the default):
+      # if the pipeline wrote revisions.jsonl, build the PR-comment body now
+      # while staging is still on disk. Posted later (see "Post proposed
+      # revisions comment on PR") once the PR exists -- a PR comment can't be
+      # made before the PR is opened. Never applied here; that only happens
+      # via a ratified `/revise` comment on the release PR.
+      - name: Build proposed-revisions comment (shadow)
+        id: revisions
+        env:
+          DATE: ${{ steps.when.outputs.date }}
+        run: |
+          python <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          date = os.environ["DATE"]
+          path = Path(f"data/staging/{date}/revisions.jsonl")
+          gh_output = os.environ["GITHUB_OUTPUT"]
+
+          if not path.exists():
+              with open(gh_output, "a") as fh:
+                  fh.write("has_comment=false\n")
+              raise SystemExit(0)
+
+          lines = [l for l in path.read_text().splitlines() if l.strip()]
+          entries = []
+          for line in lines:
+              try:
+                  entries.append(json.loads(line))
+              except json.JSONDecodeError:
+                  continue
+
+          if not entries:
+              with open(gh_output, "a") as fh:
+                  fh.write("has_comment=false\n")
+              raise SystemExit(0)
+
+          CAP = 20
+          shown, remainder = entries[:CAP], max(0, len(entries) - CAP)
+
+          parts = [
+              "## Proposed revisions (shadow -- NOT applied)",
+              "",
+              "The revise loop ran in shadow mode: these are proposals only. "
+              "Nothing below has changed the issue. Applying a fix requires a "
+              "ratified `/revise <instruction>` comment on this PR once the "
+              "revise-command workflow is live.",
+              "",
+          ]
+          for i, e in enumerate(shown, start=1):
+              target = e.get("target", "?")
+              field = e.get("field", "?")
+              status = e.get("status", "?")
+              before = e.get("before", "")
+              after = e.get("after", "")
+              recommendation = e.get("recommendation")
+              parts.append(f"### {i}. `{target}` -- `{field}`")
+              parts.append("")
+              parts.append(f"status: `{status}`")
+              if recommendation:
+                  parts.append(f"recommendation: {recommendation}")
+              parts.append("")
+              parts.append("```diff")
+              parts.append(f"- {before}")
+              parts.append(f"+ {after}")
+              parts.append("```")
+              parts.append("")
+          if remainder:
+              parts.append(
+                  f"_(+{remainder} more proposed revision(s) not shown -- see "
+                  f"`data/staging/{date}/revisions.jsonl` for the full list.)_"
+              )
+
+          Path("revisions_comment.md").write_text("\n".join(parts) + "\n")
+          with open(gh_output, "a") as fh:
+              fh.write("has_comment=true\n")
+          PY
+
       - name: Release (promote staging to canonical on this runner)
         run: aiv release --date "${{ steps.when.outputs.date }}"
 
@@ -259,7 +346,18 @@ jobs:
               "",
               f"**📖 Preview the rendered issue:** {preview}",
               "",
-              "Merging this PR publishes it to aivector.day.",
+              "## Operating this PR",
+              "",
+              "- **Merge** — publishes this issue to aivector.day.",
+              "- **Close** — skips today; nothing is burned, the previous issue "
+              "stays live.",
+              "- **Comment `/revise <instruction>`** — rebuilds the draft with a "
+              "targeted fix (requires the revise-command workflow; available "
+              "once `AIV_REVISE_MODE` is `live`).",
+              "",
+              "If a \"Proposed revisions (shadow)\" comment appears below, it is "
+              "advisory only — nothing has been applied. Use `/revise` (once "
+              "live) to act on it, or edit and re-run manually.",
               "",
               "## How we know it's better",
               "",
@@ -312,11 +410,76 @@ jobs:
           git push origin "$BRANCH"
 
       - name: Open release PR
+        id: open_pr
         run: |
-          gh pr create --repo "${{ github.repository }}" \
+          PR_URL=$(gh pr create --repo "${{ github.repository }}" \
             --base main --head "${{ steps.ids.outputs.branch }}" \
             --title "chore(release): publish ${{ steps.when.outputs.date }} as #${{ steps.ids.outputs.issue_num }}" \
-            --body-file pr_body.md
+            --body-file pr_body.md)
+          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      # Morning email: subject carries the gate's shadow verdict so the day
+      # is triageable from the inbox. Plain smtplib — no third-party mail
+      # action ever sees the credential. Skips quietly (never fails the run)
+      # when MAIL_APP_PASSWORD is unset.
+      - name: Email PR-ready notification
+        env:
+          MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
+          MAIL_TO: a.abrahamyan@gmail.com
+          PR_URL: ${{ steps.open_pr.outputs.url }}
+          ISSUE_NUM: ${{ steps.ids.outputs.issue_num }}
+          DATE: ${{ steps.when.outputs.date }}
+        run: |
+          python - <<'PY'
+          import os
+          import smtplib
+          import ssl
+          from email.message import EmailMessage
+          from pathlib import Path
+
+          password = os.environ.get("MAIL_APP_PASSWORD", "")
+          if not password:
+              print("MAIL_APP_PASSWORD not set -- skipping email notification.")
+              raise SystemExit(0)
+
+          date = os.environ["DATE"]
+          issue_num = os.environ["ISSUE_NUM"]
+          pr_url = os.environ["PR_URL"]
+          to_addr = os.environ["MAIL_TO"]
+
+          gate_lines = "gate output unavailable"
+          gate_file = Path("gate_output.txt")
+          if gate_file.exists():
+              gate_lines = gate_file.read_text().strip()
+          gate_first = gate_lines.splitlines()[0] if gate_lines else "?"
+
+          preview = (
+              f"https://raw.githack.com/{os.environ.get('GITHUB_REPOSITORY', '')}"
+              f"/release/{date}-issue-{issue_num}/docs/released/{date}.html"
+          )
+
+          msg = EmailMessage()
+          msg["Subject"] = f"AI Vector #{issue_num} ({date}) ready -- {gate_first}"
+          msg["From"] = to_addr
+          msg["To"] = to_addr
+          msg.set_content(
+              f"Issue #{issue_num} for {date} is built and waiting.\n\n"
+              f"Preview:  {preview}\n"
+              f"PR:       {pr_url}\n\n"
+              f"Gate (shadow):\n{gate_lines}\n\n"
+              "Merge = publish. Close = skip. Comment /revise <instruction> = fix.\n"
+          )
+
+          try:
+              with smtplib.SMTP_SSL(
+                  "smtp.gmail.com", 465, context=ssl.create_default_context(), timeout=30
+              ) as server:
+                  server.login(to_addr, password)
+                  server.send_message(msg)
+              print("notification email sent.")
+          except Exception as exc:  # never fail the publish flow over email
+              print(f"email send failed (non-fatal): {exc}")
+          PY
 
       # The editor's review is staging-only (gitignored, dies with the
       # runner), but ratification needs it — post it on the PR in full.
@@ -339,6 +502,15 @@ jobs:
           PY
           gh pr comment "${{ steps.ids.outputs.branch }}" \
             --repo "${{ github.repository }}" --body-file review_comment.md
+
+      # Posted here (not right after the gate step) because a PR comment
+      # needs an open PR to attach to -- the body was already built above,
+      # right after the run that produced revisions.jsonl.
+      - name: Post proposed revisions comment on PR
+        if: steps.revisions.outputs.has_comment == 'true'
+        run: |
+          gh pr comment "${{ steps.ids.outputs.branch }}" \
+            --repo "${{ github.repository }}" --body-file revisions_comment.md
 
       # A silent overnight failure is unacceptable: preserve the evidence and
       # make noise. Staging artifacts carry the partial pipeline output.

@@ -1,0 +1,134 @@
+{
+  "schema_version": 5,
+  "issue_number": 5,
+  "revision": 1,
+  "date": "2026-05-27",
+  "pulse": {
+    "schema_version": 2,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 2,
+        "story_id": "c_266d53ab99b64227",
+        "headline": "Google's embedding model now searches video, audio, images and text together",
+        "summary": "Retrieval pipelines have long needed separate models for each data type. Gemini Embedding 2 encodes video, audio, images, and text into a single shared space, beating specialised models on standard retrieval benchmarks (84.0 on code retrieval, 69.9 on multilingual text). Benchmarks are vendor-reported. If you're building document-heavy search, test it against your current per-modality stack before committing.",
+        "source_urls": [
+          "https://huggingface.co/papers/2605.27295"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try"
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null
+  },
+  "sections": [
+    {
+      "schema_version": 2,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_97f2fbea61d93416",
+          "headline": "A massive open model built from the ground up for AI agents",
+          "summary": "MiniMax-M2 is a 230-billion-parameter mixture-of-experts model that activates only 9.8 billion parameters per token, keeping inference costs low. It was trained end-to-end on verifiable agentic trajectories, coding tasks, and long-horizon workflows. Benchmarks are vendor-supplied and no independent evaluation exists yet. If you're shortlisting open-weight models for agentic pipelines, put this on the evaluation list.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.26494"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_783d46e21ab630e8",
+          "headline": "Agents need real computers, and one sandbox platform is scaling fast",
+          "summary": "AI agents need stateful, resizable computers accessible via API, not just code execution boxes. Daytona runs on bare metal, spins up a sandbox in roughly 60 milliseconds, and processes 850,000 daily runs for one customer. Reinforcement learning workloads now account for roughly half of usage. Figures are vendor-reported; benchmark it against your container setup before committing.",
+          "source_urls": [
+            "https://www.latent.space/p/daytona"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_5fd011c7ce5c6d7d",
+          "headline": "More structure makes capable AI agents worse, not better",
+          "summary": "A 432-run controlled experiment overturns a core assumption in agent design: adding more structure to a capable chat model cut task success by 29-38 percentage points, while a reasoning model peaked under strict constraints. Single model per tier limits generalisation. Audit your harness configuration before assuming tighter scaffolding helps.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.26731"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_6ac6c36e3519199c",
+          "headline": "New open models cut long-context memory costs with shared attention layers",
+          "summary": "As agent workflows hold more tokens in memory, attention and cache costs dominate. Raschka's synthesis maps how recent open-weight models tackle this: Gemma 4 reuses key-value tensors across layers, DeepSeek V4 adds compressed attention. Single-source analysis, no independent benchmarks. Raise this at your next architecture review before locking in a long-context serving strategy.",
+          "source_urls": [
+            "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        }
+      ],
+      "intro_lead": "Architecture assumptions are breaking.",
+      "intro_body": "Across infrastructure, model design, and agent scaffolding, this week's evidence challenges what practitioners thought they knew. The cost of defaulting to last year's patterns is rising."
+    },
+    {
+      "schema_version": 2,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 2,
+          "story_id": "c_c134fb12b852f1c0",
+          "headline": "No single detector beats prompt injection across all real-world conditions",
+          "summary": "A new evaluation finds prompt injection detection is highly regime-dependent: no single model wins across all conditions. Transformer-based detectors lead overall, while structural signals (hierarchy overrides, role redefinition) add consistent gains in harder scenarios. Code is promised but not yet released. Before setting detection thresholds for an agentic pipeline, test against your specific deployment regime.",
+          "source_urls": [
+            "https://arxiv.org/abs/2605.26999"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_7a7660abc5407fea",
+          "headline": "Microsoft squeezes capable browser-and-file agents into small on-device models",
+          "summary": "Microsoft Research's MagenticLite pairs two purpose-built small models (a 9-billion-parameter computer-use model, Fara1.5, nearly doubles its predecessor's web-navigation score) with a redesigned orchestration harness, keeping data on-device. Single-source vendor blog, no independent benchmarks yet. If you're evaluating on-prem agent deployments, this architecture is worth raising at your next design review.",
+          "source_urls": [
+            "https://www.microsoft.com/en-us/research/blog/magenticlite-magenticbrain-fara1-5-an-agentic-experience-optimized-for-small-models/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss"
+        },
+        {
+          "schema_version": 2,
+          "story_id": "c_c4edf0a7b59ce95b",
+          "headline": "A CUDA-free mixture-of-experts kernel matches CUDA performance and runs on AMD",
+          "summary": "Running mixture-of-experts models efficiently usually means CUDA-only code locked to NVIDIA hardware. This open-source Triton kernel reaches 89\u2013131% of Megablocks' throughput at inference batch sizes, cuts 35% of global memory traffic by fusing key operations, and runs on AMD without modification. Single Reddit post, no independent benchmarks yet; try it against your on-prem multi-vendor inference stack.",
+          "source_urls": [
+            "https://reddit.com/r/LocalLLaMA/comments/1tp4u0u/fused_moe_dispatch_kernel_in_pure_triton_89131_of"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try"
+        }
+      ],
+      "intro_lead": "Verify before you deploy.",
+      "intro_body": "Today's releases reward scepticism: vendor claims are outpacing independent validation, and the most durable gains come from open, reproducible work you can stress-test yourself before it touches production."
+    },
+    {
+      "schema_version": 2,
+      "name": "on_the_radar",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null
+    }
+  ],
+  "generated_at": "2026-05-27T13:34:03.096843Z",
+  "prompt_versions": {
+    "rank": "v0.5",
+    "summarise": "v0.9",
+    "pulse": "v0.10"
+  },
+  "notes": ""
+}

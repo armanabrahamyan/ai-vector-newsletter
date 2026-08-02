@@ -6,7 +6,10 @@
 
 **Author:** Arman
 **Repo:** `ai-vector`
-**Status:** v0 — first cut
+**Status:** shipping daily. Phases 0–3 complete; the engine runs on a
+weekday schedule and the unattended-publish gate is rolling out by phase.
+This document keeps the original plan text and marks what has landed —
+sections describing shipped work say so in their heading.
 
 ---
 
@@ -33,15 +36,27 @@ collector until the contracts and the eval harness exist. Concretely:
 A single repo that is **engine + published site + scheduler**, all on GitHub:
 
 ```
-cron (GitHub Actions, daily)
+cron (GitHub Actions, weekday mornings — Sydney Mon–Fri)
   → fetch sources (RSS/API)            [code]
   → normalise + cluster duplicates     [code + embeddings]
   → rank clusters vs. interest rubric  [LLM]
   → summarise + add "direction" note   [LLM]
+  → verify claims against sources      [LLM, advisory]
   → render HTML issue                  [code/templates]
+  → review against the editorial bar   [LLM; verdict computed by code]
+  → revise what the review flagged     [LLM inside; loop control in code]
+  → gate: may this publish unattended? [code — no LLM, fails closed]
   → write to /docs, commit             [code]
   → GitHub Pages publishes             [automatic]
 ```
+
+The last three steps are the 2026-08 additions and they divide cleanly along
+the No Token Wasted line. `review` and `revise` are judgment: is this good
+enough, and what would make it better. The **verdict** that comes out of the
+review is computed by code from finding severities under a ratified
+threshold table, and the **gate** that acts on it is code end to end. Asking
+a model "should we publish?" when the inputs are two verdict tokens and a
+hash comparison would buy non-determinism exactly where we least want it.
 
 No external infra. Publishing surface is **GitHub Pages** (`/docs` folder),
 chosen because internal bank GitHub permits it where other deployments are hard.
@@ -54,7 +69,7 @@ carry a clear point of view and an explicit financial-services lens. The name is
 
 ---
 
-## 2. Phase 0 — DESIGN (do this first, no feature code)
+## 2. Phase 0 — DESIGN — **SHIPPED**
 
 Deliverables, all as files in the repo:
 
@@ -75,7 +90,7 @@ Deliverables, all as files in the repo:
 
 ---
 
-## 3. Phase 1 — EVAL HARNESS (before tuning anything)
+## 3. Phase 1 — EVAL HARNESS — **SHIPPED**
 
 - `evals/fixtures/` — ~30–50 hand-saved real items across a few days,
   including deliberate near-duplicates (same story from 5 sources).
@@ -90,7 +105,7 @@ Deliverables, all as files in the repo:
 
 ---
 
-## 4. Phase 2 — PIPELINE (build in this order)
+## 4. Phase 2 — PIPELINE — **SHIPPED** (built in this order)
 
 Each step is its own module in `src/`, independently testable.
 
@@ -106,9 +121,30 @@ Each step is its own module in `src/`, independently testable.
    note** (where this points) + financial-services angle when relevant. For
    distribution, **link out + summarise; never reproduce full articles**
    (copyright).
-5. **`render.py`** — Jinja2 → HTML. Mobile-first, clean, fast. Writes
-   `docs/index.html` (latest) + `docs/archive/YYYY-MM-DD.html`.
-6. **`run.py`** — orchestrates 1→5, idempotent, safe to re-run same day.
+5. **`verify.py`** *(added 2026-06)* — decompose each headline and summary
+   into atomic factual claims and check each against the source excerpt
+   `summarise` used. Advisory: on any failure it writes an `unavailable`
+   report and the pipeline continues.
+6. **`render.py`** — Jinja2 → HTML. Mobile-first, clean, fast. Writes
+   `docs/index.html` (latest) + `docs/released/YYYY-MM-DD.html`.
+7. **`review.py`** *(added 2026-07; structured 2026-08)* — the editor's
+   pre-release pass. Emits `review.json`: findings, each resolved to one
+   editable field, plus a `computed_verdict` that **code** derives from the
+   finding severities under `config/review_thresholds.yaml`. `review.md` is
+   rendered from it.
+8. **`revise.py`** *(added 2026-08)* — acts on the findings. Rewrites the
+   flagged field, one LLM call per field, with a code-side validation gate
+   on every replacement. Logs every proposal, application and refusal to
+   `revisions.jsonl`.
+9. **`gate.py`** *(added 2026-08)* — the unattended-publish decision.
+   Deterministic code, no LLM, fails closed. Not a pipeline stage: it runs
+   after the pipeline, from the publish workflow.
+10. **`run.py`** — orchestrates the above, idempotent, safe to re-run the
+    same day. Also owns the **revision loop**: after the review, up to two
+    cycles of [revise → re-verify the touched stories → render → review],
+    stopping the moment the computed verdict stops improving. What to change
+    is judgment and lives in `revise.py`; when to stop is arithmetic and
+    lives here.
 
 ### Issue structure (current, v0.8 — 2026-05-24 section rename)
 - **The Pulse** — the single most important thing today, 2–3 sentences. (warmth
@@ -164,13 +200,30 @@ All RSS/API; trust-weighted. (Engineer to add/remove freely.)
 
 ---
 
-## 7. Phase 3 — SCHEDULE & PUBLISH
+## 7. Phase 3 — SCHEDULE & PUBLISH — **SHIPPED 2026-08-02**
 
-- `.github/workflows/daily.yml`: `schedule:` cron (pick a Sydney-morning UTC
-  time) **and** `workflow_dispatch` (manual button / fallback).
-- Job: checkout → install → run `run.py` → commit `docs/` → Pages auto-deploys.
+- `.github/workflows/daily.yml`: `schedule:` cron at 21:00 UTC on days 0–4,
+  which is **Monday–Friday mornings in Sydney** — the newsletter publishes
+  on weekdays only. The issue date is computed from Sydney wall-clock, never
+  from the runner's UTC clock, so only the wake-up hour drifts seasonally.
+  `workflow_dispatch` remains for manual and backfill runs.
+- **Monday absorbs the weekend.** The gap-aware fetch window in
+  `src/fetch.py` widens each source's recency window by the days elapsed
+  since the last release, so a two-day gap produces one fuller issue rather
+  than two thin ones.
+- Job: checkout → install → `aiv run` → `aiv release` on a
+  `release/<date>-issue-<N>` branch → open a PR. Merging the PR is the
+  ratification, and — because Pages serves `docs/` from `main` — the
+  publish. The workflow never touches `main` directly.
+- **Unattended publish is gated, and the gate is phased.** `aiv gate` writes
+  `data/staging/<date>/gate.json` after every run. What acts on that
+  decision depends on `AIV_AUTO_PUBLISH_PHASE`: `shadow` (default — compute
+  and record only) → `green_only` → `green_amber`. Unset or unrecognised
+  resolves to `shadow`. See DESIGN.md "Unattended publish".
+- At most one `release/` PR may be open at a time; two would both derive the
+  same issue number from `main`.
 - Secrets: LiteLLM/Bedrock endpoint + key as repo secrets.
-- **Enable GitHub Pages** to serve from `/docs`.
+- GitHub Pages serves from `/docs`.
 
 ### ⚠️ Day-one validation (can break the whole plan — check before building far)
 1. Does internal bank GitHub have **Actions + `schedule:` triggers** enabled?
@@ -212,18 +265,25 @@ If egress is blocked → fetch may need to run from an approved network.
 
 ---
 
-## 9. Definition of done (v0.1)
+## 9. Definition of done (v0.1) — **MET 2026-08-02**
 
-- One command (`python -m src.run`) produces a real, good-looking HTML issue
-  from live sources, deduped and ranked, written to `docs/`.
-- The daily Action runs it unattended and Pages serves it.
-- Eval harness runs green (dedup + ranking don't regress).
-- README credits Arman as author, dated, from commit one.
+- ✅ One command (`aiv run`) produces a real, good-looking HTML issue from
+  live sources, deduped and ranked, written to `docs/`.
+- ✅ The scheduled Action runs it unattended on weekday mornings and Pages
+  serves it. Unattended *publishing* is separately gated and phased — see §7.
+- ✅ Eval harness runs green (dedup + ranking don't regress) and gates every
+  prompt or model change before merge.
+- ✅ README credits Arman as author, dated, from commit one.
+
+**What v0.1 does not yet include:** email distribution (§8, out of scope),
+and phases beyond `shadow` on the unattended-publish gate.
 
 ---
 
-## 10. First commands for Claude Code
+## 10. First commands for Claude Code *(historical — Phase 0, 2026-05)*
 
+> Kept as the record of how the project started. Superseded by the shipped
+> repo; do not follow it as instructions today.
 > Start with Phase 0 only. Do not build the pipeline yet.
 1. Scaffold the repo structure (see tree below) with empty/typed stubs.
 2. Write `docs/DESIGN.md` with the data contracts from §2.

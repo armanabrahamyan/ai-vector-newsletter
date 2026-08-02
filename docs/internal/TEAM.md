@@ -18,18 +18,33 @@ The pipeline (`fetch → cluster → rank → summarise → verify → render �
 review`, i.e. `src/fetch.py` → `src/cluster.py` → `src/rank.py` →
 `src/summarise.py` → `src/verify.py` → `src/render.py` → `src/review.py`,
 wired by `src/run.py`'s `aiv` CLI and triggered
-daily by `.github/workflows/daily.yml`) is the engine. The
-engine runs every morning **without any agent in the runtime loop** — Python
-code + LLM API calls inside `rank.py`, `summarise.py`, `verify.py`, and
-`review.py`
+on weekday mornings by `.github/workflows/daily.yml`) is the engine. The
+engine runs **without any agent in the runtime loop** — Python
+code + LLM API calls inside `rank.py`, `summarise.py`, `verify.py`,
+`review.py` and `revise.py`
 produce `data/staging/<date>/issue.json` and a previewable HTML at
-`docs/staging/<date>.html`. Two stages are **advisory** and never block
-the pipeline or the release: `verify` (factual-accuracy flags, badges in
-the staging preview only) and `review` (automated editorial verdict in
-`review.md`).
+`docs/staging/<date>.html`. After the review, the **revision loop**
+(`src/revise.py`, driven by `src/run.py`) may act on the reviewer's
+findings — capped at two cycles, stopping as soon as the verdict stops
+improving. Then the **publish gate** (`src/gate.py`) answers one question:
+may this issue go out without a human?
 
-**Arman is the only required participant in the daily loop.** He ratifies;
-Release pushes; Pages serves.
+**Two stages are advisory — and the phrase now means something precise:
+advisory to the pipeline, decisive to the gate.** `verify`
+(factual-accuracy flags) and `review` (the computed editorial verdict in
+`review.json`) never block the pipeline and never block a **human-ratified**
+`aiv release`. They *do* govern the unattended path: an `unavailable`
+verdict from either holds an automatic publish. The distinction is the whole
+design. A human who reads an `unavailable` review and ships anyway has made
+a judgment; a scheduler that ships past one has made no judgment at all.
+What is blocking is not the advice — it is the absence of a human.
+
+**Arman is the only required participant in the daily loop, and how required
+depends on the rollout phase.** In `shadow` (the default) he ratifies every
+issue exactly as before, and the gate merely records what it *would* have
+decided. As phases advance, the gate acts on its own `auto_merge` decisions
+and Arman's ratification moves from per-issue to per-policy. He sets the
+phase; the gate never widens itself.
 
 The team's job, in order:
 
@@ -53,10 +68,10 @@ helping Arman ratify, you're out of scope.
 
 | Seat | Model | One line |
 |---|---|---|
-| **Architect & Tech Lead** | Opus | Owns contracts, repo structure, DESIGN.md, archive schema. The buck stops here on "does the shape make sense." |
+| **Architect & Tech Lead** | Opus | Owns contracts, repo structure, DESIGN.md, archive schema, `src/run.py` (orchestration shell + the revision loop's control flow) and `src/gate.py` (the unattended-publish gate). The buck stops here on "does the shape make sense." |
 | **Source Engineer** | Sonnet | Owns `config/sources.yaml`, `src/fetch.py`, source-health tracking. Subscribe, don't scrape. |
 | **Retrieval Engineer** | Sonnet | Owns `src/cluster.py`. Makes 10 feeds not produce 10 copies of one story — today or across the last 14 days. |
-| **LLM Engineer** | Opus | Owns `src/rank.py`, `src/summarise.py`, `src/verify.py` (advisory factual verifier), `src/review.py` (advisory editorial pass), the prompts (rank/summarise/verify/review prompt versions), and the rubric content. Implements voice. |
+| **LLM Engineer** | Opus | Owns `src/rank.py`, `src/summarise.py`, `src/verify.py` (advisory factual verifier), `src/review.py` (structured editorial pass), `src/revise.py` (the revision engine — decides *what* to change; `run.py` decides how many cycles), the prompts (rank/summarise/verify/review/revise prompt versions), and the rubric content. Implements voice. |
 | **Eval Engineer** | Sonnet (independent) | Owns `evals/`. Hard veto on regressions to dedup, ranking, voice, module integrity, drift, verifier calibration (Eval 7). |
 | **Test Engineer** | Sonnet (independent) | Owns `tests/` in full, including `tests/CONVENTIONS.md`. Hard veto on test PRs — keeps the unit-test suite load-bearing, not performative. Files bugs in `src/`; never fixes them. |
 | **Editor** | Opus | Owns `EDITORIAL.md` (repo root) and voice labels. Managing-editor assistant — Arman ratifies every issue. |
@@ -80,7 +95,11 @@ No Haiku in v0. No sub-agent spawning in v0.
 | LLM model per stage | LLM Engineer | Architect, Arman (cost) | Eval |
 | Eval rubric mechanics, harness | Eval | Editor (voice rubric co-dev) | All |
 | Voice itself | **Arman** | Editor proposes, LLM Engineer implements | All |
-| Per-issue release | **Arman** (runs `aiv release`) | Editor flags tradeoffs; advisory verify + review verdicts inform | Release Engineer (renders + archives + appends URLs) |
+| Per-issue release, **when the phase is `shadow`** | **Arman** (runs `aiv release`) | Editor flags tradeoffs; advisory verify + review verdicts inform | Release Engineer (renders + archives + appends URLs) |
+| Per-issue release, **once phases advance** | **the gate** (`src/gate.py`, on `green` — and on `amber` in `green_amber`) | nobody per-issue; the checks encode the ratified policy | Arman (reads `gate.json` + the held-issue notification) |
+| **Publish policy** — which phase is in force, which checks block, the hold vocabulary | **Arman** (sets `AIV_AUTO_PUBLISH_PHASE`) | Architect proposes the check set; Eval reports hold-rate | All |
+| Revision policy — modes, cycle cap, stop condition | Architect | LLM Engineer (owns what gets changed), Eval | Arman |
+| Revision engine — what a finding turns into | LLM Engineer | Editor (voice), Eval | Architect |
 | Verify prompt + calibration thresholds | LLM Engineer | Eval (Eval 7 gates) | Editor, Arman |
 | Test conventions (`tests/CONVENTIONS.md`) | Test Engineer | Module engineers (they write module tests) | All |
 | Reading experience / presentation specs | Experience Designer (proposes) | Release (implements), Editor (prose stays theirs) | Arman ratifies visible changes |
@@ -112,10 +131,13 @@ No Haiku in v0. No sub-agent spawning in v0.
   `evals/voice/`; the Eval Engineer's voice-adherence rubric is built from
   them. Editor does not auto-block merges (Eval's rubric does, once
   voice-adherence is wired in).
-- **Arman — release on every daily issue.** Nothing reaches
-  `docs/index.html` or `data/published_urls.txt` without `aiv release`.
-  Staging drafts may come and go; the released archive only
-  grows when Arman says so.
+- **Arman — the publish policy, and the release itself while the phase is
+  `shadow`.** The split matters and is worth stating twice: **the per-issue
+  decision may move to the gate; the decision to let it move never does.**
+  `AIV_AUTO_PUBLISH_PHASE` is Arman's variable. An unset or misspelled value
+  resolves to `shadow`, so the gate can only ever be *granted* authority,
+  never assume it. A local `aiv release` stays entirely manual in every
+  phase — the gate governs the unattended path only.
 
 ---
 
@@ -145,10 +167,24 @@ No Haiku in v0. No sub-agent spawning in v0.
          │ issue.json (draft) + advisory verify flags
          ▼
 ┌──────────────────┐  render (staging) → docs/staging/<date>.html
-│ render + review  │  review (ADVISORY, Editor persona via src/review.py)
-│ (engine stages)  │  writes: data/staging/<date>/review.md (verdict for Arman)
-└────────┬─────────┘
-         │ staging preview + review verdict
+│ render + review  │  review (Editor persona via src/review.py)
+│ (engine stages)  │  writes: data/staging/<date>/review.json (findings +
+└────────┬─────────┘          computed_verdict) and its rendered review.md
+         │ staging preview + computed verdict
+         ▼
+┌──────────────────┐  revise loop (src/revise.py, driven by src/run.py)
+│ revision loop    │  shadow (default): proposals only, issue untouched
+│ (post-review)    │  live: ≤2 × [revise → verify touched → render → review],
+│                  │        stops when the verdict stops improving
+└────────┬─────────┘  writes: data/staging/<date>/revisions.jsonl (append)
+         │ possibly-revised issue + a review that matches it
+         ▼
+┌──────────────────┐  gate (src/gate.py — deterministic, no LLM)
+│ publish gate     │  reads: issue.json, review.json, verify.json,
+│ (Architect)      │         revisions.jsonl
+│                  │  writes: data/staging/<date>/gate.json
+└────────┬─────────┘  auto_merge | hold — fails closed; phase decides who acts
+         │ decision
          ▼
 ┌──────────────────┐  reads:  data/staging/<date>/issue.json + ranked.jsonl + verify.json
 │ Editor           │          EDITORIAL.md, past released issue.json files
@@ -157,10 +193,10 @@ No Haiku in v0. No sub-agent spawning in v0.
 └────────┬─────────┘
          │ flagged tradeoffs, Pulse proposal
          ▼
-┌──────────────────┐
-│   Arman          │  ratifies the issue (per-issue, daily): runs `aiv release`
-│   (human gate)   │
-└────────┬─────────┘
+┌──────────────────┐  phase=shadow  → Arman ratifies per-issue: `aiv release`
+│   Arman          │  phase advanced → the gate acts on auto_merge; Arman
+│   (human gate)   │                   ratifies the POLICY, not each issue,
+└────────┬─────────┘                   and reads every hold
          │ released
          ▼
 ┌──────────────────┐  release_promote: data/staging/<date>/ → data/released/<date>/
@@ -221,35 +257,63 @@ artifact's pydantic shape, downstream blows up loudly — not silently.
 - **Mechanism:** the harness (`aiv eval` / `python -m evals.run_evals`)
   runs on PR. Non-zero exit blocks merge. Soft gates rot; this one doesn't.
 
-### Daily draft loop (the daily heartbeat)
-- **Trigger:** engine produces `data/staging/<date>/issue.json`, the
-  advisory `verify.json` + `review.md` verdicts, and a preview HTML at
-  `docs/staging/<date>.html` (advisory factual-flag badges visible in the
-  preview only).
-- **Default flow:** engine writes staging draft → **Arman** reviews preview
-  (plus the verify/review advisory verdicts printed at end of run, and the
-  LLM cost line) → **Arman** runs `aiv release` → Release promotes staging
-  to `data/released/<date>/` (including `verify.json`), assigns
-  `issue_number`, ships to `docs/index.html` +
-  `docs/released/<date>.html`, appends URLs to `data/published_urls.txt`.
-- **Optional editorial pass:** Arman may invoke the **Editor** agent
-  between engine output and his ratification. Editor reads the staging
-  draft, labels off-voice candidates, flags tradeoffs, proposes The Pulse.
-  Editor never auto-releases; Arman runs `aiv release` himself.
+### Daily draft loop (the weekday heartbeat)
+
+**Cadence: weekdays only.** The scheduled workflow fires on Sydney
+Monday–Friday mornings. Monday's issue absorbs the weekend through the
+gap-aware fetch window, which widens each source's recency window by the
+days elapsed since the last release — so a two-day gap produces one fuller
+issue, not two thin ones.
+
+The loop, end to end:
+
+1. **The engine drafts.** `fetch → cluster → rank → summarise → verify →
+   render → review` writes `data/staging/<date>/`: `issue.json`, the
+   advisory `verify.json`, the structured `review.json` (plus its rendered
+   `review.md`), and a preview at `docs/staging/<date>.html` with the
+   factual-flag badges visible in staging only.
+2. **The revision loop may act on the findings.** Default mode is `shadow`:
+   proposals are logged to `revisions.jsonl` and nothing changes. In `live`
+   mode it runs up to two cycles of
+   [revise → re-verify the touched stories → render → review], stopping the
+   moment the computed verdict stops improving. Any failure inside it is
+   logged and the run continues with the issue as it stands.
+3. **The gate decides.** `aiv gate` writes `gate.json`: `auto_merge` or
+   `hold`, with every check recorded — passes included — so the file reads
+   as an audit trail rather than a list of complaints. It fails closed:
+   anything it cannot positively confirm is a hold.
+4. **What happens next depends on the phase.**
+   - `shadow` (default): nothing acts on the decision. **Arman** reviews the
+     preview and runs `aiv release` exactly as before. The gate's answer is
+     recorded so the observation period measures the policy we are rolling
+     towards.
+   - `green_only` / `green_amber`: the workflow acts on `auto_merge` and the
+     issue publishes unattended. A `hold` opens or leaves a release PR for
+     Arman, with the hold reasons named.
+5. **Release promotes.** `data/staging/<date>/` → `data/released/<date>/`
+   (including `verify.json`, `review.json`, `review.md`, `gate.json`,
+   `revisions.jsonl`), assigns `issue_number`, ships to `docs/index.html` +
+   `docs/released/<date>.html`, appends URLs to `data/published_urls.txt`.
+
+- **A local `aiv release` is always manual**, in every phase. The gate
+  governs the unattended path only; it never runs inside `aiv run` and never
+  publishes anything itself.
+- **Optional editorial pass:** Arman may invoke the **Editor** agent between
+  engine output and ratification. Editor reads the staging draft, labels
+  off-voice candidates, flags tradeoffs, proposes The Pulse. Editor never
+  releases.
 - **Experimentation:** Arman re-runs the pipeline freely. Same-day re-runs
   overwrite `data/staging/<date>/` atomically; nothing touches the released
-  archive (`data/released/<date>/`) or `data/published_urls.txt` until
-  `aiv release`.
-  Cross-time dedup, callbacks, and the URL exclusion index all read
-  released only, so staging churn is invisible to tomorrow's run.
-- **Cutoff:** if Arman hasn't released by the configured cutoff
-  (operationally: he just hasn't run `aiv release`), yesterday's released
-  issue stays live (with its "as of" date). No silent skips. A staging
-  draft that never gets released is fine -- it stays in
-  `data/staging/<date>/` as evidence of the attempt and gets overwritten
-  next time the engine runs for that date. (`run.py` warns loudly when
-  earlier issues sit staged-but-unreleased: dedup couldn't see them, so a
-  later issue risks repeating their stories.)
+  archive or `data/published_urls.txt` until release. Cross-time dedup,
+  callbacks, and the URL exclusion index all read released only, so staging
+  churn is invisible to tomorrow's run. (`revisions.jsonl` is the one
+  exception to "overwrite on re-run": it appends, because it is a log, and a
+  log that forgets is not one.)
+- **A day that does not ship:** yesterday's released issue stays live with
+  its "as of" date. No silent skips. A staging draft that never gets
+  released stays in `data/staging/<date>/` as evidence of the attempt.
+  (`run.py` warns loudly when earlier issues sit staged-but-unreleased:
+  dedup couldn't see them, so a later issue risks repeating their stories.)
 
 ### Voice review (weekly, lightweight — changed shape, see below)
 - **Owner:** Editor, with Eval Engineer + LLM Engineer.
@@ -291,6 +355,8 @@ artifact's pydantic shape, downstream blows up loudly — not silently.
 | 5 | **Contract drift** — pydantic shapes change in code, DESIGN.md lags | Architect | Architect required reviewer on contract PRs; `schema_version` per artifact; Eval module-integrity check schema-validates every archive write |
 | 6 | **Prompt drift under us** — model endpoint shifts, outputs change with no code change | LLM Engineer + Eval | Voice-adherence eval is on a *separate* judging path where possible; sudden score changes flag the failure mode "prompt drift" in `evals/failure_modes.md` |
 | 7 | **Archive corruption** — half-written JSONL poisons months of history | Architect (schema) + each writer | Atomic writes (`.tmp` + rename) enforced in every pipeline stage; Eval cross-checks references (item_id → cluster_id → ranked_id → issue) |
+| 8 | **Unattended publish ships something nobody should have shipped** — the gate says `auto_merge` on an issue a human would have held | Architect (gate policy) + Arman (phase) | The gate fails closed: every state it cannot positively confirm is a hold. Hard blocks (contradicted claim, verifier unavailable, stale review) hold in *every* phase, `shadow` included. Rollout is phased and the phase variable is Arman's; unset or misspelled resolves to `shadow`. A held issue is loud, not silent. Eval watches the hold-rate and the hold-reason distribution — a rate that collapses is the early signal that a check stopped meaning anything |
+| 9 | **The reviser degrades voice** — the revision loop "fixes" a finding and makes the issue worse | LLM Engineer (what changes) + Architect (when to stop) | The loop stops the moment the computed verdict stops improving, on `red < amber < green` with unreadable ranked below `red`; two cycles maximum; `shadow` is the default mode. It never rolls back, so the publish gate is the backstop — a verdict that fell to `amber` (in `green_only`) or `red` holds and a human looks. Every change is logged in `revisions.jsonl` with full before/after text, which is the evidence for tuning the revise prompt. Editor reviews accumulated rejections and applied edits at the weekly voice review |
 
 ---
 
@@ -321,7 +387,10 @@ Architect authorises.
 | `issue.json` | LLM Engineer (staging); `aiv release` (released, assigns `issue_number`) | Architect | Editor, Arman, Release, Eval, LLM Engineer (callbacks -- released only) |
 | `verify.json` | LLM Engineer (`src/verify.py`, advisory) | Architect | Render (staging badges), Editor, Eval (drift `verifier_flag_rate`); promoted on release |
 | `source_excerpts.jsonl` | LLM Engineer (`src/summarise.py`) | Architect | Verify stage only. **Staging-only** — never promoted |
-| `review.md` | LLM Engineer (`src/review.py`, advisory Editor-persona pass) | Architect | Arman (pre-release verdict). **Staging-only** |
+| `review.json` | LLM Engineer (`src/review.py`) | Architect | `src/gate.py` (`computed_verdict` + `issue_sha256` — the primary review artifact), `src/revise.py` (the actionable findings), Eval; promoted on release |
+| `review.md` | LLM Engineer (`src/review.py`, rendered from `review.json`) | Architect | Arman (pre-release verdict); `src/gate.py` only when `review.json` is absent; promoted on release |
+| `revisions.jsonl` | LLM Engineer (`src/revise.py`) | Architect | Arman (what did the engine touch?), `src/gate.py` (informational `revision_status` — reads `cycle` and change `status` only), Eval; promoted on release. **Appends** rather than overwriting on re-run |
+| `gate.json` | **Architect** (`src/gate.py`) | Architect | The publish workflow (acts per phase), Eval (hold-rate + hold-reason distribution), Arman; promoted on release. A missing `gate.json` means **hold**, never proceed |
 
 **Rules:**
 - Atomic writes (`.tmp` + fsync + rename). Half-written files are worse
@@ -330,10 +399,13 @@ Architect authorises.
   DESIGN.md.
 - Readers tolerate missing days. A stage that didn't run yesterday must
   not crash today.
-- Every ratified `issue.json` is **labelled data** — Arman approved it.
-  Over months, the archive becomes the most valuable artifact in the
-  repo. Cross-time dedup, "Where it's heading" trend reads, voice
-  baselines, and callbacks all depend on it.
+- Every released `issue.json` is **labelled data**. In `shadow` the label is
+  "Arman approved it"; once phases advance it is "the ratified policy
+  approved it, and Arman did not intervene." Both are signal, and
+  `gate.json` sitting next to the issue is what tells them apart. Over
+  months the archive becomes the most valuable artifact in the repo —
+  cross-time dedup, trend reads, voice baselines, and callbacks all depend
+  on it.
 
 ---
 
@@ -373,7 +445,8 @@ You are joining AI Vector. Five minutes from now you should know:
    pydantic-typed; Architect owns the shapes.
 4. **The non-negotiables** — design before code; evals before features;
    determinism in code, judgment in the LLM; subscribe, don't scrape;
-   nothing publishes without Arman's ratification.
+   nothing publishes except under a policy Arman ratified, and the gate that
+   applies that policy fails closed.
 5. **Who to ask** — see the decision-rights table. When in doubt, ask the
    Architect.
 6. **The three skills** — `design-first-eval-first` (your pre-PR

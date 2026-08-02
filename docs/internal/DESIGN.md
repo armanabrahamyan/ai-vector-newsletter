@@ -829,6 +829,43 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   **missing** `verify.json` (verify skipped) as "not verified", exactly as
   they tolerate `SummaryBlock.verification == None`.
 
+### `review.json` — LLM Engineer writes (structured editorial review)
+
+- **Path:** `data/staging/<date>/review.json`, promoted to
+  `data/released/<date>/review.json` on `aiv release`. **Pending as of
+  2026-08-02:** `render._OPTIONAL_PERIPHERAL_FILES` does not yet list it, so
+  the promotion is contracted here but not implemented. Release Engineer's
+  one-line change; until it lands, a released day carries `review.md` but
+  not the structured report it was rendered from.
+- **Writer:** `src/review.py` (`run_review(date)`).
+- **Schema:** a single `ReviewReport` object (not JSONL). The keys the rest
+  of the system depends on:
+  - `computed_verdict` — `green | amber | red` plus the code-authored
+    machine states. **Authored by code**, from the finding severities under
+    `config/review_thresholds.yaml`. The model produces evidence; a ratified
+    threshold table turns evidence into a verdict. That separation is what
+    makes the verdict auditable — it can be re-derived from `findings` and
+    the table without re-running the LLM.
+  - `issue_sha256` — the freshness hash, same definition as the `review.md`
+    frontmatter key (see below).
+  - `findings: list[ReviewFinding]` — each resolved to a single editable
+    field via `ReviewTarget`, which is what makes a finding actionable by
+    `src/revise.py` rather than merely readable.
+  - `prompt_version`, `thresholds_version`, `llm_model`, `generated_at`,
+    `one_line`, `dropped_findings`, `note`.
+- **This is the primary review artifact** (gate policy v2, 2026-08-02).
+  `review.md` is *rendered from it*. The gate reads `computed_verdict` and
+  `issue_sha256` from here and only falls back to Markdown frontmatter when
+  this file is **absent**.
+- **`computed_verdict` is the one accepted spelling.** A second accepted key
+  would be a second contract, and when the two disagreed the gate would have
+  to pick a winner — a policy decision hiding inside a parser. A writer using
+  a different key trips `hold:review-unparseable`: loud, safe, fixed in an
+  hour.
+- **Readers:** `src/gate.py` (verdict + hash), `src/revise.py` (the
+  `fix_kind == "text_edit"` findings), `src/review.py` itself (renders
+  `review.md` from it), evals.
+
 ### `review.md` — LLM Engineer writes (pre-release editorial pass)
 
 - **Path:** `data/staging/<date>/review.md`, **promoted to
@@ -840,7 +877,10 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   release time.
 - **Writer:** `src/review.py` (`run_review(date)`), invoked either as
   the final stage in `aiv run` (auto-fires after `render` unless
-  `--no-review` is passed) or standalone via `aiv review --date`.
+  `--no-review` is passed) or standalone via `aiv review --date`. Since
+  2026-08-02 it is **rendered from `review.json`**, not authored
+  independently: same object, two serialisations, one for machines and one
+  for a human at 06:00.
 - **Schema:** Markdown with a YAML frontmatter block. Frontmatter keys:
   `verdict` (`green | amber | red | unavailable`), `one_line` (30-60
   char editorial summary), `issue_date`, `issue_shape`, `generated_at`,
@@ -882,9 +922,40 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   [Unattended publish](#unattended-publish). This does not make review
   blocking; it makes *the absence of a human* blocking.
 - **Readers:** Arman (manual review before `aiv release`), and `src/gate.py`
-  (the frontmatter `verdict` + `issue_sha256`; the body is never parsed).
-  The frontmatter is machine-parseable so downstream tooling can correlate
-  verdict shifts against prompt revisions without re-LLM.
+  **only when `review.json` is absent** (the frontmatter `verdict` +
+  `issue_sha256`; the body is never parsed). The frontmatter is
+  machine-parseable so downstream tooling can correlate verdict shifts
+  against prompt revisions without re-LLM, and so every day archived under
+  gate policy v1 still evaluates.
+
+### `revisions.jsonl` — LLM Engineer writes (the revision engine's audit trail)
+
+- **Path:** `data/staging/<date>/revisions.jsonl`, promoted to
+  `data/released/<date>/revisions.jsonl` on `aiv release`.
+- **Writer:** `src/revise.py` (`revise_day(date, *, shadow)`), invoked by
+  the revision loop in `src/run.py` or standalone via `aiv revise`.
+- **Schema:** one `RevisionCycle` per line — **one line per invocation of
+  the engine**, not per edit. Each carries `cycle` (1-indexed within the
+  date, derived from the existing line count so a re-run never overwrites
+  its predecessor), `mode` (`shadow | live`), `changes:
+  list[RevisionChange]`, `issue_sha256_before` / `issue_sha256_after`,
+  `prompt_version`, `review_prompt_version`, `generated_at`, `note`.
+- **Append-only within a date.** The file is the edit history of the day's
+  draft, so each cycle appends rather than rewriting. This is the one
+  archive file that is not "regenerate from scratch on re-run" — it is a
+  log, and a log that forgets is not one.
+- **Change statuses:** `proposed` (shadow — computed, nothing written),
+  `applied` (written to `issue.json`), `rejected` (failed the code-side
+  validation gate, with a `reject_reason`). `before` and `after` hold the
+  **full field text** on each side, not a diff, because the record has to be
+  readable a month later without the issue it came from.
+- **Readers:** Arman (what did the engine touch?), `src/gate.py` (the
+  informational `revision_status` check — it reads `cycle` and each change's
+  `status`, and **nothing else**), evals.
+- **What the gate deliberately does not read.** The before/after text, the
+  rationales, the reject reasons. A gate that parsed the whole record would
+  couple the publish decision to fields it has no opinion about, and every
+  later field addition would become a gate change.
 
 ### `gate.json` — Architect writes (unattended-publish decision)
 
@@ -1003,10 +1074,12 @@ or the eval corpus.
   in [Archive schema](#archive-schema-datayyyy-mm-dd) above:
   `items.jsonl`, `source_health.json`, `clusters.jsonl`, `ranked.jsonl`,
   `issue.json`, plus the `embeddings/centroids.npz` sidecar. The advisory
-  stages add `verify.json` and `review.md` (both promoted on release), and
-  `source_excerpts.jsonl` (staging-only, ephemeral summarise->verify
-  hand-off). The publish gate adds `gate.json` (promoted on release) — see
-  [Unattended publish](#unattended-publish).
+  stages add `verify.json`, `review.json` and `review.md` (all promoted on
+  release), and `source_excerpts.jsonl` (staging-only, ephemeral
+  summarise->verify hand-off). The publish gate adds `gate.json` and the
+  revision loop adds `revisions.jsonl` (both promoted on release) — see
+  [Unattended publish](#unattended-publish) and
+  [The revision loop](#the-revision-loop).
 - **Writer:** every `python -m src.run` invocation, by default. Each
   pipeline stage writes its staging artifact via the same atomic-write
   pattern documented above.
@@ -1297,19 +1370,43 @@ list of complaints.
 | Check | Blocking | Holds when | Hold reason |
 |---|---|---|---|
 | `issue_readable` | yes | `issue.json` missing, or fails `Issue` validation | `hold:issue-missing` / `hold:issue-invalid` |
-| `review_present` | yes | no `review.md` | `hold:review-missing` |
-| `review_verdict` | yes | no parseable frontmatter verdict | `hold:review-unparseable` |
+| `review_present` | yes | neither `review.json` nor `review.md` exists | `hold:review-missing` |
+| `review_verdict` | yes | no readable verdict in the review artifact | `hold:review-unparseable` |
 | | | verdict is `unavailable` | `hold:review-unavailable` |
 | | | verdict is `red` | `hold:review-verdict-red` |
 | | | verdict is `amber` **and** phase is `green_only` | `hold:review-verdict-amber` |
 | | | verdict is outside the known vocabulary | `hold:review-verdict-unknown` |
-| `review_freshness` | yes | frontmatter `issue_sha256` absent, or ≠ a fresh hash of `issue.json` | `hold:stale-review` |
+| `review_freshness` | yes | recorded `issue_sha256` absent, or ≠ a fresh hash of `issue.json` | `hold:stale-review` |
 | `verify_readable` | yes | `verify.json` missing or unparseable | `hold:verify-missing` / `hold:verify-unparseable` |
 | `verify_available` | yes | verify verdict is `unavailable` (ruling 2) | `hold:verify-unavailable` |
 | `no_contradicted_claims` | yes | any story carries a `contradicted` claim (ruling 1) | `hold:contradicted-claim` |
 | `verify_no_unsupported` | **no** | any story carries an `unsupported` claim | — (surfaced only) |
+| `revision_status` | **no** | `revisions.jsonl` has unreadable lines | — (surfaced only) |
 
-Two notes on the edges.
+**Which review artifact the gate reads (policy v2, 2026-08-02).**
+`review.json` is primary; `review.md` frontmatter is the fallback. The
+precedence rule has three cases and the third is the load-bearing one:
+
+1. `review.json` parses → use it. It is what the reviewer computed;
+   `review.md` is rendered from it, and trusting a copy over its original is
+   never the right default.
+2. `review.json` is **absent** → read `review.md`. This is the backward
+   compatibility path for every day archived under policy v1.
+3. `review.json` is **present but unreadable** → hold. **No fallback.** A
+   corrupt primary sitting next to a readable secondary is the worst case to
+   paper over: the two could say different things, and falling back means
+   the gate picks the more convenient one.
+
+Four notes on the edges.
+
+**`revision_status` is informational, and that is a decision, not an
+omission.** Whatever the revision loop changed was re-reviewed, and the
+re-review is already blocking evidence via `review_verdict` +
+`review_freshness`. Blocking again on "the reviser was busy" would count the
+same evidence twice and make the gate timid about exactly the machinery
+built to improve the issue. The check exists so the operator reading
+`gate.json` at 06:00 knows whether the issue in front of them is the one the
+pipeline first drafted or one the reviser edited.
 
 **`unsupported` does not block.** "The source does not assert this" is an
 editorial concern worth surfacing; "the source asserts the opposite" is a
@@ -1357,14 +1454,136 @@ treat that — and a `gate.json` it cannot read — as a hold, which keeps
 "policy says no" and "the tooling broke" distinguishable at 06:00 without
 reading a log.
 
-### Not in this phase
+---
 
-The gate decides; it does not repair. A `revise.py` that acts on a hold by
-re-running a stage, and the `SummaryBlock.revised_fields` / `revisions.jsonl`
-contracts that would record what it changed, are deliberately out of scope
-here — `revisions.jsonl` appears in the optional-promotion list only so it
-promotes harmlessly if and when it exists. `Issue` and `SummaryBlock` are
-**not** version-bumped by this work.
+## The revision loop
+
+The gate decides; it does not repair. The **revision loop** is what repairs
+— and it is deliberately a different thing, in a different module, with a
+different owner.
+
+**Ratified 2026-08-02**, five rulings: the loop is capped at two cycles; it
+stops as soon as the computed verdict stops improving; it defaults to
+`shadow` (propose, change nothing); it never rolls back, with the publish
+gate as the backstop for a degraded issue; and its failures are contained —
+a broken loop must never cost the day its issue.
+
+Read this paragraph first. After the editor's review has run, the pipeline
+has a structured list of findings and a computed verdict. The revision loop
+gives the engine a chance to *act* on those findings instead of only
+recording them: rewrite the flagged field, re-check the facts on the stories
+that changed, re-render, re-review, and ask one question — did the verdict
+actually improve? If it did, it may go around once more. If it did not, it
+stops. Two cycles, maximum, ever.
+
+### The judgment/code split
+
+`src/revise.py` (LLM Engineer) decides **what to change**: which findings are
+actionable, what the replacement text should be, whether a candidate
+rewrite passes the code-side validation gate. `src/run.py` (Architect)
+decides **how many times and when to stop**. That line is the No Token
+Wasted principle applied to control flow: judgment about a headline belongs
+in a prompt, and a termination condition belongs in a `for` loop with a hard
+cap. Neither seat needs to edit the other's file to change its half.
+
+### Modes
+
+Selected by the `AIV_REVISE_MODE` environment variable, or per-run by
+`aiv run --revise-mode MODE` / `--no-revise`.
+
+| Mode | What runs | Effect on `issue.json` |
+|---|---|---|
+| `off` | nothing | none — and no tokens spent |
+| `shadow` (**default**) | one `revise_day(date, shadow=True)` call | none. Every change resolves to `proposed` and is logged; no re-verify, no re-render, no re-review |
+| `live` | up to `MAX_REVISION_CYCLES` (2) cycles | rewritten in place by each applied change |
+
+Unset or unrecognised resolves to `shadow`, and the fallback says so in the
+log. Same posture as the publish gate's default phase: a control that can
+rewrite the day's draft unattended defaults to observation, and a typo'd
+variable must never silently license it to edit.
+
+### The live cycle
+
+```
+revise → re-verify (touched stories only) → render → review → improved?
+   ↑                                                              │
+   └──────────────────── yes, and under the cap ──────────────────┘
+```
+
+The loop stops on the first of these to become true:
+
+1. **The reviser applied nothing.** Nothing on disk changed, so re-verifying,
+   re-rendering and re-reviewing would reproduce byte-identical outputs at
+   full LLM price.
+2. **The verdict did not improve**, on the ordering `red < amber < green`.
+   Equal is not improvement. `unavailable`, an unrecognised token, and an
+   unreadable review all rank **below `red`** — so a cycle that destroys the
+   review's readability can never look like progress.
+3. **The verdict reached `green`.** That is the ceiling; another cycle can
+   only spend tokens confirming what we know.
+4. **Two cycles have run.** The cap is the backstop against a reviser that
+   always finds one more thing to fix.
+
+### Re-verification scope
+
+Only the stories the cycle actually rewrote are re-verified. The scope is
+derived from the applied `RevisionChange`s' `target.story_id`, and it is a
+**three-state** answer, which matters:
+
+- **a list of ids** → re-verify exactly those.
+- **an empty list** → we read the changes and none touched story text (a
+  cycle that only rewrote section intros, say). Section intros carry no
+  factual claim tied to a source excerpt — `verify` reads `SummaryBlock`
+  headlines and summaries only — so re-verifying would be pure cost. Skip.
+- **unknown** (the change list could not be read) → re-verify **everything**.
+  "I cannot tell what changed" and "nothing changed" are different states,
+  and only one of them is safe to skip.
+
+The seam is `verify_day(date, *, story_ids: Sequence[str] | None = None)`,
+where `None` means the whole issue. **Pending as of 2026-08-02:**
+`src/verify.py` does not yet accept the keyword, so every live cycle
+currently re-verifies the whole issue — correct, but more expensive than the
+design intends. `run.py` detects the missing parameter by signature
+inspection and logs a warning naming it. LLM Engineer's change. Until it
+lands, the fallback is the behaviour: `verify.json`
+and the denormalised `SummaryBlock.verification` copies are what the gate
+scans for contradictions, so leaving them stale about a story we just
+rewrote would let the gate reason about text that no longer exists.
+
+### Failure containment
+
+Any failure inside the loop — a missing `revise.py`, a shape change in
+`RevisionCycle`, an LLM timeout mid-cycle — is caught, logged with a
+traceback, and the pipeline continues. An improvement that can destroy the
+day's issue is not an improvement.
+
+One honest edge, stated plainly because it is the loop's real risk: the
+pipeline continues with *whatever `issue.json` is on disk*, which is the
+pre-revision draft only if the failure happened before any write. If a cycle
+applied edits and then the re-review failed, the issue on disk is the
+**revised** one carrying a review that no longer matches it — and the gate
+holds it as `hold:stale-review`. That is the correct outcome, and it is the
+reason `review_freshness` is a blocking check rather than an advisory one.
+
+**The loop never rolls back.** Rolling back would need a snapshot contract
+the reviser does not have. What the loop guarantees is that it stops making
+things worse, not that it undoes what it already did. The gate is the
+backstop for a degraded issue: a verdict that fell to `amber` (in
+`green_only`) or `red` holds, and a human looks. This is recorded in the
+risk register as *reviser degrades voice*.
+
+### Where it sits in the pipeline
+
+The loop is **not a stage**. It is not in `STAGE_ORDER`, `--stages` never
+names it, and it writes no artifact of its own. Modelling it as a stage
+would have made `--stages revise` and the auto-fire rules mean something we
+would then have to explain away — a stage runs once and hands its artifact
+forward, while this re-enters three stages that already ran.
+
+It fires after the `review` stage, and only when that stage ran inside a
+pipeline that did not fail earlier. No review means no findings, and no
+findings means nothing to act on. A failed run never reaches it, which keeps
+"the reviser edited a broken draft" out of the failure modes entirely.
 
 ---
 
@@ -1381,8 +1600,9 @@ internal helpers are private to the module.
 | `src/rank.py` | LLM Engineer | `data/YYYY-MM-DD/clusters.jsonl`, `config/rubric.yaml` | `data/YYYY-MM-DD/ranked.jsonl` | `def rank_day(run_date: date, rubric_path: Path = Path("config/rubric.yaml"), data_dir: Path = Path("data")) -> list[RankedStory]` |
 | `src/summarise.py` | LLM Engineer | `data/YYYY-MM-DD/ranked.jsonl`, `data/YYYY-MM-DD/clusters.jsonl`, `data/YYYY-MM-DD/items.jsonl`, `data/(last 14 days)/issue.json`, `data/(last 14 days)/ranked.jsonl` | `data/staging/YYYY-MM-DD/issue.json`, `data/staging/YYYY-MM-DD/source_excerpts.jsonl` | `def summarise_day(run_date: date, data_dir: Path = Path("data"), lookback_days: int = 14) -> Issue` |
 | `src/verify.py` | LLM Engineer | `data/staging/YYYY-MM-DD/issue.json`, `data/staging/YYYY-MM-DD/source_excerpts.jsonl` | `data/staging/YYYY-MM-DD/verify.json`, `data/staging/YYYY-MM-DD/issue.json` (denormalised `SummaryBlock.verification` rewritten in place) | `def verify_day(run_date: date) -> VerificationReport` (ADVISORY: never blocks release; on any failure writes an `unavailable` report and returns normally) |
-| `src/review.py` | LLM Engineer | `data/staging/YYYY-MM-DD/issue.json`, last 3 released `issue.json` | `data/staging/YYYY-MM-DD/review.md` | `def run_review(date: date \| None = None, dry_run: bool = False) -> ReviewArtifact` (ADVISORY: never blocks a human-ratified release; on any failure writes a `verdict: unavailable` review.md and returns normally). Writes `issue_sha256` into the frontmatter — the SHA-256 of the exact `issue.json` bytes it read, hashed in the same operation as the read. |
-| `src/gate.py` | **Architect** | `data/staging/YYYY-MM-DD/{issue.json, review.md, verify.json}` | `data/staging/YYYY-MM-DD/gate.json` | `def decide(date: date, *, phase: str \| None = None) -> GateDecision`; `def write_decision(decision: GateDecision, *, canonical: bool = False) -> Path`; `def run_gate(date: date, *, phase: str \| None = None) -> tuple[GateDecision, Path]`; `def issue_sha256(date: date, *, canonical: bool = False) -> str \| None` (the shared freshness hash). No LLM. Not a pipeline stage — invoked by `aiv gate` from the publish workflow, not by `aiv run`. |
+| `src/review.py` | LLM Engineer | `data/staging/YYYY-MM-DD/issue.json`, last 3 released `issue.json` | `data/staging/YYYY-MM-DD/review.json` + `review.md` | `def run_review(date: date \| None = None, dry_run: bool = False) -> ReviewArtifact` (ADVISORY: never blocks a human-ratified release; on any failure writes an `unavailable` report and returns normally). Writes `issue_sha256` into both artifacts — the SHA-256 of the exact `issue.json` bytes it read, hashed in the same operation as the read. `review.md` is rendered from `review.json`. |
+| `src/revise.py` | LLM Engineer | `data/staging/YYYY-MM-DD/{issue.json, review.json}` | `data/staging/YYYY-MM-DD/revisions.jsonl` (append), `data/staging/YYYY-MM-DD/issue.json` (rewritten in place, live mode only) | `def revise_day(run_date: date, *, shadow: bool, instruction: str = "", instruction_target: str = "") -> RevisionReport`; plus the typer command function `revise_command`, registered as `aiv revise` by `run.py`. `RevisionReport` is the caller-facing summary (`ran`, `applied`/`proposed`/`rejected` counts, `note`, and the substantive `RevisionCycle` on `.cycle`). Decides WHAT to change; `run.py` decides how many cycles. Refuses to edit against a stale review (`issue_sha256` mismatch) — `ran=False`, which the loop reports as a decline rather than a failure. |
+| `src/gate.py` | **Architect** | `data/staging/YYYY-MM-DD/{issue.json, review.json (or review.md), verify.json, revisions.jsonl}` | `data/staging/YYYY-MM-DD/gate.json` | `def decide(date: date, *, phase: str \| None = None) -> GateDecision`; `def write_decision(decision: GateDecision, *, canonical: bool = False) -> Path`; `def run_gate(date: date, *, phase: str \| None = None) -> tuple[GateDecision, Path]`; `def issue_sha256(date: date, *, canonical: bool = False) -> str \| None` (the shared freshness hash); `def read_review_state(date, *, canonical=False) -> ReviewRead` (the shared review reader — `run.py`'s loop uses the same one, so the loop and the gate can never disagree about today's verdict); `def read_revision_state(date, *, canonical=False) -> RevisionRead`. No LLM. Not a pipeline stage — invoked by `aiv gate` from the publish workflow, not by `aiv run`. |
 | `src/render.py` | Release Engineer | `data/YYYY-MM-DD/issue.json`, `templates/issue.html.j2` | `docs/index.html`, `docs/archive/YYYY-MM-DD.html` | `def render_issue(issue: Issue, templates_dir: Path = Path("templates"), docs_dir: Path = Path("docs")) -> None` |
 | `src/run.py` | Architect (orchestration shell; module owners maintain their stages) | All of the above, transitively | All of the above, transitively | `def main(run_date: date \| None = None, skip: set[str] = frozenset()) -> int` (CLI: `python -m src.run [--date YYYY-MM-DD] [--skip fetch,cluster,...]`; returns process exit code) |
 
@@ -1402,6 +1622,11 @@ internal helpers are private to the module.
   `gate.py` is the deliberate counter-case: it *consumes* those two LLM
   verdicts and makes a blocking decision from them in plain code, because
   a publish decision is the last place we want non-determinism.
+- **No LLM calls in `revise.py`?** Wrong — `revise.py` is an LLM stage, and
+  deliberately so: rewriting a headline to answer an editorial finding is
+  judgment. What is *not* in `revise.py` is the loop that calls it. Deciding
+  when to stop is arithmetic on a verdict ordering, and that lives in
+  `run.py` as plain code.
 - **Pipeline stage order** (`src/run.py::STAGE_ORDER`): `fetch -> cluster
   -> rank -> summarise -> verify -> render -> review`. `verify` runs after
   `summarise` (it needs the staged `issue.json` + the `source_excerpts.jsonl`
@@ -1411,7 +1636,10 @@ internal helpers are private to the module.
   publishable issue. **`gate` is not in `STAGE_ORDER`** — it is not part of
   the staging pipeline. It runs after it, on demand, from the publish
   workflow, and reads only artifacts the pipeline has already written. See
-  [Unattended publish](#unattended-publish).
+  [Unattended publish](#unattended-publish). **`revise` is not in
+  `STAGE_ORDER` either**, for a different reason: it is a loop over three
+  stages that already ran, not a stage of its own. See
+  [The revision loop](#the-revision-loop).
 - Logging shape is shared (Architect cross-cutting concern): one
   structured JSON line per significant event, fields `{ts, level, module,
   event, ...}`. `run.py` decides the destination (stderr for CI;
@@ -1801,4 +2029,7 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-08-02 | `GateCheck`, `GateReviewState`, `GateVerifyState`, `GateDecision` (new models); `gate.json` (new archive file) | — | v1 | New contract surface for the unattended-publish gate (`src/gate.py` `decide`). `GateCheck` (name, passed, blocking, detail, hold_reason) with a validator: a failed blocking check must name its hold reason, a passing check must not carry one. `GateReviewState` / `GateVerifyState` denormalise what the gate observed in `review.md` and `verify.json` so a reader of `gate.json` can reconstruct the decision without re-parsing either. `GateDecision` (schema_version, gate_version, phase, date, decision[auto_merge\|hold], hold_reasons, review, verify, checks, decided_at, note) — the `gate.json` envelope, with a validator keeping `decision` + `hold_reasons` consistent with `checks` (same discipline as `StoryVerification`'s rollups). New literals `GatePhase` (shadow\|green_only\|green_amber) and `GateDecisionValue` (auto_merge\|hold). `gate_version` versions the POLICY (which checks exist, which block) independently of `schema_version`, which versions the shape. See [Unattended publish](#unattended-publish). | First introduction — no on-disk migration. Missing-file tolerance is the migration story, with one inversion of the usual rule: readers tolerate a missing `gate.json`, but tolerance here means **hold**, not proceed. `Issue` and `SummaryBlock` are deliberately NOT bumped by this work — `revised_fields` / `revisions.jsonl` arrive with `revise.py` later. |
 | 2026-08-02 | `review.md` frontmatter | — | additive | Added the `issue_sha256` key: the SHA-256 hex digest of the exact `issue.json` bytes the review was written against. The writer (`review.py`) hashes the bytes in the same operation as the read, closing the window in which the file could change between read and hash; the reader (`gate.py`) recomputes via `sha256_of_file` / `issue_sha256`. The call sites differ deliberately; the raw-bytes definition is the shared contract and is what must not drift. Consumed by the gate's `review_freshness` check — absent or mismatched key holds with `hold:stale-review`. | Additive to an unversioned Markdown artifact. Existing `review.md` files (all released days before 2026-08-02) simply lack the key; a gate run against such a day holds with `hold:stale-review`, which is the correct answer — those reviews cannot be shown to describe the current issue. No rewrite of history. |
 | 2026-08-02 | Release promotion (paths, not schema) | required peripherals only + a `verify.json` special case | required + `_OPTIONAL_PERIPHERAL_FILES` | `render.release_promote` now promotes an optional-peripheral set — `verify.json`, `review.md`, `gate.json`, `revisions.jsonl` — copying each when present and skipping silently when absent; `unrelease` removes them in reverse. **Contract change: `review.md` is no longer staging-only.** Once an artifact can hold a publication, the released record must show what it said. `revisions.jsonl` is listed ahead of the stage that writes it so it promotes harmlessly when that stage lands. `source_excerpts.jsonl` remains staging-only (bulk working material, not evidence about the decision). | No migration. Already-released days simply lack the new files under `data/released/<date>/`; every reader of the released archive tolerates a missing per-day file. The previous `verify.json`-specific copy block is subsumed by the loop, so verify promotion behaviour is unchanged. `unrelease` now also removes a promoted `verify.json`, which it previously left behind — a latent bug that would have blocked the empty-directory cleanup. |
+| 2026-08-02 | `ReviewTarget`, `ReviewFinding`, `ReviewReport` (new models); `review.json` (new archive file) | — | v1 | The structured editorial review. `ReviewReport` (schema_version, generated_at, `computed_verdict`, one_line, findings, dropped_findings, prompt_version, thresholds_version, llm_model, `issue_sha256`, note) is written to `data/staging/<date>/review.json` and promoted on release; `review.md` is now RENDERED from it rather than authored independently. `computed_verdict` is authored by CODE from the finding severities under `config/review_thresholds.yaml` — the model produces evidence, a ratified table turns evidence into a decision, and the verdict is therefore re-derivable without re-running the LLM. `ReviewTarget` resolves each finding to one editable field (`kind` story\|section, `story_id`, `section`, `field`), which is what makes a finding actionable by `revise.py` rather than merely readable. Owner: LLM Engineer (writer); Architect (shape). | First introduction — no on-disk migration. Days archived before this date carry `review.md` only; `gate.py` falls back to the Markdown frontmatter when `review.json` is absent, so every historical day still evaluates. The fallback is for ABSENCE only: a present-but-unreadable `review.json` holds rather than falling back. |
+| 2026-08-02 | `RevisionChange`, `RevisionCycle` (new models); `revisions.jsonl` (new archive file) | — | v1 | The revision engine's audit trail. One `RevisionCycle` per line — one line per invocation, not per edit — appended (never rewritten) so the file reads as the edit history of the day's draft. `RevisionCycle` (schema_version, date, `cycle` 1-indexed within the date, `mode` shadow\|live, `changes`, operator_instruction, generated_at, prompt_version, review_prompt_version, `issue_sha256_before`/`_after`, note) with two validators: a shadow cycle carries no `applied` change and no `issue_sha256_after`; a live cycle leaves nothing merely `proposed`. `RevisionChange` (target, finding_ids, before, after, recommendation, rationale, `status` proposed\|applied\|rejected, reject_reason) with a validator: a rejection must say why, and an applied change must actually change something. `before`/`after` hold the FULL field text, not a diff — the record has to be readable a month later without the issue it came from. See [The revision loop](#the-revision-loop). | First introduction — no on-disk migration. Already in `render._OPTIONAL_PERIPHERAL_FILES`, so promotion needed no change. `gate.py` reads only `cycle` and each change's `status`, and treats an absent file as "no revision ran"; the informational `revision_status` check never blocks, so a malformed log degrades to a surfaced note rather than a held issue. |
+| 2026-08-02 | `gate.json` policy (`gate_version`, not `schema_version`) | v1 | v2 | `GateDecision.schema_version` is UNCHANGED — the shape did not move. What moved is the policy: (1) `review.json` became the primary review artifact, with `review.md` frontmatter as the fallback for absence only; (2) a new non-blocking `revision_status` check reports cycles run and applied/rejected counts from `revisions.jsonl`. **No blocking check changed its behaviour and no hold-reason token was added, removed, or renamed** — a day that held under v1 holds under v2 for the same reason. `GateReviewState.path` now names whichever artifact actually answered (`review.json` or `review.md`), which is how a reader of `gate.json` tells which one the decision rested on. | No migration. `gate.json` files written under policy v1 remain valid `GateDecision` records and parse unchanged; they simply carry `gate_version: "v1"` and no `revision_status` check, which is exactly what a policy version is for. Readers must not assume a fixed check list — iterate `checks` by name. |
 | 2026-05-24 | `Issue` | v4 | v5 | Added `revision: int = 0` (`ge=0`). Same-date re-release (opt-in via `aiv release --revise`) preserves `issue_number` and bumps `revision` instead of consuming a new integer in the registry. Display identifier is now `Issue.display_number` -> `"{issue_number}"` when `revision == 0`, else `"{issue_number}.{revision}"` (`#2`, `#2.1`, `#2.2`). The integer registry semantics are unchanged: uniqueness, monotonic-increase, and `paths.all_released_dates()` all still operate on the integer base; `revision` is a per-date secondary counter. Templates render `issue.display_number`; landing-page archive entries carry `display_number` alongside `issue_number`. See [Issue Number Registry -> Same-date re-release (revision bump)](#issue-number-registry). Motivating case: prompt drift fix on issue #2 (2026-05-24) re-shipped as #2.1 instead of burning #3. | Existing canonical archive (issues #1, #2 on disk) loads transparently: missing `revision` field defaults to 0 via pydantic; `display_number` returns `"1"`, `"2"`. v4 readers handling v5 records: pydantic `extra="forbid"` on `Issue` means a v4 reader of a v5 record would reject the unknown `revision` field. **Mitigation:** this repo upgrades all readers in the same PR (one binary, no external consumers). v5 readers handling v4 records: `revision` defaults to 0, display behaviour is identical to v4. No on-disk migration script is required. |

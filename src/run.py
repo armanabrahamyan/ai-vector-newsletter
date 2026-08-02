@@ -6,6 +6,7 @@ Backwards-compatible: ``python -m src.run`` still works.
 
 Subcommands:
   aiv run       -- fetch -> cluster -> rank -> summarise -> render (staging)
+  aiv revise    -- act on the reviewer's findings (owned by src/revise.py)
   aiv gate      -- decide whether the staged issue may publish unattended
   aiv release   -- promote staging draft to canonical
   aiv unrelease -- reverse a release
@@ -25,7 +26,7 @@ import sys
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, NamedTuple, Optional
 
 import typer
 
@@ -59,6 +60,47 @@ LLM_STAGES: frozenset[str] = frozenset({"rank", "summarise", "verify", "review"}
 SUPPORTED_PROVIDERS: frozenset[str] = frozenset(
     {"anthropic", "bedrock", "openai", "litellm", "ollama"}
 )
+
+# ---------------------------------------------------------------------------
+# Revision loop policy (2026-08-02).
+#
+# The loop runs AFTER the review stage and is not itself a stage: it does not
+# appear in STAGE_ORDER, `--stages` never names it, and it produces no
+# artifact of its own (`src/revise.py` writes `revisions.jsonl`; the loop's
+# visible output is a rewritten issue.json plus a fresh review of it).
+#
+# Keeping it out of STAGE_ORDER is deliberate. A stage runs once and hands
+# its artifact forward; this thing re-enters three stages that already ran.
+# Modelling it as a stage would have made `--stages revise` and the
+# auto-fire rules mean something we would then have to explain away.
+# ---------------------------------------------------------------------------
+
+REVISE_MODE_ENV_VAR = "AIV_REVISE_MODE"
+"""Environment variable selecting what the revision loop is allowed to do."""
+
+DEFAULT_REVISE_MODE = "shadow"
+"""Unset or unrecognised resolves here: propose, change nothing. Same
+posture as the publish gate's default phase -- a control that can rewrite a
+draft unattended defaults to observation."""
+
+VALID_REVISE_MODES: tuple[str, ...] = ("off", "shadow", "live")
+"""``off`` does not call the reviser at all (no tokens spent). ``shadow``
+makes one proposal-only call and leaves the issue untouched. ``live`` runs
+the full apply/re-verify/re-render/re-review loop."""
+
+MAX_REVISION_CYCLES = 2
+"""Hard cap on live cycles per run. Two is a judgment about diminishing
+returns, not a technical limit: a reviser that has not fixed the issue in
+two passes is not converging, and a third pass mostly buys tokens, latency,
+and more chances to make the issue worse."""
+
+_VERDICT_RANK: dict[str, int] = {"red": 0, "amber": 1, "green": 2}
+"""Ordering used for the "did it improve?" test. Anything not in this map --
+``unavailable``, an unrecognised token, a review that could not be read --
+ranks BELOW ``red`` (see `_verdict_rank`), so a cycle that destroys the
+review's readability can never look like progress."""
+
+_BEST_VERDICT_RANK = max(_VERDICT_RANK.values())
 
 _LOG = logging.getLogger("ai_vector.run")
 
@@ -431,6 +473,378 @@ def _run_stage(name: str, run_date: _dt.date) -> tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------
+# The revision loop.
+#
+# What it is: after the editor's review has run, give the pipeline a chance
+# to act on the findings instead of just recording them. `src/revise.py`
+# (LLM Engineer) decides WHAT to change; this module decides HOW MANY TIMES
+# and WHEN TO STOP. That split is the whole point -- judgment about a
+# headline belongs in a prompt, and a termination condition belongs in a
+# `for` loop with a hard cap, per No Token Wasted.
+#
+# The live cycle:
+#
+#     revise -> re-verify (touched stories only) -> render -> review
+#
+# and then one question: did the computed verdict actually improve? If not,
+# stop. The loop never rolls back an edit it made -- rolling back needs a
+# snapshot contract the reviser does not have, and the publish gate is
+# already the backstop for "the issue got worse" (a degraded verdict holds).
+# What the loop guarantees is that it stops making things worse, not that it
+# undoes what it already did.
+# ---------------------------------------------------------------------------
+
+def resolve_revise_mode(explicit: str | None = None) -> tuple[str, str]:
+    """Resolve the revision mode. Returns ``(mode, note)``.
+
+    Precedence: the ``explicit`` argument (test / CLI override), then
+    ``AIV_REVISE_MODE``, then `DEFAULT_REVISE_MODE`. An unrecognised value
+    falls back to ``shadow`` and says so -- a typo'd variable must never
+    silently license the loop to rewrite the issue.
+    """
+    raw = explicit if explicit is not None else os.getenv(REVISE_MODE_ENV_VAR)
+    if raw is None or not raw.strip():
+        return DEFAULT_REVISE_MODE, ""
+    value = raw.strip().lower()
+    if value in VALID_REVISE_MODES:
+        return value, ""
+    note = (
+        f"unrecognised {REVISE_MODE_ENV_VAR}={raw!r}; falling back to "
+        f"{DEFAULT_REVISE_MODE!r} (valid: {', '.join(VALID_REVISE_MODES)})"
+    )
+    _LOG.warning("revise: %s", note)
+    return DEFAULT_REVISE_MODE, note
+
+
+def _verdict_rank(verdict: str | None) -> int:
+    """Rank a review verdict for the improvement test. Unknown ranks last.
+
+    ``red`` < ``amber`` < ``green``; everything else (``unavailable``, an
+    unrecognised token, no readable review at all) ranks -1. Ranking the
+    unreadable states BELOW the worst readable one is what makes "did it
+    improve?" safe: a cycle that leaves the review unparseable scores worse
+    than the red it started from, so the loop stops instead of continuing
+    into a state nobody can evaluate.
+    """
+    if verdict is None:
+        return -1
+    return _VERDICT_RANK.get(verdict.strip().lower(), -1)
+
+
+def _current_review_verdict(run_date: _dt.date) -> str | None:
+    """Read the computed editorial verdict for ``run_date``.
+
+    Delegates to `gate.read_review_state`, which prefers ``review.json`` and
+    falls back to ``review.md`` frontmatter. Deliberately the same reader the
+    gate uses: if the loop and the gate disagreed about what today's verdict
+    is, the loop could stop on "good enough" while the gate holds, and the
+    two would be arguing about a file rather than a decision.
+    """
+    from src import gate as gate_mod
+
+    return gate_mod.read_review_state(run_date).verdict
+
+
+def _attr(obj: Any, name: str, default: Any = None) -> Any:
+    """Read ``name`` off a pydantic model or a plain mapping.
+
+    `RevisionCycle` is the LLM Engineer's shape. Reading it through one
+    tolerant accessor means a rename downstream degrades to "the loop stops
+    early", which is a bad morning, rather than "the pipeline raises", which
+    is no issue at all.
+    """
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+def _revision_changes(report: Any) -> list[Any] | None:
+    """The `RevisionChange` list behind a revise call, or ``None``.
+
+    `revise_day` returns a `RevisionReport` -- a caller-facing summary that
+    carries the substantive `RevisionCycle` on ``.cycle`` -- so the changes
+    live one level down. We also accept a bare cycle, because that is the
+    shape on disk in ``revisions.jsonl`` and it costs one line to read both.
+    """
+    for candidate in (report, _attr(report, "cycle")):
+        if candidate is None:
+            continue
+        changes = _attr(candidate, "changes")
+        if isinstance(changes, (list, tuple)):
+            return list(changes)
+    return None
+
+
+class RevisionTally(NamedTuple):
+    """How one revision call's changes resolved."""
+
+    applied: int
+    rejected: int
+    proposed: int
+
+
+def _revision_tally(report: Any) -> RevisionTally:
+    """Count the change statuses from one `revise_day` call.
+
+    Prefers the report's own integer counters (`RevisionReport.applied` /
+    `.proposed` / `.rejected`) because that is what the writer computed;
+    falls back to counting the `RevisionChange` statuses when they are not
+    there. ``applied`` and ``rejected`` are the live-mode outcomes;
+    ``proposed`` is what a shadow call produces (it computes the rewrite and
+    writes nothing).
+
+    An unreadable report tallies to zeros, which the loop reads as "nothing
+    happened" and stops on. That is the safe interpretation: a loop that
+    guesses high keeps spending.
+    """
+    counters = {
+        name: _attr(report, name) for name in ("applied", "rejected", "proposed")
+    }
+    if any(isinstance(v, int) for v in counters.values()):
+        return RevisionTally(
+            *(v if isinstance(v, int) else 0
+              for v in (counters["applied"], counters["rejected"],
+                        counters["proposed"]))
+        )
+
+    changes = _revision_changes(report) or []
+    counts = {"applied": 0, "rejected": 0, "proposed": 0}
+    for change in changes:
+        status = _attr(change, "status")
+        if status in counts:
+            counts[status] += 1
+    return RevisionTally(counts["applied"], counts["rejected"], counts["proposed"])
+
+
+def _revision_touched_story_ids(report: Any) -> list[str] | None:
+    """Which stories the call actually rewrote. Three-state on purpose.
+
+    - a **list of ids** -- these stories' text changed; re-verify exactly
+      them.
+    - an **empty list** -- we read the changes and none of them touched story
+      text (a cycle that only rewrote section intros, say). Nothing the
+      verifier looks at moved, so re-verifying would be pure cost. Section
+      intros carry no factual claims tied to a source excerpt; verify works
+      over `SummaryBlock` headlines and summaries only.
+    - ``None`` -- we could not tell. Callers re-verify everything, because
+      "I don't know what changed" and "nothing changed" are different states
+      and only one of them is safe to skip.
+    """
+    changes = _revision_changes(report)
+    if changes is None:
+        explicit = _attr(report, "touched_story_ids")
+        if isinstance(explicit, (list, tuple)):
+            return [s for s in explicit if isinstance(s, str) and s]
+        return None
+
+    ids: list[str] = []
+    seen: set[str] = set()
+    for change in changes:
+        if _attr(change, "status") != "applied":
+            continue
+        target = _attr(change, "target")
+        if target is None:
+            # An applied change we cannot locate. Fall back to "unknown"
+            # rather than silently narrowing the re-verify scope.
+            return None
+        story_id = _attr(target, "story_id")
+        if isinstance(story_id, str) and story_id and story_id not in seen:
+            seen.add(story_id)
+            ids.append(story_id)
+    return ids
+
+
+def _reverify_stories(run_date: _dt.date, story_ids: list[str] | None) -> str:
+    """Re-run the factual verifier over the stories the reviser rewrote.
+
+    The contract is ``verify_day(date, *, story_ids=None)`` where ``None``
+    means the whole issue. When the installed `verify.py` does not accept the
+    keyword yet, we re-verify EVERYTHING and log why. That costs tokens we
+    hoped to save, and it is still the right fallback: `verify.json` and the
+    denormalised `SummaryBlock.verification` copies are what the gate scans
+    for contradictions, so leaving them stale about a story we just rewrote
+    would let the gate reason about text that no longer exists.
+    """
+    import inspect
+
+    from src import verify as verify_mod
+
+    if story_ids is not None and not story_ids:
+        return "skipped (no story text changed this cycle)"
+
+    kwargs: dict[str, Any] = {}
+    if story_ids:
+        try:
+            accepts = "story_ids" in inspect.signature(verify_mod.verify_day).parameters
+        except (TypeError, ValueError):  # pragma: no cover -- exotic callables
+            accepts = False
+        if accepts:
+            kwargs["story_ids"] = story_ids
+        else:
+            _LOG.warning(
+                "revise: verify_day() does not accept story_ids yet; "
+                "re-verifying the whole issue instead of just %d touched "
+                "story/stories", len(story_ids),
+            )
+    report = verify_mod.verify_day(run_date, **kwargs)
+    scope = f"{len(story_ids)} touched" if kwargs else "all"
+    return f"{report.verdict} ({scope} stories)"
+
+
+def _revise_once(run_date: _dt.date, *, shadow: bool) -> Any:
+    """One call into `src/revise.py`. Isolated so tests can patch one seam."""
+    from src import revise as revise_mod
+
+    return revise_mod.revise_day(run_date, shadow=shadow)
+
+
+class RevisionOutcome(NamedTuple):
+    """What the revision phase did, for the end-of-run summary.
+
+    ``summary`` is the revision line itself. ``review_summary`` is the
+    verdict line from the LAST re-review the loop ran, or ``None`` when the
+    loop never re-reviewed (shadow mode, mode ``off``, no cycle applied
+    anything, or the loop failed) -- in which case the caller keeps the
+    verdict the review stage already reported.
+    """
+
+    summary: str | None
+    review_summary: str | None = None
+
+
+def _run_revision_loop(run_date: _dt.date, *, mode: str) -> RevisionOutcome:
+    """Run the revision phase. Returns the summary lines for the run report.
+
+    Raises nothing that the caller has to handle beyond the advisory guard in
+    `_maybe_revise` -- see there for the containment contract.
+    """
+    if mode == "shadow":
+        llm_usage.set_stage("revise")
+        report = _revise_once(run_date, shadow=True)
+        tally = _revision_tally(report)
+        # A shadow cycle resolves every change to "proposed" and writes no
+        # issue.json, which is why nothing re-verifies, re-renders or
+        # re-reviews after it.
+        return RevisionOutcome(
+            f"shadow -- {tally.proposed} proposed / {tally.rejected} rejected; "
+            "issue unchanged, no re-review"
+        )
+
+    start_verdict = _current_review_verdict(run_date)
+    verdict = start_verdict
+    cycles_run = 0
+    applied_total = 0
+    rejected_total = 0
+    last_review_summary: str | None = None
+    stop_reason = f"reached the {MAX_REVISION_CYCLES}-cycle cap"
+
+    for cycle in range(1, MAX_REVISION_CYCLES + 1):
+        _LOG.info(
+            "--- revision cycle %d/%d (verdict in: %s) ---",
+            cycle, MAX_REVISION_CYCLES, verdict or "unreadable",
+        )
+        llm_usage.set_stage("revise")
+        report = _revise_once(run_date, shadow=False)
+        cycles_run = cycle
+        tally = _revision_tally(report)
+        applied_total += tally.applied
+        rejected_total += tally.rejected
+
+        if tally.applied == 0:
+            # Nothing on disk changed, so re-verifying, re-rendering and
+            # re-reviewing would all produce byte-identical outputs at full
+            # LLM price. Stop.
+            #
+            # `ran=False` is the engine REFUSING to act (no review, a stale
+            # review, nothing actionable) rather than trying and changing
+            # nothing. A refusal is not a failure, but it is also not a
+            # revision, and the log should not read as though it were.
+            if _attr(report, "ran") is False:
+                note = str(_attr(report, "note", "") or "no reason given")
+                stop_reason = f"reviser declined: {note}"
+            else:
+                stop_reason = "reviser applied nothing"
+            break
+
+        touched = _revision_touched_story_ids(report)
+        _LOG.info(
+            "revise: cycle %d applied %d change(s) across %s",
+            cycle, tally.applied,
+            f"{len(touched)} story/stories" if touched is not None
+            else "an undetermined set of stories",
+        )
+        llm_usage.set_stage("verify")
+        _reverify_stories(run_date, touched)
+        llm_usage.set_stage("render")
+        _run_render_preview(run_date)
+        llm_usage.set_stage("review")
+        last_review_summary = _run_review(run_date)
+
+        new_verdict = _current_review_verdict(run_date)
+        if _verdict_rank(new_verdict) <= _verdict_rank(verdict):
+            stop_reason = (
+                f"verdict did not improve ({verdict or 'unreadable'} -> "
+                f"{new_verdict or 'unreadable'})"
+            )
+            verdict = new_verdict
+            break
+        verdict = new_verdict
+        if _verdict_rank(verdict) >= _BEST_VERDICT_RANK:
+            stop_reason = "verdict reached the ceiling"
+            break
+
+    return RevisionOutcome(
+        f"live -- {cycles_run} cycle(s), {applied_total} applied / "
+        f"{rejected_total} rejected, verdict "
+        f"{start_verdict or 'unreadable'} -> {verdict or 'unreadable'} "
+        f"(stopped: {stop_reason})",
+        last_review_summary,
+    )
+
+
+def _maybe_revise(run_date: _dt.date, *, mode: str | None = None) -> RevisionOutcome:
+    """Run the revision phase if the mode calls for it. Never raises.
+
+    The containment contract, and why it is absolute: the revision loop is
+    an improvement, and an improvement that can destroy the day's issue is
+    not one. Any failure inside it -- a missing `revise.py`, a shape change
+    in `RevisionReport`, an LLM timeout mid-cycle -- is caught here, logged
+    with a traceback, and the pipeline continues with whatever issue.json is
+    on disk.
+
+    Note the honest edge: "whatever is on disk" is the PRE-revision issue
+    only if the failure happened before any write. If a cycle applied edits
+    and then the re-review failed, the issue on disk is the revised one with
+    a review that no longer matches it -- and the gate holds it as
+    `hold:stale-review`. That is the correct outcome, and it is the reason
+    the freshness check is blocking rather than advisory.
+    """
+    active_mode, _note = resolve_revise_mode(mode)
+    if active_mode == "off":
+        _LOG.debug("revise: mode=off -- skipping the revision phase")
+        return RevisionOutcome(None)
+    t0 = time.monotonic()
+    try:
+        outcome = _run_revision_loop(run_date, mode=active_mode)
+    except SystemExit:
+        raise
+    except Exception as exc:  # noqa: BLE001 -- advisory by contract
+        elapsed_ms = int((time.monotonic() - t0) * 1000)
+        _LOG.warning(
+            "revise: the revision loop failed after %dms (advisory -- "
+            "pipeline continues with the issue as it stands) -- %s: %s",
+            elapsed_ms, type(exc).__name__, exc,
+        )
+        _LOG.warning("traceback:\n%s", traceback.format_exc())
+        return RevisionOutcome(f"[advisory-guard] {type(exc).__name__}: {exc}")
+    elapsed_ms = int((time.monotonic() - t0) * 1000)
+    _LOG.info(
+        "revise: revision phase complete in %dms -- %s", elapsed_ms, outcome.summary,
+    )
+    return outcome
+
+
+# ---------------------------------------------------------------------------
 # Banners.
 # ---------------------------------------------------------------------------
 
@@ -474,16 +888,32 @@ _STAGE_ARTIFACTS: dict[str, str] = {
     "verify":    ("data/staging/{date}/verify.json + "
                   "data/staging/{date}/issue.json (verification populated)"),
     "render":    "docs/staging/{date}.html",
-    "review":    "data/staging/{date}/review.md (editorial verdict)",
+    "review":    ("data/staging/{date}/review.json (findings + computed "
+                  "verdict) + review.md"),
 }
 
 
-def _dry_run_staging(run_date: _dt.date, stages: list[str]) -> None:
+def _dry_run_staging(
+    run_date: _dt.date, stages: list[str], *, revise_mode: str | None = None,
+) -> None:
     date_str = run_date.isoformat()
     print(f"[dry-run] STAGING for date={date_str}:")
     for idx, name in enumerate(stages, start=1):
         artifact = _STAGE_ARTIFACTS[name].format(date=date_str)
         print(f"  {idx}. {name:<9} -> {artifact}")
+    if "review" not in stages:
+        return
+    active_mode, _note = resolve_revise_mode(revise_mode)
+    print(f"  then. revise   -> mode={active_mode} ({REVISE_MODE_ENV_VAR})")
+    if active_mode == "off":
+        print("        the revision phase is disabled; nothing runs after review")
+    elif active_mode == "shadow":
+        print(f"        one proposal-only pass -> data/staging/{date_str}/"
+              "revisions.jsonl; issue.json untouched")
+    else:
+        print(f"        up to {MAX_REVISION_CYCLES} cycles of "
+              "[revise -> verify (touched stories) -> render -> review],")
+        print("        stopping early when the computed verdict stops improving")
 
 
 def _dry_run_release(run_date: _dt.date) -> None:
@@ -532,12 +962,17 @@ def _dry_run_unrelease(run_date: _dt.date) -> None:
 # ---------------------------------------------------------------------------
 
 def _run_pipeline(
-    run_date: _dt.date, stages: list[str], dry_run: bool, skip_preflight: bool = False,
+    run_date: _dt.date,
+    stages: list[str],
+    dry_run: bool,
+    skip_preflight: bool = False,
+    *,
+    revise_mode: str | None = None,
 ) -> int:
     """Run the staging pipeline. Returns Unix exit code."""
     _banner_staging(run_date, stages)
     if dry_run:
-        _dry_run_staging(run_date, stages)
+        _dry_run_staging(run_date, stages, revise_mode=revise_mode)
         return 0
 
     # Fresh accumulator per run -- a re-run in the same process (tests, or a
@@ -595,12 +1030,27 @@ def _run_pipeline(
         if name == "review":
             review_summary = message
 
+    # The revision phase follows the review stage, and only that stage: it
+    # acts on the reviewer's findings, so with no review there is nothing to
+    # act on. A pipeline that failed earlier never reaches here, which keeps
+    # "the reviser edited a broken draft" out of the failure modes.
+    revise_summary: str | None = None
+    if failed_stage is None and "review" in stages_succeeded:
+        outcome = _maybe_revise(run_date, mode=revise_mode)
+        revise_summary = outcome.summary
+        # A live cycle re-runs review, so the verdict printed at the end of
+        # the run must be the one that survived the loop, not the one that
+        # triggered it.
+        if outcome.review_summary is not None:
+            review_summary = f"{outcome.review_summary} (after revision)"
+
     elapsed = time.monotonic() - wall_t0
     llm_usage_snapshot = llm_usage.snapshot()
     _print_staging_summary(
         run_date, stages_succeeded, failed_stage, failure_reason, elapsed,
         verify_summary=verify_summary,
         review_summary=review_summary,
+        revise_summary=revise_summary,
         llm_usage_snapshot=llm_usage_snapshot,
     )
     # Duplicate-risk guard: fires when this run (re)built the issue and
@@ -822,6 +1272,7 @@ def _print_staging_summary(
     *,
     verify_summary: str | None = None,
     review_summary: str | None = None,
+    revise_summary: str | None = None,
     llm_usage_snapshot: dict[str, Any] | None = None,
 ) -> None:
     mm = int(elapsed_seconds // 60)
@@ -854,6 +1305,8 @@ def _print_staging_summary(
     # scannable last lines for Arman.
     if verify_summary is not None:
         _LOG.info("verify: %s", verify_summary)
+    if revise_summary is not None:
+        _LOG.info("revise: %s", revise_summary)
     if review_summary is not None:
         _LOG.info("review: %s", review_summary)
     # Cost line -- last, so it's the final thing on screen. Silent (no line
@@ -959,6 +1412,17 @@ def run(
         help="Skip the post-render editorial review pass. Review auto-fires "
              "whenever 'render' runs; use this flag to suppress it.",
     ),
+    no_revise: bool = typer.Option(
+        False, "--no-revise",
+        help="Skip the revision phase that follows the review. Equivalent to "
+             f"{REVISE_MODE_ENV_VAR}=off for this run.",
+    ),
+    revise_mode: Optional[str] = typer.Option(
+        None, "--revise-mode", metavar="MODE",
+        help="Override the revision mode for this run: off | shadow | live. "
+             f"Default comes from {REVISE_MODE_ENV_VAR}, and from 'shadow' "
+             "when that is unset or unrecognised.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
 ) -> None:
     """Fetch, cluster, rank, summarise, verify, render, and review a staging draft.
@@ -971,12 +1435,28 @@ def run(
     The editor's pre-release review auto-fires after ``render`` runs (full
     pipeline or any stage subset that includes ``render``). Pass
     ``--no-review`` to skip it.
+
+    The revision phase follows the review whenever the review ran. In the
+    default ``shadow`` mode it makes one proposal-only pass and changes
+    nothing; in ``live`` mode it runs up to two cycles of
+    [revise, re-verify the touched stories, render, review] and stops as
+    soon as the computed verdict stops improving. It is advisory in the
+    strongest sense: any failure inside it is logged and the run continues
+    with the issue as it stands.
     """
     _setup_logging(verbose)
     _load_env()
     run_date = _resolve_date(date)
     stage_list = _resolve_stages(stage, stages, no_verify=no_verify, no_review=no_review)
-    sys.exit(_run_pipeline(run_date, stage_list, dry_run, skip_preflight=skip_preflight))
+    # --no-revise is a shorthand for mode "off" and wins over --revise-mode:
+    # a flag that says "don't" should not be overridable by a flag that says
+    # "how".
+    effective_revise_mode = "off" if no_revise else revise_mode
+    sys.exit(_run_pipeline(
+        run_date, stage_list, dry_run,
+        skip_preflight=skip_preflight,
+        revise_mode=effective_revise_mode,
+    ))
 
 
 @app.command()
@@ -1331,6 +1811,58 @@ def eval_cmd(
     # `_resolve_date` raises on malformed input.
     run_date = _resolve_date(date) if date is not None else None
     sys.exit(_run_eval(run_date, judge_only, no_judge, fixture, vs, strict, staging=staging))
+
+
+# ---------------------------------------------------------------------------
+# `aiv revise` -- registered here, implemented in src/revise.py.
+#
+# The CLI surface is the Architect's (run.py owns `app`); the command's
+# behaviour is the LLM Engineer's (revise.py owns the reviser). So the
+# registration is a one-liner here and the function body lives there --
+# neither seat has to edit the other's file to ship a change.
+#
+# Registration is fail-soft on purpose. `aiv` is the entry point for
+# release, unrelease and gate as well; a syntax error in a module that only
+# `aiv revise` needs must not take the whole CLI down at 06:00. When
+# revise.py is absent we log at DEBUG (a normal state before it lands); when
+# it exists but cannot be registered we log at WARNING, because that is a
+# real breakage someone should see.
+# ---------------------------------------------------------------------------
+
+_REVISE_COMMAND_CANDIDATES: tuple[str, ...] = ("revise_command", "revise_cmd", "revise")
+"""Accepted names for the typer command function in ``src/revise.py``, in
+preference order. ``revise_command`` is the one that shipped; the others are
+accepted so a rename on that side does not cost the CLI its command."""
+
+
+def _register_revise_command(typer_app: typer.Typer = app) -> bool:
+    """Attach ``aiv revise`` from `src.revise`. Returns True when registered."""
+    try:
+        from src import revise as revise_mod
+    except ImportError:
+        _LOG.debug("cli: src/revise.py not present; `aiv revise` not registered")
+        return False
+    except Exception as exc:  # noqa: BLE001 -- a broken module must not kill `aiv`
+        _LOG.warning(
+            "cli: src/revise.py could not be imported; `aiv revise` is "
+            "unavailable but the rest of the CLI still works -- %s: %s",
+            type(exc).__name__, exc,
+        )
+        return False
+
+    for name in _REVISE_COMMAND_CANDIDATES:
+        command = getattr(revise_mod, name, None)
+        if callable(command):
+            typer_app.command(name="revise")(command)
+            return True
+    _LOG.warning(
+        "cli: src/revise.py exposes none of %s; `aiv revise` not registered",
+        ", ".join(_REVISE_COMMAND_CANDIDATES),
+    )
+    return False
+
+
+_register_revise_command()
 
 
 # ---------------------------------------------------------------------------

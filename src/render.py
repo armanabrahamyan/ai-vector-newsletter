@@ -106,6 +106,7 @@ _PERIPHERAL_EMBEDDINGS: str = "embeddings/centroids.npz"
 _OPTIONAL_PERIPHERAL_FILES: tuple[str, ...] = (
     "verify.json",
     "review.md",
+    "review.json",
     "gate.json",
     "revisions.jsonl",
 )

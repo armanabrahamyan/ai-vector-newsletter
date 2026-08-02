@@ -116,6 +116,20 @@ a week. Do not hand-curate from web sources — see `evals/README.md`.
 
 ---
 
+## Exceptions to the four-file convention
+
+Two fixture sets are self-contained YAML manifests (`cases.yaml` + one
+payload file per case) rather than the `items/clusters/ranked/issue`
+four-file set above, because they calibrate a single downstream artifact
+consumer, not the dedup/rank pipeline itself:
+
+- `factual-accuracy/` (Eval 7) — a `(headline, body, source_excerpt)` triple
+  per case, labelled with per-claim ground-truth verdicts.
+- `reviewer-gate/` (Eval 9, PROPOSAL pending ratification) — a full
+  `issue.json` payload per case (still `Issue`-schema-valid — see its
+  `build_fixtures.py`), labelled with a `ground_truth_gate` (`hold` /
+  `publish`) and a `defect_class`. See `reviewer-gate/README.md`.
+
 ## Source-of-truth reminder
 
 The pydantic models in `src/models.py` are the authoritative schema.

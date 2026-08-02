@@ -26,6 +26,7 @@ consistently produce what it was designed for?
 | **Drift detection** | Scores, tier mix, voice signatures, summary length drifting from rolling 14-day baseline? | Stub — needs a corpus to detect drift against |
 | **Behavioural integrity** | Is the team following its own rules? PRs reviewed, postmortems filed, labels accumulating? | Manual — Eval Engineer writes weekly note |
 | **Reading-experience lint (Eval 8)** | Deterministic R-8/R-9 checks over `issue.json`: banned absence-form trust flags, "A new + generic noun" headline openers, "A/An"-led headline density (cap 2). No LLM. Gates datasets dated ≥ 2026-07-04; earlier days report counts as `informational`. | Ready — unit checks in `evals/test_reading_experience_lint.py` |
+| **Reviewer-gate calibration (Eval 9)** | Phase 2 auto-publish gate: does the editorial reviewer (`src/review.py`) hold issues that should not ship unattended and publish the ones that should? 42 labelled fixtures in `evals/fixtures/reviewer-gate/`. Hard gate `recall_hold_worthy >= 0.95`; advisory `precision_publish_safe >= 0.75`; `gate_stability` (rerun agreement) reported. | **PROPOSAL, pending ratification** — fixtures + harness built; execution against the real end-to-end reviewer pending LLM credentials in a runnable environment. See `evals/fixtures/reviewer-gate/README.md`. |
 
 "Stub" means: function signature and structure are real; implementation is
 TODO with graceful not-yet-implemented output. The harness is runnable and
@@ -55,8 +56,15 @@ Any regression on any tracked eval **blocks merge** to:
 - `src/cluster.py`
 - `src/rank.py`
 - `src/summarise.py`
+- `src/verify.py` (Eval 7 calibration gates: `recall_contradicted >= 0.85`,
+  `precision_supported >= 0.80`)
 - `config/rubric.yaml`
 - Any prompt file owned by the LLM Engineer
+- `src/review.py` + `config/review_thresholds.yaml` — **PENDING**: Eval 9's
+  `recall_hold_worthy >= 0.95` gate becomes hard on these two paths once
+  Arman ratifies the Eval 9 proposal (see
+  `evals/fixtures/reviewer-gate/README.md`). Until ratified, Eval 9 runs in
+  seam mode (green, non-blocking) and does not veto.
 
 **Mechanism:** CI runs `python -m evals.run_evals` on every PR touching those
 paths. Non-zero exit = regression = PR blocked. The veto is not advisory and

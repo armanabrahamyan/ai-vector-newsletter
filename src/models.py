@@ -54,6 +54,16 @@ Pipeline flow (producers -> consumers; full picture in `docs/internal/TEAM.md`):
     GateDecision       consumed by the unattended-publish workflow, render
                        (promoted to released), evals, Arman
 
+    ReviewTarget /  -> produced by src/review.py (the review.json sidecar;
+    ReviewFinding /    review.md is rendered from it)
+    ReviewReport       consumed by src/revise.py (text_edit findings only),
+                       Arman, evals
+
+    RevisionChange /-> produced by src/revise.py (revisions.jsonl -- one
+    RevisionCycle      RevisionCycle per line, appended per invocation)
+                       consumed by Arman, render (promoted to released),
+                       evals
+
 Schema versioning. Every persisted model carries a `schema_version: int`
 field per the DESIGN.md schema changelog. Most models are v1 today; `Issue`
 is v6 (v2 added `issue_number`; v3 made `issue_number` Optional to support
@@ -235,9 +245,94 @@ the active phase; ``hold`` == at least one blocking check failed, and
 that cannot decide holds (fail closed)."""
 
 
+ReviewVerdictValue = Literal[
+    "green",
+    "amber",
+    "red",
+    "unavailable",
+    "unparseable",
+    "not_run",
+]
+"""The `review.json` / `review.md` verdict vocabulary. Mirrors
+``review.REVIEW_VERDICTS`` -- the two must move together.
+
+The first three are EDITORIAL judgements. Since the structured reviewer
+(review prompt v1.0) they are computed BY CODE from the finding severities
+under ``config/review_thresholds.yaml``; the model authors findings, never
+the verdict. The last three are code-authored machine states meaning "no
+judgement was recorded": ``unavailable`` (the review could not run),
+``unparseable`` (it ran but its output could not be trusted), ``not_run``
+(dry run). None of the three is an editorial pass -- a consumer that
+authorises anything treats ``green`` (and only ``green``) as permission.
+"""
+
+ReviewTargetKind = Literal["story", "section"]
+"""What a `ReviewFinding` is about: one story (a `SummaryBlock`) or one
+section's editorial framing (an `IssueSection` intro)."""
+
+ReviewTargetField = Literal["headline", "summary", "intro_lead", "intro_body"]
+"""The exact field a finding points at. ``headline`` / ``summary`` belong to
+story targets; ``intro_lead`` / ``intro_body`` to section targets (enforced
+by the validator on `ReviewTarget`).
+
+Naming a FIELD rather than "the story" is what makes a finding actionable
+without judgement: `revise.py` looks the field up, hands the model only
+that text, and writes only that text back."""
+
+ReviewSeverity = Literal["blocking", "major", "minor", "note"]
+"""How much a finding matters. Feeds the code-computed verdict via the
+ratifiable threshold table in ``config/review_thresholds.yaml``.
+
+  - ``blocking`` : do not publish as-is. Reserved for reputational /
+                   liability exposure and factual claims the issue cannot
+                   stand behind.
+  - ``major``    : a substantive editorial defect a reader would notice.
+  - ``minor``    : a real improvement, not a defect.
+  - ``note``     : an observation; nothing to do today.
+"""
+
+ReviewFixKind = Literal[
+    "text_edit",
+    "structural",
+    "sourcing",
+    "metadata",
+    "carry_forward",
+    "human",
+]
+"""What KIND of action would resolve a finding. This is the routing key
+between the reviewer and the revision engine: `src/revise.py` acts on
+``text_edit`` and ONLY on ``text_edit``.
+
+  - ``text_edit``     : rewriting the quoted text in place fixes it.
+  - ``structural``    : needs a re-pick, a re-route, or a re-order --
+                        a different story or a different section.
+  - ``sourcing``      : needs another source, a link, or a corroboration.
+  - ``metadata``      : signal pill, audience tags, section name.
+  - ``carry_forward`` : nothing to do today; remember it tomorrow.
+  - ``human``         : needs Arman's judgement, not an edit.
+"""
+
+RevisionStatus = Literal["proposed", "applied", "rejected"]
+"""Lifecycle of one `RevisionChange`.
+
+  - ``proposed`` : computed and validated, not written. The shadow-run
+                   status.
+  - ``applied``  : written into `issue.json`. Live runs only.
+  - ``rejected`` : the code-side validation gate refused the replacement.
+                   Reachable in BOTH modes -- a shadow run that would have
+                   refused must say so, or it is not a preview of what live
+                   would do.
+"""
+
+RevisionMode = Literal["shadow", "live"]
+"""Whether a `RevisionCycle` wrote to `issue.json` (``live``) or only
+recorded what it would have written (``shadow``)."""
+
+
 # Patterns reused across models.
 _CLUSTER_ID_PATTERN = r"^c_[0-9a-f]{12,}$"
 _PROMPT_VERSION_PATTERN = r"^v\d+(\.\d+)*$"
+_FINDING_ID_PATTERN = r"^f\d{3,}$"
 
 
 # ---------------------------------------------------------------------------
@@ -1601,6 +1696,413 @@ class GateDecision(BaseModel):
         return self
 
 
+# ---------------------------------------------------------------------------
+# ReviewFinding / ReviewReport -- the structured editorial reviewer output.
+#
+# Produced by `src/review.py` (`run_review`), persisted as the `review.json`
+# sidecar; `review.md` is RENDERED FROM this object by the same module, so
+# the human-readable artifact and the machine-readable one cannot disagree.
+#
+# The shape exists to make the review ACTIONABLE. A prose verdict can only
+# be read; a finding that names a target field, quotes the offending text
+# verbatim, and states what kind of fix it needs can be routed -- to
+# `src/revise.py` (text edits), to a re-pick, or to Arman. See DESIGN.md
+# "review.json".
+# ---------------------------------------------------------------------------
+
+class ReviewTarget(BaseModel):
+    """What one `ReviewFinding` is about, resolved to a single editable field.
+
+    The field-level precision is the point. "The Hands-On section reads
+    flat" is an opinion nobody can act on deterministically; "the
+    ``intro_lead`` of the ``hands_on`` section" is a string on disk that a
+    reviewer quoted from and a reviser can rewrite.
+    """
+
+    schema_version: int = 1
+    kind: ReviewTargetKind
+    """``story`` (a SummaryBlock) or ``section`` (an IssueSection intro)."""
+
+    story_id: Annotated[
+        str | None, Field(default=None, pattern=_CLUSTER_ID_PATTERN)
+    ] = None
+    """= `SummaryBlock.story_id` = `Cluster.cluster_id`. REQUIRED when
+    ``kind == "story"``; MUST be None when ``kind == "section"`` (a section
+    intro belongs to no single story)."""
+
+    section: SectionName | None = None
+    """Which section the target lives in. REQUIRED when
+    ``kind == "section"``. Optional-but-useful on a story target: it lets
+    the renderer group findings by section without re-joining `issue.json`."""
+
+    field: ReviewTargetField
+    """The exact field. ``headline`` / ``summary`` for story targets;
+    ``intro_lead`` / ``intro_body`` for section targets."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _kind_matches_locator_and_field(self) -> "ReviewTarget":
+        """Invariant: the locator fields and the field name agree with
+        ``kind``. A story finding that names no story, or a section finding
+        that points at ``headline``, cannot be resolved to text on disk --
+        and an unresolvable finding is exactly the misfire class this whole
+        shape exists to eliminate. Reject it at the boundary."""
+        if self.kind == "story":
+            if not self.story_id:
+                raise ValueError(
+                    "ReviewTarget(kind='story') requires story_id."
+                )
+            if self.field not in ("headline", "summary"):
+                raise ValueError(
+                    f"ReviewTarget(kind='story') field must be 'headline' or "
+                    f"'summary'; got {self.field!r}."
+                )
+        else:  # section
+            if self.story_id is not None:
+                raise ValueError(
+                    "ReviewTarget(kind='section') must not carry a story_id; "
+                    f"got {self.story_id!r}."
+                )
+            if self.section is None:
+                raise ValueError(
+                    "ReviewTarget(kind='section') requires section."
+                )
+            if self.field not in ("intro_lead", "intro_body"):
+                raise ValueError(
+                    f"ReviewTarget(kind='section') field must be 'intro_lead' "
+                    f"or 'intro_body'; got {self.field!r}."
+                )
+        return self
+
+
+class ReviewFinding(BaseModel):
+    """One specific editorial concern about one field of the issue.
+
+    Produced by `src/review.py`'s reviewer LLM (as JSON), then filtered by
+    code: any finding whose ``quote`` does not appear in the target field's
+    CURRENT text is dropped before it reaches a reader (see
+    `ReviewReport.dropped_findings`). That deterministic check is why
+    ``quote`` is mandatory -- a finding that cannot point at the text it
+    objects to has no evidence, and the reviewer's two documented misfire
+    classes (2026-07-04) were both findings about text that was not there.
+    """
+
+    schema_version: int = 1
+    finding_id: Annotated[str, Field(pattern=_FINDING_ID_PATTERN)]
+    """``f001``, ``f002``, ... Assigned BY CODE in emission order, not by the
+    model: `RevisionChange.finding_ids` references these, and a duplicate id
+    would silently mis-attribute an edit."""
+
+    target: ReviewTarget
+    """Which field this is about."""
+
+    criterion: Annotated[str, Field(min_length=1, max_length=64)]
+    """Stable token for the editorial criterion that fired, e.g.
+    ``closing_shape``, ``reputational_liability``, ``trust_flags``. The
+    vocabulary the prompt publishes lives in
+    ``review.REVIEW_CRITERIA``; an unrecognised token is KEPT (and logged),
+    because a real concern in an unexpected bucket is still a real concern."""
+
+    severity: ReviewSeverity
+    """blocking | major | minor | note. Drives the code-computed verdict."""
+
+    quote: Annotated[str, Field(min_length=1, max_length=1000)]
+    """VERBATIM span of the target field's text that the finding is about.
+    Mandatory, and verified by code against the live text. No quote, no
+    finding."""
+
+    fix_kind: ReviewFixKind
+    """What kind of action resolves this. `src/revise.py` acts on
+    ``text_edit`` only."""
+
+    instruction: Annotated[str, Field(min_length=1, max_length=1000)]
+    """What to do about it, in the imperative, specific enough that a
+    reviser could act on it without re-reading the whole issue."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ReviewReport(BaseModel):
+    """The top-level object serialised to `data/<date>/review.json`.
+
+    Produced by `src/review.py` (`run_review`). Consumed by
+    `src/revise.py` (the ``text_edit`` findings), by `review.md` rendering
+    (same module, same object), and by evals.
+
+    ``computed_verdict`` is authored by CODE from the finding severities
+    under ``config/review_thresholds.yaml``. The model never writes a
+    verdict: it produces evidence, and the ratified threshold table turns
+    evidence into a decision. That separation is what makes the verdict
+    auditable -- you can re-derive it from ``findings`` and the table
+    without re-running the LLM.
+    """
+
+    schema_version: int = 1
+    generated_at: datetime
+    """UTC timestamp when the review stage wrote this report."""
+
+    computed_verdict: ReviewVerdictValue
+    """green | amber | red (computed from findings + thresholds) or one of
+    the code-authored machine states (see `ReviewVerdictValue`)."""
+
+    one_line: Annotated[str, Field(max_length=200)] = ""
+    """Short editorial summary of the day, for the terminal line and the
+    `review.md` frontmatter. The model may supply it (AFTER its findings,
+    by prompt key order, so it commits to evidence first); code falls back
+    to a severity tally when it doesn't."""
+
+    findings: list[ReviewFinding] = Field(default_factory=list)
+    """Every finding that survived the verbatim-quote check, in emission
+    order. THE input to the verdict computation."""
+
+    dropped_findings: list[ReviewFinding] = Field(default_factory=list)
+    """Findings the code dropped because their ``quote`` is not present in
+    the target field's current text (or the target could not be resolved).
+    Kept for the audit trail -- they are the reviewer's misfire rate, which
+    is a number worth watching -- and EXCLUDED from the verdict."""
+
+    prompt_version: Annotated[str, Field(pattern=_PROMPT_VERSION_PATTERN)]
+    """== `review.REVIEW_PROMPT_VERSION` at the time of the review."""
+
+    thresholds_version: Annotated[str, Field(max_length=64)] = ""
+    """``version`` from ``config/review_thresholds.yaml`` -- the table that
+    turned these severities into this verdict. Empty only on a run that
+    never got as far as loading it."""
+
+    llm_model: Annotated[str, Field(max_length=128)] = "unknown"
+    """The model that produced the findings (``REVIEW_MODEL``, falling back
+    to ``LLM_MODEL``). Recorded because a reviewer reading its own writer's
+    output is a known leniency risk -- the audit trail must show which
+    model judged."""
+
+    issue_sha256: Annotated[str, Field(max_length=64)] = "unknown"
+    """SHA-256 of the exact `issue.json` bytes the reviewer read. Same
+    definition as the `review.md` frontmatter key of the same name (see
+    DESIGN.md "review.md -> issue_sha256"); `src/revise.py` refuses to edit
+    when it no longer matches the file on disk."""
+
+    note: Annotated[str, Field(max_length=2000)] = ""
+    """Free-text engine note -- the failure reason on an ``unavailable`` /
+    ``unparseable`` run, a drop tally otherwise."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _machine_states_carry_no_findings(self) -> "ReviewReport":
+        """Invariant: a code-authored machine state means NO judgement was
+        recorded, so it cannot ship findings. Mirrors
+        `VerificationReport._unavailable_has_no_stories`: the failure state
+        must be unambiguous, or a reader can't tell "the editor found
+        nothing" from "the editor never ran"."""
+        if self.computed_verdict in ("unavailable", "unparseable", "not_run"):
+            if self.findings:
+                raise ValueError(
+                    f"ReviewReport.computed_verdict="
+                    f"{self.computed_verdict!r} must carry an empty findings "
+                    f"list; got {len(self.findings)}."
+                )
+        return self
+
+    @model_validator(mode="after")
+    def _finding_ids_are_unique(self) -> "ReviewReport":
+        """Invariant: finding ids are unique across findings AND dropped
+        findings. `RevisionChange.finding_ids` is a reference into this
+        list; a duplicate id would attribute an edit to the wrong
+        concern."""
+        seen: set[str] = set()
+        for finding in list(self.findings) + list(self.dropped_findings):
+            if finding.finding_id in seen:
+                raise ValueError(
+                    f"ReviewReport carries duplicate finding_id "
+                    f"{finding.finding_id!r}; ids must be unique so a "
+                    "RevisionChange can reference exactly one finding."
+                )
+            seen.add(finding.finding_id)
+        return self
+
+    def severity_counts(self) -> dict[str, int]:
+        """Tally of ``findings`` by severity, every severity present with a
+        zero default. The verdict computation in `src/review.py` reads
+        exactly this, so the tally the artifact displays and the tally the
+        verdict came from are the same code path."""
+        counts = {"blocking": 0, "major": 0, "minor": 0, "note": 0}
+        for finding in self.findings:
+            counts[finding.severity] += 1
+        return counts
+
+
+# ---------------------------------------------------------------------------
+# RevisionChange / RevisionCycle -- the revision engine's audit trail.
+#
+# Produced by `src/revise.py` (`revise_day`), persisted as
+# `data/<date>/revisions.jsonl` -- ONE RevisionCycle per line, appended per
+# invocation, so the file reads as the edit history of the day's draft.
+#
+# The engine acts only on `ReviewFinding`s with ``fix_kind == "text_edit"``,
+# one LLM call per target FIELD, and every replacement passes a code-side
+# validation gate before it is written. These models record what was
+# proposed, what was applied, and what was refused -- and why.
+# ---------------------------------------------------------------------------
+
+class RevisionChange(BaseModel):
+    """One proposed-or-applied rewrite of one field.
+
+    ``before`` and ``after`` are the FULL field text on each side, not a
+    diff: the record has to be readable a month later without the issue it
+    came from, and a diff is only interpretable against a base you still
+    have.
+    """
+
+    schema_version: int = 1
+    target: ReviewTarget
+    """The field that was rewritten. Same locator shape the findings use."""
+
+    finding_ids: list[Annotated[str, Field(pattern=_FINDING_ID_PATTERN)]] = Field(
+        default_factory=list
+    )
+    """The `ReviewFinding.finding_id`s this change answers. Empty ONLY for
+    an operator-supplied ``--instruction`` directive, which has no finding
+    behind it."""
+
+    before: Annotated[str, Field(max_length=4000)]
+    """The field text as it stood before the change."""
+
+    after: Annotated[str, Field(max_length=4000)]
+    """The replacement text. On a ``rejected`` change this is the candidate
+    that FAILED validation -- kept deliberately, because the rejected text
+    plus ``reject_reason`` is the evidence for tuning the revise prompt."""
+
+    recommendation: Annotated[str, Field(max_length=2000)]
+    """The instruction(s) the reviser was given, joined. What was asked."""
+
+    rationale: Annotated[str, Field(max_length=2000)] = ""
+    """Why this replacement answers the recommendation -- the model's own
+    one-line account, or a code-authored line on the rejected path."""
+
+    status: RevisionStatus
+    """proposed (shadow) | applied (written to issue.json) | rejected."""
+
+    reject_reason: Annotated[str | None, Field(max_length=200)] = None
+    """Which validation rule refused the change (e.g.
+    ``edit_distance_exceeded``, ``numeral_invented``, ``url_dropped``).
+    REQUIRED when ``status == "rejected"``, forbidden otherwise."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _status_consistency(self) -> "RevisionChange":
+        """Invariants: a rejection must say why, an acceptance must not
+        carry a rejection reason, and an applied change must actually
+        change something. Without the last one, "applied" would include
+        no-op writes and the audit trail would overstate what the engine
+        did."""
+        if self.status == "rejected" and not (self.reject_reason or "").strip():
+            raise ValueError(
+                "RevisionChange(status='rejected') must carry a "
+                "reject_reason; a refusal that does not say why cannot be "
+                "acted on."
+            )
+        if self.status != "rejected" and self.reject_reason is not None:
+            raise ValueError(
+                f"RevisionChange(status={self.status!r}) must not carry a "
+                f"reject_reason; got {self.reject_reason!r}."
+            )
+        if self.status == "applied" and self.before == self.after:
+            raise ValueError(
+                "RevisionChange(status='applied') must change the text; "
+                "before == after is a no-op, not an application."
+            )
+        return self
+
+
+class RevisionCycle(BaseModel):
+    """One invocation of the revision engine -- one line of
+    `data/<date>/revisions.jsonl`.
+
+    Produced by `src/revise.py` (`revise_day`). Consumed by Arman (what did
+    the engine touch?), by `render.release_promote` (promoted with the
+    released day as part of the audit trail), and by evals.
+    """
+
+    schema_version: int = 1
+    date: date
+    """Issue date this cycle revised; matches the archive folder."""
+
+    cycle: Annotated[int, Field(ge=1)]
+    """1-indexed sequence number within the date -- the Nth time the engine
+    ran against this draft. Derived from the existing line count, so a
+    re-run never overwrites the previous cycle's record."""
+
+    mode: RevisionMode
+    """``shadow`` (computed, nothing written to issue.json) or ``live``."""
+
+    changes: list[RevisionChange] = Field(default_factory=list)
+    """One entry per target field the engine attempted, in field order.
+    Empty when no ``text_edit`` finding applied."""
+
+    operator_instruction: Annotated[str, Field(max_length=2000)] = ""
+    """The free-text ``--instruction`` this cycle carried, if any. Recorded
+    verbatim: an operator directive is an editorial act and belongs in the
+    trail next to the findings it ran alongside."""
+
+    generated_at: datetime
+    """UTC timestamp when the cycle ran."""
+
+    prompt_version: Annotated[str, Field(pattern=_PROMPT_VERSION_PATTERN)]
+    """== `revise.REVISE_PROMPT_VERSION`."""
+
+    review_prompt_version: Annotated[str | None, Field(max_length=32)] = None
+    """The `review.json` prompt version this cycle acted on, for
+    correlating a bad edit back to the review that asked for it."""
+
+    issue_sha256_before: Annotated[str, Field(max_length=64)] = "unknown"
+    """SHA-256 of the `issue.json` bytes the cycle read. Must equal the
+    reviewed hash -- the engine refuses to edit against a stale review."""
+
+    issue_sha256_after: Annotated[str | None, Field(max_length=64)] = None
+    """SHA-256 of the bytes written. ``None`` on a shadow cycle and on a
+    live cycle that applied nothing."""
+
+    note: Annotated[str, Field(max_length=2000)] = ""
+    """Free-text engine note -- the refusal reason when the cycle did not
+    run (no review, stale review), a tally otherwise."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _mode_matches_change_statuses(self) -> "RevisionCycle":
+        """Invariant: a shadow cycle applies nothing and writes nothing; a
+        live cycle leaves nothing merely proposed.
+
+        This is the contract the ``--shadow`` flag makes to the operator,
+        and it is cheap to state here rather than trust three call sites to
+        hold it. Shadow may carry ``rejected`` changes on purpose: a preview
+        that hid the refusals would not be a preview of what live does."""
+        if self.mode == "shadow":
+            offenders = [c.status for c in self.changes if c.status == "applied"]
+            if offenders:
+                raise ValueError(
+                    "RevisionCycle(mode='shadow') must not carry 'applied' "
+                    f"changes; got {len(offenders)}. A shadow cycle writes "
+                    "no issue.json."
+                )
+            if self.issue_sha256_after is not None:
+                raise ValueError(
+                    "RevisionCycle(mode='shadow') must not record an "
+                    "issue_sha256_after; a shadow cycle writes no issue.json."
+                )
+        else:  # live
+            offenders = [c.status for c in self.changes if c.status == "proposed"]
+            if offenders:
+                raise ValueError(
+                    "RevisionCycle(mode='live') must resolve every change to "
+                    "'applied' or 'rejected'; got "
+                    f"{len(offenders)} still 'proposed'."
+                )
+        return self
+
+
 # Resolve the forward reference on SummaryBlock.verification now that
 # StoryVerification is defined.
 SummaryBlock.model_rebuild()
@@ -1622,6 +2124,13 @@ __all__ = [
     "VerificationVerdict",
     "GatePhase",
     "GateDecisionValue",
+    "ReviewVerdictValue",
+    "ReviewTargetKind",
+    "ReviewTargetField",
+    "ReviewSeverity",
+    "ReviewFixKind",
+    "RevisionStatus",
+    "RevisionMode",
     # Constants
     "RUBRIC_WEIGHTS",
     "SECTION_WEIGHTS",
@@ -1641,4 +2150,9 @@ __all__ = [
     "GateReviewState",
     "GateVerifyState",
     "GateDecision",
+    "ReviewTarget",
+    "ReviewFinding",
+    "ReviewReport",
+    "RevisionChange",
+    "RevisionCycle",
 ]
