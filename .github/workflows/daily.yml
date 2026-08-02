@@ -16,7 +16,12 @@ on:
     # 21:00 UTC = 07:00 Sydney (AEST); 08:00 during daylight saving. The
     # issue date is computed from Sydney wall-clock below, never from the
     # runner's UTC clock, so only the wake-up hour drifts seasonally.
-    - cron: "0 21 * * *"
+    #
+    # Days 0-4 (Sun-Thu in UTC) = Monday-Friday mornings in Sydney: the
+    # newsletter publishes weekdays only. Monday's issue absorbs the weekend
+    # via the gap-aware fetch window in src/fetch.py, which widens each
+    # source's recency window by the days elapsed since the last release.
+    - cron: "0 21 * * 0-4"
   workflow_dispatch:
     inputs:
       date:

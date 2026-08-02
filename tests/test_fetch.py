@@ -29,6 +29,7 @@ import yaml
 
 from src.fetch import (
     _cap_summary,
+    _compute_gap_extension,
     _dedup_items,
     _fetch_rss,
     _strip_html,
@@ -1252,3 +1253,277 @@ class TestPublishedUrlsDedup:
         )
         assert url_new in surviving_urls, "Fresh URL must also survive"
         assert len(items) == 2
+
+
+# ---------------------------------------------------------------------------
+# Gap-aware recency window — Mon-Fri cadence (skipping weekends) means a run
+# can legitimately follow the last released issue by more than one calendar
+# day. `_compute_gap_extension` widens every source's max_age_days window by
+# the gap so stories published on a skipped day are not silently dropped.
+# ---------------------------------------------------------------------------
+
+def _mark_released(root: Path, date: datetime.date) -> None:
+    """Create a minimal released day (issue.json only) so
+    `paths.all_released_dates()` reports it."""
+    from src import paths as _paths
+
+    d = _paths.RELEASED_ROOT / date.isoformat()
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "issue.json").write_text("{}", encoding="utf-8")
+
+
+class TestComputeGapExtension:
+    """Unit coverage of `_compute_gap_extension` in isolation."""
+
+    def test_empty_archive_yields_zero_extension(self, tmp_data_root: Path) -> None:
+        """No released issue yet — nothing to catch up on."""
+        gap_days, extension = _compute_gap_extension(datetime.date(2026, 7, 13))
+        assert gap_days == 0
+        assert extension == 0
+
+    def test_normal_daily_cadence_yields_zero_extension(
+        self, tmp_data_root: Path
+    ) -> None:
+        """Released yesterday, running today — ordinary one-day cadence."""
+        _mark_released(tmp_data_root, datetime.date(2026, 7, 10))
+        gap_days, extension = _compute_gap_extension(datetime.date(2026, 7, 11))
+        assert gap_days == 1
+        assert extension == 0
+
+    def test_weekend_gap_yields_extension_of_two(self, tmp_data_root: Path) -> None:
+        """Friday release, Monday run — 3 calendar days apart (Sat+Sun skipped)."""
+        _mark_released(tmp_data_root, datetime.date(2026, 7, 10))  # Friday
+        gap_days, extension = _compute_gap_extension(datetime.date(2026, 7, 13))  # Monday
+        assert gap_days == 3
+        assert extension == 2
+
+    def test_long_outage_extension_capped_at_seven(self, tmp_data_root: Path) -> None:
+        """A 20-day gap (held/failed-run streak) must not scale unbounded."""
+        _mark_released(tmp_data_root, datetime.date(2026, 6, 20))
+        gap_days, extension = _compute_gap_extension(datetime.date(2026, 7, 10))
+        assert gap_days == 20
+        assert extension == 7
+
+    def test_most_recent_of_multiple_released_dates_is_used(
+        self, tmp_data_root: Path
+    ) -> None:
+        """With several released dates on file, the gap is measured from the
+        most recent one, not the oldest."""
+        _mark_released(tmp_data_root, datetime.date(2026, 7, 1))
+        _mark_released(tmp_data_root, datetime.date(2026, 7, 10))
+        gap_days, extension = _compute_gap_extension(datetime.date(2026, 7, 11))
+        assert gap_days == 1
+        assert extension == 0
+
+    @pytest.mark.parametrize(
+        "run_date, expected_gap_days",
+        [
+            pytest.param(datetime.date(2026, 7, 10), 0, id="same_day_rerun"),
+            pytest.param(datetime.date(2026, 7, 5), -5, id="backfill_5_days_earlier"),
+            pytest.param(datetime.date(2026, 6, 20), -20, id="backfill_20_days_earlier"),
+        ],
+    )
+    def test_run_date_at_or_before_last_release_never_yields_negative_extension(
+        self, tmp_data_root: Path, run_date: datetime.date, expected_gap_days: int
+    ) -> None:
+        """Backfill runs (`aiv run --date ...` for a date at or before the
+        latest released issue) produce `gap_days <= 0`. The extension must
+        clamp at 0, not go negative -- a negative extension would *shrink*
+        every source's recency window below its configured `max_age_days`,
+        silently dropping items that would otherwise have survived. This is
+        the one case current-vs-recent-daily-cadence cases (gap_days >= 1)
+        never exercise, because they never drive `gap_days - 1` negative."""
+        _mark_released(tmp_data_root, datetime.date(2026, 7, 10))
+        gap_days, extension = _compute_gap_extension(run_date)
+        assert gap_days == expected_gap_days
+        assert extension == 0
+
+
+class TestFetchDayGapAwareRecency:
+    """Integration coverage through `fetch_day` — this is where the old fixed
+    2-day window silently dropped weekend stories; these tests fail against
+    that code and pass against the gap-aware version."""
+
+    def test_weekend_gap_extends_default_window_so_friday_story_survives(
+        self, tmp_data_root: Path
+    ) -> None:
+        """Monday's run, last release was Friday (gap=3, extension=2). A
+        source with no max_age_days override (global default=2) would drop a
+        3-day-old Friday story under the old fixed window (3 > 2). With the
+        gap extension the effective window is 2 + 2 = 4 days, so the story
+        survives — this is exactly the Fri/Sat/Sun-on-Monday scenario.
+        """
+        _mark_released(tmp_data_root, datetime.date(2026, 7, 10))  # Friday released
+
+        monday = datetime.date(2026, 7, 13)
+        monday_fetch_at = datetime.datetime(2026, 7, 13, 9, 0, 0, tzinfo=UTC)
+        friday_pub = monday_fetch_at - datetime.timedelta(days=3)
+
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Daily Blog</title>
+<item>
+  <title>Friday's story</title>
+  <link>https://daily.example.com/friday-story</link>
+  <description>Published Friday, read Monday.</description>
+  <pubDate>{friday_pub.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://daily.example.com/friday-story</guid>
+</item>
+</channel></rss>"""
+        feed = feedparser.parse(xml)
+
+        config_yaml = _config_yaml([{
+            "name": "daily_source",
+            "url": "https://daily.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+            # no max_age_days override — global default of 2 applies
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=monday_fetch_at):
+            items, _ = fetch_day(monday, config_path=config_path)
+
+        assert len(items) == 1, (
+            "Friday's 3-day-old story must survive on Monday's run thanks to "
+            "the weekend gap extension; under a fixed 2-day window it would "
+            "have been silently dropped"
+        )
+
+    def test_no_gap_does_not_widen_window_old_story_still_dropped(
+        self, tmp_data_root: Path
+    ) -> None:
+        """Normal daily cadence (released yesterday, gap=1, extension=0): a
+        3-day-old story is still dropped under the default 2-day window — the
+        gap extension must not fire on the ordinary case."""
+        _mark_released(tmp_data_root, datetime.date(2026, 5, 23))
+
+        run_date = FIXED_DATE  # 2026-05-24
+        pub_3d_ago = FIXED_FETCH_AT - datetime.timedelta(days=3)
+
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Daily Blog</title>
+<item>
+  <title>Old story</title>
+  <link>https://daily.example.com/old-story</link>
+  <description>Old.</description>
+  <pubDate>{pub_3d_ago.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://daily.example.com/old-story</guid>
+</item>
+</channel></rss>"""
+        feed = feedparser.parse(xml)
+
+        config_yaml = _config_yaml([{
+            "name": "daily_source",
+            "url": "https://daily.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(run_date, config_path=config_path)
+
+        assert items == [], (
+            "Under normal one-day cadence the gap extension is 0; a 3-day-old "
+            "story must still be dropped by the default 2-day window"
+        )
+
+    def test_empty_archive_does_not_widen_window(
+        self, tmp_data_root: Path
+    ) -> None:
+        """No released issue on file at all (fresh repo / first run ever):
+        extension must be 0, same as the no-gap case."""
+        run_date = FIXED_DATE
+        pub_3d_ago = FIXED_FETCH_AT - datetime.timedelta(days=3)
+
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Daily Blog</title>
+<item>
+  <title>Old story</title>
+  <link>https://daily.example.com/old-story-2</link>
+  <description>Old.</description>
+  <pubDate>{pub_3d_ago.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>
+  <guid>https://daily.example.com/old-story-2</guid>
+</item>
+</channel></rss>"""
+        feed = feedparser.parse(xml)
+
+        config_yaml = _config_yaml([{
+            "name": "daily_source",
+            "url": "https://daily.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT):
+            items, _ = fetch_day(run_date, config_path=config_path)
+
+        assert items == [], (
+            "An empty released archive must not widen the recency window"
+        )
+
+    def test_gap_extension_logged_when_nonzero(
+        self, tmp_data_root: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """A nonzero gap extension emits one INFO line stating the gap and
+        the applied extension, so a silent widening never happens quietly."""
+        import logging as _logging
+
+        _mark_released(tmp_data_root, datetime.date(2026, 7, 10))
+
+        feed = _parse_fixture("empty_rss.xml")
+        config_yaml = _config_yaml([{
+            "name": "daily_source",
+            "url": "https://daily.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        monday_fetch_at = datetime.datetime(2026, 7, 13, 9, 0, 0, tzinfo=UTC)
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=monday_fetch_at), \
+             caplog.at_level(_logging.INFO, logger="src.fetch"):
+            fetch_day(datetime.date(2026, 7, 13), config_path=config_path)
+
+        info_texts = [r.message for r in caplog.records if r.levelno == _logging.INFO]
+        assert any("publishing gap detected" in t for t in info_texts)
+
+    def test_no_log_line_when_gap_extension_is_zero(
+        self, tmp_data_root: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Normal daily cadence must NOT emit the gap-detected log line."""
+        import logging as _logging
+
+        _mark_released(tmp_data_root, datetime.date(2026, 5, 23))
+
+        feed = _parse_fixture("empty_rss.xml")
+        config_yaml = _config_yaml([{
+            "name": "daily_source",
+            "url": "https://daily.example.com/feed.xml",
+            "type": "rss",
+            "trust_weight": 3,
+            "enabled": True,
+        }])
+        config_path = tmp_data_root / "sources.yaml"
+        config_path.write_text(config_yaml)
+
+        with patch("src.fetch.feedparser.parse", return_value=feed), \
+             patch("src.fetch._utcnow", return_value=FIXED_FETCH_AT), \
+             caplog.at_level(_logging.INFO, logger="src.fetch"):
+            fetch_day(FIXED_DATE, config_path=config_path)
+
+        info_texts = [r.message for r in caplog.records if r.levelno == _logging.INFO]
+        assert not any("publishing gap detected" in t for t in info_texts)

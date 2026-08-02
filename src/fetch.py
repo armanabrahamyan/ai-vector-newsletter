@@ -66,6 +66,13 @@ HN_POINTS_THRESHOLD: int = 50
 # for a daily newsletter. Items dropped here do NOT count toward items_kept.
 MAX_ITEM_AGE_DAYS: int = 2
 
+# Cadence moved to Mon-Fri (Sydney), skipping weekends -- a run can legitimately
+# follow the last released issue by more than one calendar day (weekend,
+# held release, failed run). See `_compute_gap_extension` below: this caps how
+# far the recency window can widen to cover a gap, so a long outage cannot
+# flood a single issue with a backlog of stale news.
+MAX_GAP_EXTENSION_DAYS: int = 7
+
 # Bug #70 — BIS future timestamps.
 # Clamp any `published_at` more than this many hours ahead of `fetched_at`
 # to `fetched_at`.  Feeds occasionally embed bogus far-future dates (observed:
@@ -954,6 +961,59 @@ def _dedup_items(
 
 
 # ---------------------------------------------------------------------------
+# Gap-aware recency window
+# ---------------------------------------------------------------------------
+
+
+def _compute_gap_extension(run_date: datetime.date) -> tuple[int, int]:
+    """Compute the recency-window extension for a non-daily publishing gap.
+
+    Cadence is Mon-Fri (Sydney), skipping weekends, plus the occasional held
+    release or failed run. A Monday run needs Fri/Sat/Sun coverage, but a
+    fixed per-source `max_age_days` (e.g. 2 for daily news feeds) would
+    silently drop Saturday's stories -- the source fired, the item existed,
+    and it vanished before anyone saw it. That is exactly the silent-failure
+    class this function exists to prevent.
+
+    `gap_days` = calendar days between `run_date` and the most recently
+    RELEASED issue date (`paths.all_released_dates()` -- the canonical
+    archive, not staging). On an empty archive (no released issue yet) there
+    is nothing to catch up on, so gap_days and the extension are both 0.
+
+    `extension` = max(0, gap_days - 1), capped at MAX_GAP_EXTENSION_DAYS. The
+    "-1" accounts for the normal daily case (one calendar day between
+    releases) contributing no extension; the cap means a long outage widens
+    the window generously but not without bound -- we do not want a two-week
+    outage to flood a single issue with a fortnight of backlog.
+
+    Widening the window here is safe even when it re-surfaces an item that
+    would otherwise have been dropped: cross-issue URL dedup against
+    `data/published_urls.txt` (see `_load_published_urls` below) already
+    guarantees no story is ever shipped twice, regardless of how wide this
+    window gets. At worst a widened window hands the ranker one extra
+    candidate item, which loses on the merits or gets deduped -- it never
+    causes a repeat.
+
+    Uses `run_date` (the pipeline's resolved run date, threaded down from
+    `src/run.py` through `fetch(date=...)` / `fetch_day(run_date, ...)`) --
+    NOT wall-clock "today" -- so a backfill run (`aiv run --date 2026-07-10`)
+    computes the gap as of the date being built, not the date it happens to
+    execute on.
+
+    Returns (gap_days, extension_days). `gap_days` is reported as 0 when the
+    archive is empty, since there is no prior release to measure a gap from.
+    """
+    released_dates = paths.all_released_dates()
+    if not released_dates:
+        return 0, 0
+    most_recent = max(released_dates)
+    gap_days = (run_date - most_recent).days
+    extension = max(0, gap_days - 1)
+    extension = min(extension, MAX_GAP_EXTENSION_DAYS)
+    return gap_days, extension
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -1052,7 +1112,7 @@ def fetch_day(
     # ---- Within-batch URL dedup -------------------------------------------
     kept_items, kept_count_by_source = _dedup_items(source_items)
 
-    # ---- Recency filter (per-source max_age_days) --------------------------
+    # ---- Recency filter (per-source max_age_days, gap-aware) ---------------
     # Drop items whose `published_at` is older than the source's max_age_days
     # window.  Sources publish on different cadences: daily news feeds need 2
     # days; weekly/monthly FS research sources (BIS, FRBNY, Bank Underground,
@@ -1061,17 +1121,39 @@ def fetch_day(
     # Per-source override: read `max_age_days` from the source config entry.
     # When absent, fall back to the global MAX_ITEM_AGE_DAYS constant.
     #
+    # Gap-aware extension: publishing cadence is Mon-Fri (Sydney), skipping
+    # weekends, plus the occasional held release or failed run. A fixed
+    # per-source window sized for daily cadence would silently drop stories
+    # published on a skipped day (e.g. Saturday's news is 3 days old by
+    # Monday, older than a 2-day window). `_compute_gap_extension` widens
+    # every source's window by the same amount, sized to the actual gap
+    # since the last released issue -- capped so a long outage cannot flood
+    # the issue with a backlog. This is safe to do liberally because
+    # cross-issue URL dedup against `published_urls.txt` (below) already
+    # guarantees nothing already shipped can reappear.
+    #
     # Build a lookup from source name → max_age_days for fast per-item lookup.
     source_max_age: dict[str, int] = {
         src["name"]: int(src["max_age_days"])
         for src in sources
         if "max_age_days" in src
     }
+    gap_days, gap_extension = _compute_gap_extension(run_date)
+    if gap_extension > 0:
+        log.info(
+            "publishing gap detected: %d day(s) since the last released issue "
+            "(run_date=%s) -- extending every source's recency window by %d "
+            "day(s) (capped at %d)",
+            gap_days,
+            run_date.isoformat(),
+            gap_extension,
+            MAX_GAP_EXTENSION_DAYS,
+        )
     now = _utcnow()
     before_age_filter = len(kept_items)
     kept_after_age: list[Item] = []
     for item in kept_items:
-        age_days = source_max_age.get(item.source, MAX_ITEM_AGE_DAYS)
+        age_days = source_max_age.get(item.source, MAX_ITEM_AGE_DAYS) + gap_extension
         cutoff = now - datetime.timedelta(days=age_days)
         if item.published_at >= cutoff:
             kept_after_age.append(item)
@@ -1079,8 +1161,10 @@ def fetch_day(
     kept_items = kept_after_age
     if dropped_old > 0:
         log.info(
-            "filtered %d items older than their source max_age_days window",
+            "filtered %d items older than their source max_age_days window "
+            "(gap extension=%d day(s))",
             dropped_old,
+            gap_extension,
         )
 
     # ---- Cross-issue item dedup (against published_urls.txt) ---------------

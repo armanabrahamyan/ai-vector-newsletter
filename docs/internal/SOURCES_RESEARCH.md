@@ -742,3 +742,53 @@ graduated response, in order, before disabling:
    never be used to reach paywalled content or to scrape non-feed HTML — that
    remains a hard no per PLAN §0.4/§6, Architect-gated. Flagging as a future
    option, not proposing it for any current source.
+
+---
+
+## Gap-aware recency window (2026-08-02)
+
+*Cadence change: publishing moved from daily to Mon-Fri (Sydney), skipping
+weekends. Cron change tracked separately (`.github/workflows/daily.yml`);
+this entry documents the fetch-side consequence.*
+
+### Problem
+
+`src/fetch.py`'s recency filter drops any item older than the source's
+`max_age_days` (fallback: the global `MAX_ITEM_AGE_DAYS = 2`). That window was
+sized for daily publishing: "today + yesterday" for a fast-moving news feed.
+On a Mon-Fri cadence, Monday's run needs to cover Friday, Saturday, and
+Sunday — three calendar days — but a daily news source's 2-day window would
+silently drop Friday's stories. The source fires, `items_in` is correct,
+`items_kept` just quietly shrinks. Exactly the class of failure this doc's
+owner is supposed to catch before readers do.
+
+### Fix
+
+`fetch_day` now computes a **gap extension** and adds it to every source's
+`max_age_days` before applying the recency cutoff:
+
+- `gap_days` = calendar days between the pipeline's run date and the most
+  recently RELEASED issue date (`paths.all_released_dates()`, the canonical
+  archive — not staging). Empty archive (no released issue yet) → `gap_days
+  = 0`.
+- `extension = max(0, gap_days - 1)`, capped at 7 days
+  (`MAX_GAP_EXTENSION_DAYS` in `src/fetch.py`). The `-1` means ordinary
+  one-day cadence contributes zero extension; the cap means a long outage
+  (held release, multi-day failure) widens the window generously but can't
+  flood a single issue with a fortnight of backlog.
+- Effective window per source = `max_age_days + extension`. A daily news
+  source (`max_age_days=2`) on a Friday→Monday gap (`extension=2`) gets an
+  effective 4-day window — Friday's stories survive.
+
+Widening the window this way is safe: cross-issue URL dedup against
+`data/published_urls.txt` already guarantees nothing already shipped can
+reappear, regardless of how wide the recency window gets. At worst a widened
+window hands the ranker one extra candidate that loses on the merits.
+
+Whenever the extension is nonzero, `fetch_day` logs one INFO line stating the
+gap and the applied extension — so a widened window is never a quiet one.
+
+See `src/fetch.py::_compute_gap_extension` for the implementation and
+`tests/test_fetch.py::TestComputeGapExtension` /
+`TestFetchDayGapAwareRecency` for the test coverage (gap of 0 days, weekend
+gap of 2 days extension, cap at 7, empty archive).
