@@ -577,6 +577,39 @@ class TestReleasePromote:
         for name in ("items.jsonl", "source_health.json", "clusters.jsonl", "ranked.jsonl"):
             assert (released / name).exists()
 
+    def test_optional_peripherals_copied_when_present(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """verify.json, review.md, gate.json, revisions.jsonl are advisory
+        peripherals: promoted when the upstream stage produced them, so a
+        released day carries the evidence it shipped on."""
+        _write_staging(FIXED_DATE, rich_issue)
+        staging = _paths.staging_dir(FIXED_DATE)
+        for name, content in (
+            ("verify.json", '{"verdict": "clean"}'),
+            ("review.md", "---\nverdict: green\n---\n\nfine\n"),
+            ("gate.json", '{"decision": "auto_merge"}'),
+            ("revisions.jsonl", '{"revision": 0}\n'),
+        ):
+            (staging / name).write_text(content, encoding="utf-8")
+
+        release_promote(FIXED_DATE)
+        released = _paths.released_dir(FIXED_DATE)
+        for name in ("verify.json", "review.md", "gate.json", "revisions.jsonl"):
+            assert (released / name).exists(), name
+
+    def test_optional_peripherals_absent_does_not_fail_release(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """None of verify.json / review.md / gate.json / revisions.jsonl are
+        written by _write_staging -- absence must not fail the release, and
+        none should appear in the released dir either."""
+        _write_staging(FIXED_DATE, rich_issue)
+        release_promote(FIXED_DATE)
+        released = _paths.released_dir(FIXED_DATE)
+        for name in ("verify.json", "review.md", "gate.json", "revisions.jsonl"):
+            assert not (released / name).exists(), name
+
     def test_already_released_raises(
         self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
     ) -> None:
@@ -647,6 +680,28 @@ class TestUnrelease:
         content = _paths.PUBLISHED_URLS_PATH.read_text(encoding="utf-8")
         # earlier issue's URL should survive
         assert "example.com" in content
+
+    def test_unrelease_removes_optional_peripherals(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """An unreleased day must not keep carrying evidence (review.md,
+        gate.json) for an issue that is no longer released."""
+        _write_staging(FIXED_DATE, rich_issue)
+        staging = _paths.staging_dir(FIXED_DATE)
+        (staging / "review.md").write_text(
+            "---\nverdict: green\n---\n\nfine\n", encoding="utf-8"
+        )
+        (staging / "gate.json").write_text(
+            '{"decision": "auto_merge"}', encoding="utf-8"
+        )
+        release_promote(FIXED_DATE)
+        released = _paths.released_dir(FIXED_DATE)
+        assert (released / "review.md").exists()
+        assert (released / "gate.json").exists()
+
+        unrelease(FIXED_DATE)
+        assert not (released / "review.md").exists()
+        assert not (released / "gate.json").exists()
 
     def test_not_released_raises(
         self, tmp_data_root: Path, tmp_docs: Path

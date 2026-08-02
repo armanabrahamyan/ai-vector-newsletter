@@ -50,6 +50,10 @@ Pipeline flow (producers -> consumers; full picture in `docs/internal/TEAM.md`):
     VerificationReport -> produced by src/verify.py (the verify.json sidecar)
                           consumed by render, Editor, evals
 
+    GateCheck /     -> produced by src/gate.py (the gate.json sidecar)
+    GateDecision       consumed by the unattended-publish workflow, render
+                       (promoted to released), evals, Arman
+
 Schema versioning. Every persisted model carries a `schema_version: int`
 field per the DESIGN.md schema changelog. Most models are v1 today; `Issue`
 is v6 (v2 added `issue_number`; v3 made `issue_number` Optional to support
@@ -203,6 +207,32 @@ unavailable pattern.
                       state, identical in spirit to review.md's
                       ``verdict: unavailable``. See DESIGN.md "verify.json".
 """
+
+GatePhase = Literal["shadow", "green_only", "green_amber"]
+"""Rollout phase of the unattended-publish gate, read from the
+``AIV_AUTO_PUBLISH_PHASE`` environment variable (repo variable in CI).
+Unset / unrecognised => ``shadow``. Ratified 2026-08-02.
+
+  - ``shadow``      : the gate computes and writes its decision; the
+                      workflow does not act on it. Observation only.
+  - ``green_only``  : auto-merge is permitted only when the editorial
+                      review verdict is ``green``.
+  - ``green_amber`` : auto-merge is permitted when the review verdict is
+                      ``green`` or ``amber`` -- the end-state policy.
+
+The phase narrows WHICH review verdicts may auto-merge. It never widens
+anything: the hard blocks (a contradicted fact-check claim, verify not
+available, a stale review) hold in every phase, ``shadow`` included.
+``shadow`` evaluates against the widest accepted set (``green`` +
+``amber``) so the observation period measures the end-state policy; a
+narrower phase is always derivable from the recorded review verdict.
+"""
+
+GateDecisionValue = Literal["auto_merge", "hold"]
+"""The gate's answer. ``auto_merge`` == every blocking check passed under
+the active phase; ``hold`` == at least one blocking check failed, and
+``GateDecision.hold_reasons`` says which. There is no third state: a gate
+that cannot decide holds (fail closed)."""
 
 
 # Patterns reused across models.
@@ -1326,6 +1356,251 @@ class VerificationReport(BaseModel):
         return self
 
 
+# ---------------------------------------------------------------------------
+# GateCheck / GateDecision -- the unattended-publish gate output.
+#
+# Produced by `src/gate.py` (`decide`), persisted as the `gate.json` sidecar.
+# The gate is the ONLY artifact in the pipeline that is allowed to say "do
+# not publish this without a human": every other advisory stage (verify,
+# review) is explicitly non-blocking. See DESIGN.md "Unattended publish".
+# ---------------------------------------------------------------------------
+
+class GateCheck(BaseModel):
+    """One policy check the gate ran, and what it found.
+
+    The gate is deterministic code reading advisory artifacts -- No Token
+    Wasted: there is no LLM call anywhere in `src/gate.py`. Each check is
+    recorded whether it passed or failed so `gate.json` reads as a full
+    audit trail rather than a list of complaints.
+
+    ``blocking`` is a property of the CHECK, not of the outcome: a
+    non-blocking check that fails is surfaced for the operator (e.g. the
+    verifier flagged an unsupported claim) but does not by itself force a
+    hold. A blocking check that fails contributes its ``hold_reason`` to
+    ``GateDecision.hold_reasons`` and forces ``decision="hold"``.
+    """
+
+    schema_version: int = 1
+    name: Annotated[str, Field(min_length=1, max_length=64)]
+    """Stable machine token for the check, e.g. ``"review_verdict"``.
+    Workflows and dashboards key on this; treat renames as contract changes."""
+
+    passed: bool
+    """True when the check found what it required."""
+
+    blocking: bool
+    """True when a failure of this check forces ``decision="hold"``."""
+
+    detail: Annotated[str, Field(max_length=1000)] = ""
+    """One-line human-readable finding. Written for the operator reading the
+    workflow log at 06:00, not for a parser."""
+
+    hold_reason: Annotated[str | None, Field(max_length=64)] = None
+    """The ``hold:<token>`` this check contributes when it fails while
+    blocking. ``None`` on a passing check and on non-blocking checks."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("detail", mode="before")
+    @classmethod
+    def _truncate_detail(cls, v: Any) -> Any:
+        """Truncate rather than reject an over-long detail.
+
+        ``detail`` is prose for a human reading a workflow log. Its length
+        must never be the reason the gate fails to produce a decision -- a
+        gate that raises instead of deciding is strictly worse than one that
+        decides with an elided sentence. This is the single truncation
+        mechanism; callers construct `GateCheck` without pre-slicing.
+        """
+        if isinstance(v, str) and len(v) > 1000:
+            return v[:997] + "..."
+        return v
+
+    @model_validator(mode="after")
+    def _hold_reason_consistency(self) -> "GateCheck":
+        """Invariant: a failed blocking check MUST name its hold reason, and
+        a passing check MUST NOT carry one. Without this, `hold_reasons`
+        could silently disagree with `checks` and the artifact would stop
+        being an audit trail."""
+        if self.passed and self.hold_reason is not None:
+            raise ValueError(
+                f"GateCheck({self.name!r}) passed but carries "
+                f"hold_reason={self.hold_reason!r}; passing checks contribute "
+                "no hold reason."
+            )
+        if not self.passed and self.blocking and not self.hold_reason:
+            raise ValueError(
+                f"GateCheck({self.name!r}) failed as a blocking check but "
+                "carries no hold_reason; a block must say why."
+            )
+        return self
+
+
+class GateReviewState(BaseModel):
+    """What the gate observed about `review.md` for the date.
+
+    Denormalised out of the review artifact so a reader of `gate.json` can
+    reconstruct the decision without re-parsing Markdown frontmatter.
+    """
+
+    schema_version: int = 1
+    present: bool
+    """True when `data/staging/<date>/review.md` exists and was readable."""
+
+    verdict: Annotated[str | None, Field(max_length=32)] = None
+    """The frontmatter ``verdict`` as written: ``green | amber | red |
+    unavailable``, any unrecognised token verbatim, or ``None`` when the
+    file was missing or carried no parseable frontmatter."""
+
+    issue_sha256: Annotated[str | None, Field(max_length=64)] = None
+    """The ``issue_sha256`` recorded in the review frontmatter -- the hash of
+    the `issue.json` the editor actually read. ``None`` when the key is
+    absent (a review written before the freshness contract, or by a writer
+    that does not honour it)."""
+
+    computed_issue_sha256: Annotated[str | None, Field(max_length=64)] = None
+    """SHA-256 of the CURRENT staged `issue.json` bytes, recomputed by the
+    gate. ``None`` when `issue.json` is missing."""
+
+    fresh: bool = False
+    """True iff ``issue_sha256`` is present and equals
+    ``computed_issue_sha256``. A review of a superseded issue is not
+    evidence about the issue we are about to publish."""
+
+    prompt_version: Annotated[str | None, Field(max_length=32)] = None
+    """The review prompt version from the frontmatter, for audit correlation.
+    Free-form (not pattern-validated) because the gate must never fail on a
+    malformed advisory artifact -- it holds instead."""
+
+    path: Annotated[str | None, Field(max_length=512)] = None
+    """Path the gate read (or would have read), for the operator's benefit."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GateVerifyState(BaseModel):
+    """What the gate observed about `verify.json` for the date.
+
+    The contradiction scan is the load-bearing part: ratified 2026-08-02,
+    ANY contradicted claim hard-blocks unattended publish regardless of the
+    editorial verdict.
+    """
+
+    schema_version: int = 1
+    present: bool
+    """True when `data/staging/<date>/verify.json` exists and parsed."""
+
+    verdict: Annotated[str | None, Field(max_length=32)] = None
+    """``clean | flagged | unavailable``, or ``None`` when the file was
+    missing or unparseable."""
+
+    stories_verified: Annotated[int, Field(ge=0)] = 0
+    """Count of `StoryVerification` records in the report."""
+
+    contradicted_story_ids: list[str] = Field(default_factory=list)
+    """Story ids carrying at least one ``contradicted`` claim, from
+    `verify.json` and from the denormalised `SummaryBlock.verification`
+    copies in `issue.json` (union -- either source is sufficient evidence)."""
+
+    unsupported_story_ids: list[str] = Field(default_factory=list)
+    """Story ids carrying at least one ``unsupported`` claim. Surfaced but
+    NOT blocking: "the source does not assert this" is an editorial concern,
+    not a factual error."""
+
+    path: Annotated[str | None, Field(max_length=512)] = None
+    """Path the gate read (or would have read)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GateDecision(BaseModel):
+    """The top-level object serialised to `data/<date>/gate.json`.
+
+    Produced by `src/gate.py` (`decide`). Consumed by the unattended-publish
+    workflow (which decides whether to act on it, per `phase`), by
+    `render.release_promote` (promoted to `data/released/<date>/gate.json`
+    as part of the published audit trail), by evals, and by Arman.
+
+    The decision lives in this ARTIFACT, never in a process exit code:
+    `aiv gate` exits 0 whether it decided ``auto_merge`` or ``hold``, so an
+    orchestration failure (non-zero exit) stays distinguishable from a
+    policy hold. A workflow that cannot read `gate.json` must treat the
+    absence as a hold.
+    """
+
+    schema_version: int = 1
+    gate_version: Annotated[str, Field(pattern=_PROMPT_VERSION_PATTERN)]
+    """Version of the POLICY that produced this decision (== `gate.GATE_VERSION`),
+    e.g. ``"v1"``. Distinct from ``schema_version`` (the shape): the policy can
+    tighten without the shape moving, and a shape change need not re-open the
+    policy. Bump when a check is added, removed, or changes its blocking flag."""
+
+    phase: GatePhase
+    """Rollout phase in force when this decision was computed. See `GatePhase`."""
+
+    date: date
+    """Issue date this decision is about; matches the archive folder."""
+
+    decision: GateDecisionValue
+    """``auto_merge`` | ``hold``. See `GateDecisionValue`."""
+
+    hold_reasons: list[Annotated[str, Field(max_length=64)]] = Field(
+        default_factory=list
+    )
+    """Ordered, de-duplicated ``hold:<token>`` list -- exactly the
+    ``hold_reason`` of every failed blocking check, in check order. Empty iff
+    ``decision == "auto_merge"`` (enforced below)."""
+
+    review: GateReviewState
+    """What the gate saw in `review.md`."""
+
+    verify: GateVerifyState
+    """What the gate saw in `verify.json` (+ the denormalised copies in
+    `issue.json`)."""
+
+    checks: list[GateCheck]
+    """Every check the gate ran, in evaluation order -- passes included."""
+
+    decided_at: datetime
+    """UTC timestamp when the gate computed this decision."""
+
+    note: Annotated[str, Field(max_length=2000)] = ""
+    """Free-text engine note (e.g. an unrecognised phase value that fell back
+    to ``shadow``). Not rendered to readers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _decision_matches_checks(self) -> "GateDecision":
+        """Invariant: the headline ``decision`` and ``hold_reasons`` agree with
+        ``checks``. The whole value of this artifact is that a reader can trust
+        the one-word answer without re-deriving it; a writer that ships a
+        disagreeing rollup is buggy and we reject it at the boundary --
+        exactly as `StoryVerification` does with its rollups."""
+        expected_reasons = [
+            c.hold_reason for c in self.checks
+            if not c.passed and c.blocking and c.hold_reason
+        ]
+        # De-duplicate, preserving first-seen order.
+        deduped: list[str] = []
+        for reason in expected_reasons:
+            if reason not in deduped:
+                deduped.append(reason)
+        if self.hold_reasons != deduped:
+            raise ValueError(
+                f"GateDecision.hold_reasons {self.hold_reasons} disagrees with "
+                f"the failed blocking checks {deduped}."
+            )
+        expected_decision = "hold" if deduped else "auto_merge"
+        if self.decision != expected_decision:
+            raise ValueError(
+                f"GateDecision.decision ({self.decision!r}) disagrees with the "
+                f"checks (expected {expected_decision!r}; failed blocking "
+                f"checks: {deduped})."
+            )
+        return self
+
+
 # Resolve the forward reference on SummaryBlock.verification now that
 # StoryVerification is defined.
 SummaryBlock.model_rebuild()
@@ -1345,6 +1620,8 @@ __all__ = [
     "ClaimLocation",
     "ClaimVerdictValue",
     "VerificationVerdict",
+    "GatePhase",
+    "GateDecisionValue",
     # Constants
     "RUBRIC_WEIGHTS",
     "SECTION_WEIGHTS",
@@ -1360,4 +1637,8 @@ __all__ = [
     "ClaimVerdict",
     "StoryVerification",
     "VerificationReport",
+    "GateCheck",
+    "GateReviewState",
+    "GateVerifyState",
+    "GateDecision",
 ]

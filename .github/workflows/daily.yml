@@ -134,6 +134,27 @@ jobs:
       - name: Run staging pipeline
         run: aiv run --date "${{ steps.when.outputs.date }}"
 
+      # Unattended-publish gate, SHADOW phase only (rollout phase comes from
+      # the AIV_AUTO_PUBLISH_PHASE repo variable; unset = shadow). `aiv gate`
+      # reads staging review.md/verify.json/issue.json and writes
+      # data/staging/<date>/gate.json -- purely for observation this phase.
+      # It never affects whether the PR opens or whether it merges: no
+      # auto-merge logic exists yet. By contract `aiv gate` always exits 0
+      # (the decision lives in gate.json, not the exit code); the `if`
+      # below is belt-and-braces for the case where the gate itself crashes
+      # before it can honour that contract, and it must never fail this job.
+      - name: Publish gate (shadow -- observation only, never blocks)
+        env:
+          AIV_AUTO_PUBLISH_PHASE: ${{ vars.AIV_AUTO_PUBLISH_PHASE }}
+        run: |
+          DATE="${{ steps.when.outputs.date }}"
+          if aiv gate --date "$DATE" > gate_output.txt; then
+            :
+          else
+            echo "gate crashed — treat as hold" >> gate_output.txt
+          fi
+          cat gate_output.txt
+
       - name: Release (promote staging to canonical on this runner)
         run: aiv release --date "${{ steps.when.outputs.date }}"
 
@@ -213,6 +234,13 @@ jobs:
                   "fresh or uncapped — review with extra care."
               )
 
+          gate_lines = ["(gate step did not run or produced no output)"]
+          gate_output_path = Path("gate_output.txt")
+          if gate_output_path.exists():
+              text = gate_output_path.read_text().strip("\n")
+              if text:
+                  gate_lines = text.splitlines()
+
           repo = os.environ.get("GITHUB_REPOSITORY", "")
           preview = (
               f"https://raw.githack.com/{repo}/release/{date}-issue-{issue_num}"
@@ -237,6 +265,16 @@ jobs:
               f"- {verify_line}",
               f"- {review_line}",
               f"- {dedup_line}",
+              "",
+              "## Gate (shadow)",
+              "",
+              "Shadow phase: the unattended-publish gate below is computed for",
+              "observation only. This did NOT affect publication — merge remains",
+              "the decision.",
+              "",
+              "```",
+              *gate_lines,
+              "```",
               "",
               "## If it's wrong",
               "",

@@ -803,8 +803,16 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   missing staged `issue.json`, an unparseable `source_excerpts.jsonl`, or any
   unexpected exception — `verify_day` writes a report with
   `verdict="unavailable"` (empty `stories`, empty `verdict_counts`, reason in
-  `note`) and returns normally. The verify stage **must never block release.**
-  A `verdict="unavailable"` is a non-event for publication.
+  `note`) and returns normally. The verify stage **must never block a
+  human-ratified release.** A `verdict="unavailable"` is a non-event for a
+  publication Arman ratifies.
+- **…but it does gate the unattended path (ratified 2026-08-02).**
+  `src/gate.py` holds unattended publish when the verdict is `unavailable`
+  (ruling 2) and when any story carries a `contradicted` claim (ruling 1),
+  regardless of the editorial verdict. `verify.py` itself is unchanged by
+  this: it still writes its report and returns normally in every case. The
+  blocking lives entirely in the gate. See
+  [Unattended publish](#unattended-publish).
 - **Denormalisation contract:** in addition to writing `verify.json`,
   `verify_day` rewrites the staged `issue.json` in place, setting each
   `SummaryBlock.verification` to its matching `StoryVerification` (joined on
@@ -823,11 +831,13 @@ Every reader tolerates missing days, missing files, and missing sidecars.
 
 ### `review.md` — LLM Engineer writes (pre-release editorial pass)
 
-- **Path:** `data/staging/<date>/review.md`. Staging-only — the artifact
-  feeds Arman's ratification call; it is not promoted to released on
-  `aiv release`. Staging-resident by design (a record of what the editor
-  flagged on the *staged* draft; if Arman re-runs the pipeline, the
-  review is regenerated against the new staging issue).
+- **Path:** `data/staging/<date>/review.md`, **promoted to
+  `data/released/<date>/review.md` on `aiv release`** (contract change
+  2026-08-02; it was staging-only before). The promotion happened when the
+  gate started reading it: once an artifact can hold a publication, the
+  released record must show what it said. Still regenerated from scratch on
+  every staging re-run — the promoted copy is the one that was true at
+  release time.
 - **Writer:** `src/review.py` (`run_review(date)`), invoked either as
   the final stage in `aiv run` (auto-fires after `render` unless
   `--no-review` is passed) or standalone via `aiv review --date`.
@@ -835,17 +845,88 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   `verdict` (`green | amber | red | unavailable`), `one_line` (30-60
   char editorial summary), `issue_date`, `issue_shape`, `generated_at`,
   `prompt_version` (`REVIEW_PROMPT_VERSION` constant in
-  `src/review.py`), `llm_model`. Body is the editor's structured pass
-  (Shape / Pulse / Big Picture / Hands-On / Currents / Drift watch /
-  Recommendations / Ratification call).
+  `src/review.py`), `llm_model`, and `issue_sha256`. Body is the editor's
+  structured pass (Shape / Pulse / Big Picture / Hands-On / Currents /
+  Drift watch / Recommendations / Ratification call).
+- **`issue_sha256` — the freshness contract (added 2026-08-02).** The
+  SHA-256 hex digest of the **exact bytes** of the `issue.json` the review
+  was written against — not a canonical re-serialisation of the parsed
+  object. The question being asked is "did the editor read *this* file?",
+  and any edit at all changes the bytes. A canonicalising hash would need
+  both sides to agree on a canonicalisation, which is a second contract to
+  keep in sync for no gain.
+  - **Writer side** (`review.py`): hash the bytes you just read, in the
+    same operation. Re-reading the file in order to hash it leaves a window
+    in which it could change between the read and the hash — which is
+    exactly the staleness this key exists to detect.
+  - **Reader side** (`gate.py`): `gate.sha256_of_file(path)` /
+    `gate.issue_sha256(date)`. Available to any reader that needs the same
+    digest.
+  - The two call sites differ; the **definition** is shared and is what
+    must not drift. If a third writer appears, it hashes raw bytes too.
+  - The gate recomputes the digest and holds (`hold:stale-review`) on a
+    mismatch **or on an absent key**: a green verdict about a superseded
+    draft is not evidence about the draft we are publishing, and a review
+    that will not say what it read cannot be shown to be about it.
 - **Failure-soft:** if the LLM call cannot complete (timeout, auth,
   parse error, missing env vars), `review.md` is written with
   `verdict: unavailable` and the error reason in the body. The
   publication still ships; the review just doesn't run for that day.
-  This contract is non-negotiable — review must never block release.
-- **Readers:** Arman (manual review before `aiv release`). The
-  frontmatter is machine-parseable so downstream tooling can correlate
+  This contract is non-negotiable — review must never block a
+  human-ratified release.
+- **…but it does gate the unattended path.** A human who reads an
+  `unavailable` review and ships anyway has made a judgment; a scheduler
+  that ships past one has made no judgment at all. So `aiv release` is
+  unaffected by the verdict, while `src/gate.py` holds unattended publish
+  on `unavailable`, `red`, and (in the `green_only` phase) `amber`. See
+  [Unattended publish](#unattended-publish). This does not make review
+  blocking; it makes *the absence of a human* blocking.
+- **Readers:** Arman (manual review before `aiv release`), and `src/gate.py`
+  (the frontmatter `verdict` + `issue_sha256`; the body is never parsed).
+  The frontmatter is machine-parseable so downstream tooling can correlate
   verdict shifts against prompt revisions without re-LLM.
+
+### `gate.json` — Architect writes (unattended-publish decision)
+
+- **Path:** `data/staging/<date>/gate.json`, promoted to
+  `data/released/<date>/gate.json` on `aiv release`. Part of the published
+  audit trail: a released day carries the decision that let it ship.
+- **Writer:** `src/gate.py` (`decide(date) -> GateDecision` +
+  `write_decision`), invoked by `aiv gate`. **Not a pipeline stage** — it
+  is not in `STAGE_ORDER` and `aiv run` does not call it. The gate runs
+  after the pipeline, on demand, from the publish workflow.
+- **Schema:** a single `GateDecision` object (not JSONL). Top-level:
+  - `schema_version: int` (shape) and `gate_version: str` (policy —
+    `gate.GATE_VERSION`; bump when a check is added, removed, or changes
+    its blocking flag)
+  - `phase: "shadow" | "green_only" | "green_amber"`
+  - `date: date`
+  - `decision: "auto_merge" | "hold"`
+  - `hold_reasons: list[str]` — ordered, de-duplicated `hold:<token>` list
+  - `review: GateReviewState` (present, verdict, issue_sha256,
+    computed_issue_sha256, fresh, prompt_version, path)
+  - `verify: GateVerifyState` (present, verdict, stories_verified,
+    contradicted_story_ids, unsupported_story_ids, path)
+  - `checks: list[GateCheck]` — every check in evaluation order, passes
+    included; each with `name`, `passed`, `blocking`, `detail`,
+    `hold_reason`
+  - `decided_at: datetime` (UTC), `note: str`
+- **Invariant (model-enforced):** `decision` and `hold_reasons` must agree
+  with `checks` — `hold_reasons` is exactly the de-duplicated
+  `hold_reason` of every failed blocking check, and `decision == "hold"`
+  iff that list is non-empty. Same discipline as
+  `StoryVerification`'s rollups: a one-word answer is only worth having if
+  a reader can trust it without re-deriving it.
+- **Atomicity:** `.tmp` + fsync + rename. Same-day re-runs overwrite.
+- **No LLM.** The gate is deterministic code reading artifacts that
+  judgment already produced. Asking a model "should we publish?" when the
+  inputs are two verdict tokens and a hash comparison would buy
+  non-determinism where we least want it.
+- **Readers:** the unattended-publish workflow (which acts on `decision`
+  according to `phase`), evals (hold-rate and hold-reason distribution over
+  time), Arman. **A missing or unreadable `gate.json` is a hold**, never a
+  pass — readers tolerate its absence, but tolerance means "hold", not
+  "proceed".
 
 ### `data/published_urls.txt` — Release Engineer writes (cumulative, not per-day)
 
@@ -922,9 +1003,10 @@ or the eval corpus.
   in [Archive schema](#archive-schema-datayyyy-mm-dd) above:
   `items.jsonl`, `source_health.json`, `clusters.jsonl`, `ranked.jsonl`,
   `issue.json`, plus the `embeddings/centroids.npz` sidecar. The advisory
-  stages add `verify.json` (promoted on release), `review.md`
-  (staging-only), and `source_excerpts.jsonl` (staging-only, ephemeral
-  summarise->verify hand-off).
+  stages add `verify.json` and `review.md` (both promoted on release), and
+  `source_excerpts.jsonl` (staging-only, ephemeral summarise->verify
+  hand-off). The publish gate adds `gate.json` (promoted on release) — see
+  [Unattended publish](#unattended-publish).
 - **Writer:** every `python -m src.run` invocation, by default. Each
   pipeline stage writes its staging artifact via the same atomic-write
   pattern documented above.
@@ -988,16 +1070,31 @@ target date (default: today):
    `issue_number` values. Compute `next_number = max(existing) + 1`,
    or `1` if no canonical history exists. Apply on the in-memory
    `Issue`.
-4. **Copy peripheral artifacts first.** For each of `items.jsonl`,
-   `clusters.jsonl`, `ranked.jsonl`, `source_health.json`, `verify.json`
-   (when present — verify is advisory and may have been skipped), and the
-   `embeddings/` sidecar directory, copy the file from
-   `data/staging/<date>/` to `data/<date>/` using the standard atomic
-   pattern (write to `<name>.tmp` in the destination, fsync, rename).
-   Order among these is not load-bearing; do them in the order listed
-   for log readability. **`source_excerpts.jsonl` is NOT promoted** — it is
-   ephemeral summarise->verify hand-off material with no value in the
-   released corpus; it stays in staging only.
+4. **Copy peripheral artifacts first.** Two classes, both copied with the
+   standard atomic pattern (write to `<name>.tmp` in the destination,
+   fsync, rename). Order among them is not load-bearing; do them in the
+   order listed for log readability.
+   - **Required** (`render._PERIPHERAL_FILES` + the `embeddings/` sidecar):
+     `items.jsonl`, `source_health.json`, `clusters.jsonl`, `ranked.jsonl`,
+     `embeddings/centroids.npz`. A missing one raises `IncompleteStaging` —
+     the canonical archive is complete-by-construction.
+   - **Optional** (`render._OPTIONAL_PERIPHERAL_FILES`): `verify.json`,
+     `review.md`, `gate.json`, `revisions.jsonl`. Copied when present,
+     skipped silently when absent. These come from advisory stages that
+     may not have run, or from stages that do not exist yet. Absence is a
+     normal state and must never fail a release.
+
+   **Why the optional four are promoted at all:** a released day should
+   carry the evidence it shipped on. When someone asks six months later
+   "why did this go out?", the editorial verdict (`review.md`), the
+   factual check (`verify.json`), and the publish decision (`gate.json`)
+   belong in the released record next to the issue — not stranded in a
+   gitignored staging directory that a later re-run overwrote.
+
+   **`source_excerpts.jsonl` is NOT promoted** — it is ephemeral
+   summarise->verify hand-off material with no value in the released
+   corpus; it stays in staging only. It is bulk working material, not
+   evidence about the decision.
 5. **Write canonical `issue.json` LAST.** With `issue_number` now set
    on the in-memory `Issue`, serialise and atomically write to
    `data/<date>/issue.json`. **This is the load-bearing ordering: a
@@ -1146,6 +1243,131 @@ which is now explicitly the canonical location.
 
 ---
 
+## Unattended publish
+
+Everything above assumes a human closes the loop: Arman reads the staging
+preview, reads `review.md`, and runs `aiv release`. This section describes
+the path where nobody does — where the issue publishes on a schedule with
+no human in the loop — and the single control that governs it.
+
+That control is **the gate**: `src/gate.py`, one deterministic function
+(`decide(date) -> GateDecision`) that reads the day's artifacts and answers
+one question, `auto_merge` or `hold`. The answer is written to `gate.json`.
+
+**The gate does not change the human path.** `verify` and `review` remain
+advisory exactly as documented above: an `unavailable` verdict from either
+never blocks a human-run `aiv release`. The gate governs the *unattended*
+path only. The distinction matters — a human who reads an `unavailable`
+review and ships anyway has made a judgment; a scheduler that ships past
+one has made no judgment at all.
+
+### The ratified policy (2026-08-02)
+
+Four rulings, recorded as decided:
+
+1. **Any contradicted fact-check claim hard-blocks auto-publish, regardless
+   of the editorial verdict.** A green review over a story the verifier says
+   the source contradicts means the two judges disagree, and disagreement
+   between judges is precisely when a human should look.
+2. **A verifier that could not run also holds.** "Not fact-checked" and
+   "fact-checked clean" are different states, and only one of them earns an
+   unattended publish.
+3. **Rollout is phased**, via the repository variable
+   `AIV_AUTO_PUBLISH_PHASE`: `shadow` → `green_only` → `green_amber`.
+   Unset or unrecognised resolves to `shadow`.
+4. **The build is approved** on that basis.
+
+Everything else in this section is the implementation of those four.
+
+### Fail closed
+
+Every state the gate cannot positively confirm is a hold. A missing review,
+an unparseable verdict, an `issue.json` that does not validate, a
+`verify.json` that is not there — all hold. The gate never publishes on the
+*absence* of evidence, only on its presence. This is the one place in the
+pipeline where that stance is correct: everywhere else, a missing artifact
+degrades the issue; here, it would publish one unread.
+
+### The checks
+
+Evaluated in this order; each is recorded in `GateDecision.checks` whether
+it passed or failed, so `gate.json` reads as an audit trail rather than a
+list of complaints.
+
+| Check | Blocking | Holds when | Hold reason |
+|---|---|---|---|
+| `issue_readable` | yes | `issue.json` missing, or fails `Issue` validation | `hold:issue-missing` / `hold:issue-invalid` |
+| `review_present` | yes | no `review.md` | `hold:review-missing` |
+| `review_verdict` | yes | no parseable frontmatter verdict | `hold:review-unparseable` |
+| | | verdict is `unavailable` | `hold:review-unavailable` |
+| | | verdict is `red` | `hold:review-verdict-red` |
+| | | verdict is `amber` **and** phase is `green_only` | `hold:review-verdict-amber` |
+| | | verdict is outside the known vocabulary | `hold:review-verdict-unknown` |
+| `review_freshness` | yes | frontmatter `issue_sha256` absent, or ≠ a fresh hash of `issue.json` | `hold:stale-review` |
+| `verify_readable` | yes | `verify.json` missing or unparseable | `hold:verify-missing` / `hold:verify-unparseable` |
+| `verify_available` | yes | verify verdict is `unavailable` (ruling 2) | `hold:verify-unavailable` |
+| `no_contradicted_claims` | yes | any story carries a `contradicted` claim (ruling 1) | `hold:contradicted-claim` |
+| `verify_no_unsupported` | **no** | any story carries an `unsupported` claim | — (surfaced only) |
+
+Two notes on the edges.
+
+**`unsupported` does not block.** "The source does not assert this" is an
+editorial concern worth surfacing; "the source asserts the opposite" is a
+factual error worth stopping for. Only the second is a contradiction, and
+only the second blocks.
+
+**The contradiction scan reads both evidence sources** — the `stories` in
+`verify.json` and the denormalised `SummaryBlock.verification` copies inside
+`issue.json` — and takes the union. They should always agree, since
+`verify.py` writes both in one pass; taking the union means a contradiction
+recorded in either place still stops the publication.
+
+When a check's prerequisite already failed (say `review_verdict` when there
+is no `review.md`), the dependent check is recorded as
+`passed=False, blocking=False` with a `not evaluated -- …` detail. It did
+not pass, but it contributes no second hold reason: the prerequisite already
+holds the release, and naming the same problem twice makes `hold_reasons`
+noisier without making it truer.
+
+### Phases
+
+`AIV_AUTO_PUBLISH_PHASE` narrows **which editorial verdicts may
+auto-merge**, and nothing else. The hard blocks — contradiction, verifier
+unavailable, stale review — hold in every phase, `shadow` included.
+
+| Phase | Accepted review verdicts | What the workflow does |
+|---|---|---|
+| `shadow` (default) | `green`, `amber` | Nothing. Computes and records the decision only. |
+| `green_only` | `green` | Acts on `auto_merge`. |
+| `green_amber` | `green`, `amber` | Acts on `auto_merge`. The end state. |
+
+`shadow` evaluates against the widest accepted set on purpose: the
+observation period should measure the policy we are rolling *towards*, and
+a narrower phase's answer is always derivable afterwards from the recorded
+review verdict. An unrecognised value falls back to `shadow` and says so in
+`GateDecision.note` — a typo'd repository variable must never silently
+widen the gate.
+
+### Exit-code semantics
+
+**The decision lives in the artifact, never in the exit code.** `aiv gate`
+exits 0 whether it decided `auto_merge` or `hold`. A non-zero exit therefore
+means one specific thing: the gate itself failed to run. The workflow must
+treat that — and a `gate.json` it cannot read — as a hold, which keeps
+"policy says no" and "the tooling broke" distinguishable at 06:00 without
+reading a log.
+
+### Not in this phase
+
+The gate decides; it does not repair. A `revise.py` that acts on a hold by
+re-running a stage, and the `SummaryBlock.revised_fields` / `revisions.jsonl`
+contracts that would record what it changed, are deliberately out of scope
+here — `revisions.jsonl` appears in the optional-promotion list only so it
+promotes harmlessly if and when it exists. `Issue` and `SummaryBlock` are
+**not** version-bumped by this work.
+
+---
+
 ## Module boundaries & seams
 
 One row per module. The owner agent's PRs touch that module; everyone else
@@ -1159,6 +1381,8 @@ internal helpers are private to the module.
 | `src/rank.py` | LLM Engineer | `data/YYYY-MM-DD/clusters.jsonl`, `config/rubric.yaml` | `data/YYYY-MM-DD/ranked.jsonl` | `def rank_day(run_date: date, rubric_path: Path = Path("config/rubric.yaml"), data_dir: Path = Path("data")) -> list[RankedStory]` |
 | `src/summarise.py` | LLM Engineer | `data/YYYY-MM-DD/ranked.jsonl`, `data/YYYY-MM-DD/clusters.jsonl`, `data/YYYY-MM-DD/items.jsonl`, `data/(last 14 days)/issue.json`, `data/(last 14 days)/ranked.jsonl` | `data/staging/YYYY-MM-DD/issue.json`, `data/staging/YYYY-MM-DD/source_excerpts.jsonl` | `def summarise_day(run_date: date, data_dir: Path = Path("data"), lookback_days: int = 14) -> Issue` |
 | `src/verify.py` | LLM Engineer | `data/staging/YYYY-MM-DD/issue.json`, `data/staging/YYYY-MM-DD/source_excerpts.jsonl` | `data/staging/YYYY-MM-DD/verify.json`, `data/staging/YYYY-MM-DD/issue.json` (denormalised `SummaryBlock.verification` rewritten in place) | `def verify_day(run_date: date) -> VerificationReport` (ADVISORY: never blocks release; on any failure writes an `unavailable` report and returns normally) |
+| `src/review.py` | LLM Engineer | `data/staging/YYYY-MM-DD/issue.json`, last 3 released `issue.json` | `data/staging/YYYY-MM-DD/review.md` | `def run_review(date: date \| None = None, dry_run: bool = False) -> ReviewArtifact` (ADVISORY: never blocks a human-ratified release; on any failure writes a `verdict: unavailable` review.md and returns normally). Writes `issue_sha256` into the frontmatter — the SHA-256 of the exact `issue.json` bytes it read, hashed in the same operation as the read. |
+| `src/gate.py` | **Architect** | `data/staging/YYYY-MM-DD/{issue.json, review.md, verify.json}` | `data/staging/YYYY-MM-DD/gate.json` | `def decide(date: date, *, phase: str \| None = None) -> GateDecision`; `def write_decision(decision: GateDecision, *, canonical: bool = False) -> Path`; `def run_gate(date: date, *, phase: str \| None = None) -> tuple[GateDecision, Path]`; `def issue_sha256(date: date, *, canonical: bool = False) -> str \| None` (the shared freshness hash). No LLM. Not a pipeline stage — invoked by `aiv gate` from the publish workflow, not by `aiv run`. |
 | `src/render.py` | Release Engineer | `data/YYYY-MM-DD/issue.json`, `templates/issue.html.j2` | `docs/index.html`, `docs/archive/YYYY-MM-DD.html` | `def render_issue(issue: Issue, templates_dir: Path = Path("templates"), docs_dir: Path = Path("docs")) -> None` |
 | `src/run.py` | Architect (orchestration shell; module owners maintain their stages) | All of the above, transitively | All of the above, transitively | `def main(run_date: date \| None = None, skip: set[str] = frozenset()) -> int` (CLI: `python -m src.run [--date YYYY-MM-DD] [--skip fetch,cluster,...]`; returns process exit code) |
 
@@ -1171,17 +1395,23 @@ internal helpers are private to the module.
   import the public functions to chain them in-process for local dev; CI
   may also run them as separate subprocesses.)
 - No LLM calls in `fetch.py`, `cluster.py` (embeddings yes; LLM judgment
-  no), `render.py`, or `run.py`. LLM lives in `rank.py`, `summarise.py`,
-  `verify.py`, and `review.py`. The latter two are **advisory** stages:
-  both call the LLM but neither blocks release — an LLM/transport failure
-  produces an `unavailable` artifact, not a crash.
+  no), `render.py`, `gate.py`, or `run.py`. LLM lives in `rank.py`,
+  `summarise.py`, `verify.py`, and `review.py`. The latter two are
+  **advisory** stages: both call the LLM but neither blocks release — an
+  LLM/transport failure produces an `unavailable` artifact, not a crash.
+  `gate.py` is the deliberate counter-case: it *consumes* those two LLM
+  verdicts and makes a blocking decision from them in plain code, because
+  a publish decision is the last place we want non-determinism.
 - **Pipeline stage order** (`src/run.py::STAGE_ORDER`): `fetch -> cluster
   -> rank -> summarise -> verify -> render -> review`. `verify` runs after
   `summarise` (it needs the staged `issue.json` + the `source_excerpts.jsonl`
   summarise wrote) and before `render` (so the renderer can surface the
   per-story factual flag). Both `verify` and `review` are failure-soft
   tail stages relative to their producers; skipping either leaves a
-  publishable issue.
+  publishable issue. **`gate` is not in `STAGE_ORDER`** — it is not part of
+  the staging pipeline. It runs after it, on demand, from the publish
+  workflow, and reads only artifacts the pipeline has already written. See
+  [Unattended publish](#unattended-publish).
 - Logging shape is shared (Architect cross-cutting concern): one
   structured JSON line per significant event, fields `{ts, level, module,
   event, ...}`. `run.py` decides the destination (stderr for CI;
@@ -1568,4 +1798,7 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-06-29 | `ClaimVerdict`, `StoryVerification`, `VerificationReport` (new models); `verify.json` + `source_excerpts.jsonl` (new archive files) | — | v1 | New contract surface for the advisory factual-accuracy verify stage (`src/verify.py` `verify_day`). `ClaimVerdict` (claim, verdict[supported\|unsupported\|contradicted\|unverifiable], location[headline\|body], summary_span, source_span, note) with a validator: `verdict == "contradicted"` requires a non-empty `source_span` (mirrors `verify._enforce_contradiction_discipline`). `StoryVerification` (story_id, prompt_version, claims, has_contradiction/has_unsupported/headline_flagged rollups, with a validator keeping rollups consistent with claims). `VerificationReport` (schema_version, generated_at, prompt_version, verdict[clean\|flagged\|unavailable], verdict_counts, stories, note) — the `verify.json` envelope, mirroring `SourceHealthReport`; an `unavailable` report carries empty `stories`. `source_excerpts.jsonl` is a staging-only JSONL keyed by source URL (url, excerpt, fetched_at, optional story_id) that `summarise.py` persists so `verify` judges against the identical excerpt. Promotion: `verify.json` promotes to released like `source_health.json`; `source_excerpts.jsonl` is ephemeral and stays staging-only. | First introduction — no on-disk migration. Missing-file tolerance is the migration story: a day without `verify.json` (verify skipped / unavailable / predates the stage) is read as "not verified"; a missing `source_excerpts.jsonl` makes verify treat all excerpts as empty (all-`unverifiable`, fail-soft). |
 | 2026-06-29 | `SummaryBlock` | v2 | v3 | Added optional nullable `verification: StoryVerification \| None = None`, written in place by the advisory verify stage after summarise. Additive + nullable: `None` means "not verified" (NOT a clean bill of health). | Existing issue.json (SummaryBlock schema_version <= 2) parse unchanged with `verification = None`. `extra="forbid"` means a pre-v3 reader of a v3 record would reject the unknown `verification` field, but this repo upgrades all readers in the same wave (one binary, no external consumers). Verified end-to-end by parsing `data/released/2026-06-28/issue.json` (a v5 issue) under the new model: parses clean, `verification = None`. |
 | 2026-06-29 | `Issue` | v5 | v6 | No field change on `Issue` itself; the bump tracks the transitive SummaryBlock v2->v3 change (issue.json now carries the new SummaryBlock shape) and documents the optional `"verify"` key in `prompt_versions` (set to `verify.VERIFY_PROMPT_VERSION` when the advisory stage runs; absent otherwise — `prompt_versions` still requires only `{"rank", "summarise"}`). | Older issue.json (schema_version <= 5) parse unchanged; the v6 envelope simply admits the new optional SummaryBlock field and the optional prompt-version key. Same in-repo all-readers-upgrade-together mitigation as the SummaryBlock row above. |
+| 2026-08-02 | `GateCheck`, `GateReviewState`, `GateVerifyState`, `GateDecision` (new models); `gate.json` (new archive file) | — | v1 | New contract surface for the unattended-publish gate (`src/gate.py` `decide`). `GateCheck` (name, passed, blocking, detail, hold_reason) with a validator: a failed blocking check must name its hold reason, a passing check must not carry one. `GateReviewState` / `GateVerifyState` denormalise what the gate observed in `review.md` and `verify.json` so a reader of `gate.json` can reconstruct the decision without re-parsing either. `GateDecision` (schema_version, gate_version, phase, date, decision[auto_merge\|hold], hold_reasons, review, verify, checks, decided_at, note) — the `gate.json` envelope, with a validator keeping `decision` + `hold_reasons` consistent with `checks` (same discipline as `StoryVerification`'s rollups). New literals `GatePhase` (shadow\|green_only\|green_amber) and `GateDecisionValue` (auto_merge\|hold). `gate_version` versions the POLICY (which checks exist, which block) independently of `schema_version`, which versions the shape. See [Unattended publish](#unattended-publish). | First introduction — no on-disk migration. Missing-file tolerance is the migration story, with one inversion of the usual rule: readers tolerate a missing `gate.json`, but tolerance here means **hold**, not proceed. `Issue` and `SummaryBlock` are deliberately NOT bumped by this work — `revised_fields` / `revisions.jsonl` arrive with `revise.py` later. |
+| 2026-08-02 | `review.md` frontmatter | — | additive | Added the `issue_sha256` key: the SHA-256 hex digest of the exact `issue.json` bytes the review was written against. The writer (`review.py`) hashes the bytes in the same operation as the read, closing the window in which the file could change between read and hash; the reader (`gate.py`) recomputes via `sha256_of_file` / `issue_sha256`. The call sites differ deliberately; the raw-bytes definition is the shared contract and is what must not drift. Consumed by the gate's `review_freshness` check — absent or mismatched key holds with `hold:stale-review`. | Additive to an unversioned Markdown artifact. Existing `review.md` files (all released days before 2026-08-02) simply lack the key; a gate run against such a day holds with `hold:stale-review`, which is the correct answer — those reviews cannot be shown to describe the current issue. No rewrite of history. |
+| 2026-08-02 | Release promotion (paths, not schema) | required peripherals only + a `verify.json` special case | required + `_OPTIONAL_PERIPHERAL_FILES` | `render.release_promote` now promotes an optional-peripheral set — `verify.json`, `review.md`, `gate.json`, `revisions.jsonl` — copying each when present and skipping silently when absent; `unrelease` removes them in reverse. **Contract change: `review.md` is no longer staging-only.** Once an artifact can hold a publication, the released record must show what it said. `revisions.jsonl` is listed ahead of the stage that writes it so it promotes harmlessly when that stage lands. `source_excerpts.jsonl` remains staging-only (bulk working material, not evidence about the decision). | No migration. Already-released days simply lack the new files under `data/released/<date>/`; every reader of the released archive tolerates a missing per-day file. The previous `verify.json`-specific copy block is subsumed by the loop, so verify promotion behaviour is unchanged. `unrelease` now also removes a promoted `verify.json`, which it previously left behind — a latent bug that would have blocked the empty-directory cleanup. |
 | 2026-05-24 | `Issue` | v4 | v5 | Added `revision: int = 0` (`ge=0`). Same-date re-release (opt-in via `aiv release --revise`) preserves `issue_number` and bumps `revision` instead of consuming a new integer in the registry. Display identifier is now `Issue.display_number` -> `"{issue_number}"` when `revision == 0`, else `"{issue_number}.{revision}"` (`#2`, `#2.1`, `#2.2`). The integer registry semantics are unchanged: uniqueness, monotonic-increase, and `paths.all_released_dates()` all still operate on the integer base; `revision` is a per-date secondary counter. Templates render `issue.display_number`; landing-page archive entries carry `display_number` alongside `issue_number`. See [Issue Number Registry -> Same-date re-release (revision bump)](#issue-number-registry). Motivating case: prompt drift fix on issue #2 (2026-05-24) re-shipped as #2.1 instead of burning #3. | Existing canonical archive (issues #1, #2 on disk) loads transparently: missing `revision` field defaults to 0 via pydantic; `display_number` returns `"1"`, `"2"`. v4 readers handling v5 records: pydantic `extra="forbid"` on `Issue` means a v4 reader of a v5 record would reject the unknown `revision` field. **Mitigation:** this repo upgrades all readers in the same PR (one binary, no external consumers). v5 readers handling v4 records: `revision` defaults to 0, display behaviour is identical to v4. No on-disk migration script is required. |

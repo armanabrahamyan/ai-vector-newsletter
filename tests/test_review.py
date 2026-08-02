@@ -285,22 +285,63 @@ class TestExtractFrontmatterSummary:
     """The terminal one-line and the downstream parsers both depend on
     pulling ``verdict`` + ``one_line`` cleanly from the LLM's response.
     If this is wrong, the pipeline prints garbage even when the LLM
-    nailed the review."""
+    nailed the review.
+
+    The parser is strict on purpose: anything it cannot read with
+    certainty returns ``unparseable``, never a verdict that looks like a
+    judgement. A consumer must be able to tell "the editor said amber"
+    apart from "we could not read what the editor said"."""
 
     def test_parses_valid_frontmatter(self) -> None:
         verdict, one_line = _extract_frontmatter_summary(_FAKE_LLM_RESPONSE)
         assert verdict == "green"
         assert "Strong day" in one_line
 
-    def test_unknown_verdict_falls_back_to_amber(self) -> None:
+    def test_unknown_verdict_is_unparseable(self) -> None:
         raw = "---\nverdict: maybe\none_line: ok\n---\n\nbody"
-        verdict, _ = _extract_frontmatter_summary(raw)
-        assert verdict == "amber"
+        verdict, one_line = _extract_frontmatter_summary(raw)
+        assert verdict == "unparseable"
+        assert "maybe" in one_line
 
-    def test_missing_frontmatter_falls_back_to_amber(self) -> None:
+    def test_code_reserved_verdict_from_llm_is_unparseable(self) -> None:
+        # The model does not get to claim a machine state it doesn't own.
+        for token in ("unavailable", "not_run", "unparseable"):
+            raw = f"---\nverdict: {token}\none_line: ok\n---\n\nbody"
+            verdict, _ = _extract_frontmatter_summary(raw)
+            assert verdict == "unparseable", token
+
+    def test_missing_frontmatter_is_unparseable(self) -> None:
         verdict, one_line = _extract_frontmatter_summary("just some prose")
-        assert verdict == "amber"
-        assert "missing" in one_line.lower() or "unclosed" in one_line.lower()
+        assert verdict == "unparseable"
+        assert "missing" in one_line.lower()
+
+    def test_unclosed_frontmatter_is_unparseable(self) -> None:
+        raw = "---\nverdict: green\none_line: ok\n\n# Editor's Review\n"
+        verdict, one_line = _extract_frontmatter_summary(raw)
+        assert verdict == "unparseable"
+        assert "unclosed" in one_line.lower()
+
+    def test_missing_verdict_key_is_unparseable(self) -> None:
+        raw = "---\none_line: ok\nissue_date: 2026-05-29\n---\n\nbody"
+        verdict, _ = _extract_frontmatter_summary(raw)
+        assert verdict == "unparseable"
+
+    def test_duplicate_verdict_keys_are_unparseable(self) -> None:
+        # The hazard this pins: last-wins parsing turned red-then-green into
+        # green. Two verdict lines mean the document states no verdict.
+        raw = "---\nverdict: red\nverdict: green\none_line: ok\n---\n\nbody"
+        verdict, _ = _extract_frontmatter_summary(raw)
+        assert verdict == "unparseable"
+
+    def test_malformed_line_in_block_is_unparseable(self) -> None:
+        raw = "---\nverdict: green\nthis line has no key\n---\n\nbody"
+        verdict, _ = _extract_frontmatter_summary(raw)
+        assert verdict == "unparseable"
+
+    def test_loose_delimiters_do_not_count_as_frontmatter(self) -> None:
+        raw = "---yaml\nverdict: green\n---\n\nbody"
+        verdict, _ = _extract_frontmatter_summary(raw)
+        assert verdict == "unparseable"
 
     def test_strips_code_fence_wrapper(self) -> None:
         raw = "```markdown\n" + _FAKE_LLM_RESPONSE + "\n```"
@@ -321,13 +362,12 @@ class TestWriteReviewArtifact:
         date = _dt.date(2026, 5, 29)
         out = _write_review_artifact(
             date, _FAKE_LLM_RESPONSE,
-            llm_metadata={
-                "verdict": "green",
-                "one_line": "strong",
-                "issue_date": "2026-05-29",
-                "issue_shape": "green",
-                "llm_model": "claude-opus-4-7",
-            },
+            llm_metadata={"llm_model": "claude-opus-4-7"},
+            verdict="green",
+            one_line="strong",
+            issue_date="2026-05-29",
+            issue_shape="green",
+            issue_sha256="a" * 64,
         )
         expected = paths.staging_dir(date) / "review.md"
         assert out == expected
@@ -339,19 +379,97 @@ class TestWriteReviewArtifact:
         date = _dt.date(2026, 5, 29)
         path = _write_review_artifact(
             date, _FAKE_LLM_RESPONSE,
-            llm_metadata={
-                "verdict": "green",
-                "one_line": "strong",
-                "issue_date": "2026-05-29",
-                "issue_shape": "green",
-                "llm_model": "claude-opus-4-7",
-            },
+            llm_metadata={"llm_model": "claude-opus-4-7"},
+            verdict="green",
+            one_line="strong",
+            issue_date="2026-05-29",
+            issue_shape="green",
+            issue_sha256="a" * 64,
         )
         content = path.read_text(encoding="utf-8")
         assert f"prompt_version: {REVIEW_PROMPT_VERSION}" in content
         assert "llm_model: claude-opus-4-7" in content
         assert "generated_at:" in content
         assert "issue_date: 2026-05-29" in content
+        assert f"issue_sha256: {'a' * 64}" in content
+
+    def test_code_authored_verdict_replaces_the_llms(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The file must state the verdict the caller decided on, not the
+        one the model typed -- otherwise a strict-parse rejection would be
+        recorded on disk as a clean green."""
+        date = _dt.date(2026, 5, 29)
+        path = _write_review_artifact(
+            date, _FAKE_LLM_RESPONSE,  # its frontmatter says verdict: green
+            llm_metadata={"llm_model": "claude-opus-4-7"},
+            verdict="unparseable",
+            one_line="<verdict token not recognised>",
+            issue_date="2026-05-29",
+        )
+        content = path.read_text(encoding="utf-8")
+        frontmatter = content.split("---", 2)[1]
+        fm_lines = [ln.strip() for ln in frontmatter.splitlines()]
+        assert "verdict: unparseable" in fm_lines
+        assert "verdict: green" not in fm_lines
+        # The model's own claim survives for the audit trail, and its prose
+        # is untouched.
+        assert "llm_reported_verdict: green" in frontmatter
+        assert "**Verdict**: GREEN." in content
+
+    def test_frontmatter_has_exactly_one_verdict_key(
+        self, tmp_data_root: Path,
+    ) -> None:
+        date = _dt.date(2026, 5, 29)
+        path = _write_review_artifact(
+            date, _FAKE_LLM_RESPONSE,
+            llm_metadata={"llm_model": "claude-opus-4-7"},
+            verdict="amber",
+            one_line="notes",
+            issue_date="2026-05-29",
+        )
+        frontmatter = path.read_text(encoding="utf-8").split("---", 2)[1]
+        verdict_lines = [
+            ln for ln in frontmatter.splitlines()
+            if ln.strip().startswith("verdict:")
+        ]
+        assert verdict_lines == ["verdict: amber"]
+
+    def test_written_file_reparses_to_the_same_verdict(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Round-trip: whatever we write must read back through the strict
+        parser as the same verdict, for every token in the vocabulary the
+        LLM can produce."""
+        date = _dt.date(2026, 5, 29)
+        for token in ("green", "amber", "red"):
+            path = _write_review_artifact(
+                date, _FAKE_LLM_RESPONSE,
+                llm_metadata={"llm_model": "claude-opus-4-7"},
+                verdict=token,
+                one_line="round trip",
+                issue_date="2026-05-29",
+            )
+            reparsed, _ = _extract_frontmatter_summary(
+                path.read_text(encoding="utf-8")
+            )
+            assert reparsed == token
+
+    def test_missing_llm_frontmatter_is_synthesised(
+        self, tmp_data_root: Path,
+    ) -> None:
+        date = _dt.date(2026, 5, 29)
+        path = _write_review_artifact(
+            date, "# Editor's Review\n\nNo frontmatter at all.\n",
+            llm_metadata={"llm_model": "claude-opus-4-7"},
+            verdict="unparseable",
+            one_line="<frontmatter missing>",
+            issue_date="2026-05-29",
+        )
+        content = path.read_text(encoding="utf-8")
+        assert content.startswith("---\nverdict: unparseable\n")
+        # The model's output is preserved as the body rather than dropped.
+        assert "No frontmatter at all." in content
 
 
 # ---------------------------------------------------------------------------
@@ -389,6 +507,12 @@ class TestRunReview:
         assert artifact.verdict == "unavailable"
         content = artifact.path.read_text(encoding="utf-8")
         assert "verdict: unavailable" in content
+        # No issue.json was ever read, so no hash could be computed. The
+        # literal "unknown" placeholder is what src/gate.py's freshness check
+        # relies on comparing byte-for-byte against a real hash (and never
+        # matching) -- see test_issue_sha256_literal_unknown_holds_as_stale
+        # in tests/test_gate.py.
+        assert "issue_sha256: unknown" in content
 
     def test_llm_failure_writes_unavailable_without_raising(
         self, tmp_data_root: Path,
@@ -408,6 +532,88 @@ class TestRunReview:
         date = _dt.date(2026, 5, 29)
         artifact = run_review(date=date, dry_run=True)
         assert not artifact.path.exists()
+
+    def test_dry_run_verdict_is_not_run(self, tmp_data_root: Path) -> None:
+        """A dry run makes no editorial judgement, so it must not return a
+        judgement-shaped verdict that a consumer could read as a pass."""
+        date = _dt.date(2026, 5, 29)
+        artifact = run_review(date=date, dry_run=True)
+        assert artifact.verdict == "not_run"
+        assert artifact.verdict != "green"
+
+    def test_verdict_vocabulary_is_enforced(self) -> None:
+        with pytest.raises(ValueError):
+            ReviewArtifact(
+                date=_dt.date(2026, 5, 29), verdict="fine",
+                one_line="x", path=Path("review.md"),
+            )
+
+    def test_frontmatter_carries_hash_of_the_issue_bytes_read(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The hash must be of the exact bytes the reviewer was shown, so a
+        downstream freshness check can tell whether issue.json moved after
+        the review ran."""
+        import hashlib
+
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        expected = hashlib.sha256(
+            paths.issue_path(date, canonical=False).read_bytes()
+        ).hexdigest()
+        with patch("src.review._call_review_llm", return_value=_FAKE_LLM_RESPONSE):
+            artifact = run_review(date=date)
+        assert f"issue_sha256: {expected}" in artifact.path.read_text(
+            encoding="utf-8"
+        )
+
+    def test_unparseable_llm_output_yields_unparseable_verdict(
+        self, tmp_data_root: Path,
+    ) -> None:
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        with patch(
+            "src.review._call_review_llm",
+            return_value="I could not complete the review today.",
+        ):
+            artifact = run_review(date=date)
+        assert artifact.verdict == "unparseable"
+        assert "verdict: unparseable" in artifact.path.read_text(encoding="utf-8")
+
+    def test_artifact_and_file_agree_on_verdict(
+        self, tmp_data_root: Path,
+    ) -> None:
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+        with patch("src.review._call_review_llm", return_value=_FAKE_LLM_RESPONSE):
+            artifact = run_review(date=date)
+        on_disk, _ = _extract_frontmatter_summary(
+            artifact.path.read_text(encoding="utf-8")
+        )
+        assert on_disk == artifact.verdict
+
+    def test_failed_unavailable_write_raises(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A review.md we could not write must not vanish silently: an
+        absent file is indistinguishable from a stage nobody ran."""
+        date = _dt.date(2026, 5, 29)
+        with patch(
+            "src.review._atomic_write_text",
+            side_effect=OSError("disk full"),
+        ):
+            with pytest.raises(OSError):
+                run_review(date=date)  # no staged issue -> unavailable path
+
+    def test_non_object_issue_json_writes_unavailable(
+        self, tmp_data_root: Path,
+    ) -> None:
+        date = _dt.date(2026, 5, 29)
+        target = paths.staging_dir(date)
+        target.mkdir(parents=True)
+        (target / "issue.json").write_text("[1, 2, 3]")
+        artifact = run_review(date=date)
+        assert artifact.verdict == "unavailable"
 
 
 # ---------------------------------------------------------------------------

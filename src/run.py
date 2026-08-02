@@ -6,6 +6,7 @@ Backwards-compatible: ``python -m src.run`` still works.
 
 Subcommands:
   aiv run       -- fetch -> cluster -> rank -> summarise -> render (staging)
+  aiv gate      -- decide whether the staged issue may publish unattended
   aiv release   -- promote staging draft to canonical
   aiv unrelease -- reverse a release
   aiv check     -- pre-flight checks only
@@ -1029,6 +1030,69 @@ def _banner_review(run_date: _dt.date) -> None:
     _LOG.info(" AI Vector -- EDITORIAL REVIEW")
     _LOG.info(" date:    %s", run_date.isoformat())
     _LOG.info(_BANNER_RULE)
+
+
+@app.command()
+def gate(
+    date: Optional[str] = typer.Option(None, metavar="YYYY-MM-DD", help=_DATE_HELP),
+    phase: Optional[str] = typer.Option(
+        None, metavar="PHASE",
+        help="Override the rollout phase for this invocation: shadow | "
+             "green_only | green_amber. Default comes from the "
+             "AIV_AUTO_PUBLISH_PHASE environment variable, and from "
+             "'shadow' when that is unset or unrecognised.",
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run",
+        help="Compute and print the decision without writing gate.json.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Decide whether the staged issue may be published unattended.
+
+    Reads ``data/staging/<date>/{issue.json, review.md, verify.json}``,
+    applies the ratified publish policy, and writes the verdict to
+    ``data/staging/<date>/gate.json``.
+
+    **The decision lives in the artifact, not the exit code.** This command
+    exits 0 whether it decided ``auto_merge`` or ``hold``, so a non-zero
+    exit means the gate itself failed to run -- which the publish workflow
+    must also treat as a hold. Nothing here publishes anything: acting on
+    the decision is the workflow's job, and in the ``shadow`` phase it acts
+    on nothing at all.
+
+    No LLM call is made. The gate is deterministic code reading artifacts
+    that judgment already produced.
+    """
+    _setup_logging(verbose)
+    _load_env()
+    run_date = _resolve_date(date)
+    from src import gate as gate_mod
+
+    _LOG.info(_BANNER_RULE)
+    _LOG.info(" AI Vector -- PUBLISH GATE")
+    _LOG.info(" date:    %s", run_date.isoformat())
+    _LOG.info(_BANNER_RULE)
+
+    decision = gate_mod.decide(run_date, phase=phase)
+
+    reasons = ", ".join(decision.hold_reasons) if decision.hold_reasons else "none"
+    print(
+        f"gate: {decision.decision.upper()} "
+        f"(phase={decision.phase}, gate={decision.gate_version}) -- {reasons}"
+    )
+    for check in decision.checks:
+        if not check.passed and check.blocking and check.hold_reason:
+            print(f"  - {check.hold_reason}: {check.detail}")
+    if decision.note:
+        print(f"  note: {decision.note}")
+
+    if dry_run:
+        print(f"[dry-run] would write {gate_mod.gate_path(run_date, canonical=False)}")
+    else:
+        out_path = gate_mod.write_decision(decision)
+        print(f"  -> {out_path}")
+    sys.exit(0)
 
 
 @app.command()

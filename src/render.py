@@ -88,6 +88,28 @@ _PERIPHERAL_FILES: tuple[str, ...] = (
 )
 _PERIPHERAL_EMBEDDINGS: str = "embeddings/centroids.npz"
 
+# Optional peripherals: promoted when present, silently skipped when absent.
+# These come from advisory stages that may not have run (verify, review,
+# gate) or from a stage that does not exist yet (revisions.jsonl, the
+# forthcoming revise.py). Absence is a normal state -- a missing one must
+# never fail a release, unlike _PERIPHERAL_FILES above, where a gap means an
+# incomplete archive.
+#
+# Why they are promoted at all: a released day should carry the evidence it
+# shipped on. When a reader six months from now asks "why did this go out?",
+# the editorial verdict, the factual check, and the publish decision should
+# be in the released record next to the issue -- not stranded in a gitignored
+# staging directory that a later re-run overwrote.
+#
+# source_excerpts.jsonl is deliberately NOT here: it is bulk working material
+# for the summarise -> verify hand-off, not evidence about the decision.
+_OPTIONAL_PERIPHERAL_FILES: tuple[str, ...] = (
+    "verify.json",
+    "review.md",
+    "gate.json",
+    "revisions.jsonl",
+)
+
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -782,15 +804,19 @@ def release_promote(
         staging_dir / _PERIPHERAL_EMBEDDINGS,
         released_dir / _PERIPHERAL_EMBEDDINGS,
     )
-    # verify.json: optional peripheral -- copy when present (advisory stage
-    # may have been skipped or returned unavailable). source_excerpts.jsonl
-    # is intentionally NOT promoted (staging-only working material).
-    staging_verify = paths.verify_path(date, canonical=False)
-    if staging_verify.exists():
-        _atomic_copy(staging_verify, paths.verify_path(date, canonical=True))
-        log.debug("release: copied verify.json -> canonical")
-    else:
-        log.debug("release: verify.json not present in staging; skipping copy")
+    # Optional peripherals (verify.json, review.md, gate.json,
+    # revisions.jsonl): copy each when present. These come from advisory
+    # stages that may have been skipped, or from stages that do not exist
+    # yet -- absence is normal and never fails a release.
+    # source_excerpts.jsonl is intentionally NOT promoted (staging-only
+    # working material).
+    for name in _OPTIONAL_PERIPHERAL_FILES:
+        src = staging_dir / name
+        if src.exists():
+            _atomic_copy(src, released_dir / name)
+            log.debug("release: copied %s -> canonical", name)
+        else:
+            log.debug("release: %s not present in staging; skipping copy", name)
 
     # --- Step 6: write canonical issue.json LAST (the commit marker) -----
     # Construct a fresh Issue with the assigned number + revision. We use
@@ -864,6 +890,15 @@ def unrelease(date: datetime.date) -> int:
 
     # --- ...then peripheral files in reverse listing order ----------------
     released_dir = paths.released_dir(date)
+    # Optional peripherals first, so the date directory can actually become
+    # empty in step 3. An unrelease that left review.md or gate.json behind
+    # would leave a released day carrying evidence for an issue that is no
+    # longer released.
+    for name in reversed(_OPTIONAL_PERIPHERAL_FILES):
+        p = released_dir / name
+        if p.exists():
+            p.unlink()
+            log.debug("unrelease: removed %s", p)
     for name in reversed(_PERIPHERAL_FILES):
         p = released_dir / name
         if p.exists():

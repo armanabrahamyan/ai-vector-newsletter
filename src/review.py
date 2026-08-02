@@ -11,6 +11,17 @@ runs ``aiv release``. When the LLM call fails (timeout, auth, parse error),
 we write a ``verdict: unavailable`` review.md and return normally -- a
 review failure must NOT block publication.
 
+Verdicts are fail-closed. ``green | amber | red`` are editorial
+judgements and only the model can author them; ``unavailable``,
+``unparseable``, and ``not_run`` are code-authored states meaning "no
+judgement was recorded", and nothing here ever degrades a failure into a
+judgement-shaped default. The verdict in the returned ``ReviewArtifact``
+and the ``verdict:`` line in ``review.md`` come from the same value
+written by the same code, so a consumer reading either sees the same
+thing. The frontmatter also carries ``issue_sha256``, the hash of the
+exact ``issue.json`` bytes the reviewer read, so a consumer can tell
+whether the issue changed after the review ran. See ``REVIEW_VERDICTS``.
+
 Owner: LLM Engineer (per docs/internal/TEAM.md). This module is a NEW
 *mode* of the existing Editor persona, not a new agent.
 
@@ -20,6 +31,7 @@ Audit tag: review-v0.1-2026-05-31.
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
 import json
 import logging
 import os
@@ -93,6 +105,46 @@ _LOG = logging.getLogger("ai_vector.review")
 
 
 # ---------------------------------------------------------------------------
+# Verdict vocabulary.
+# ---------------------------------------------------------------------------
+
+VERDICT_GREEN = "green"
+VERDICT_AMBER = "amber"
+VERDICT_RED = "red"
+VERDICT_UNAVAILABLE = "unavailable"
+VERDICT_UNPARSEABLE = "unparseable"
+VERDICT_NOT_RUN = "not_run"
+
+REVIEW_LLM_VERDICTS: frozenset[str] = frozenset(
+    {VERDICT_GREEN, VERDICT_AMBER, VERDICT_RED}
+)
+"""The only verdict tokens the LLM is allowed to author.
+
+Anything else in the model's frontmatter -- including the code-reserved
+tokens below -- is out-of-vocabulary and yields ``unparseable``. The model
+must not be able to claim a machine state it does not own."""
+
+REVIEW_VERDICTS: frozenset[str] = REVIEW_LLM_VERDICTS | frozenset(
+    {VERDICT_UNAVAILABLE, VERDICT_UNPARSEABLE, VERDICT_NOT_RUN}
+)
+"""Every verdict a ``ReviewArtifact`` (and the frontmatter written beside
+it) may carry. The three code-authored tokens mean:
+
+``unavailable`` -- the review could not run (no staged issue, unreadable
+issue, LLM transport failure). ``unparseable`` -- the review ran but its
+frontmatter could not be read strictly enough to trust a verdict.
+``not_run`` -- the stage was invoked in dry-run and produced no judgement
+at all.
+
+None of the three is an editorial pass. A consumer that authorises
+anything must treat ``green`` (and only ``green``) as permission; every
+other token withholds it."""
+
+# Backwards-compatible alias: this name previously held the LLM vocabulary.
+_VALID_VERDICTS = REVIEW_LLM_VERDICTS
+
+
+# ---------------------------------------------------------------------------
 # Public return type.
 # ---------------------------------------------------------------------------
 
@@ -102,15 +154,32 @@ class ReviewArtifact:
     line. The substantive artifact is the ``review.md`` file on disk; this
     structure exposes just what callers need to log a one-liner.
 
-    ``verdict`` mirrors the frontmatter value: ``"green" | "amber" | "red"``
-    on success, or ``"unavailable"`` when the LLM call failed and we wrote a
-    placeholder. ``path`` is the path to ``review.md`` (always written, even
-    on the unavailable branch).
+    ``verdict`` is one of ``REVIEW_VERDICTS``: ``green | amber | red`` when
+    the LLM produced a readable verdict, ``unavailable`` when the review
+    could not run, ``unparseable`` when it ran but the frontmatter could not
+    be trusted, and ``not_run`` for dry runs. ``path`` is the path to
+    ``review.md`` -- always written, except on the dry-run path where
+    nothing is written at all.
+
+    The verdict here and the ``verdict:`` line in the file at ``path`` are
+    written from the same value by the same code, so they cannot disagree.
     """
     date: _dt.date
     verdict: str
     one_line: str
     path: Path
+
+    def __post_init__(self) -> None:
+        # Guards a code bug, not user input: every construction site passes
+        # one of the module constants. A verdict outside the vocabulary
+        # would be uninterpretable to any downstream consumer, so we fail
+        # loudly rather than hand it on. run.py's advisory-stage guard keeps
+        # the pipeline alive if this ever fires.
+        if self.verdict not in REVIEW_VERDICTS:
+            raise ValueError(
+                f"review verdict {self.verdict!r} is outside the vocabulary "
+                f"{sorted(REVIEW_VERDICTS)}"
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -132,22 +201,31 @@ def run_review(
     ``verdict: unavailable`` with the error message in the body, and
     returned normally. The pipeline must continue.
 
+    The one exception is a filesystem failure that prevents us recording
+    the unavailable state at all: that raises, because an absent
+    ``review.md`` is indistinguishable from a stage that was never asked to
+    run, and silence must never be readable as approval. ``run.py`` treats
+    review as an advisory stage and keeps the pipeline going either way.
+
     Parameters
     ----------
     date
         Issue date (local). Defaults to today.
     dry_run
-        When True, returns a fake ReviewArtifact and writes nothing.
+        When True, returns a ``not_run`` ReviewArtifact and writes nothing.
         Mirrors the dry-run contract on other stages.
     """
     run_date = date or _dt.date.today()
     review_path = paths.staging_dir(run_date) / "review.md"
 
     if dry_run:
+        # A dry run produces no editorial judgement, so it must not return a
+        # judgement-shaped verdict. ``not_run`` is deliberately outside the
+        # green/amber/red vocabulary any consumer would read as a pass.
         return ReviewArtifact(
             date=run_date,
-            verdict="green",
-            one_line="(dry-run: review would write to review.md)",
+            verdict=VERDICT_NOT_RUN,
+            one_line="(dry-run: review did not run; no verdict)",
             path=review_path,
         )
 
@@ -157,12 +235,37 @@ def run_review(
         _LOG.warning("review: %s -- writing unavailable review.md", msg)
         return _write_unavailable(run_date, review_path, msg)
 
+    # Read the bytes ONCE and hash exactly what we are about to send to the
+    # reviewer. Re-reading to hash would leave a window in which the file
+    # changed between the read and the hash, which is precisely the
+    # staleness the downstream freshness check exists to catch.
     try:
-        issue_payload = json.loads(staged_issue_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        issue_bytes = staged_issue_path.read_bytes()
+    except OSError as exc:
         msg = f"could not read staged issue.json: {exc}"
         _LOG.warning("review: %s", msg)
         return _write_unavailable(run_date, review_path, msg)
+
+    issue_sha256 = hashlib.sha256(issue_bytes).hexdigest()
+
+    try:
+        issue_payload = json.loads(issue_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        msg = f"could not parse staged issue.json: {exc}"
+        _LOG.warning("review: %s", msg)
+        return _write_unavailable(
+            run_date, review_path, msg, issue_sha256=issue_sha256,
+        )
+
+    if not isinstance(issue_payload, dict):
+        msg = (
+            "staged issue.json is not a JSON object "
+            f"(got {type(issue_payload).__name__})"
+        )
+        _LOG.warning("review: %s", msg)
+        return _write_unavailable(
+            run_date, review_path, msg, issue_sha256=issue_sha256,
+        )
 
     recent_issues = _load_recent_released_issues(run_date, _REVIEW_LOOKBACK_ISSUES)
 
@@ -174,23 +277,25 @@ def run_review(
     except Exception as exc:  # noqa: BLE001 -- never fail the pipeline
         msg = f"LLM call failed: {type(exc).__name__}: {exc}"
         _LOG.warning("review: %s -- writing unavailable review.md", msg)
-        return _write_unavailable(run_date, review_path, msg)
+        return _write_unavailable(
+            run_date, review_path, msg, issue_sha256=issue_sha256,
+        )
 
     verdict, one_line = _extract_frontmatter_summary(raw)
-    # The LLM is asked to emit verdict/one_line/issue_date/issue_shape in
-    # its own frontmatter; we layer ONLY the audit-trail keys on top so the
-    # final block is single-authored per key. When the LLM omitted the
-    # block entirely, the synthesise path falls back to including verdict
-    # + one_line we extracted (otherwise the frontmatter would be missing
-    # the most useful fields).
+    # The verdict we just extracted is the ONE verdict: it goes into the
+    # returned artifact AND is the value written into the file's
+    # frontmatter. The LLM's own verdict line is stripped from the block and
+    # preserved as ``llm_reported_verdict`` for the audit trail; its prose,
+    # including the "**Verdict**: ..." line in the body, is left untouched.
     llm_metadata = {
         "llm_model": (os.getenv("LLM_MODEL") or "").strip() or "unknown",
     }
     written = _write_review_artifact(
         run_date, raw, llm_metadata,
-        fallback_verdict=verdict, fallback_one_line=one_line,
+        verdict=verdict, one_line=one_line,
         issue_date=run_date.isoformat(),
         issue_shape=_extract_issue_shape(issue_payload),
+        issue_sha256=issue_sha256,
     )
     _LOG.info(
         "review: %s verdict=%s one_line=%r -> %s",
@@ -587,52 +692,139 @@ def _resolve_timeout() -> float:
 # Frontmatter parsing + Markdown write.
 # ---------------------------------------------------------------------------
 
-_VALID_VERDICTS = {"green", "amber", "red"}
+_CODE_AUTHORED_KEYS: frozenset[str] = frozenset({
+    "verdict",
+    "one_line",
+    "llm_reported_verdict",
+    "issue_date",
+    "issue_shape",
+    "issue_sha256",
+    "generated_at",
+    "prompt_version",
+    "llm_model",
+})
+"""Frontmatter keys the WRITE path owns outright.
+
+Any line carrying one of these keys is stripped from the LLM's block
+before we append our own, so each key appears exactly once and is written
+by code. ``verdict`` is the load-bearing member: it is why the file and
+the returned ``ReviewArtifact`` cannot disagree."""
+
+
+def _strip_code_fence(text: str) -> str:
+    """Remove a whole-document code fence the LLM sometimes wraps its
+    Markdown in (e.g. ```markdown ... ```). Leading whitespace goes too, so
+    the frontmatter delimiter can be matched at position zero."""
+    stripped = text.lstrip()
+    if not stripped.startswith("```"):
+        return stripped
+    first_newline = stripped.find("\n")
+    if first_newline != -1:
+        stripped = stripped[first_newline + 1:]
+    if stripped.rstrip().endswith("```"):
+        stripped = stripped.rsplit("```", 1)[0]
+    return stripped
+
+
+def _split_frontmatter(text: str) -> tuple[str | None, str, str]:
+    """Split a Markdown document into (frontmatter, body, failure).
+
+    A frontmatter block is recognised ONLY when the first line is exactly
+    ``---`` and a later line is exactly ``---``. Nothing looser counts:
+    ``---yaml`` is not an opener and ``----`` is not a closer, because a
+    delimiter we half-recognise is a delimiter we can be fooled by.
+
+    On success returns ``(frontmatter_text, body_text, "")``. On failure
+    returns ``(None, "", reason)`` where reason is ``"missing"`` or
+    ``"unclosed"``.
+    """
+    lines = _strip_code_fence(text).split("\n")
+    if not lines or lines[0].strip() != "---":
+        return (None, "", "missing")
+    for idx in range(1, len(lines)):
+        if lines[idx].strip() == "---":
+            return ("\n".join(lines[1:idx]), "\n".join(lines[idx + 1:]), "")
+    return (None, "", "unclosed")
+
+
+def _parse_frontmatter_block(
+    frontmatter: str,
+) -> tuple[dict[str, str], set[str]] | None:
+    """Parse a frontmatter block into ``{key: value}`` plus the set of keys
+    that appeared more than once.
+
+    First occurrence wins in the mapping; the duplicate set lets callers
+    refuse to guess where the ambiguity actually matters. Blank lines and
+    ``#`` comments are tolerated. Any other line that is not a plain
+    ``key: value`` pair makes the whole block malformed and returns
+    ``None`` -- we do not skip over lines we cannot account for, because a
+    line we cannot parse may be the one that changes the meaning.
+    """
+    mapping: dict[str, str] = {}
+    duplicates: set[str] = set()
+    for raw_line in frontmatter.split("\n"):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" not in line:
+            return None
+        key, _, value = line.partition(":")
+        key = key.strip().lower()
+        if not key or any(ch.isspace() for ch in key):
+            return None
+        value = value.strip().strip('"').strip("'")
+        if key in mapping:
+            duplicates.add(key)
+            continue
+        mapping[key] = value
+    return (mapping, duplicates)
 
 
 def _extract_frontmatter_summary(raw: str) -> tuple[str, str]:
-    """Best-effort extraction of ``verdict`` + ``one_line`` from the LLM's
-    Markdown response.
+    """Strictly extract ``verdict`` + ``one_line`` from the LLM's Markdown.
 
-    The prompt asks for a YAML frontmatter block delimited by ``---``.
-    We scan the first such block and read the two keys; on any parse
-    failure we return ``("amber", "<could not parse verdict>")`` so the
-    terminal line still surfaces SOMETHING and Arman opens the file.
+    Returns ``(verdict, one_line)`` where verdict is one of
+    ``REVIEW_LLM_VERDICTS`` when -- and only when -- the frontmatter is
+    well-formed and carries exactly one recognised verdict token. Every
+    other outcome returns ``VERDICT_UNPARSEABLE`` with a diagnostic
+    one_line naming the specific defect.
+
+    There is deliberately no default verdict. The previous behaviour fell
+    back to ``amber``, which turned three different failures (no
+    frontmatter, unclosed frontmatter, a verdict token nobody recognised)
+    into a value that reads like a real editorial judgement. Anything that
+    consumes these verdicts must be able to tell "the editor said amber"
+    apart from "we could not read what the editor said".
+
+    Duplicate ``verdict:`` keys are unparseable rather than first-wins.
+    Two verdict lines mean the document does not state one verdict, and
+    picking either is guessing -- last-wins in particular let a
+    ``red``-then-``green`` pair report green.
     """
-    # Strip code-fence wrappers the LLM sometimes adds.
-    stripped = raw.lstrip()
-    if stripped.startswith("```"):
-        # drop the first fence line
-        first_newline = stripped.find("\n")
-        if first_newline != -1:
-            stripped = stripped[first_newline + 1:]
-        # drop a trailing fence if any
-        if stripped.rstrip().endswith("```"):
-            stripped = stripped.rsplit("```", 1)[0]
-    if not stripped.startswith("---"):
-        return ("amber", "<frontmatter missing>")
-    # find the closing --- after the first line
-    rest = stripped[3:]
-    end = rest.find("\n---")
-    if end == -1:
-        return ("amber", "<frontmatter unclosed>")
-    fm_block = rest[:end]
-    verdict = "amber"
-    one_line = "<one_line missing>"
-    for line in fm_block.splitlines():
-        line = line.strip()
-        if not line or ":" not in line:
-            continue
-        key, _, value = line.partition(":")
-        key = key.strip().lower()
-        value = value.strip().strip('"').strip("'")
-        if key == "verdict":
-            value_lower = value.lower()
-            if value_lower in _VALID_VERDICTS:
-                verdict = value_lower
-        elif key == "one_line":
-            if value:
-                one_line = value
+    frontmatter, _body, failure = _split_frontmatter(raw)
+    if frontmatter is None:
+        return (VERDICT_UNPARSEABLE, f"<frontmatter {failure}>")
+
+    parsed = _parse_frontmatter_block(frontmatter)
+    if parsed is None:
+        return (VERDICT_UNPARSEABLE, "<frontmatter malformed>")
+    mapping, duplicates = parsed
+
+    if "verdict" in duplicates:
+        return (VERDICT_UNPARSEABLE, "<frontmatter has duplicate verdict keys>")
+
+    raw_verdict = mapping.get("verdict")
+    if raw_verdict is None:
+        return (VERDICT_UNPARSEABLE, "<frontmatter has no verdict key>")
+
+    verdict = raw_verdict.strip().lower()
+    if verdict not in REVIEW_LLM_VERDICTS:
+        return (
+            VERDICT_UNPARSEABLE,
+            f"<verdict token not recognised: {raw_verdict!r}>",
+        )
+
+    one_line = mapping.get("one_line") or "<one_line missing>"
     return (verdict, one_line)
 
 
@@ -641,110 +833,133 @@ def _write_review_artifact(
     markdown: str,
     llm_metadata: dict[str, Any],
     *,
-    fallback_verdict: str | None = None,
-    fallback_one_line: str | None = None,
+    verdict: str,
+    one_line: str,
     issue_date: str | None = None,
     issue_shape: str | None = None,
+    issue_sha256: str | None = None,
 ) -> Path:
     """Write ``data/staging/<date>/review.md``.
 
-    The LLM is asked to produce a complete Markdown doc with frontmatter;
-    we accept it as-is and append our own ``generated_at`` /
-    ``prompt_version`` / ``llm_model`` keys to the frontmatter block so
-    downstream tooling can parse provenance without re-LLM. When the LLM
-    omits frontmatter entirely (defensive case), we synthesise a minimal
-    one from the fallback values supplied so the file remains parseable.
+    The LLM's prose is preserved verbatim in the body. The frontmatter is
+    rewritten so that the machine-readable keys -- ``verdict`` above all --
+    are authored by this function from the values the caller is also
+    putting into the returned ``ReviewArtifact``. That is what makes the
+    file and the artifact incapable of disagreeing.
     """
     review_path = paths.staging_dir(date) / "review.md"
     review_path.parent.mkdir(parents=True, exist_ok=True)
 
     enriched = _enrich_frontmatter(
         markdown, llm_metadata,
-        fallback_verdict=fallback_verdict,
-        fallback_one_line=fallback_one_line,
+        verdict=verdict,
+        one_line=one_line,
         issue_date=issue_date,
         issue_shape=issue_shape,
+        issue_sha256=issue_sha256,
     )
-    # Atomic write -- mirrors the rank/summarise pattern. Same-day re-runs
-    # overwrite the prior review.md cleanly.
-    tmp = review_path.with_suffix(review_path.suffix + ".tmp")
+    _atomic_write_text(review_path, enriched)
+    return review_path
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    """Write ``content`` to ``path`` atomically (tmp + fsync + rename),
+    ensuring a trailing newline. Mirrors the rank/summarise pattern, so
+    same-day re-runs overwrite the prior file cleanly and a reader never
+    sees a half-written review."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
     with tmp.open("w", encoding="utf-8") as fh:
-        fh.write(enriched)
-        if not enriched.endswith("\n"):
+        fh.write(content)
+        if not content.endswith("\n"):
             fh.write("\n")
         fh.flush()
         os.fsync(fh.fileno())
-    os.replace(tmp, review_path)
-    return review_path
+    os.replace(tmp, path)
 
 
 def _enrich_frontmatter(
     markdown: str,
     extra: dict[str, Any],
     *,
-    fallback_verdict: str | None = None,
-    fallback_one_line: str | None = None,
+    verdict: str,
+    one_line: str,
     issue_date: str | None = None,
     issue_shape: str | None = None,
+    issue_sha256: str | None = None,
 ) -> str:
-    """Append provenance keys to the LLM's frontmatter block.
+    """Rewrite the document's frontmatter so code owns the machine keys.
 
-    Always adds ``generated_at`` + ``prompt_version`` + ``llm_model`` so
-    the artifact carries its own audit trail. If the LLM omitted the
-    frontmatter entirely, we synthesise a minimal one with the
-    ``fallback_verdict`` / ``fallback_one_line`` / ``issue_date`` /
-    ``issue_shape`` we extracted upstream so the file is still
-    machine-parseable.
+    Every key in ``_CODE_AUTHORED_KEYS`` is stripped from whatever the LLM
+    produced and re-emitted from the arguments here, in a fixed order. Any
+    other key the LLM invented is kept, in its original order, above ours.
+
+    Two things are preserved rather than discarded. The LLM's own verdict
+    token is re-emitted as ``llm_reported_verdict`` so a reviewer can see
+    what the model said next to what we recorded -- which is the whole
+    audit trail when the two differ (a verdict the strict parser rejected
+    still shows up here). And the body is untouched, including the
+    ``**Verdict**: GREEN.`` sentence the prompt asks for; we never edit the
+    editor's prose.
+
+    ``issue_sha256`` is the SHA-256 of the exact ``issue.json`` bytes the
+    reviewer read. It is always emitted -- ``unknown`` when we never got as
+    far as reading the file -- so a freshness check downstream can compare
+    it against the file on disk and hold when the issue moved underneath
+    the review.
     """
     generated_at = _dt.datetime.now(_dt.timezone.utc).isoformat()
-    base_kvs: dict[str, Any] = {
-        "generated_at": generated_at,
-        "prompt_version": REVIEW_PROMPT_VERSION,
-    }
-    base_kvs.update(extra)
 
-    stripped = markdown.lstrip()
-    if stripped.startswith("```"):
-        # Strip a leading code-fence the LLM sometimes adds around the
-        # whole document, e.g. ```markdown\n...\n```.
-        first_newline = stripped.find("\n")
-        if first_newline != -1:
-            stripped = stripped[first_newline + 1:]
-        if stripped.rstrip().endswith("```"):
-            stripped = stripped.rsplit("```", 1)[0]
+    frontmatter, body, _failure = _split_frontmatter(markdown)
 
-    if stripped.startswith("---"):
-        rest = stripped[3:]
-        # Drop a leading newline so we don't double up on the `---\n` line.
-        if rest.startswith("\n"):
-            rest = rest[1:]
-        end = rest.find("\n---")
-        if end != -1:
-            fm = rest[:end]
-            body = rest[end + len("\n---"):]
-            # Append our keys to the existing block. We deliberately do
-            # NOT inject verdict/one_line/issue_date/issue_shape here --
-            # those came from the LLM's own frontmatter and the avoid-
-            # duplicate-keys cleanliness rule wins. YAML readers tolerate
-            # duplicate keys but humans don't.
-            extras = "\n".join(
-                f"{k}: {_yaml_safe(v)}" for k, v in base_kvs.items()
-            )
-            fm_combined = fm.rstrip() + "\n" + extras + "\n"
-            return f"---\n{fm_combined}---{body}"
-    # No frontmatter detected -- synthesise one using the fallback values.
-    synth: dict[str, Any] = {}
-    if fallback_verdict is not None:
-        synth["verdict"] = fallback_verdict
-    if fallback_one_line is not None:
-        synth["one_line"] = fallback_one_line
+    kept_lines: list[str] = []
+    llm_reported_verdict: str | None = None
+    if frontmatter is not None:
+        for raw_line in frontmatter.split("\n"):
+            line = raw_line.strip()
+            if not line:
+                continue
+            key = line.partition(":")[0].strip().lower() if ":" in line else ""
+            if key == "verdict" and llm_reported_verdict is None:
+                llm_reported_verdict = (
+                    line.partition(":")[2].strip().strip('"').strip("'")
+                )
+            if key in _CODE_AUTHORED_KEYS:
+                continue
+            kept_lines.append(raw_line.rstrip())
+
+    kvs: dict[str, Any] = {"verdict": verdict, "one_line": one_line}
+    if llm_reported_verdict:
+        kvs["llm_reported_verdict"] = llm_reported_verdict
     if issue_date is not None:
-        synth["issue_date"] = issue_date
+        kvs["issue_date"] = issue_date
     if issue_shape:
-        synth["issue_shape"] = issue_shape
-    synth.update(base_kvs)
-    extras = "\n".join(f"{k}: {_yaml_safe(v)}" for k, v in synth.items())
-    return f"---\n{extras}\n---\n\n{markdown}"
+        kvs["issue_shape"] = issue_shape
+    kvs["issue_sha256"] = issue_sha256 or "unknown"
+    kvs["generated_at"] = generated_at
+    kvs["prompt_version"] = REVIEW_PROMPT_VERSION
+    for key, value in extra.items():
+        # Never let caller metadata shadow a key we have already written.
+        # The comparison is case-insensitive because a stray ``Verdict:``
+        # would parse back as a duplicate of our own ``verdict:`` line.
+        if key.strip().lower() in {k.lower() for k in kvs}:
+            continue
+        kvs[key] = value
+
+    code_block = _render_frontmatter(kvs)
+
+    if frontmatter is None:
+        # No readable frontmatter from the LLM -- synthesise the whole block
+        # and leave the model's output as the body, so nothing is lost.
+        return f"---\n{code_block}\n---\n\n{_strip_code_fence(markdown)}"
+
+    kept = "\n".join(kept_lines).strip()
+    combined = f"{kept}\n{code_block}" if kept else code_block
+    return f"---\n{combined}\n---\n{body}"
+
+
+def _render_frontmatter(kvs: dict[str, Any]) -> str:
+    """Render an ordered mapping as YAML ``key: value`` lines."""
+    return "\n".join(f"{k}: {_yaml_safe(v)}" for k, v in kvs.items())
 
 
 def _yaml_safe(value: Any) -> str:
@@ -759,27 +974,38 @@ def _yaml_safe(value: Any) -> str:
 
 
 def _write_unavailable(
-    date: _dt.date, path: Path, reason: str
+    date: _dt.date, path: Path, reason: str, *, issue_sha256: str | None = None,
 ) -> ReviewArtifact:
-    """Write a placeholder review.md when the LLM call could not run.
+    """Write a placeholder review.md when the review could not run.
 
     The publication still ships; Arman just doesn't get a review for the
     day. The file is shaped so downstream parsers see ``verdict:
     unavailable`` in the frontmatter and act accordingly (don't print a
     misleading green).
+
+    The write itself is guarded, and a failure is logged AND re-raised.
+    That is the deliberate difference from the ordinary failure-soft path:
+    if we cannot even record that the review is unavailable, the only
+    trace left on disk would be an absent (or stale, from a previous run)
+    ``review.md``, and either reads as a state nobody chose. An exception
+    reaching the caller is visible; a missing file is not. ``run.py``
+    treats review as advisory and continues regardless.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    generated_at = _dt.datetime.now(_dt.timezone.utc).isoformat()
     one_line = f"unavailable: {reason}"
+    kvs: dict[str, Any] = {
+        "verdict": VERDICT_UNAVAILABLE,
+        "one_line": one_line,
+        "issue_date": date.isoformat(),
+        "issue_shape": "unknown",
+        "issue_sha256": issue_sha256 or "unknown",
+        "generated_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "prompt_version": REVIEW_PROMPT_VERSION,
+        "llm_model": (os.getenv("LLM_MODEL") or "").strip() or "unknown",
+    }
     content = (
         "---\n"
-        f"verdict: unavailable\n"
-        f"one_line: {_yaml_safe(one_line)}\n"
-        f"generated_at: {generated_at}\n"
-        f"prompt_version: {REVIEW_PROMPT_VERSION}\n"
-        f"llm_model: {_yaml_safe((os.getenv('LLM_MODEL') or '').strip() or 'unknown')}\n"
-        f"issue_date: {date.isoformat()}\n"
-        "issue_shape: unknown\n"
+        f"{_render_frontmatter(kvs)}\n"
         "---\n\n"
         f"# Editor's Review -- {date.isoformat()}\n\n"
         f"**Verdict**: UNAVAILABLE.\n\n"
@@ -788,13 +1014,15 @@ def _write_unavailable(
         "read for today. Re-run `aiv review --date "
         f"{date.isoformat()}` once the underlying issue is resolved.\n"
     )
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as fh:
-        fh.write(content)
-        fh.flush()
-        os.fsync(fh.fileno())
-    os.replace(tmp, path)
+    try:
+        _atomic_write_text(path, content)
+    except Exception:
+        _LOG.exception(
+            "review: could not write the unavailable review.md at %s "
+            "(original reason: %s)", path, reason,
+        )
+        raise
     return ReviewArtifact(
-        date=date, verdict="unavailable",
+        date=date, verdict=VERDICT_UNAVAILABLE,
         one_line=one_line, path=path,
     )
