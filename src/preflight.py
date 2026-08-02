@@ -28,7 +28,11 @@ from typing import Callable
 log = logging.getLogger(__name__)
 
 EXPECTED_EMBEDDING_DIM = 768
-EMBEDDING_MODEL_NAME = "BAAI/bge-base-en-v1.5"
+
+# The pipeline loads the embedding model at a pinned revision (cluster.py),
+# so presence must be checked at that same revision: a cache holding only
+# the pinned snapshot has no `main` ref and would fail the default lookup.
+from src.cluster import EMBEDDING_MODEL_NAME, EMBEDDING_MODEL_REVISION  # noqa: E402
 
 
 @dataclass
@@ -67,7 +71,9 @@ def check_embedding_model() -> CheckResult:
     # None if the model is not cached, or a sentinel constant if it's
     # known to be unavailable. We only need presence.
     cached = try_to_load_from_cache(
-        repo_id=EMBEDDING_MODEL_NAME, filename="config.json"
+        repo_id=EMBEDDING_MODEL_NAME,
+        filename="config.json",
+        revision=EMBEDDING_MODEL_REVISION,
     )
     elapsed_ms = int((time.perf_counter() - t0) * 1000)
     if cached is None:
