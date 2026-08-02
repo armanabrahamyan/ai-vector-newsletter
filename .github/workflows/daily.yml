@@ -90,9 +90,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
-          key: hf-models-${{ runner.os }}-${{ hashFiles('src/cluster.py') }}
+          # v2: the v1 key was saved by a run that failed before the models
+          # downloaded, permanently caching an empty dir under that key.
+          key: hf-models-v2-${{ runner.os }}-${{ hashFiles('src/cluster.py') }}
           restore-keys: |
-            hf-models-${{ runner.os }}-
+            hf-models-v2-${{ runner.os }}-
 
       # Stopgap for cross-time dedup: centroid .npz sidecars are gitignored
       # (rebuildable), so a fresh checkout has none and clustering runs
