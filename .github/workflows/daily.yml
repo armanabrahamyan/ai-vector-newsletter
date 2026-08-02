@@ -183,7 +183,10 @@ jobs:
                   raw = review_path.read_text()
                   if raw.startswith("---"):
                       fm = yaml.safe_load(raw[3 : raw.index("---", 3)])
-                      review_line = f"review: {fm.get('verdict', '?')} — {fm.get('one_line', '')}"
+                      review_line = (
+                          f"review: {fm.get('verdict', '?')} — {fm.get('one_line', '')} "
+                          "(full editor's review in the PR comment below)"
+                      )
               except Exception:
                   review_line = "review: unreadable"
 
@@ -210,11 +213,18 @@ jobs:
                   "fresh or uncapped — review with extra care."
               )
 
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          preview = (
+              f"https://raw.githack.com/{repo}/release/{date}-issue-{issue_num}"
+              f"/docs/released/{date}.html"
+          )
           body = "\n".join([
               "## What changes in tomorrow's issue",
               "",
               f"Issue #{issue_num} for {date} (automated nightly build): "
               f"pulse={pulse_count}, {section_counts}.",
+              "",
+              f"**📖 Preview the rendered issue:** {preview}",
               "",
               "Merging this PR publishes it to aivector.day.",
               "",
@@ -264,6 +274,28 @@ jobs:
             --base main --head "${{ steps.ids.outputs.branch }}" \
             --title "chore(release): publish ${{ steps.when.outputs.date }} as #${{ steps.ids.outputs.issue_num }}" \
             --body-file pr_body.md
+
+      # The editor's review is staging-only (gitignored, dies with the
+      # runner), but ratification needs it — post it on the PR in full.
+      - name: Post editor review on PR
+        run: |
+          DATE="${{ steps.when.outputs.date }}"
+          REVIEW="data/staging/${DATE}/review.md"
+          if [ ! -f "$REVIEW" ]; then
+            echo "::warning::No review.md in staging — PR opened without an editor review comment."
+            exit 0
+          fi
+          python - "$REVIEW" <<'PY'
+          import sys
+          from pathlib import Path
+
+          raw = Path(sys.argv[1]).read_text()
+          if raw.startswith("---"):
+              raw = raw[raw.index("---", 3) + 3 :].lstrip()
+          Path("review_comment.md").write_text(raw)
+          PY
+          gh pr comment "${{ steps.ids.outputs.branch }}" \
+            --repo "${{ github.repository }}" --body-file review_comment.md
 
       # A silent overnight failure is unacceptable: preserve the evidence and
       # make noise. Staging artifacts carry the partial pipeline output.
