@@ -1,0 +1,279 @@
+name: Daily publish
+
+# Nightly build-and-release. This workflow NEVER touches main directly and
+# NEVER auto-publishes: it runs the full pipeline, promotes via `aiv release`
+# on a release/<date>-issue-<N> branch, and opens a PR. Merging that PR is
+# the ratification, and — because Pages serves docs/ from main — the publish.
+#
+# Contract notes (docs/internal/DESIGN.md):
+# - Canonical = data/released/ on main. The issue number assigned here is a
+#   proposal; it becomes a commitment at merge. A closed PR burns nothing.
+# - At most one release/ PR may be open at a time (numbering uniqueness).
+# - Never pass --force or --revise on an unattended run.
+
+on:
+  schedule:
+    # 21:00 UTC = 07:00 Sydney (AEST); 08:00 during daylight saving. The
+    # issue date is computed from Sydney wall-clock below, never from the
+    # runner's UTC clock, so only the wake-up hour drifts seasonally.
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: >
+          Issue date, YYYY-MM-DD (Sydney calendar date). Blank = today in
+          Sydney. Use for manual or backfill runs.
+        required: false
+        type: string
+
+permissions:
+  contents: write # push the release branch
+  pull-requests: write # open the release PR
+  issues: write # failure-notification issue
+
+# One release pipeline at a time; a second trigger queues, never preempts a
+# run that may be mid-promote or mid-push.
+concurrency:
+  group: daily-release-pipeline
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+      LLM_ENDPOINT: ${{ vars.LLM_ENDPOINT }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      # Hard requirement: two open release PRs would both derive the same
+      # issue number from main. Applies to ALL triggers — close or merge the
+      # open PR first, then re-run.
+      - name: Abort if a release PR is already open
+        run: |
+          open_pr=$(gh pr list --repo "${{ github.repository }}" --state open \
+            --json number,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("release/"))][0].number // empty')
+          if [ -n "$open_pr" ]; then
+            echo "::error::Release PR #$open_pr is still open. Merge or close it before running (issue-number uniqueness)."
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Resolve issue date (Sydney calendar date)
+        id: when
+        run: |
+          input_date="${{ github.event.inputs.date }}"
+          if [ -n "$input_date" ]; then
+            echo "date=$input_date" >> "$GITHUB_OUTPUT"
+          else
+            echo "date=$(TZ='Australia/Sydney' date +%F)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # Two revision-pinned local models (embeddings + near-dedup verifier),
+      # ~900MB combined. Keyed on src/cluster.py, which carries both pins.
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-${{ runner.os }}-${{ hashFiles('src/cluster.py') }}
+          restore-keys: |
+            hf-models-${{ runner.os }}-
+
+      # Stopgap for cross-time dedup: centroid .npz sidecars are gitignored
+      # (rebuildable), so a fresh checkout has none and clustering runs
+      # cross-time-blind. The cache carries them run-to-run; the PR body
+      # reports visibility so a cache miss is never silent. Proper fix
+      # (rebuild from tracked files) is tracked with the retrieval-engineer.
+      - name: Cache released centroids
+        uses: actions/cache@v4
+        with:
+          path: data/released/*/embeddings
+          key: released-embeddings-${{ github.run_id }}
+          restore-keys: |
+            released-embeddings-
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Run staging pipeline
+        run: aiv run --date "${{ steps.when.outputs.date }}"
+
+      - name: Release (promote staging to canonical on this runner)
+        run: aiv release --date "${{ steps.when.outputs.date }}"
+
+      - name: Derive issue number and branch name
+        id: ids
+        run: |
+          DATE="${{ steps.when.outputs.date }}"
+          ISSUE_NUM=$(python -c "import json; print(json.load(open('data/released/${DATE}/issue.json'))['issue_number'])")
+          echo "issue_num=$ISSUE_NUM" >> "$GITHUB_OUTPUT"
+          echo "branch=release/${DATE}-issue-${ISSUE_NUM}" >> "$GITHUB_OUTPUT"
+
+      - name: Build PR body
+        env:
+          DATE: ${{ steps.when.outputs.date }}
+          ISSUE_NUM: ${{ steps.ids.outputs.issue_num }}
+        run: |
+          python <<'PY'
+          import datetime as dt
+          import json
+          import os
+          from pathlib import Path
+
+          date = os.environ["DATE"]
+          issue_num = os.environ["ISSUE_NUM"]
+
+          issue = json.loads(Path(f"data/released/{date}/issue.json").read_text())
+          sections = issue.get("sections") or []
+          section_counts = ", ".join(
+              f"{s.get('name', '?')}={len(s.get('stories') or [])}" for s in sections
+          )
+          pulse_count = len((issue.get("pulse") or {}).get("stories") or [])
+
+          verify_line = "verify: not available"
+          verify_path = Path(f"data/released/{date}/verify.json")
+          if verify_path.exists():
+              try:
+                  v = json.loads(verify_path.read_text())
+                  verify_line = f"verify: {v.get('verdict', '?')} ({v.get('verdict_counts', {})})"
+              except Exception:
+                  verify_line = "verify: unreadable"
+
+          review_line = "review: not available"
+          review_path = Path(f"data/staging/{date}/review.md")
+          if review_path.exists():
+              try:
+                  import yaml
+                  raw = review_path.read_text()
+                  if raw.startswith("---"):
+                      fm = yaml.safe_load(raw[3 : raw.index("---", 3)])
+                      review_line = f"review: {fm.get('verdict', '?')} — {fm.get('one_line', '')}"
+              except Exception:
+                  review_line = "review: unreadable"
+
+          # Cross-time dedup visibility: which prior released issues in the
+          # 14-day window had centroids on this runner when clustering ran.
+          run_day = dt.date.fromisoformat(date)
+          window = []
+          for p in sorted(Path("data/released").iterdir()):
+              try:
+                  d = dt.date.fromisoformat(p.name)
+              except ValueError:
+                  continue
+              if dt.timedelta(0) < run_day - d <= dt.timedelta(days=14):
+                  window.append(p)
+          visible = sum(1 for p in window if (p / "embeddings" / "centroids.npz").exists())
+          if not window:
+              dedup_line = "cross-time dedup: no released issues in the 14-day window."
+          elif visible == len(window):
+              dedup_line = f"cross-time dedup: fully sighted ({visible}/{len(window)} prior issues had centroids)."
+          else:
+              dedup_line = (
+                  f"⚠️ cross-time dedup ran PARTIALLY BLIND: {visible}/{len(window)} prior "
+                  "issues had centroids on the runner. Continuation stories may appear "
+                  "fresh or uncapped — review with extra care."
+              )
+
+          body = "\n".join([
+              "## What changes in tomorrow's issue",
+              "",
+              f"Issue #{issue_num} for {date} (automated nightly build): "
+              f"pulse={pulse_count}, {section_counts}.",
+              "",
+              "Merging this PR publishes it to aivector.day.",
+              "",
+              "## How we know it's better",
+              "",
+              "Routine nightly run — no prompt/model change, so no eval gate applies.",
+              "Evidence this run produced a publishable issue:",
+              "",
+              "- `aiv release` staging-integrity gate passed (release_promote refuses otherwise).",
+              f"- {verify_line}",
+              f"- {review_line}",
+              f"- {dedup_line}",
+              "",
+              "## If it's wrong",
+              "",
+              "Don't merge — the previous issue stays live on aivector.day; close the",
+              f"PR and nothing is burned. If already merged: `aiv unrelease --date {date}`",
+              "on a branch cut from main, then revert this PR's commit.",
+          ])
+          Path("pr_body.md").write_text(body + "\n")
+          PY
+
+      - name: Commit release branch
+        run: |
+          DATE="${{ steps.when.outputs.date }}"
+          ISSUE_NUM="${{ steps.ids.outputs.issue_num }}"
+          BRANCH="${{ steps.ids.outputs.branch }}"
+          if find "data/released/${DATE}" -name '*.tmp' | grep -q .; then
+            echo "::error::Stale .tmp file in data/released/${DATE} — atomic write did not complete."
+            exit 1
+          fi
+          git config user.name "aivector-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add -- "data/released/${DATE}" data/published_urls.txt \
+            data/metrics_log.jsonl docs/index.html "docs/released/${DATE}.html"
+          if git diff --cached --quiet; then
+            echo "::error::Nothing to commit — release produced no file changes."
+            exit 1
+          fi
+          git commit -m "chore(release): publish ${DATE} as #${ISSUE_NUM}"
+          git push origin "$BRANCH"
+
+      - name: Open release PR
+        run: |
+          gh pr create --repo "${{ github.repository }}" \
+            --base main --head "${{ steps.ids.outputs.branch }}" \
+            --title "chore(release): publish ${{ steps.when.outputs.date }} as #${{ steps.ids.outputs.issue_num }}" \
+            --body-file pr_body.md
+
+      # A silent overnight failure is unacceptable: preserve the evidence and
+      # make noise. Staging artifacts carry the partial pipeline output.
+      - name: Upload staging artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-${{ steps.when.outputs.date || 'unknown-date' }}
+          path: |
+            docs/staging/
+            data/staging/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING=$(gh issue list --repo "${{ github.repository }}" --state open \
+            --search "Daily pipeline failure in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --repo "${{ github.repository }}" \
+              --body "Another nightly run failed: $RUN_URL"
+          else
+            NEW_URL=$(gh issue create --repo "${{ github.repository }}" \
+              --title "Daily pipeline failure" \
+              --body "The nightly AI Vector publish workflow failed.
+
+          Run: $RUN_URL
+          Staging artifacts (if any) are attached to the run for 7 days.
+
+          No reader-facing outage: the previous issue stays live on aivector.day until a run succeeds.")
+            gh issue pin "$NEW_URL" --repo "${{ github.repository }}" || true
+          fi
