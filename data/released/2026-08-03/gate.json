@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "gate_version": "v2",
+  "phase": "shadow",
+  "date": "2026-08-03",
+  "decision": "hold",
+  "hold_reasons": [
+    "hold:review-verdict-red",
+    "hold:contradicted-claim"
+  ],
+  "review": {
+    "schema_version": 1,
+    "present": true,
+    "verdict": "red",
+    "issue_sha256": "cc89c42d95aa82490f50cc6b1318ecccff0a2d3ce96517aeae304bf0ecda477b",
+    "computed_issue_sha256": "cc89c42d95aa82490f50cc6b1318ecccff0a2d3ce96517aeae304bf0ecda477b",
+    "fresh": true,
+    "prompt_version": "v1.0",
+    "path": "data/staging/2026-08-03/review.json"
+  },
+  "verify": {
+    "schema_version": 1,
+    "present": true,
+    "verdict": "flagged",
+    "stories_verified": 10,
+    "contradicted_story_ids": [
+      "c_951225ac6251bd9c"
+    ],
+    "unsupported_story_ids": [
+      "c_951225ac6251bd9c",
+      "c_e779af306d834c95"
+    ],
+    "path": "data/staging/2026-08-03/verify.json"
+  },
+  "checks": [
+    {
+      "schema_version": 1,
+      "name": "issue_readable",
+      "passed": true,
+      "blocking": true,
+      "detail": "issue.json validates (10 stories)",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "review_present",
+      "passed": true,
+      "blocking": true,
+      "detail": "review.json found at data/staging/2026-08-03/review.json",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "review_verdict",
+      "passed": false,
+      "blocking": true,
+      "detail": "review verdict 'red' is not accepted in phase 'shadow' (accepted: amber, green)",
+      "hold_reason": "hold:review-verdict-red"
+    },
+    {
+      "schema_version": 1,
+      "name": "review_freshness",
+      "passed": true,
+      "blocking": true,
+      "detail": "review matches current issue.json (cc89c42d95aa...)",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "verify_readable",
+      "passed": true,
+      "blocking": true,
+      "detail": "verify.json parsed (verdict='flagged')",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "verify_available",
+      "passed": true,
+      "blocking": true,
+      "detail": "verify ran (verdict='flagged')",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "no_contradicted_claims",
+      "passed": false,
+      "blocking": true,
+      "detail": "1 story/stories carry a contradicted claim: c_951225ac6251bd9c",
+      "hold_reason": "hold:contradicted-claim"
+    },
+    {
+      "schema_version": 1,
+      "name": "verify_no_unsupported",
+      "passed": false,
+      "blocking": false,
+      "detail": "2 story/stories carry an unsupported claim (advisory, not blocking): c_951225ac6251bd9c, c_e779af306d834c95",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "revision_status",
+      "passed": true,
+      "blocking": false,
+      "detail": "1 revision cycle(s), 0 applied / 4 rejected / 4 proposed (shadow)",
+      "hold_reason": null
+    }
+  ],
+  "decided_at": "2026-08-02T21:33:48.701430Z",
+  "note": ""
+}
