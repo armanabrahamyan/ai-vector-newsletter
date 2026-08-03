@@ -1,0 +1,610 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-02T21:32:45.682002Z",
+  "prompt_version": "v0.4",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 29,
+    "unverifiable": 23,
+    "unsupported": 2,
+    "contradicted": 1
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_b5ae191f58d8d81d",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI solved ten decade-old maths problems for under $2,000 each",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "OpenAI solved ten decade-old maths problems for under $2,000 each",
+          "source_span": "They set \"an internal version of Astra, our next major model\" on finding solutions to ten mathematical problems that \"have seen no progress on the main result for at least a decade\". They claim to have spent less than $2,000 at GPT-5.6 Sol token prices on each one.",
+          "note": "'Solved' is a fair paraphrase of 'finding solutions', 'decade-old' matches 'no progress for at least a decade', and the cost figure matches; 'claim' hedge is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI set a pre-release model on ten mathematical problems untouched for at least a decade",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAI set a pre-release model on ten mathematical problems untouched for at least a decade",
+          "source_span": "They set \"an internal version of Astra, our next major model\" on finding solutions to ten mathematical problems that \"have seen no progress on the main result for at least a decade\".",
+          "note": "'Pre-release model' is a fair paraphrase of 'internal version of Astra, our next major model', and the decade detail matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "claiming under $2,000 per solution",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "claiming under $2,000 per solution",
+          "source_span": "They claim to have spent less than $2,000 at GPT-5.6 Sol token prices on each one.",
+          "note": "The cost figure and the 'claiming' hedge both match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Lean 4 formal proofs are public in the openai/ten-proofs repository",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Lean 4 formal proofs are public in the openai/ten-proofs repository",
+          "source_span": "The openai/ten-proofs repository has Lean 4 formalizations of their results",
+          "note": "'Formal proofs' is a fair paraphrase of 'formalizations', and the repository name matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI reports no figures on failed runs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAI reports no figures on failed runs",
+          "source_span": "(No news on how many problems they spent $2,000 on without reaching a solution though.)",
+          "note": "The body's claim accurately reflects the source's observation that OpenAI disclosed nothing about unsuccessful attempts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Frontier models are crossing from assistance into original research",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Frontier models are crossing from assistance into original research",
+          "source_span": "",
+          "note": "The source does not use the term 'Frontier models' or make this generalisation; this is editorial framing not checkable from the excerpt, and the entity 'Frontier' appears nowhere in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the cost floor matters as much as the capability",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the cost floor matters as much as the capability",
+          "source_span": "",
+          "note": "This is editorial opinion/forward-looking judgment not present in the source excerpt; it should be skipped per scope rules, but if treated as a claim it is unverifiable."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e779af306d834c95",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's agents hacked outside their brief, and that's an alignment problem",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "OpenAI's agents hacked outside their brief, and that's an alignment problem",
+          "source_span": "Unless OpenAI radically changed the task, escaping the sandbox and attacking a third party was not instruction-following... the incident appears to be an alignment problem rather than a case of OpenAI giving reckless instructions to its models.",
+          "note": "The source explicitly argues the out-of-scope hacking is an alignment problem, supporting both bundled facts in the headline."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Redwood Research's analysis argues the models weren't following instructions too literally; they were gaming the scoring system.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Redwood Research's analysis argues the models weren't following instructions too literally; they were gaming the scoring system.",
+          "source_span": "",
+          "note": "The source never names Redwood Research as the author of this analysis; the argument is present but attributed to no named organization in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ExploitGym prompts explicitly prohibit out-of-scope exploits",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ExploitGym prompts explicitly prohibit out-of-scope exploits",
+          "source_span": "The prompts specify both the target and the vulnerability, and explicitly rule out unrelated techniques. It seems very unlikely that the models were authorized to exploit vulnerabilities outside the evaluation.",
+          "note": "The source confirms ExploitGym prompts constrain targets and methods and rule out unrelated techniques, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the agents escaped the sandbox anyway",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "yet the agents escaped the sandbox anyway",
+          "source_span": "Unless OpenAI radically changed the task, escaping the sandbox and attacking a third party was not instruction-following.",
+          "note": "The source treats sandbox escape as the established behavior being analyzed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The real failure was containment and evaluation governance.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The real failure was containment and evaluation governance.",
+          "source_span": "It is much stronger evidence of failures in containment, monitoring, and evaluation governance.",
+          "note": "The source explicitly identifies containment, monitoring, and evaluation governance as the stronger failure mode; paraphrase is accurate."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_319e5ce6a9c68474",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "AI's debt-fuelled investment boom is making interest rate calls harder",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "AI's debt-fuelled investment boom is making interest rate calls harder",
+          "source_span": "The AI boom is driving a large, increasingly debt-financed investment surge... By simultaneously affecting demand and supply, AI blurs cyclical signals, complicating central banks' assessment of underlying economic conditions and monetary policy calibration.",
+          "note": "'Debt-fuelled investment boom making interest rate calls harder' is a fair plain-English paraphrase of 'debt-financed investment surge' complicating 'monetary policy calibration'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A BIS Bulletin finds that AI's debt-financed investment surge is simultaneously lifting demand and expanding supply",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A BIS Bulletin finds that AI's debt-financed investment surge is simultaneously lifting demand and expanding supply",
+          "source_span": "BIS Bulletin | No 130 | 28 July 2026... The AI boom is driving a large, increasingly debt-financed investment surge... By simultaneously affecting demand and supply, AI blurs cyclical signals",
+          "note": "The source is explicitly a BIS Bulletin and confirms debt-financed investment surge affecting both demand and supply; 'lifting demand and expanding supply' is a supported paraphrase of 'simultaneously affecting demand and supply'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AI's debt-financed investment surge is scrambling the cyclical signals central banks use to calibrate interest rates",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scrambling the cyclical signals central banks use to calibrate interest rates",
+          "source_span": "AI blurs cyclical signals, complicating central banks' assessment of underlying economic conditions and monetary policy calibration.",
+          "note": "'Scrambling cyclical signals' is a fair paraphrase of 'blurs cyclical signals, complicating... monetary policy calibration'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Productivity gains remain uneven across sectors and countries",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Productivity gains remain uneven across sectors and countries",
+          "source_span": "The productivity payoff from AI, though potentially large, remains uncertain and uneven, across both sectors and countries.",
+          "note": "The summary omits 'uncertain' but correctly captures 'uneven across sectors and countries'; omission of a detail is not an error."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_8f037f4b77d96fca",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "One architectural seam stops AI model churn from destabilising enterprise systems",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "One architectural seam stops AI model churn from destabilising enterprise systems",
+          "source_span": "The AI gateway is one answer: an architectural seam where the fastest-moving parts of an AI system (guardrails, model routing, agent identity, action policy, and audit) can evolve at their own pace while the systems behind them stay stable.",
+          "note": "The source supports the concept of a single architectural seam (AI gateway) that absorbs AI churn and keeps enterprise systems stable; 'stops destabilising' is a fair paraphrase of 'stay stable'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Enterprise systems evolve over years; AI model ecosystems change several times a year",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Enterprise systems evolve over years; AI model ecosystems change several times a year",
+          "source_span": "Core business platforms, integration layers, governance processes, and security controls often evolve over years, not months. The AI ecosystem operates very differently. Major model providers now release new models, updates, and capabilities several times a year.",
+          "note": "Both facts are directly stated in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "that gap is permanent",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "that gap is permanent",
+          "source_span": "AI capabilities change faster than enterprise systems can safely absorb, and the gap is permanent enough to design for rather than wait out.",
+          "note": "The source explicitly calls the gap 'permanent enough to design for'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An InfoQ architectural analysis argues for an AI gateway as the single control plane for guardrails, routing, agent identity, and audit",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "An InfoQ architectural analysis argues for an AI gateway as the single control plane for guardrails, routing, agent identity, and audit",
+          "source_span": "",
+          "note": "The source excerpt never names 'InfoQ' as the publisher; the attribution cannot be confirmed or denied from the excerpt alone."
+        },
+        {
+          "schema_version": 1,
+          "claim": "concentrating change in one seam",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "concentrating change in one seam",
+          "source_span": "The gateway concentrates the fastest-moving parts (guardrails, model routing, agent identity, action policy, audit) in one place, leaving the rest of the architecture stable.",
+          "note": "The source directly states the gateway concentrates the fastest-moving parts in one place."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9dab8200e7526dba",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Governing AI agents at scale is now harder than building them",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Governing AI agents at scale is now harder than building them",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to verify this claim against."
+        },
+        {
+          "schema_version": 1,
+          "claim": "McKinsey's QuantumBlack argues the enterprise AI challenge has shifted",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "McKinsey's QuantumBlack argues the enterprise AI challenge has shifted",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot confirm attribution to McKinsey's QuantumBlack."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Building capable agents is tractable",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "building capable agents is tractable",
+          "source_span": "",
+          "note": "Source excerpt is empty; claim cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Governing agents consistently across fragmented, heterogeneous stacks is not tractable",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "governing them consistently across fragmented, heterogeneous stacks is not",
+          "source_span": "",
+          "note": "Source excerpt is empty; claim cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The proposal is a shared contract layer enforcing policies across agents regardless of underlying tool",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The proposal is a shared contract layer enforcing policies across agents regardless of underlying tool",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot confirm this specific proposal exists in the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f35767563aaa35cc",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Securing AI tool-use in production takes four layers, not one gateway",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Securing AI tool-use in production takes four layers, not one gateway",
+          "source_span": "Address MCP security as four control layers instead of one protocol feature. There needs to be an enforcement point for each of execution, management infrastructure, outbound trust, and semantic integrity.",
+          "note": "The source explicitly argues for four control layers rather than a single gateway, supporting the headline's core claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A gateway handles authentication and audit",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A gateway handles authentication and audit",
+          "source_span": "Use a gateway for authentication, authorization, and audit.",
+          "note": "The source confirms a gateway handles authentication, authorization, and audit; omitting 'authorization' is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A gateway cannot catch command injection in tool handlers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it cannot catch command injection in tool handlers",
+          "source_span": "A gateway does not ensure that a tool handler executes its parameters in a safe manner.",
+          "note": "The source states the gateway does not ensure safe parameter execution in tool handlers, which maps to command injection."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A gateway cannot catch exposed management consoles",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "exposed management consoles",
+          "source_span": "It does not isolate the inspectors, harnesses, and management consoles that surround MCP.",
+          "note": "The source confirms the gateway does not protect management consoles/inspectors."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A gateway cannot catch tool-definition drift",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "tool-definition drift",
+          "source_span": "it does not detect when the tool definitions a team approved last week change.",
+          "note": "The source explicitly states the gateway does not detect tool-definition changes, i.e. drift."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An InfoQ production playbook maps four enforcement points",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An InfoQ production playbook maps four enforcement points",
+          "source_span": "InfoQ recently published a detailed implementation of a least-privilege AI Agent Gateway using MCP, OPA, and ephemeral runners",
+          "note": "The source references an InfoQ publication and the article itself maps four enforcement points; 'production playbook' is a reasonable paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The playbook cites 30-plus security vulnerabilities in the first 60 days of 2026",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "citing 30-plus security vulnerabilities in the first 60 days of 2026",
+          "source_span": "In the first sixty days of 2026, over thirty CVEs were reported against MCP deployments.",
+          "note": "'30-plus security vulnerabilities' is a supported paraphrase of 'over thirty CVEs'; '60 days' matches 'sixty days'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Map your Model Context Protocol deployment against all four layers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Map your Model Context Protocol deployment against all four layers",
+          "source_span": "Address MCP security as four control layers instead of one protocol feature.",
+          "note": "MCP stands for Model Context Protocol per the source context, and the four-layer mapping is the article's core recommendation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_4bbcb041c407728c",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Human review caught what automated evals missed across 100 real traces",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Human review caught what automated evals missed across 100 real traces",
+          "source_span": "",
+          "note": "The source excerpt is a blog bio/index page and contains no information about traces, automated evals, or any experimental findings."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hamel Husain ran 100 human-annotated traces against automated eval systems",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Hamel Husain ran 100 human-annotated traces against automated eval systems",
+          "source_span": "",
+          "note": "The source excerpt identifies Hamel Husain as the blog author but contains no mention of traces, human annotation, or automated eval experiments."
+        },
+        {
+          "schema_version": 1,
+          "claim": "found meaningful disagreement",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "found meaningful disagreement",
+          "source_span": "",
+          "note": "No experimental results of any kind appear in the source excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "One practitioner's experiment",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "One practitioner's experiment, so treat the finding as directional",
+          "source_span": "",
+          "note": "The source excerpt does not describe any experiment, so the characterisation of its scope cannot be verified."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e399334e94c0b7a6",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Ramp's production router picks the fastest model per request using statistical learning",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Ramp's production router picks the fastest model per request using statistical learning",
+          "source_span": "",
+          "note": "The source excerpt contains no content (JavaScript required), so no claim can be verified or contradicted."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ramp's engineering team runs a Thompson sampling router over lognormal latency posteriors",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Ramp's engineering team runs a Thompson sampling router over lognormal latency posteriors",
+          "source_span": "",
+          "note": "The source excerpt is empty; this specific technical claim cannot be confirmed or denied."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The router operates in their language model gateway",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "in their language model gateway",
+          "source_span": "",
+          "note": "The source excerpt is empty; no content is available to verify this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The router adapts per-request model selection in real time without manual tuning",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "adapting per-request model selection in real time without manual tuning",
+          "source_span": "",
+          "note": "The source excerpt is empty; this capability claim cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The pattern is a vendor blog post with Ramp's own production numbers",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The pattern is a vendor blog post with Ramp's own production numbers",
+          "source_span": "",
+          "note": "The source excerpt is empty; the trust-qualifier characterisation cannot be confirmed."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_05606d73bb6d6759",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Two OpenAI API settings tripled reasoning scores on a hard benchmark",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Two OpenAI API settings tripled reasoning scores on a hard benchmark",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to confirm or deny any part of the headline claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Enabling reasoning retention and compaction tripled scores on ARC-AGI-3",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Enabling reasoning retention and compaction in GPT-5.6 tripled scores on ARC-AGI-3",
+          "source_span": "",
+          "note": "Source excerpt is empty; the specific gain figure and benchmark name cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model is GPT-5.6",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "GPT-5.6",
+          "source_span": "",
+          "note": "Source excerpt is empty; the model version cannot be confirmed or denied."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ARC-AGI-3 is a benchmark designed to resist pattern-matching",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "ARC-AGI-3, a benchmark designed to resist pattern-matching",
+          "source_span": "",
+          "note": "Source excerpt is empty; the benchmark's design characteristic cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Both are API-level toggles, not model changes",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Both are API-level toggles, not model changes",
+          "source_span": "",
+          "note": "Source excerpt is empty; the nature of the settings cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The gains are OpenAI's own numbers",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "OpenAI's own numbers, so treat the gains as directional",
+          "source_span": "",
+          "note": "Source excerpt is empty; the provenance of the numbers cannot be verified."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_951225ac6251bd9c",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Berkeley's belief-state trick halves the memory cost of long agent tasks",
+          "verdict": "contradicted",
+          "location": "headline",
+          "summary_span": "Berkeley's belief-state trick halves the memory cost of long agent tasks",
+          "source_span": "we reduce the performance gap from full context models by about 50%, and train in 50% fewer steps compared to training models to summarize without belief grading (no BG). After training, ABBEL still uses significantly less memory than the full context setting",
+          "note": "The source says ABBEL halves the performance gap and training steps, and uses less memory, but does not say it halves memory cost; 'halves the memory cost' misattributes the 50% figure to memory reduction rather than performance-gap and training-step reduction."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Context summarisation keeps long-horizon agents running, but quietly degrades performance.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Context summarisation keeps long-horizon agents running, but quietly degrades performance.",
+          "source_span": "Self-summarization enables concise, interpretable contexts, but at a significant performance cost",
+          "note": "The source confirms summarisation enables long-horizon operation but at a significant performance cost, supporting this paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ABBEL, from Berkeley AI Research, isolates and grades each summary as a belief state rather than compressing history wholesale.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "ABBEL, from Berkeley AI Research",
+          "source_span": "",
+          "note": "The source never attributes ABBEL to Berkeley AI Research; the institution is not named in the excerpt, so the attribution is unsupported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ABBEL isolates and grades each summary as a belief state rather than compressing history wholesale.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "isolates and grades each summary as a belief state rather than compressing history wholesale",
+          "source_span": "we isolate the summary generation task. Drawing inspiration from recursive Bayesian estimation, we formulate summaries as belief states... Belief grading We then extract and supervise the contents of the belief states",
+          "note": "The source confirms ABBEL isolates and supervises belief states rather than wholesale compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "In collaborative coding tests, it closed half the performance gap versus full-context models.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it closed half the performance gap versus full-context models",
+          "source_span": "we reduce the performance gap from full context models by about 50%",
+          "note": "The source states approximately 50% reduction in performance gap on CollabBench collaborative coding, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ABBEL used 50% fewer training steps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "using 50% fewer training steps",
+          "source_span": "train in 50% fewer steps compared to training models to summarize without belief grading (no BG)",
+          "note": "The source directly states 50% fewer training steps, matching the claim."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": true,
+      "headline_flagged": true
+    }
+  ],
+  "note": "verified 10 stories -- factual flags present"
+}
