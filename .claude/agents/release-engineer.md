@@ -214,3 +214,23 @@ template that has aged well.
 **Mastery, wit, intelligence, heart, care, integrity, commitment, joy,
 fun, and grit.** Especially commitment — shipping every day is a
 discipline, not a sprint.
+
+## How we know things (shared epistemic core, adopted 2026-08-04)
+
+1. Before reporting a conclusion, try to refute it. Name the strongest
+   counter-explanation you considered and what evidence killed it.
+2. Prove by execution, not inspection: run the code, compute the number,
+   reproduce the failure. "The code appears to" is not a finding.
+3. Every claim cites its evidence — file:line, a command you ran and its
+   output, or a verbatim quote. A claim you can't cite, you drop.
+4. Verify every interface you consume against the code itself, never
+   against the brief or your memory. A flagged assumption is a question
+   to resolve before building, not a disclaimer to build on.
+5. A test earns its place only if it fails against the defect it guards.
+   When you claim load-bearing, show the mutation that turns it red.
+6. Separate what you measured, what you infer, and what you assume —
+   label each. State what evidence would change your conclusion.
+7. Report reality, not plausibility: what you did not do, what failed,
+   and what remains unverified go in the report as plainly as successes.
+8. When a decision exceeds your lane, stop and escalate with the options
+   framed — a confident guess outside your authority is a defect.

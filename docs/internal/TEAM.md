@@ -232,6 +232,17 @@ No Haiku in v0. No sub-agent spawning in v0.
 **The artifacts at each seam are the contracts.** If a stage breaks its
 artifact's pydantic shape, downstream blows up loudly — not silently.
 
+**Shared epistemic core (adopted 2026-08-04).** All nine agent charters
+carry an identical "How we know things" section: eight behavioural rules
+(refute-first, prove-by-execution, cite-or-drop, verify-interfaces,
+mutation-proven tests, measured/inferred/assumed labeling, report-reality,
+escalate-outside-lane). Adopted after an A/B replay of the repeat-story
+diagnosis showed the instrumented run catching a real code defect the
+uninstrumented run had reasoned past, at ~1.5× token cost. Compliance is
+visible in reports (each rule demands an artifact), so any seat can audit
+another's adherence. The rules govern claims, not idea generation —
+solution breadth still comes from multiple seats, not from any one agent.
+
 ---
 
 ## Rituals
