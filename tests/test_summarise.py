@@ -40,6 +40,8 @@ from src.summarise import (
     DEFAULT_CURRENTS_MAX_STORIES,
     DEFAULT_PER_SOURCE_PER_SECTION,
     EditorialConfig,
+    HEAD_TIER_MIN_HANDS_ON,
+    HEAD_TIER_SUMMARISE_BUDGET,
     PULSE_ELIGIBILITY_TRUST_FLOOR,
     _assemble_sections,
     _build_summary_prompt,
@@ -52,6 +54,7 @@ from src.summarise import (
     _pick_source_urls,
     _pulse_eligibility,
     _reconcile_signal_with_audience_tags,
+    _select_head_candidates,
     _url_dedup_key,
 )
 from tests.conftest import FIXED_EARLIER, FIXED_NOW
@@ -1838,6 +1841,137 @@ class TestSectionScoreOrdering:
             items_by_id=items_by_id,
         )
         assert pulse_id == story_a.cluster_id
+
+
+# ===========================================================================
+# _select_head_candidates -- hands_on minimum-guarantee (2026-08-04).
+#
+# Regression: a big_picture-heavy day crowded out all hands_on stories
+# from the top-12 head budget, leaving _pick_hands_on with a pool of 1
+# (publish gate requires >= 3). The fix reserves HEAD_TIER_MIN_HANDS_ON
+# slots for hands_on stories before filling the rest of the budget.
+# ===========================================================================
+
+
+class TestSelectHeadCandidates:
+    """_select_head_candidates guarantees that at least HEAD_TIER_MIN_HANDS_ON
+    hands_on stories are included in the head budget even when
+    big_picture-tier stories outscore them in the merged pool."""
+
+    def _make_bp(self, idx: int, bp_rel: int = 90) -> RankedStory:
+        """High big_picture score, low hands_on_utility."""
+        cluster_id = f"c_bb{idx:010x}"
+        return _ranked_with_section_scores(
+            cluster_id,
+            breakdown={
+                "significance": 70,
+                "hands_on_utility": 10,
+                "big_picture_relevance": bp_rel,
+                "financial_services_impact": 30,
+                "freshness_momentum": 50,
+            },
+            tier="big_picture",
+            audience_tags=["big_picture"],
+        )
+
+    def _make_ho(self, idx: int, ho_util: int = 80) -> RankedStory:
+        """High hands_on_utility score, lower big_picture_relevance."""
+        cluster_id = f"c_aa{idx:010x}"
+        return _ranked_with_section_scores(
+            cluster_id,
+            breakdown={
+                "significance": 40,
+                "hands_on_utility": ho_util,
+                "big_picture_relevance": 15,
+                "financial_services_impact": 20,
+                "freshness_momentum": 50,
+            },
+            tier="hands_on",
+            audience_tags=["hands_on"],
+        )
+
+    def test_bp_heavy_day_still_includes_min_hands_on(self) -> None:
+        """Regression (2026-08-04 incident): 12 big_picture stories all
+        outscore 3 hands_on stories in the merged pool. Without the min-
+        guarantee the top-12 slice would contain 0 hands_on stories.
+        With it, the top 3 hands_on stories must appear in head_top."""
+        bp_stories = [self._make_bp(i) for i in range(12)]
+        ho_stories = [self._make_ho(i) for i in range(3)]
+        ranked = bp_stories + ho_stories
+
+        result = _select_head_candidates(ranked)
+
+        result_ids = {r.cluster_id for r in result}
+        for ho in ho_stories:
+            assert ho.cluster_id in result_ids, (
+                f"hands_on story {ho.cluster_id} missing from head candidates "
+                f"-- min-guarantee not enforced"
+            )
+
+    def test_total_does_not_exceed_budget(self) -> None:
+        """Total selected never exceeds HEAD_TIER_SUMMARISE_BUDGET."""
+        bp_stories = [self._make_bp(i) for i in range(20)]
+        ho_stories = [self._make_ho(i) for i in range(10)]
+        ranked = bp_stories + ho_stories
+
+        result = _select_head_candidates(ranked)
+
+        assert len(result) <= HEAD_TIER_SUMMARISE_BUDGET
+
+    def test_fewer_ho_than_minimum_uses_all_available(self) -> None:
+        """When the ranked pool has fewer than HEAD_TIER_MIN_HANDS_ON
+        hands_on stories, all available are included (no padding, no
+        error)."""
+        bp_stories = [self._make_bp(i) for i in range(10)]
+        ho_stories = [self._make_ho(0)]  # only 1, min is 3
+        ranked = bp_stories + ho_stories
+
+        result = _select_head_candidates(ranked)
+
+        assert any(r.cluster_id == ho_stories[0].cluster_id for r in result)
+
+    def test_top_ho_by_section_score_reserved(self) -> None:
+        """The reserved hands_on slots are filled by the highest hands_on
+        section scores, not by the aggregate score."""
+        ho_high_util = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaf01",
+            breakdown={
+                "significance": 30,
+                "hands_on_utility": 95,
+                "big_picture_relevance": 10,
+                "financial_services_impact": 10,
+                "freshness_momentum": 40,
+            },
+            tier="hands_on",
+            audience_tags=["hands_on"],
+        )
+        ho_low_util = _ranked_with_section_scores(
+            "c_aaaaaaaaaaaf02",
+            breakdown={
+                "significance": 75,
+                "hands_on_utility": 20,
+                "big_picture_relevance": 60,
+                "financial_services_impact": 50,
+                "freshness_momentum": 70,
+            },
+            tier="hands_on",
+            audience_tags=["hands_on"],
+        )
+        # ho_low_util has a much higher aggregate score but lower hands_on sbs.
+        assert ho_high_util.score < ho_low_util.score
+        assert (
+            ho_high_util.score_by_section["hands_on"]  # type: ignore[index]
+            > ho_low_util.score_by_section["hands_on"]  # type: ignore[index]
+        )
+        # Add enough big_picture stories to fill the budget without ho.
+        bp_stories = [self._make_bp(i) for i in range(12)]
+        ranked = bp_stories + [ho_high_util, ho_low_util]
+
+        result = _select_head_candidates(ranked)
+
+        result_ids = [r.cluster_id for r in result]
+        assert ho_high_util.cluster_id in result_ids
+        assert ho_low_util.cluster_id in result_ids
 
 
 # ===========================================================================

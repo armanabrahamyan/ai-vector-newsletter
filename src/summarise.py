@@ -406,6 +406,19 @@ honours tier as a hard boundary, so the upstream summarise budget must
 honour it too -- otherwise a head-tier-heavy day starves the radar pool
 even though radar candidates exist in `ranked.jsonl`."""
 
+HEAD_TIER_MIN_HANDS_ON = 3
+"""Minimum ``hands_on`` stories guaranteed a slot in the head-tier summarise
+budget (``HEAD_TIER_SUMMARISE_BUDGET``). Matches the publish-gate floor
+(``check_integrity`` requires ``hands_on >= 3``). Without this guarantee a
+big_picture-heavy day can crowd out all hands_on candidates in the top-12
+slice, leaving the picker with an empty tier pool and triggering an
+integrity failure even when ranked.jsonl holds sufficient hands_on rows.
+
+Implementation: the top ``HEAD_TIER_MIN_HANDS_ON`` hands_on stories (sorted
+by their hands_on section score) are always included in ``head_top``; the
+remaining ``HEAD_TIER_SUMMARISE_BUDGET - len(reserved)`` slots are filled
+from the rest of the merged pool, still sorted by per-tier section score."""
+
 CURRENTS_TIER_SUMMARISE_BUDGET = 8
 """How many ``currents`` tier stories to summarise. Phase 2 (2026-05-30):
 renamed from ``RADAR_TIER_SUMMARISE_BUDGET`` in lockstep with the section
@@ -1539,20 +1552,17 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # Hands-On pool. Each candidate's sort key is its OWN tier-section
     # score (big_picture stories ranked by their big_picture score;
     # hands_on stories ranked by their hands_on score).
-    def _section_score_or_legacy(r: RankedStory, section: str) -> int:
-        if r.score_by_section is None:
-            return r.score
-        return r.score_by_section.get(section, r.score)
-
-    head_pool = sorted(
-        (r for r in ranked if r.tier in ("big_picture", "hands_on")),
-        key=lambda r: _section_score_or_legacy(r, r.tier),
-        reverse=True,
-    )
-    head_top = head_pool[:HEAD_TIER_SUMMARISE_BUDGET]
+    #
+    # Min-guarantee (2026-08-04): _select_head_candidates reserves the
+    # top HEAD_TIER_MIN_HANDS_ON hands_on candidates before filling the
+    # rest of the budget from the merged pool. Without this, a
+    # big_picture-heavy day can push all hands_on stories out of the
+    # top-12 slice, leaving _pick_hands_on with an empty pool and
+    # triggering the integrity gate (hands_on >= 3).
+    head_top = _select_head_candidates(ranked)
     currents_top = sorted(
         (r for r in ranked if r.tier == "currents"),
-        key=lambda r: _section_score_or_legacy(r, "currents"),
+        key=lambda r: _section_score_or_aggregate(r, "currents"),
         reverse=True,
     )[:CURRENTS_TIER_SUMMARISE_BUDGET]
     top = head_top + currents_top
@@ -3629,6 +3639,46 @@ def _pulse_eligibility(
         f"floor={PULSE_ELIGIBILITY_TRUST_FLOOR}"
     )
     return eligible, reason
+
+
+def _select_head_candidates(
+    ranked: list[RankedStory],
+) -> list[RankedStory]:
+    """Select up to ``HEAD_TIER_SUMMARISE_BUDGET`` head-tier candidates
+    (``big_picture`` + ``hands_on``) with a minimum-guarantee for
+    ``hands_on`` stories (``HEAD_TIER_MIN_HANDS_ON``).
+
+    Without the guarantee, a big_picture-heavy day fills the top-N slice
+    with big_picture stories, leaving ``_pick_hands_on`` with an empty
+    pool and triggering the publish-gate integrity failure (hands_on >= 3).
+
+    Algorithm (2026-08-04):
+      1. Reserve the top ``HEAD_TIER_MIN_HANDS_ON`` hands_on candidates
+         (by hands_on section score).
+      2. Fill remaining ``HEAD_TIER_SUMMARISE_BUDGET - len(reserved)``
+         slots from the rest of the merged pool, ordered by each story's
+         own tier-section score.
+
+    When fewer than ``HEAD_TIER_MIN_HANDS_ON`` hands_on stories exist in
+    ranked.jsonl, all available are reserved and the remaining slots are
+    filled by big_picture stories as before (no padding, no error).
+    """
+    ho_pool = sorted(
+        (r for r in ranked if r.tier == "hands_on"),
+        key=lambda r: _section_score_or_aggregate(r, "hands_on"),
+        reverse=True,
+    )
+    reserved = ho_pool[:HEAD_TIER_MIN_HANDS_ON]
+    reserved_ids = {r.cluster_id for r in reserved}
+    rest = sorted(
+        (r for r in ranked
+         if r.tier in ("big_picture", "hands_on")
+         and r.cluster_id not in reserved_ids),
+        key=lambda r: _section_score_or_aggregate(r, r.tier),
+        reverse=True,
+    )
+    remaining_slots = HEAD_TIER_SUMMARISE_BUDGET - len(reserved)
+    return reserved + rest[:remaining_slots]
 
 
 def _pick_pulse(
