@@ -181,6 +181,21 @@ jobs:
           # (including punctuation, quotes, newlines) verbatim as the
           # instruction text.
           instruction = re.sub(r"^/revise\b[ \t]*", "", body, count=1, flags=re.IGNORECASE)
+
+          # Deterministic severity floor: an explicit "--min-severity <level>"
+          # token, or the natural phrasing "only <level>" / "<level> only"
+          # (e.g. "apply only major rated recommendations"), maps to the
+          # engine's --min-severity pre-filter instead of riding along as
+          # prose the field-scoped model cannot act on.
+          levels = "note|minor|major|blocking"
+          min_sev = ""
+          m = re.search(rf"--min-severity[ =]({levels})\b", instruction)
+          if not m:
+              m = re.search(rf"\bonly ({levels})\b|\b({levels}) only\b", instruction)
+          if m:
+              min_sev = next(g for g in m.groups() if g)
+              instruction = re.sub(rf"--min-severity[ =]({levels})\b", "", instruction).strip()
+          Path("revise_min_severity.txt").write_text(min_sev)
           Path("revise_instruction.txt").write_text(instruction.strip())
           PY
 
@@ -201,15 +216,16 @@ jobs:
 
           date = os.environ["REVISE_DATE"]
           instruction = Path("revise_instruction.txt").read_text()
+          min_sev = Path("revise_min_severity.txt").read_text().strip()
 
           # --released: a release-PR checkout carries only data/released/<date>/
           # (staging is gitignored). Safe here because the state==open guard
           # means this branch is an unmerged draft, not a published issue.
-          result = subprocess.run(
-              ["aiv", "revise", "--date", date, "--live", "--released",
-               "--instruction", instruction],
-              check=False,
-          )
+          argv = ["aiv", "revise", "--date", date, "--live", "--released",
+                  "--instruction", instruction]
+          if min_sev:
+              argv += ["--min-severity", min_sev]
+          result = subprocess.run(argv, check=False)
           sys.exit(result.returncode)
           PY
 
@@ -266,26 +282,45 @@ jobs:
                             "individual field changes. Check the rendered diff "
                             "in this commit directly.")
           else:
-              entries = []
+              # Each line is a RevisionCycle; its field-level results live in
+              # the "changes" array. Summarise the LAST cycle only -- that is
+              # this run; earlier lines are prior (e.g. nightly shadow) cycles.
+              cycles = []
               for raw in path.read_text().splitlines():
                   if not raw.strip():
                       continue
                   try:
-                      entries.append(json.loads(raw))
+                      cycles.append(json.loads(raw))
                   except json.JSONDecodeError:
                       continue
-              applied = [e for e in entries if e.get("status") == "applied"]
-              rejected = [e for e in entries if e.get("status") not in ("applied",)]
+              last = cycles[-1] if cycles else {}
+              changes = last.get("changes") or []
+
+              def label(ch):
+                  t = ch.get("target") or {}
+                  where = t.get("story_id") or t.get("section") or "?"
+                  return f"`{where}` / `{t.get('field', '?')}`"
+
+              applied = [c for c in changes if c.get("status") == "applied"]
+              other = [c for c in changes if c.get("status") != "applied"]
+              lines.append(f"Mode: `{last.get('mode', '?')}`"
+                           + (f" · min-severity: `{last.get('min_severity')}`"
+                              if last.get("min_severity") else ""))
+              lines.append("")
               if applied:
                   lines.append(f"**Applied ({len(applied)}):**")
-                  for e in applied:
-                      lines.append(f"- `{e.get('target', '?')}` / `{e.get('field', '?')}`")
+                  for c in applied:
+                      lines.append(f"- {label(c)}")
                   lines.append("")
-              if rejected:
-                  lines.append(f"**Not applied ({len(rejected)}):**")
-                  for e in rejected:
-                      reason = e.get("recommendation") or e.get("status", "?")
-                      lines.append(f"- `{e.get('target', '?')}` / `{e.get('field', '?')}` -- {reason}")
+              if other:
+                  lines.append(f"**Not applied ({len(other)}):**")
+                  for c in other:
+                      reason = c.get("reject_reason") or c.get("status", "?")
+                      lines.append(f"- {label(c)} -- {reason}")
+                  lines.append("")
+              if not changes:
+                  lines.append(f"No field changes this run. Cycle note: "
+                               f"{last.get('note', 'none')}")
                   lines.append("")
               if not applied and not rejected:
                   lines.append("`revisions.jsonl` was empty -- no fields were changed.")
