@@ -33,18 +33,47 @@ Shadow vs live
 ``revise_day(date, shadow=True)`` computes every replacement, runs the full
 validation gate, and writes ``revisions.jsonl`` with statuses ``proposed``
 (would apply) and ``rejected`` (would refuse) -- ``issue.json`` is not
-touched. ``shadow=False`` applies the accepted changes atomically and
-records ``applied`` / ``rejected``.
+touched. ``shadow=False`` applies the accepted changes atomically, re-renders
+the HTML for the copy it edited, and records ``applied`` / ``rejected``.
 
-Applying an edit invalidates two things downstream, both handled here or
+Applying an edit invalidates three things downstream, all handled here or
 stated plainly:
   * the touched story's ``verification`` is set to ``None`` by CODE -- the
     fact-check was about text that no longer exists, and a stale clean
     verdict is worse than none;
+  * the rendered HTML now describes text that is not in ``issue.json``, so a
+    live cycle that changed the file re-renders it (``_rerender_html``) --
+    the JSON and the page a reader opens are never allowed to disagree;
   * the review's ``issue_sha256`` no longer matches the file, so
     ``src/gate.py`` will hold with ``hold:stale-review`` until the issue is
     re-reviewed. That is correct, not a bug: an edited issue has not been
     reviewed.
+
+Which findings reach the model
+------------------------------
+Two deterministic filters run BEFORE any LLM call, in this order:
+
+1. **Freshness** (``_assess_freshness``). The review must still describe the
+   text on disk. On the staging draft that is a byte-for-byte hash match. On
+   the released copy it cannot be: ``render.release_promote`` stamps
+   ``issue_number`` into the canonical ``issue.json``, so its bytes differ
+   from the staging bytes the reviewer hashed while every sentence is
+   identical. There, freshness is established per finding from the evidence
+   the finding carries -- its verbatim ``quote`` must still appear in the
+   field it points at.
+
+2. **Severity** (``min_severity``). "Apply only the major recommendations"
+   is a selection rule, not a writing instruction, so it is code: findings
+   below the floor are dropped and never reach a prompt. Passing that
+   sentence as ``--instruction`` instead would have paid tokens to ask a
+   field-scoped model -- which cannot see the other findings -- to filter a
+   list it was never shown.
+
+Freshness answers first because it is a property of the review against the
+file, which the operator's floor cannot change. Running the floor first
+makes a day whose findings are all minor look like a stale review when
+``--min-severity major`` is passed, and a wrong diagnosis in the refusal is
+worse than no refusal message at all.
 
 Voice
 -----
@@ -147,6 +176,24 @@ where the ratio governs.
 Calibration knob. It and ``_MAX_EDIT_RATIO`` are the two numbers to revisit
 if the shadow run shows rewrites slipping through, or legitimate repairs
 being refused."""
+
+SEVERITY_RANK: dict[str, int] = {
+    "note": 0, "minor": 1, "major": 2, "blocking": 3,
+}
+"""Order of ``ReviewSeverity``, lowest first. The only place this stage
+ranks severities, so ``--min-severity major`` and any future threshold read
+the same scale."""
+
+MIN_SEVERITY_CHOICES: tuple[str, ...] = tuple(
+    sorted(SEVERITY_RANK, key=lambda name: SEVERITY_RANK[name])
+)
+"""``("note", "minor", "major", "blocking")`` -- the accepted
+``--min-severity`` values, in ascending order, for help text and validation."""
+
+MIN_SEVERITY_DEFAULT = "note"
+"""The floor that filters nothing. Default because the reviewer's severities
+are advisory evidence, not a queue: an operator who wants only the serious
+ones says so, and the daily loop keeps acting on everything."""
 
 _LOG = logging.getLogger("ai_vector.revise")
 
@@ -336,23 +383,29 @@ def revise_day(
     instruction: str = "",
     instruction_target: str = "",
     canonical: bool = False,
+    min_severity: str = MIN_SEVERITY_DEFAULT,
 ) -> RevisionReport:
     """Apply the review's ``text_edit`` findings to one day's staged issue.
 
     Flow
     ----
     1. Read ``review.json`` and the staged ``issue.json``.
-    2. REFUSE unless the review's ``issue_sha256`` still matches the issue
-       on disk. A review of a superseded draft describes text that is no
-       longer there; acting on it would edit the wrong sentences.
-    3. Group the ``text_edit`` findings by target field.
+    2. REFUSE unless the review still describes the text on disk -- a byte
+       hash match on the staging draft, surviving finding quotes on the
+       released copy (see ``_assess_freshness``). A review of a superseded
+       draft describes text that is no longer there; acting on it would edit
+       the wrong sentences.
+    3. Drop every finding below ``min_severity``, then group the surviving
+       ``text_edit`` findings by target field. Both filters are plain code
+       and both run before the first token is spent; freshness goes first so
+       a refusal names the cause the operator can act on.
     4. One LLM call per field: current text + directives in, replacement
        text out.
     5. Validate each replacement in code. Pass -> ``proposed`` (shadow) or
        ``applied`` (live). Fail -> ``rejected``, field untouched.
     6. Write the cycle to ``revisions.jsonl``; in live mode also rewrite
-       ``issue.json`` atomically, clearing ``verification`` on every story
-       whose text changed.
+       ``issue.json`` atomically (clearing ``verification`` on every story
+       whose text changed) and re-render that copy's HTML.
 
     Failure-soft: this stage never raises into a caller. Every refusal and
     every error becomes a ``RevisionReport`` with ``ran=False`` and a reason
@@ -381,14 +434,26 @@ def revise_day(
 
         ``True`` targets ``data/released/<date>/`` and exists because
         ``data/staging/`` is gitignored, so a release-PR branch checked out
-        in CI carries only the released copy. Editing a released issue is a
-        different act from editing a draft -- DESIGN.md's "Issue Number
-        Registry -> Same-date re-release" says a corrected re-publication
-        bumps ``revision`` and re-renders -- and NEITHER of those happens
-        here. This parameter is the seam, not the policy: whether the
-        ``/revise`` command should use it, and what else must run alongside
-        it, is an Architect + ratification decision. See the hand-off note
-        at module end.
+        in CI carries only the released copy. That is the copy the
+        ``/revise`` PR command edits, and a live cycle there re-renders
+        ``docs/released/<date>.html`` and ``docs/index.html`` so the page
+        never disagrees with the JSON.
+
+        What it deliberately does NOT do is bump ``Issue.revision``.
+        DESIGN.md's "Issue Number Registry -> Same-date re-release" governs
+        a corrected RE-publication -- an issue readers have already seen.
+        ``/revise`` runs only on an open release PR (the workflow's
+        ``state == 'open'`` guard), so the issue is still a draft that
+        happens to live in the released folder, and stamping revision 1 on
+        something never published would misdescribe the archive. If
+        ``/revise`` is ever opened to merged PRs, the revision bump becomes
+        mandatory and belongs with the Architect.
+    min_severity
+        Floor on ``ReviewFinding.severity``: one of ``note`` (the default,
+        which filters nothing), ``minor``, ``major``, ``blocking``. Applied
+        by code before any prompt is built. An unrecognised value is treated
+        as the default and logged, because a typo'd floor must not silently
+        drop every finding.
     """
     llm_usage.set_stage("revise")
     mode = "shadow" if shadow else "live"
@@ -401,6 +466,7 @@ def revise_day(
             "no readable review.json at "
             f"{review_json_path(run_date, canonical=canonical)}; the "
             "revision engine acts only on a recorded review",
+            instruction=instruction,
         )
 
     issue_path = paths.issue_path(run_date, canonical=canonical)
@@ -411,37 +477,53 @@ def revise_day(
         return _refuse(
             run_date, mode, out_path,
             f"could not read staged issue.json at {issue_path}: {exc}",
+            instruction=instruction,
         )
     if not isinstance(issue_payload, dict):
         return _refuse(
             run_date, mode, out_path, "staged issue.json is not a JSON object",
+            instruction=instruction,
         )
 
     import hashlib
 
     sha_before = hashlib.sha256(issue_bytes).hexdigest()
-    if report.issue_sha256 != sha_before:
+
+    # --- filter 1: freshness. Does the review describe THIS file? --------
+    freshness = _assess_freshness(
+        report, report.findings, issue_payload, sha_before,
+        run_date=run_date, canonical=canonical,
+        has_targeted_instruction=bool(
+            instruction.strip()
+            and _parse_target_selector(instruction_target) is not None
+        ),
+    )
+    if not freshness.ok:
         return _refuse(
-            run_date, mode, out_path,
-            "the review is stale: it was written against issue.json "
-            f"{report.issue_sha256[:12]}..., the file on disk is "
-            f"{sha_before[:12]}.... Re-run `aiv review --date "
-            f"{run_date.isoformat()}` before revising.",
-            issue_sha256_before=sha_before,
+            run_date, mode, out_path, freshness.reason,
+            issue_sha256_before=sha_before, instruction=instruction,
         )
 
+    # --- filter 2: severity. Of the valid findings, which were asked for?
+    floor = normalise_min_severity(min_severity)
+    findings, _ = filter_findings_by_severity(freshness.findings, floor)
+    # Counted over text_edit findings only: a structural finding below the
+    # floor was never going to be rewritten, and reporting it as a cost of
+    # the floor would overstate what the operator's choice actually excluded.
+    dropped_by_severity = _count_text_edits(freshness.findings) - (
+        _count_text_edits(findings)
+    )
+
     groups = _build_groups(
-        report, issue_payload, instruction, instruction_target,
+        findings, issue_payload, instruction, instruction_target,
     )
     if not groups:
         return _refuse(
             run_date, mode, out_path,
-            "nothing to revise: no text_edit findings"
-            + (
-                " and the operator instruction named no target"
-                if instruction else ""
+            _nothing_to_revise_reason(
+                instruction, floor, dropped_by_severity,
             ),
-            issue_sha256_before=sha_before,
+            issue_sha256_before=sha_before, instruction=instruction,
         )
 
     changes: list[RevisionChange] = []
@@ -449,6 +531,7 @@ def revise_day(
         changes.append(_revise_one_field(group, shadow=shadow))
 
     sha_after: str | None = None
+    render_note = ""
     applied = [c for c in changes if c.status == "applied"]
     if not shadow and applied:
         try:
@@ -469,6 +552,11 @@ def revise_day(
                 sha_before=sha_before, sha_after=None,
                 note=f"issue.json write failed: {exc}",
             )
+        # The JSON on disk has moved; the HTML rendered from it has not.
+        # Re-rendering is code, it is cheap, and the /revise workflow commits
+        # exactly these paths -- but a template failure must not turn an
+        # applied edit into a crash, so the outcome lands in the note.
+        render_note = _rerender_html(run_date, canonical=canonical)
 
     counts = {
         "applied": sum(1 for c in changes if c.status == "applied"),
@@ -480,10 +568,232 @@ def revise_day(
         f"{counts['applied']} applied, {counts['proposed']} proposed, "
         f"{counts['rejected']} rejected"
     )
+    for extra in (
+        _severity_note(floor, dropped_by_severity), freshness.note, render_note,
+    ):
+        if extra:
+            note += f"; {extra}"
     return _write_cycle(
         run_date, mode, out_path, changes, report,
         instruction=instruction,
         sha_before=sha_before, sha_after=sha_after, note=note,
+    )
+
+
+def _count_text_edits(findings: list[ReviewFinding]) -> int:
+    """How many of these findings this stage could act on at all."""
+    return sum(1 for f in findings if f.fix_kind == "text_edit")
+
+
+def _severity_note(floor: str, dropped: int) -> str:
+    """Audit line for the severity pre-filter. Silent when it dropped
+    nothing -- a note that always fires is a note nobody reads."""
+    if not dropped:
+        return ""
+    return f"{dropped} text_edit finding(s) below min_severity={floor} not sent"
+
+
+def _nothing_to_revise_reason(
+    instruction: str, floor: str, dropped_by_severity: int,
+) -> str:
+    """Why there was no work, in the operator's terms.
+
+    "No text_edit findings" and "the severity floor removed all of them" look
+    identical in the counts and mean opposite things: the first says the
+    review found nothing to rewrite, the second says the operator asked for
+    less than the review offered.
+    """
+    if dropped_by_severity:
+        return (
+            f"nothing to revise at min_severity={floor}: all "
+            f"{dropped_by_severity} actionable finding(s) in this review are "
+            "below the floor"
+        )
+    return "nothing to revise: no text_edit findings" + (
+        " and the operator instruction named no target" if instruction else ""
+    )
+
+
+# ---------------------------------------------------------------------------
+# Filter 1: severity. Deterministic, and deliberately so.
+# ---------------------------------------------------------------------------
+
+def normalise_min_severity(value: str | None) -> str:
+    """Return a valid severity floor for ``value``.
+
+    An unrecognised token falls back to ``MIN_SEVERITY_DEFAULT`` with a
+    warning rather than raising: this is a failure-soft stage, and the safe
+    reading of a typo is "the operator meant everything", not "drop the
+    reviewer's entire report".
+    """
+    token = (value or "").strip().lower()
+    if not token:
+        return MIN_SEVERITY_DEFAULT
+    if token not in SEVERITY_RANK:
+        _LOG.warning(
+            "revise: unknown min_severity %r (expected one of %s); using %r",
+            value, ", ".join(MIN_SEVERITY_CHOICES), MIN_SEVERITY_DEFAULT,
+        )
+        return MIN_SEVERITY_DEFAULT
+    return token
+
+
+def filter_findings_by_severity(
+    findings: list[ReviewFinding], min_severity: str,
+) -> tuple[list[ReviewFinding], int]:
+    """Keep the findings at or above ``min_severity``; return them and the
+    number dropped.
+
+    This is the code answer to "apply only the major recommendations". The
+    LLM never sees a dropped finding, so the filter costs nothing and cannot
+    be argued with -- which is the whole reason it is not a prompt.
+
+    A finding carrying a severity this scale does not know is KEPT, and
+    logged. The model contract makes that unreachable today; if it ever
+    becomes reachable, an unrecognised severity is a reason to look, not a
+    reason to silently discard editorial evidence.
+    """
+    floor = SEVERITY_RANK[normalise_min_severity(min_severity)]
+    kept: list[ReviewFinding] = []
+    dropped = 0
+    for finding in findings:
+        rank = SEVERITY_RANK.get(str(finding.severity))
+        if rank is None:
+            _LOG.warning(
+                "revise: finding %s has severity %r, which is not on the "
+                "known scale; keeping it", finding.finding_id, finding.severity,
+            )
+            kept.append(finding)
+            continue
+        if rank >= floor:
+            kept.append(finding)
+        else:
+            dropped += 1
+    if dropped:
+        _LOG.info(
+            "revise: severity filter dropped %d finding(s) below %s",
+            dropped, normalise_min_severity(min_severity),
+        )
+    return kept, dropped
+
+
+# ---------------------------------------------------------------------------
+# Filter 2: freshness. Does the review still describe the text on disk?
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _Freshness:
+    """The freshness verdict for one invocation.
+
+    ``findings`` is the subset still anchored in the text, which is what the
+    caller should act on -- on the released copy that can be narrower than
+    what came in.
+    """
+    ok: bool
+    basis: str
+    findings: list[ReviewFinding] = field(default_factory=list)
+    reason: str = ""
+    note: str = ""
+
+
+def _assess_freshness(
+    report: ReviewReport,
+    findings: list[ReviewFinding],
+    issue_payload: dict[str, Any],
+    sha_before: str,
+    *,
+    run_date: _dt.date,
+    canonical: bool,
+    has_targeted_instruction: bool,
+) -> _Freshness:
+    """Decide whether this review may be acted on, and with which findings.
+
+    Two bases, and the second exists because the first is unavailable by
+    construction on the released copy:
+
+    ``sha_match``
+        The review's ``issue_sha256`` equals a hash of the bytes on disk.
+        Exact, cheap, and the only accepted basis for the staging draft --
+        where a mismatch means the draft was regenerated after review and
+        ``aiv review`` is one command away.
+
+    ``quote_evidence``
+        Every ``text_edit`` finding whose verbatim ``quote`` still appears in
+        the field it points at is fresh; the rest are dropped. Accepted only
+        on the released copy, because ``render.release_promote`` stamps
+        ``issue_number`` into the canonical ``issue.json`` -- so its bytes
+        can NEVER equal the staging bytes the reviewer hashed, while every
+        sentence in it is identical. A byte check there is not a freshness
+        test, it is an unconditional refusal, and that is exactly what the
+        first live ``/revise`` run hit (2026-08-04).
+
+        Per-finding quote presence is the same evidence rule ``src/review.py``
+        already applies when it filters the reviewer's output, so "the
+        finding points at text that is really there" means one thing across
+        both stages.
+
+    A targeted operator instruction (``--target``) is self-anchoring: it
+    names its own field and the model is shown that field's current text, so
+    it does not need the review to be fresh. It can therefore carry a cycle
+    on its own when every finding has aged out.
+    """
+    if report.issue_sha256 == sha_before:
+        return _Freshness(ok=True, basis="sha_match", findings=findings)
+
+    stale_line = (
+        "the review is stale: it was written against issue.json "
+        f"{report.issue_sha256[:12]}..., the file on disk is "
+        f"{sha_before[:12]}...."
+    )
+    if not canonical:
+        return _Freshness(
+            ok=False, basis="",
+            reason=(
+                f"{stale_line} Re-run `aiv review --date "
+                f"{run_date.isoformat()}` before revising."
+            ),
+        )
+
+    field_texts = index_issue_fields(issue_payload)
+    text_edits = [f for f in findings if f.fix_kind == "text_edit"]
+    anchored = [
+        f for f in text_edits
+        if quote_present(f.quote, field_texts.get(target_key(f.target), ""))
+    ]
+    aged_out = len(text_edits) - len(anchored)
+
+    if not anchored and not has_targeted_instruction:
+        return _Freshness(
+            ok=False, basis="",
+            reason=(
+                f"{stale_line} None of the review's {len(text_edits)} "
+                "text_edit finding(s) still quote text present in the "
+                "released copy, so there is no anchored edit to make. "
+                f"Re-run `aiv review --date {run_date.isoformat()} "
+                "--released` before revising."
+            ),
+        )
+
+    note = (
+        f"released copy: freshness by quote evidence, {len(anchored)} of "
+        f"{len(text_edits)} text_edit finding(s) still anchored"
+    )
+    if aged_out:
+        _LOG.warning(
+            "revise: %d finding(s) quote text no longer in the released "
+            "copy; dropped", aged_out,
+        )
+    # Non-text_edit findings are carried through untouched: _build_groups
+    # discards them anyway, and quote-checking a finding this stage will
+    # never act on would be work with no consumer.
+    keep_ids = {f.finding_id for f in anchored}
+    return _Freshness(
+        ok=True, basis="quote_evidence",
+        findings=[
+            f for f in findings
+            if f.fix_kind != "text_edit" or f.finding_id in keep_ids
+        ],
+        note=note,
     )
 
 
@@ -492,13 +802,18 @@ def revise_day(
 # ---------------------------------------------------------------------------
 
 def _build_groups(
-    report: ReviewReport,
+    findings: list[ReviewFinding],
     issue_payload: dict[str, Any],
     instruction: str,
     instruction_target: str,
 ) -> list[_FieldGroup]:
     """Group the actionable findings by target field, then attach any
     operator directive.
+
+    Takes an explicit finding list rather than the whole report because the
+    severity and freshness filters have already run: this function groups
+    what survived, and cannot accidentally reach back past a filter to the
+    full report.
 
     Only ``fix_kind == "text_edit"`` findings are collected; everything else
     in the review is somebody's judgement call, not a rewrite. A finding
@@ -508,7 +823,7 @@ def _build_groups(
     field_texts = index_issue_fields(issue_payload)
     groups: dict[str, _FieldGroup] = {}
 
-    for finding in report.findings:
+    for finding in findings:
         if finding.fix_kind != "text_edit":
             continue
         key = target_key(finding.target)
@@ -1043,6 +1358,38 @@ def _apply_changes(
     return hashlib.sha256(payload_bytes).hexdigest()
 
 
+def _rerender_html(run_date: _dt.date, *, canonical: bool) -> str:
+    """Re-render the HTML for the copy that was just edited.
+
+    Returns a short note for the cycle log: empty when the render succeeded,
+    a reason when it did not.
+
+    Why this belongs here. The edit is only half-done while ``issue.json``
+    says one thing and the page a reader opens says another, and no caller
+    closes that gap on the released copy -- the ``/revise`` workflow commits
+    ``docs/released/<date>.html`` and ``docs/index.html`` and expects this
+    stage to have written them. Rendering is pure code over the file we just
+    wrote (No Token Wasted: no LLM anywhere near it).
+
+    Failure-soft, and the asymmetry is deliberate: the JSON write already
+    succeeded, so raising here would report a failed cycle whose edits are on
+    disk. A stale page is visible and re-renderable in one command; a
+    misreported cycle is neither.
+    """
+    from src import render as render_mod
+
+    mode = "release" if canonical else "preview"
+    try:
+        out = render_mod.render(run_date, mode=mode)
+    except Exception as exc:  # noqa: BLE001 -- the edit is written; the page can wait
+        _LOG.exception(
+            "revise: %s render failed after applying the edits", mode,
+        )
+        return f"{mode} render FAILED ({type(exc).__name__}: {exc})"
+    _LOG.info("revise: re-rendered %s after applying the edits", out)
+    return f"re-rendered {out}"
+
+
 def _index_story_blocks(issue_payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """``{story_id: the mutable story dict}`` across Pulse and all sections."""
     out: dict[str, dict[str, Any]] = {}
@@ -1172,6 +1519,7 @@ def _refuse(
     reason: str,
     *,
     issue_sha256_before: str = "unknown",
+    instruction: str = "",
 ) -> RevisionReport:
     """Record a refusal: the engine declined to act, and why.
 
@@ -1179,6 +1527,11 @@ def _refuse(
     than passed over in silence. "The engine ran and refused" and "the
     engine was never invoked" are different states, and only the artifact
     can tell them apart after the fact.
+
+    The operator instruction is recorded on a refusal too. A cycle that
+    dropped it read as an unprompted no-op, which is what made the first
+    live ``/revise`` run (2026-08-04) look like the flag had been lost when
+    the engine had in fact refused a stale review.
     """
     _LOG.warning("revise: %s -- %s", run_date.isoformat(), reason)
     existing = _read_cycle_lines(out_path)
@@ -1187,6 +1540,7 @@ def _refuse(
         cycle=len(existing) + 1,
         mode=mode,  # type: ignore[arg-type]
         changes=[],
+        operator_instruction=instruction.strip()[:2000],
         generated_at=_dt.datetime.now(_dt.timezone.utc),
         prompt_version=REVISE_PROMPT_VERSION,
         issue_sha256_before=issue_sha256_before,
@@ -1215,30 +1569,37 @@ def _refuse(
 # Usage once registered:
 #     aiv revise --date 2026-08-02 --shadow
 #     aiv revise --date 2026-08-02 --live
+#     aiv revise --date 2026-08-02 --live --min-severity major
 #     aiv revise --date 2026-08-02 --live \
 #         --instruction "drop the second sentence" \
 #         --target story:c_abc123def456:summary
 #
 # ---------------------------------------------------------------------------
-# TWO OPEN QUESTIONS FOR THE ARCHITECT (surfaced by reading
-# .github/workflows/revise-command.yml, which was written in parallel with
-# this module). Both are contract decisions, so neither is decided here.
+# SETTLED, AND WHAT IS STILL OPEN (the first two notes here were open
+# questions until the first live `/revise` run on 2026-08-04 answered one of
+# them the hard way).
 #
-# 1. WHICH COPY DOES `/revise` EDIT?
-#    `revise_day` defaults to `data/staging/<date>/`, which is what this
-#    stage is for. But `data/staging/` is gitignored, so a release-PR
-#    branch checked out in CI has ONLY `data/released/<date>/` -- and the
-#    workflow's commit step git-adds exactly that path. As written, the
-#    workflow would hit "no readable review.json" and refuse.
-#    The `canonical=True` / `--released` seam exists so the wiring is a
-#    one-word change, but pointing it there is not free: DESIGN.md's
-#    "Same-date re-release" says a corrected re-publication bumps
-#    `Issue.revision` and re-renders, and this stage does neither. Either
-#    the workflow keeps the staging artifacts alive (upload/restore, or an
-#    `aiv run --stages review` to rebuild them), or `/revise` becomes a
-#    released-copy edit that runs alongside the revision-bump path.
+# 1. WHICH COPY DOES `/revise` EDIT? -- SETTLED: the released copy.
+#    `data/staging/` is gitignored, so a release-PR checkout in CI has ONLY
+#    `data/released/<date>/`, and the workflow git-adds exactly that path.
+#    `--released` therefore edits the canonical copy, and a live cycle there
+#    re-renders `docs/released/<date>.html` + `docs/index.html` so the
+#    committed page matches the committed JSON.
+#    It does NOT bump `Issue.revision`. DESIGN.md's "Same-date re-release"
+#    governs re-publishing an issue readers have seen; `/revise` runs only
+#    on an OPEN release PR, where the issue is still a draft. Opening
+#    `/revise` to merged PRs would make the revision bump mandatory -- an
+#    Architect decision, not this stage's.
 #
-# 2. WHERE DOES AN UNTARGETED `--instruction` APPLY?
+# 2. WHY THE RELEASED COPY NEEDS ITS OWN FRESHNESS BASIS.
+#    `release_promote` stamps `issue_number` into the canonical issue.json,
+#    so its bytes can never equal the staging bytes the reviewer hashed even
+#    when every sentence is identical. A byte-hash freshness check there
+#    refuses 100% of the time -- which is what the first live `/revise` run
+#    did. `_assess_freshness` falls back to per-finding quote evidence on
+#    the canonical copy only; staging keeps the exact hash check.
+#
+# 3. WHERE DOES AN UNTARGETED `--instruction` APPLY? -- STILL OPEN.
 #    The workflow passes `--instruction` with no `--target`. This module
 #    attaches such a directive to the fields the review's `text_edit`
 #    findings already scheduled, and refuses when there are none, because
@@ -1247,6 +1608,11 @@ def _refuse(
 #    anything and it fixes the right thing", the routing needs a ratified
 #    rule -- most likely a small LLM classification of the instruction to a
 #    target field, which is a new judgment call and therefore a new eval.
+#
+#    One large class of untargeted instruction is now answered without any
+#    of that: "apply only the major recommendations" is a SELECTION rule,
+#    and selection is `--min-severity major`. The workflow can parse that
+#    class of comment into the flag deterministically.
 # ---------------------------------------------------------------------------
 
 def revise_command(
@@ -1258,6 +1624,14 @@ def revise_command(
     ),
     instruction: str = "",
     target: str = "",
+    min_severity: str = typer.Option(
+        MIN_SEVERITY_DEFAULT,
+        "--min-severity",
+        help=(
+            "Only act on findings at or above this severity "
+            "[note|minor|major|blocking]. Default note (acts on all)."
+        ),
+    ),
     released: bool = False,
     verbose: bool = False,
 ) -> None:
@@ -1279,10 +1653,16 @@ def revise_command(
     section:<name>:<field>`` to say where it applies; without a target it
     rides along with the fields the findings already scheduled.
 
+    ``--min-severity major`` acts only on the findings the reviewer rated
+    major or blocking. It is a code filter applied before any prompt is
+    built, which is why "apply only the major recommendations" belongs here
+    and not in ``--instruction``: the field-scoped model cannot see the other
+    findings, so it could not honour that sentence even if it tried.
+
     ``--released`` revises ``data/released/<date>/`` instead of the staging
-    draft. Present because staging is gitignored and a release-PR checkout
-    has only the released copy -- see ``revise_day``'s docstring for why
-    that is a seam awaiting a ratified policy, not a supported workflow.
+    draft, and re-renders that day's released HTML plus the landing index.
+    Present because staging is gitignored and a release-PR checkout has only
+    the released copy.
     """
     import sys
 
@@ -1290,6 +1670,8 @@ def revise_command(
     # typer.Option sentinel arrives as the literal default -- normalise it.
     if isinstance(shadow, typer.models.OptionInfo):
         shadow = bool(shadow.default)
+    if isinstance(min_severity, typer.models.OptionInfo):
+        min_severity = str(min_severity.default)
 
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
@@ -1311,12 +1693,25 @@ def revise_command(
     else:
         run_date = _dt.date.today()
 
+    # Strict at the CLI boundary, failure-soft inside the engine. A typo'd
+    # floor means the operator asked for less than they get -- an unattended
+    # `--live` run would then rewrite fields they meant to leave alone, so
+    # the command stops rather than guesses.
+    floor = (min_severity or "").strip().lower() or MIN_SEVERITY_DEFAULT
+    if floor not in SEVERITY_RANK:
+        print(
+            f"--min-severity must be one of "
+            f"{'|'.join(MIN_SEVERITY_CHOICES)}; got {min_severity!r}"
+        )
+        sys.exit(2)
+
     report = revise_day(
         run_date,
         shadow=shadow,
         instruction=instruction,
         instruction_target=target,
         canonical=released,
+        min_severity=floor,
     )
     print(f"revise: {report.one_line} -> {report.path}")
     if report.cycle:
@@ -1343,6 +1738,10 @@ def _cli() -> int:
                         help="Extra operator directive.")
     parser.add_argument("--target", default="",
                         help="story:<cluster_id>:<field> | section:<name>:<field>")
+    parser.add_argument("--min-severity", dest="min_severity",
+                        default=MIN_SEVERITY_DEFAULT,
+                        choices=list(MIN_SEVERITY_CHOICES),
+                        help="Only act on findings at or above this severity.")
     parser.add_argument("--released", action="store_true",
                         help="Revise data/released/<date>/ instead of staging.")
     parser.add_argument("--verbose", action="store_true")
@@ -1353,6 +1752,7 @@ def _cli() -> int:
             shadow=not args.live,
             instruction=args.instruction,
             target=args.target,
+            min_severity=args.min_severity,
             released=args.released,
             verbose=args.verbose,
         )

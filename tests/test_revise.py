@@ -61,6 +61,20 @@ _BODY_B = (
 # Fixtures / helpers.
 # ---------------------------------------------------------------------------
 
+@pytest.fixture(autouse=True)
+def render_stub():
+    """Stub ``src.render.render`` for every test in this module.
+
+    A live cycle now re-renders the HTML for the copy it edited, and
+    ``tmp_data_root`` redirects ``data/`` but NOT ``docs/`` -- so an
+    unstubbed live test would rewrite the repo's committed pages from a tmp
+    fixture's contents. Stubbing the render boundary (rather than
+    ``_rerender_html``) keeps this module's own re-render wiring under test.
+    """
+    with patch("src.render.render", return_value=Path("docs/rendered.html")) as stub:
+        yield stub
+
+
 def _issue_payload() -> dict[str, Any]:
     """Two stories in two sections, plus section intros -- enough surface to
     prove containment (an edit to one must not see or touch the other)."""
@@ -184,6 +198,48 @@ def _stage(
 
     if stale:
         payload["notes"] = "shape: amber -- edited after the review"
+        issue_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    return issue_path
+
+
+def _stage_released(
+    findings: list[ReviewFinding],
+    *,
+    issue: dict[str, Any] | None = None,
+    restamp: bool = False,
+) -> Path:
+    """Write a released issue.json + a matching review.json.
+
+    ``restamp=True`` reproduces what ``render.release_promote`` actually does
+    on the way to ``data/released/``: it stamps ``issue_number`` into the
+    issue AFTER the review hashed the staging bytes. The prose is identical;
+    the bytes are not. That single byte difference is what made the first
+    live ``/revise`` run refuse (2026-08-04), so it is reproduced here rather
+    than described.
+    """
+    payload = issue if issue is not None else _issue_payload()
+    target = paths.released_dir(DATE)
+    target.mkdir(parents=True, exist_ok=True)
+    issue_path = target / "issue.json"
+    issue_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    sha = hashlib.sha256(issue_path.read_bytes()).hexdigest()
+    report = ReviewReport(
+        generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+        computed_verdict="amber", findings=findings,
+        prompt_version="v1.0", issue_sha256=sha,
+    )
+    review_mod._write_report_json(
+        review_mod.review_json_path(DATE, canonical=True), report,
+    )
+
+    if restamp:
+        payload["issue_number"] = 32
         issue_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
@@ -483,6 +539,157 @@ class TestFreshness:
         assert report.ran is False
         assert "review.json" in report.note
 
+    def test_a_refusal_still_records_the_operator_instruction(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The instruction is what the operator asked for; a refusal that
+        dropped it reads as an unprompted no-op. That is precisely how the
+        first live ``/revise`` run was misdiagnosed as a lost flag when the
+        engine had in fact refused a stale review."""
+        _stage(tmp_data_root, [_finding()], stale=True)
+        report = revise_day(
+            DATE, shadow=False, instruction="apply only the major ones",
+        )
+        assert report.ran is False
+        assert report.cycle is not None
+        assert report.cycle.operator_instruction == "apply only the major ones"
+
+    def test_a_refusal_records_the_mode_it_ran_in(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A ``--live`` invocation that refused must not be logged as a
+        shadow cycle -- the two say different things about what the operator
+        asked for."""
+        _stage(tmp_data_root, [_finding()], stale=True)
+        report = revise_day(DATE, shadow=False)
+        assert report.cycle is not None
+        assert report.cycle.mode == "live"
+
+
+# ---------------------------------------------------------------------------
+# Freshness on the released copy.
+# ---------------------------------------------------------------------------
+
+class TestReleasedCopyFreshness:
+    """``render.release_promote`` stamps ``issue_number`` into the canonical
+    ``issue.json``, so its bytes can NEVER equal the staging bytes the
+    reviewer hashed -- while every sentence in it is identical. A byte-hash
+    freshness check on the released copy is therefore not a freshness test at
+    all, it is an unconditional refusal, and that is what the first live
+    ``/revise`` run hit on 2026-08-04.
+
+    On that copy the engine establishes freshness from the evidence each
+    finding carries: its verbatim quote must still be in the field it points
+    at. Same rule ``src/review.py`` already uses to filter the reviewer's
+    output."""
+
+    def test_release_stamped_issue_is_still_revisable(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The regression test for the bug. Prose unchanged, bytes changed by
+        the release stamp -- the edit must go through."""
+        issue_path = _stage_released([_finding()], restamp=True)
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(DATE, shadow=False, canonical=True)
+        assert report.ran is True
+        assert report.applied == 1
+        payload = json.loads(issue_path.read_text(encoding="utf-8"))
+        assert payload["pulse"]["stories"][0]["summary"].endswith("under load.")
+        # The release stamp survives the edit: revise rewrites fields, it
+        # does not re-issue the day.
+        assert payload["issue_number"] == 32
+
+    def test_quote_evidence_is_recorded_on_the_cycle(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Which basis the engine accepted is audit information: "the hash
+        matched" and "the quotes still line up" are different guarantees."""
+        _stage_released([_finding()], restamp=True)
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(DATE, shadow=False, canonical=True)
+        assert report.cycle is not None
+        assert "quote evidence" in report.cycle.note
+
+    def test_finding_whose_quote_is_gone_is_dropped(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A finding that no longer quotes live text is about a sentence
+        somebody already changed. Dropping it is the same call review.py
+        makes; acting on it would edit text the reviewer never read."""
+        _stage_released(
+            [
+                _finding("f001"),
+                _finding(
+                    "f002", field="headline",
+                    quote="a headline that was replaced days ago",
+                    instruction="Name the artefact.",
+                ),
+            ],
+            restamp=True,
+        )
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ) as call:
+            report = revise_day(DATE, shadow=True, canonical=True)
+        assert call.call_count == 1
+        assert report.cycle is not None
+        assert [c.finding_ids for c in report.cycle.changes] == [["f001"]]
+
+    def test_all_quotes_gone_refuses(self, tmp_data_root: Path) -> None:
+        """No anchored finding means no evidence the review describes this
+        text at all. That is a genuinely stale review, and the engine still
+        refuses it -- the quote fallback loosens the check's mechanism, not
+        its standard."""
+        _stage_released(
+            [_finding(quote="a sentence that is not in this issue")],
+            restamp=True,
+        )
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(DATE, shadow=False, canonical=True)
+        call.assert_not_called()
+        assert report.ran is False
+        assert "stale" in report.note
+
+    def test_targeted_instruction_survives_a_stale_review(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A ``--target`` instruction names its own field and is shown that
+        field's current text, so it does not depend on the review being
+        fresh. It can carry a cycle when every finding has aged out."""
+        _stage_released(
+            [_finding(quote="a sentence that is not in this issue")],
+            restamp=True,
+        )
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value="Costs land before clarity does.",
+        ):
+            report = revise_day(
+                DATE, shadow=False, canonical=True,
+                instruction="Replace the cliche.",
+                instruction_target="section:big_picture:intro_lead",
+            )
+        assert report.applied == 1
+
+    def test_staging_still_demands_an_exact_hash_match(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The fallback is scoped to the released copy on purpose. In staging
+        a byte mismatch means the draft was regenerated after review, and
+        ``aiv review`` is one command away -- so the strict check stays."""
+        _stage(tmp_data_root, [_finding()], stale=True)  # quote still present
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(DATE, shadow=False)
+        call.assert_not_called()
+        assert report.ran is False
+
 
 # ---------------------------------------------------------------------------
 # Shadow mode.
@@ -752,32 +959,14 @@ class TestOperatorInstruction:
 class TestCanonicalSeam:
     """``canonical=True`` points every read and write at
     ``data/released/<date>/``. It exists because staging is gitignored, so a
-    release-PR checkout has only the released copy -- see the open question
-    at the end of src/revise.py. Pinned so the seam is known to work when
-    the Architect decides whether to use it."""
-
-    def _stage_released(self, findings: list[ReviewFinding]) -> Path:
-        payload = _issue_payload()
-        target = paths.released_dir(DATE)
-        target.mkdir(parents=True, exist_ok=True)
-        issue_path = target / "issue.json"
-        issue_path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-        sha = hashlib.sha256(issue_path.read_bytes()).hexdigest()
-        report = ReviewReport(
-            generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
-            computed_verdict="amber", findings=findings,
-            prompt_version="v1.0", issue_sha256=sha,
-        )
-        review_mod._write_report_json(
-            review_mod.review_json_path(DATE, canonical=True), report,
-        )
-        return issue_path
+    release-PR checkout has only the released copy -- which is what the
+    ``/revise`` PR command edits."""
 
     def test_released_copy_is_revised(self, tmp_data_root: Path) -> None:
-        issue_path = self._stage_released([_finding()])
+        """No release stamp here: the plain seam, where the hash still
+        matches. ``TestReleasedCopyFreshness`` covers the stamped copy the
+        real archive actually holds."""
+        issue_path = _stage_released([_finding()])
         with patch(
             "src.revise._call_revise_llm",
             return_value=_BODY_A.replace("sustained load.", "load."),
@@ -793,11 +982,249 @@ class TestCanonicalSeam:
         """The default must stay staging-only: silently falling back to the
         released archive would let a draft-stage command edit a published
         issue."""
-        self._stage_released([_finding()])
+        _stage_released([_finding()])
         with patch("src.revise._call_revise_llm") as call:
             report = revise_day(DATE, shadow=True)
         call.assert_not_called()
         assert report.ran is False
+
+
+# ---------------------------------------------------------------------------
+# The severity pre-filter.
+# ---------------------------------------------------------------------------
+
+class TestSeverityFilter:
+    """"Apply only the major recommendations" is a selection rule, and
+    selection is code. The filter runs before a prompt exists, so a dropped
+    finding costs nothing and cannot be talked past -- which is the whole
+    reason it is not a sentence in the prompt. A field-scoped model cannot
+    see the other findings and so could not honour that instruction anyway."""
+
+    def test_floor_keeps_at_and_above(self) -> None:
+        findings = [
+            _finding("f001", severity="note"),
+            _finding("f002", severity="minor"),
+            _finding("f003", severity="major"),
+            _finding("f004", severity="blocking"),
+        ]
+        kept, dropped = revise_mod.filter_findings_by_severity(findings, "major")
+        assert [f.finding_id for f in kept] == ["f003", "f004"]
+        assert dropped == 2
+
+    def test_default_floor_filters_nothing(self) -> None:
+        findings = [_finding("f001", severity="note")]
+        kept, dropped = revise_mod.filter_findings_by_severity(
+            findings, revise_mod.MIN_SEVERITY_DEFAULT,
+        )
+        assert kept == findings
+        assert dropped == 0
+
+    def test_unknown_floor_falls_back_to_keeping_everything(self) -> None:
+        """Failure-soft inside the engine: the safe reading of a typo is
+        "the operator meant everything", not "discard the whole review"."""
+        findings = [_finding("f001", severity="note")]
+        kept, dropped = revise_mod.filter_findings_by_severity(findings, "urgent")
+        assert kept == findings
+        assert dropped == 0
+
+    def test_filtered_finding_never_reaches_the_llm(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The point of a pre-filter: no tokens are spent on a finding the
+        operator excluded."""
+        _stage(tmp_data_root, [
+            _finding("f001", severity="major"),
+            _finding(
+                "f002", field="headline", severity="minor",
+                quote="Latency drops on the fleet",
+                instruction="Name the artefact in the headline.",
+            ),
+        ])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ) as call:
+            report = revise_day(DATE, shadow=True, min_severity="major")
+        assert call.call_count == 1
+        assert "Name the artefact" not in call.call_args[0][0]
+        assert report.cycle is not None
+        assert [c.finding_ids for c in report.cycle.changes] == [["f001"]]
+
+    def test_everything_filtered_out_refuses_without_calling_the_llm(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding(severity="minor")])
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(DATE, shadow=False, min_severity="blocking")
+        call.assert_not_called()
+        assert report.ran is False
+        assert "min_severity=blocking" in report.note
+
+    def test_the_refusal_distinguishes_filtered_from_empty(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """"The review found nothing to rewrite" and "the floor removed
+        everything it found" produce identical counts and mean opposite
+        things. The operator has to be able to tell which one happened."""
+        _stage(tmp_data_root, [])
+        report = revise_day(DATE, shadow=True, min_severity="blocking")
+        assert "no text_edit findings" in report.note
+
+    def test_the_floor_is_not_blamed_for_findings_it_could_not_fix(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A structural finding below the floor was never going to be
+        rewritten, so counting it as a cost of the floor would overstate
+        what the operator's choice excluded."""
+        _stage(tmp_data_root, [
+            _finding("f001", severity="major"),
+            _finding("f002", severity="minor", fix_kind="structural"),
+        ])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(DATE, shadow=True, min_severity="major")
+        assert report.cycle is not None
+        assert "below min_severity" not in report.cycle.note
+
+    def test_dropped_count_is_recorded_on_the_cycle(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [
+            _finding("f001", severity="major"),
+            _finding(
+                "f002", field="headline", severity="note",
+                quote="Latency drops on the fleet",
+                instruction="Name the artefact in the headline.",
+            ),
+        ])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=_BODY_A.replace("sustained load.", "load."),
+        ):
+            report = revise_day(DATE, shadow=True, min_severity="major")
+        assert report.cycle is not None
+        assert "1 text_edit finding(s) below min_severity=major" in report.cycle.note
+
+    def test_a_severity_floor_does_not_read_as_a_stale_review(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Order matters for the diagnosis. Freshness is a property of the
+        review against the file and the operator's floor cannot change it,
+        so freshness is decided first -- otherwise a day whose findings are
+        all minor reports "stale review" under ``--min-severity major`` and
+        sends the operator to re-run a review that was never the problem.
+        (2026-08-04 had exactly that shape: four minor text_edit findings.)"""
+        _stage_released([_finding(severity="minor")], restamp=True)
+        with patch("src.revise._call_revise_llm") as call:
+            report = revise_day(
+                DATE, shadow=False, canonical=True, min_severity="major",
+            )
+        call.assert_not_called()
+        assert report.ran is False
+        assert "min_severity=major" in report.note
+        assert "stale" not in report.note
+
+    def test_operator_instruction_is_not_severity_filtered(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """A directive the operator typed has no severity and is not the
+        reviewer's opinion. The floor selects among findings; it must not
+        discard the thing the operator explicitly asked for."""
+        _stage(tmp_data_root, [_finding(severity="note")])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value="Costs land before clarity does.",
+        ):
+            report = revise_day(
+                DATE, shadow=True, min_severity="blocking",
+                instruction="Replace the cliche.",
+                instruction_target="section:big_picture:intro_lead",
+            )
+        assert report.proposed == 1
+
+
+# ---------------------------------------------------------------------------
+# Re-rendering after a live edit.
+# ---------------------------------------------------------------------------
+
+class TestReRender:
+    """A live cycle that changed ``issue.json`` and left the HTML alone has
+    only half-applied the edit: the page a reader opens would still carry the
+    sentence the editor asked to remove. The ``/revise`` workflow commits
+    ``docs/released/<date>.html`` and ``docs/index.html`` and depends on this
+    stage having written them."""
+
+    _GOOD_REPLACEMENT = _BODY_A.replace("sustained load.", "load.")
+    _REJECTED_REPLACEMENT = _BODY_A.replace(
+        "under sustained load.", "under sustained load for 12 hours.",
+    )
+
+    def test_released_edit_renders_in_release_mode(
+        self, tmp_data_root: Path, render_stub: Any,
+    ) -> None:
+        """``mode="release"`` is what writes docs/released/<date>.html AND
+        refreshes docs/index.html -- the two paths the workflow commits."""
+        _stage_released([_finding()], restamp=True)
+        with patch(
+            "src.revise._call_revise_llm", return_value=self._GOOD_REPLACEMENT,
+        ):
+            report = revise_day(DATE, shadow=False, canonical=True)
+        assert report.applied == 1
+        render_stub.assert_called_once_with(DATE, mode="release")
+
+    def test_staging_edit_renders_the_preview(
+        self, tmp_data_root: Path, render_stub: Any,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm", return_value=self._GOOD_REPLACEMENT,
+        ):
+            revise_day(DATE, shadow=False)
+        render_stub.assert_called_once_with(DATE, mode="preview")
+
+    def test_shadow_never_renders(
+        self, tmp_data_root: Path, render_stub: Any,
+    ) -> None:
+        """Shadow writes nothing, so there is nothing for the page to catch
+        up with."""
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm", return_value=self._GOOD_REPLACEMENT,
+        ):
+            revise_day(DATE, shadow=True)
+        render_stub.assert_not_called()
+
+    def test_a_cycle_that_applied_nothing_does_not_render(
+        self, tmp_data_root: Path, render_stub: Any,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value=self._REJECTED_REPLACEMENT,
+        ):
+            report = revise_day(DATE, shadow=False)
+        assert report.rejected == 1
+        render_stub.assert_not_called()
+
+    def test_render_failure_does_not_undo_the_edit(
+        self, tmp_data_root: Path, render_stub: Any,
+    ) -> None:
+        """The JSON write already succeeded. Reporting a failed cycle whose
+        edits are on disk would be a lie; a stale page is visible and
+        re-renderable in one command."""
+        render_stub.side_effect = RuntimeError("template blew up")
+        issue_path = _stage_released([_finding()], restamp=True)
+        with patch(
+            "src.revise._call_revise_llm", return_value=self._GOOD_REPLACEMENT,
+        ):
+            report = revise_day(DATE, shadow=False, canonical=True)
+        assert report.applied == 1
+        payload = json.loads(issue_path.read_text(encoding="utf-8"))
+        assert payload["pulse"]["stories"][0]["summary"].endswith("under load.")
+        assert report.cycle is not None
+        assert "render FAILED" in report.cycle.note
 
 
 # ---------------------------------------------------------------------------
@@ -1094,10 +1521,14 @@ class TestReviseCommandArguments:
     def _spy():
         captured: dict[str, Any] = {}
 
-        def _fake(run_date, *, shadow, instruction, instruction_target, canonical):
+        def _fake(
+            run_date, *, shadow, instruction, instruction_target, canonical,
+            min_severity=revise_mod.MIN_SEVERITY_DEFAULT,
+        ):
             captured.update(
                 run_date=run_date, shadow=shadow, instruction=instruction,
                 instruction_target=instruction_target, canonical=canonical,
+                min_severity=min_severity,
             )
             return revise_mod.RevisionReport(
                 date=run_date, mode="shadow" if shadow else "live", ran=True,
@@ -1154,6 +1585,44 @@ class TestReviseCommandArguments:
                 revise_mod.revise_command(date="2026-01-15")
         assert captured["run_date"] == _dt.date(2026, 1, 15)
 
+    def test_min_severity_reaches_revise_day(self) -> None:
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(
+                    date=DATE.isoformat(), min_severity="major",
+                )
+        assert captured["min_severity"] == "major"
+
+    def test_min_severity_defaults_to_filtering_nothing(self) -> None:
+        captured, fake = self._spy()
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            with pytest.raises(SystemExit):
+                revise_mod.revise_command(date=DATE.isoformat())
+        assert captured["min_severity"] == revise_mod.MIN_SEVERITY_DEFAULT
+
+    def test_the_workflow_invocation_marshals_every_flag(self) -> None:
+        """The exact argv `.github/workflows/revise-command.yml` sends. It is
+        pinned as one case because the flags only matter together: the first
+        live run passed all four and the engine acted on none of them."""
+        captured, fake = self._spy()
+        from typer.testing import CliRunner
+
+        from src.run import app
+
+        with patch.object(revise_mod, "revise_day", side_effect=fake):
+            result = CliRunner().invoke(app, [
+                "revise", "--date", DATE.isoformat(), "--live", "--released",
+                "--min-severity", "major",
+                "--instruction", "tighten the close",
+            ])
+        assert result.exit_code == 0
+        assert captured == {
+            "run_date": DATE, "shadow": False, "canonical": True,
+            "min_severity": "major", "instruction": "tighten the close",
+            "instruction_target": "",
+        }
+
 
 class TestReviseCommandDateValidation:
     def test_invalid_date_exits_with_usage_error(
@@ -1167,6 +1636,22 @@ class TestReviseCommandDateValidation:
         fake.assert_not_called()
         assert exc.value.code == 2
         assert "YYYY-MM-DD" in capsys.readouterr().out
+
+    def test_invalid_min_severity_exits_with_usage_error(
+        self, capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Strict at the CLI boundary even though the engine is failure-soft:
+        a typo'd floor means the operator gets MORE edits than they asked
+        for, and an unattended --live run would rewrite fields they meant to
+        leave alone."""
+        with patch.object(revise_mod, "revise_day") as fake:
+            with pytest.raises(SystemExit) as exc:
+                revise_mod.revise_command(
+                    date=DATE.isoformat(), min_severity="urgent",
+                )
+        fake.assert_not_called()
+        assert exc.value.code == 2
+        assert "note|minor|major|blocking" in capsys.readouterr().out
 
 
 class TestReviseCommandOutput:

@@ -947,6 +947,17 @@ Three things worth knowing before you rely on it:
 One `/revise` runs at a time per PR; a second comment queues behind the
 first rather than racing it for the same branch.
 
+**Severity floor.** To apply only the reviewer's own findings above a
+severity, say `only major` (or `--min-severity major`) in the comment:
+
+```
+/revise --min-severity major
+```
+
+Levels: `note` (default, filters nothing) → `minor` → `major` →
+`blocking`. The floor is a deterministic pre-filter in code — findings
+below it never reach the LLM, so it also spends nothing on them.
+
 ---
 
 ## 16. When to bring in the team
