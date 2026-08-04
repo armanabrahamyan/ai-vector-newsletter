@@ -66,6 +66,8 @@ import math
 import os
 import re
 from dataclasses import dataclass, field
+
+import typer
 from pathlib import Path
 from typing import Any, Optional
 
@@ -1249,7 +1251,11 @@ def _refuse(
 
 def revise_command(
     date: Optional[str] = None,
-    shadow: bool = True,
+    shadow: bool = typer.Option(
+        True,
+        "--shadow/--live",
+        help="--shadow proposes only (default); --live applies accepted edits.",
+    ),
     instruction: str = "",
     target: str = "",
     released: bool = False,
@@ -1279,6 +1285,11 @@ def revise_command(
     that is a seam awaiting a ratified policy, not a supported workflow.
     """
     import sys
+
+    # Direct python calls (tests, other modules) bypass typer, so the
+    # typer.Option sentinel arrives as the literal default -- normalise it.
+    if isinstance(shadow, typer.models.OptionInfo):
+        shadow = bool(shadow.default)
 
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
