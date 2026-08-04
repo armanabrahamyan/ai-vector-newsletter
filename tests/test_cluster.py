@@ -2267,6 +2267,637 @@ class TestModelVersionCanonicalId:
 
 
 # ===========================================================================
+# TestSameDayLinkPropagation
+# ===========================================================================
+
+class TestSameDayLinkPropagation:
+    """Second pass after cross-time linking: an unlinked cluster that sits
+    within WITHIN_DAY_COSINE_THRESHOLD of a linked same-day sibling inherits
+    the sibling's chain root.
+
+    Regression for 2026-08-04 (day three of the sandbox-escape incident):
+    the Stage-3 cross-encoder correctly kept a report and a retelling as
+    separate clusters (different speech acts), the retelling linked to prior
+    coverage at 0.8455, but the report scored 0.7930 against history — below
+    the 0.82 cross-time bar — while sitting at 0.8318 same-day similarity to
+    the linked retelling.  It ran unlinked and uncapped.
+
+    Geometry used below (2-D plane inside DIM=16, angles from the prior
+    centroid P at 0 degrees):
+      v1 at  6 deg -> cos=0.9945 vs P  (links cross-time, >= 0.82)
+      v2 at 42 deg -> cos=0.7431 vs P  (misses cross-time, < 0.82)
+                      cos(36 deg)=0.8090 vs v1 (clears same-day, >= 0.78)
+      v2 at 50 deg -> cos(44 deg)=0.7193 vs v1 (below same-day, < 0.78)
+    """
+
+    def _vec_at_degrees(self, deg: float) -> np.ndarray:
+        rad = float(np.radians(deg))
+        return _unit(
+            [float(np.cos(rad)), float(np.sin(rad))] + [0.0] * (DIM - 2)
+        )
+
+    def _plant_prior(
+        self,
+        prior_date: datetime.date,
+        cluster: Cluster,
+        centroid: np.ndarray,
+    ) -> None:
+        from src import paths
+
+        npz_path = paths.centroids_path(prior_date, canonical=True)
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(npz_path, "wb") as fh:
+            np.savez(fh, **{cluster.cluster_id: centroid})
+        clusters_path = paths.clusters_path(prior_date, canonical=True)
+        with clusters_path.open("w", encoding="utf-8") as fh:
+            fh.write(cluster.model_dump_json() + "\n")
+
+    def _prior_cluster(self, prior_cid: str) -> Cluster:
+        return Cluster(
+            cluster_id=prior_cid,
+            item_ids=["prior-item"],
+            canonical_title="Sandbox escape incident report",
+            sources=["blog_a"],
+            earliest_published=_T0,
+            size=1,
+            prior_coverage_ref=None,
+        )
+
+    def test_unlinked_sibling_inherits_chain_root(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Happy path: linked cluster at 6 deg, unlinked sibling at 42 deg.
+
+        The two same-day items merge at Stage 2 (cos 0.809 >= 0.78) and are
+        split by the verifier (speech-act grounds) — reproducing exactly how
+        the 08-04 pair stayed separate.  The sibling must then inherit the
+        linked cluster's prior_coverage_ref in the propagation pass.
+        """
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        prior_cid = _expected_cluster_id(["prior-item"])
+        self._plant_prior(
+            prior_date, self._prior_cluster(prior_cid), self._vec_at_degrees(0.0)
+        )
+
+        items = [
+            _make_item("i1", "Incident retelling with the same facts"),
+            _make_item("i2", "Report on the incident"),
+        ]
+        embeddings = np.stack(
+            [self._vec_at_degrees(6.0), self._vec_at_degrees(42.0)]
+        )
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        # Reject-all verifier: the Stage-2 merge of i1+i2 is split into
+        # singletons, exactly like the real speech-act split.
+        monkeypatch.setattr(
+            cluster_mod, "_load_verifier", lambda: _RejectAllVerifier()
+        )
+
+        from src import paths
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2
+        by_items = {frozenset(c.item_ids): c for c in clusters}
+        linked = by_items[frozenset({"i1"})]
+        sibling = by_items[frozenset({"i2"})]
+        assert linked.prior_coverage_ref == prior_cid, "direct cross-time link"
+        assert sibling.prior_coverage_ref == prior_cid, (
+            "sibling within same-day threshold of a linked cluster must "
+            "inherit its chain root"
+        )
+
+    def test_propagation_does_not_fire_below_same_day_threshold(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Sibling at 50 deg: cos(44 deg)=0.7193 < 0.78 vs the linked cluster
+        — no inheritance.  Propagation must not be looser than the same-day
+        clustering bar itself."""
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        prior_cid = _expected_cluster_id(["prior-item"])
+        self._plant_prior(
+            prior_date, self._prior_cluster(prior_cid), self._vec_at_degrees(0.0)
+        )
+
+        items = [
+            _make_item("i1", "Incident retelling"),
+            _make_item("i2", "Adjacent but different story"),
+        ]
+        embeddings = np.stack(
+            [self._vec_at_degrees(6.0), self._vec_at_degrees(50.0)]
+        )
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        from src import paths
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2
+        by_items = {frozenset(c.item_ids): c for c in clusters}
+        assert by_items[frozenset({"i1"})].prior_coverage_ref == prior_cid
+        assert by_items[frozenset({"i2"})].prior_coverage_ref is None, (
+            "below-threshold sibling must NOT inherit a link"
+        )
+
+    def test_propagation_does_not_fire_when_nothing_linked(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """No cluster gained a prior_coverage_ref from cross-time linking —
+        the propagation pass must not invent links from same-day similarity
+        alone (no history, no donors)."""
+        items = [
+            _make_item("i1", "Fresh incident report"),
+            _make_item("i2", "Fresh incident commentary"),
+        ]
+        embeddings = np.stack(
+            [self._vec_at_degrees(6.0), self._vec_at_degrees(42.0)]
+        )
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(
+            cluster_mod, "_load_verifier", lambda: _RejectAllVerifier()
+        )
+
+        from src import paths
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2
+        assert all(c.prior_coverage_ref is None for c in clusters), (
+            "with no linked donors, propagation must set nothing"
+        )
+
+    def test_two_donors_closest_wins_deterministically(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Two same-day donors both clear WITHIN_DAY_COSINE_THRESHOLD against the
+        same unlinked cluster; the CLOSER donor's chain root must win, not
+        whichever donor happens to sit first in cluster order.
+
+        Geometry (angles from root_a at 0 deg, root_b at 100 deg -- far apart
+        so neither donor's own cross-time match is ambiguous):
+          donor-a at  25 deg -> cos=0.906 vs root_a (clears cross-time, links)
+          donor-b at  80 deg -> cos=0.940 vs root_b (clears cross-time, links)
+          candidate at 60 deg:
+            cos(35 deg)=0.819 vs donor-a  (clears same-day, >= 0.78)
+            cos(20 deg)=0.940 vs donor-b  (clears same-day, closer than donor-a)
+            cos(60 deg)=0.500 vs root_a, cos(40 deg)=0.766 vs root_b (both
+            below CROSS_TIME_COSINE_THRESHOLD=0.82 -- no direct link, so this
+            is decided by propagation only).
+        """
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        root_a = _expected_cluster_id(["prior-a"])
+        root_b = _expected_cluster_id(["prior-b"])
+        cluster_a = self._prior_cluster(root_a)
+        cluster_b = Cluster(
+            cluster_id=root_b,
+            item_ids=["prior-item"],
+            canonical_title="Sandbox escape incident report",
+            sources=["blog_a"],
+            earliest_published=_T0,
+            size=1,
+        )
+
+        from src import paths
+
+        npz_path = paths.centroids_path(prior_date, canonical=True)
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(npz_path, "wb") as fh:
+            np.savez(
+                fh,
+                **{
+                    root_a: self._vec_at_degrees(0.0),
+                    root_b: self._vec_at_degrees(100.0),
+                },
+            )
+        clusters_path = paths.clusters_path(prior_date, canonical=True)
+        with clusters_path.open("w", encoding="utf-8") as fh:
+            fh.write(cluster_a.model_dump_json() + "\n")
+            fh.write(cluster_b.model_dump_json() + "\n")
+
+        items = [
+            _make_item("donor-a", "Donor near story A"),
+            _make_item("donor-b", "Donor near story B"),
+            _make_item("candidate", "Equidistant-ish candidate"),
+        ]
+        embeddings = np.stack(
+            [
+                self._vec_at_degrees(25.0),
+                self._vec_at_degrees(80.0),
+                self._vec_at_degrees(60.0),
+            ]
+        )
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(
+            cluster_mod, "_load_verifier", lambda: _RejectAllVerifier()
+        )
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 3
+        by_items = {frozenset(c.item_ids): c for c in clusters}
+        assert by_items[frozenset({"donor-a"})].prior_coverage_ref == root_a
+        assert by_items[frozenset({"donor-b"})].prior_coverage_ref == root_b
+        assert by_items[frozenset({"candidate"})].prior_coverage_ref == root_b, (
+            "candidate sits closer to donor-b (cosine 0.94) than donor-a "
+            "(cosine 0.82); the closer donor's chain root must win"
+        )
+
+    def test_propagation_not_transitive_within_one_run(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """A propagated link must not itself become a donor within the same
+        pass. Cluster C sits close only to B, and B is itself only reachable
+        via propagation from A (not a direct cross-time donor) -- C must stay
+        unlinked, pinning the "no transitive chaining within one run" claim
+        in the docstring.
+
+        Geometry: A at 0 deg (direct cross-time donor, root_a). B at 37 deg
+        (cos=0.799 vs A, clears WITHIN_DAY 0.78 but misses CROSS_TIME_COSINE_
+        THRESHOLD 0.82 directly -- must propagate from A). C at 73 deg
+        (cos(36 deg)=0.809 vs B, clears same-day vs B; cos(73 deg)=0.292 vs
+        A, nowhere near A directly or same-day).
+        """
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        root_a = _expected_cluster_id(["prior-a"])
+        cluster_a = self._prior_cluster(root_a)
+
+        from src import paths
+
+        npz_path = paths.centroids_path(prior_date, canonical=True)
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(npz_path, "wb") as fh:
+            np.savez(fh, **{root_a: self._vec_at_degrees(0.0)})
+        clusters_path = paths.clusters_path(prior_date, canonical=True)
+        with clusters_path.open("w", encoding="utf-8") as fh:
+            fh.write(cluster_a.model_dump_json() + "\n")
+
+        items = [
+            _make_item("today-a", "Today A"),
+            _make_item("today-b", "Today B"),
+            _make_item("today-c", "Today C"),
+        ]
+        embeddings = np.stack(
+            [
+                self._vec_at_degrees(0.0),
+                self._vec_at_degrees(37.0),
+                self._vec_at_degrees(73.0),
+            ]
+        )
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(
+            cluster_mod, "_load_verifier", lambda: _RejectAllVerifier()
+        )
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 3
+        by_items = {frozenset(c.item_ids): c for c in clusters}
+        assert by_items[frozenset({"today-a"})].prior_coverage_ref == root_a
+        assert by_items[frozenset({"today-b"})].prior_coverage_ref == root_a, (
+            "B misses cross-time directly but must propagate from A"
+        )
+        assert by_items[frozenset({"today-c"})].prior_coverage_ref is None, (
+            "C is only close to B, and B itself was only propagated (not a "
+            "direct cross-time donor) -- must not chain transitively in one run"
+        )
+
+    def test_propagation_self_ref_guard(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """A recurring item_id can make a today-cluster's own cluster_id equal
+        to another cluster's resolved chain root. The guard must skip that
+        propagation rather than set prior_coverage_ref == cluster_id.
+
+        Setup: an item 'foo' seeds a chain root days ago whose id is baked
+        into a mid-day cluster's prior_coverage_ref. Today, 'foo' recurs
+        alone -- its cluster_id is deterministically the same root id (SHA of
+        item_ids). A same-day donor links to the mid-day cluster and resolves
+        its chain root to that same id, and sits within WITHIN_DAY_COSINE_
+        THRESHOLD of the recurring 'foo' cluster -- without the guard, 'foo'
+        would inherit prior_coverage_ref == its own cluster_id.
+        """
+        mid_date = fixed_date - datetime.timedelta(days=1)
+        root_id = _expected_cluster_id(["foo"])  # forced by item_ids=["foo"]
+
+        mid_cluster = Cluster(
+            cluster_id=_expected_cluster_id(["mid-item"]),
+            item_ids=["mid-item"],
+            canonical_title="Mid story",
+            sources=["src_a"],
+            earliest_published=_T0,
+            size=1,
+            prior_coverage_ref=root_id,  # root not itself present -> chain resolves here
+        )
+        self._plant_prior(mid_date, mid_cluster, self._vec_at_degrees(0.0))
+
+        items = [
+            _make_item("today-donor", "Today donor story"),
+            _make_item("foo", "Recurring foo item"),
+        ]
+        embeddings = np.stack(
+            [self._vec_at_degrees(10.0), self._vec_at_degrees(46.0)]
+        )
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(
+            cluster_mod, "_load_verifier", lambda: _RejectAllVerifier()
+        )
+
+        from src import paths
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, items)
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 2
+        by_items = {frozenset(c.item_ids): c for c in clusters}
+        donor = by_items[frozenset({"today-donor"})]
+        candidate = by_items[frozenset({"foo"})]
+        assert donor.prior_coverage_ref == root_id
+        assert candidate.cluster_id == root_id, "sanity: recurring id collision is set up"
+        assert candidate.prior_coverage_ref is None, (
+            "self-ref guard must skip propagation when the donor's chain "
+            "root equals the candidate's own cluster_id"
+        )
+
+
+# ===========================================================================
+# TestCentroidRebuild
+# ===========================================================================
+
+class TestCentroidRebuild:
+    """_rebuild_missing_prior_centroids reconstructs missing released sidecars
+    from the tracked clusters.jsonl + items.jsonl.
+
+    Regression for 2026-08-03 (mode A of the repeat-story incident): the CI
+    cache only saves centroids.npz on green runs, so a failed run permanently
+    dropped a day's sidecar and later days built with a hole in their
+    cross-time history.
+    """
+
+    @staticmethod
+    def _fake_embed(vec_for: dict[str, np.ndarray]):
+        """Deterministic embedder: each item id always maps to the same vector,
+        so an original run and a rebuild produce identical embeddings."""
+
+        def _embed(items):
+            return np.stack([vec_for[it.id] for it in items]).astype(np.float32)
+
+        return _embed
+
+    def _promote_to_released(self, date: datetime.date) -> None:
+        """Copy the staging day's tracked files + sidecar to released."""
+        import shutil
+
+        from src import paths
+
+        for staging_p, released_p in [
+            (paths.items_path(date, canonical=False), paths.items_path(date, canonical=True)),
+            (paths.clusters_path(date, canonical=False), paths.clusters_path(date, canonical=True)),
+            (paths.centroids_path(date, canonical=False), paths.centroids_path(date, canonical=True)),
+        ]:
+            released_p.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(staging_p, released_p)
+
+    def test_rebuild_reconstructs_deleted_sidecar_bit_for_bit(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Run a prior day for real (staged -> promoted), delete its released
+        sidecar, rebuild, and compare every centroid array byte-for-byte."""
+        from src import paths
+
+        prior_date = fixed_date - datetime.timedelta(days=3)
+
+        vec_for = {
+            "p1": _unit([1.0, 0.01] + [0.0] * (DIM - 2)),
+            "p2": _unit([1.0, 0.02] + [0.0] * (DIM - 2)),  # merges with p1
+            "p3": _unit([0.0, 1.0] + [0.0] * (DIM - 2)),   # separate singleton
+        }
+        monkeypatch.setattr(cluster_mod, "_embed", self._fake_embed(vec_for))
+
+        items = [
+            _make_item("p1", "Story A"),
+            _make_item("p2", "Story A again"),
+            _make_item("p3", "Unrelated story"),
+        ]
+        paths.staging_dir(prior_date).mkdir(parents=True, exist_ok=True)
+        _write_items(paths.items_path(prior_date, canonical=False), items)
+        cluster_mod.cluster_day(run_date=prior_date)
+        self._promote_to_released(prior_date)
+
+        released_npz = paths.centroids_path(prior_date, canonical=True)
+        with np.load(str(released_npz)) as npz:
+            original = {key: npz[key].copy() for key in npz.files}
+        released_npz.unlink()
+
+        rebuilt_dates = cluster_mod._rebuild_missing_prior_centroids(fixed_date)
+
+        assert rebuilt_dates == [prior_date]
+        assert released_npz.exists(), "sidecar must be rewritten in released"
+        with np.load(str(released_npz)) as npz:
+            rebuilt = {key: npz[key].copy() for key in npz.files}
+        assert set(rebuilt) == set(original), "same cluster_id keys"
+        for key, orig_vec in original.items():
+            assert rebuilt[key].dtype == orig_vec.dtype
+            assert rebuilt[key].tobytes() == orig_vec.tobytes(), (
+                f"centroid for {key} must be bit-for-bit identical"
+            )
+
+    def test_rebuild_skips_days_already_present(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """A day with an existing sidecar is never re-embedded or rewritten."""
+        from src import paths
+
+        prior_date = fixed_date - datetime.timedelta(days=2)
+        prior_cid = _expected_cluster_id(["prior-item"])
+        sentinel = _unit([0.5, 0.5] + [0.0] * (DIM - 2))
+
+        paths.released_dir(prior_date).mkdir(parents=True, exist_ok=True)
+        _write_items(
+            paths.items_path(prior_date, canonical=True),
+            [_make_item("prior-item", "Prior story")],
+        )
+        prior_cluster = Cluster(
+            cluster_id=prior_cid,
+            item_ids=["prior-item"],
+            canonical_title="Prior story",
+            sources=["src_a"],
+            earliest_published=_T0,
+            size=1,
+        )
+        with paths.clusters_path(prior_date, canonical=True).open("w", encoding="utf-8") as fh:
+            fh.write(prior_cluster.model_dump_json() + "\n")
+        npz_path = paths.centroids_path(prior_date, canonical=True)
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(npz_path, "wb") as fh:
+            np.savez(fh, **{prior_cid: sentinel})
+
+        def _explode(_items):
+            raise AssertionError("_embed must not be called for a present sidecar")
+
+        monkeypatch.setattr(cluster_mod, "_embed", _explode)
+
+        rebuilt_dates = cluster_mod._rebuild_missing_prior_centroids(fixed_date)
+
+        assert rebuilt_dates == []
+        with np.load(str(npz_path)) as npz:
+            assert npz.files == [prior_cid]
+            assert np.array_equal(npz[prior_cid], sentinel), "sidecar untouched"
+
+    def test_rebuild_skips_day_without_items_file(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """clusters.jsonl alone (no items.jsonl) is not enough to rebuild —
+        skip gracefully, never crash."""
+        from src import paths
+
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        prior_cluster = Cluster(
+            cluster_id=_expected_cluster_id(["ghost-item"]),
+            item_ids=["ghost-item"],
+            canonical_title="Ghost story",
+            sources=["src_a"],
+            earliest_published=_T0,
+            size=1,
+        )
+        clusters_p = paths.clusters_path(prior_date, canonical=True)
+        clusters_p.parent.mkdir(parents=True, exist_ok=True)
+        with clusters_p.open("w", encoding="utf-8") as fh:
+            fh.write(prior_cluster.model_dump_json() + "\n")
+
+        def _explode(_items):
+            raise AssertionError("_embed must not be called without items.jsonl")
+
+        monkeypatch.setattr(cluster_mod, "_embed", _explode)
+
+        rebuilt_dates = cluster_mod._rebuild_missing_prior_centroids(fixed_date)
+
+        assert rebuilt_dates == []
+        assert not paths.centroids_path(prior_date, canonical=True).exists()
+
+    def test_cluster_day_links_after_rebuilding_missing_history(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """End-to-end mode-A regression: a prior released day has tracked files
+        but NO sidecar (the 2026-08-03 state).  cluster_day must rebuild the
+        sidecar at stage start and then cross-time-link today's continuation
+        against it."""
+        from src import paths
+
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        prior_cid = _expected_cluster_id(["prior-item"])
+        shared_vec = _unit([1.0] + [0.0] * (DIM - 1))
+        today_vec = _unit([1.0, 0.001] + [0.0] * (DIM - 2))
+
+        paths.released_dir(prior_date).mkdir(parents=True, exist_ok=True)
+        _write_items(
+            paths.items_path(prior_date, canonical=True),
+            [_make_item("prior-item", "Sandbox escape incident")],
+        )
+        prior_cluster = Cluster(
+            cluster_id=prior_cid,
+            item_ids=["prior-item"],
+            canonical_title="Sandbox escape incident",
+            sources=["src_a"],
+            earliest_published=_T0,
+            size=1,
+        )
+        with paths.clusters_path(prior_date, canonical=True).open("w", encoding="utf-8") as fh:
+            fh.write(prior_cluster.model_dump_json() + "\n")
+        # Deliberately NO centroids.npz for prior_date.
+
+        vec_for = {"prior-item": shared_vec, "today-1": today_vec}
+        monkeypatch.setattr(cluster_mod, "_embed", self._fake_embed(vec_for))
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, [_make_item("today-1", "Sandbox escape follow-up")])
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert paths.centroids_path(prior_date, canonical=True).exists(), (
+            "cluster_day must heal the missing sidecar before linking"
+        )
+        assert len(clusters) == 1
+        assert clusters[0].prior_coverage_ref == prior_cid, (
+            "with the sidecar rebuilt, the continuation must link"
+        )
+
+    def test_rebuild_hard_skips_day_with_corrupt_item_line(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """items.jsonl has one valid line and one corrupt (unparseable) line
+        for a two-member cluster. Rebuild must hard-skip the whole day: a
+        centroid averaged over only the parsed member would silently diverge
+        from the original day's math (the sidecar invariant is "when present,
+        exactly the original run's centroids"), and a visibly missing day is
+        already tolerated by every history reader while a subtly-wrong
+        centroid is not debuggable.  No crash, no sidecar, loud warning.
+        """
+        from src import paths
+
+        prior_date = fixed_date - datetime.timedelta(days=1)
+        cid = _expected_cluster_id(["a", "b"])
+        cluster = Cluster(
+            cluster_id=cid,
+            item_ids=["a", "b"],
+            canonical_title="Two-member story",
+            sources=["src_a"],
+            earliest_published=_T0,
+            size=2,
+        )
+        clusters_p = paths.clusters_path(prior_date, canonical=True)
+        clusters_p.parent.mkdir(parents=True, exist_ok=True)
+        with clusters_p.open("w", encoding="utf-8") as fh:
+            fh.write(cluster.model_dump_json() + "\n")
+
+        item_a = _make_item("a", "Story half A")
+        items_p = paths.items_path(prior_date, canonical=True)
+        with items_p.open("w", encoding="utf-8") as fh:
+            fh.write(item_a.model_dump_json() + "\n")
+            fh.write("{not valid json at all!!\n")  # corrupt line stands in for item 'b'
+
+        def _explode(_items):
+            raise AssertionError(
+                "_embed must not be called for a day with corrupt tracked lines"
+            )
+
+        monkeypatch.setattr(cluster_mod, "_embed", _explode)
+
+        rebuilt_dates = cluster_mod._rebuild_missing_prior_centroids(fixed_date)
+
+        assert rebuilt_dates == [], (
+            "a day with any unparseable tracked line must be hard-skipped, "
+            "not rebuilt from partial membership"
+        )
+        assert not paths.centroids_path(prior_date, canonical=True).exists(), (
+            "no sidecar is better than a silently-degraded one"
+        )
+
+
+# ===========================================================================
 # TestCrossTimeSelfRefFix
 # ===========================================================================
 
@@ -2424,4 +3055,85 @@ class TestCrossTimeSelfRefFix:
         assert clusters[0].prior_coverage_ref == root_cid, (
             f"Expected prior_coverage_ref={root_cid!r}, "
             f"got {clusters[0].prior_coverage_ref!r}"
+        )
+
+    def test_chain_resolution_landing_on_own_id_links_nearest_prior(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Chain-RESOLUTION self-ref: the direct match is a DIFFERENT prior
+        cluster, but following its chain lands on today's own cluster_id
+        (a recurring singleton item_id weeks apart seeded the chain root).
+
+        Day N-5: c_self (item 'recur-item', ref None) — released cluster
+        record only, no centroid (its sidecar day is treated as absent, so it
+        can never be the direct match).
+        Day N-1: c_mid (item 'mid-item', prior_coverage_ref=c_self) with a
+        centroid identical to today's vector.
+        Day N: 'recur-item' recurs -> today's cluster_id == c_self.  Direct
+        best match is c_mid; resolution walks c_mid -> c_self == own id.
+
+        Expected: prior_coverage_ref = c_mid (nearest non-self prior cluster,
+        keeping the continuation marked), never a self-ref, and not None.
+        """
+        shared_vec = _unit([1.0] + [0.0] * (DIM - 1))
+        old_date = fixed_date - datetime.timedelta(days=5)
+        mid_date = fixed_date - datetime.timedelta(days=1)
+
+        self_cid = _expected_cluster_id(["recur-item"])
+        mid_cid = _expected_cluster_id(["mid-item"])
+
+        from src import paths
+
+        # Old day: cluster record only (no centroid, no items -> rebuild skips).
+        old_cluster_obj = Cluster(
+            cluster_id=self_cid,
+            item_ids=["recur-item"],
+            canonical_title="Slow feed story",
+            sources=["LLMQuant Newsletter"],
+            earliest_published=_T1,
+            size=1,
+            prior_coverage_ref=None,
+        )
+        old_clusters_path = paths.clusters_path(old_date, canonical=True)
+        old_clusters_path.parent.mkdir(parents=True, exist_ok=True)
+        with old_clusters_path.open("w", encoding="utf-8") as fh:
+            fh.write(old_cluster_obj.model_dump_json() + "\n")
+
+        # Mid day: chained to the old cluster; centroid == today's vector.
+        mid_cluster_obj = Cluster(
+            cluster_id=mid_cid,
+            item_ids=["mid-item"],
+            canonical_title="Follow-up on slow feed story",
+            sources=["SomeSource"],
+            earliest_published=_T0,
+            size=1,
+            prior_coverage_ref=self_cid,
+        )
+        self._plant_prior(tmp_data_root, mid_date, mid_cluster_obj, shared_vec)
+
+        today_item = Item(
+            id="recur-item",
+            source="LLMQuant Newsletter",
+            source_type="rss",
+            url="https://llmquant.substack.com/p/some-article",
+            title="Slow feed story",
+            published_at=_T0,
+            raw_summary="content",
+            fetched_at=FIXED_NOW,
+        )
+        embeddings = np.stack([shared_vec])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, [today_item])
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1
+        assert clusters[0].cluster_id == self_cid, "sanity: id collision is set up"
+        assert clusters[0].prior_coverage_ref == mid_cid, (
+            "resolution landing on today's own id must fall back to the "
+            "nearest non-self prior cluster (the direct match), got "
+            f"{clusters[0].prior_coverage_ref!r}"
         )

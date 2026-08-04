@@ -988,6 +988,152 @@ def _write_centroids(
     return out_path
 
 
+def _rebuild_missing_prior_centroids(
+    today: datetime.date,
+    lookback_days: int = CROSS_TIME_LOOKBACK_DAYS,
+) -> list[datetime.date]:
+    """Rebuild missing released centroid sidecars from tracked files.
+
+    Failure mode this fixes (2026-08-03 incident): ``centroids.npz`` is
+    gitignored working state that survives between CI runs only via the
+    actions/cache layer, and that cache's post-step saves only on green runs.
+    A failed run therefore drops the sidecar for its day, and every later day
+    inside the lookback window builds with a hole in its history — cross-time
+    linking silently sees nothing for that day and the same story repeats.
+
+    The tracked files are sufficient to reconstruct the sidecar:
+    ``clusters.jsonl`` + ``items.jsonl`` are committed on release, and a
+    centroid is a pure function of them — the mean of the member items'
+    embeddings under the pinned model revision, L2-normalised, exactly the
+    math ``_compute_centroids`` ran on the original day.  So at cluster-stage
+    start, before ``_load_prior_centroids`` reads history, any canonical day
+    in the window that has both tracked files but no sidecar is re-embedded
+    and its sidecar rewritten.  The CI cache stays as a warm layer: normally
+    zero or one day needs rebuilding (seconds); a full cold rebuild of the
+    14-day window is ~4-8 minutes — acceptable.
+
+    The published-URL filter is deliberately NOT applied when re-embedding:
+    centroids average only the rows referenced by ``cluster.item_ids``, so
+    extra rows are inert, while filtering could only remove rows a cluster
+    needs (the original run filtered before clustering, so no released
+    cluster references a filtered item — but re-deriving that filter state
+    retroactively is fragile and buys nothing).
+
+    A day with ANY unparseable line in either tracked file is hard-skipped
+    (loud warning, no sidecar written).  Rationale: the sidecar's invariant
+    is "when present, exactly the original day's math".  A centroid averaged
+    over only the lines that parsed would silently diverge from what the
+    original run computed — a subtle similarity drift that is far harder to
+    debug than a visibly missing day, which every history reader already
+    tolerates.  Corrupt lines in released, committed files also signal
+    archive damage that deserves attention, not smoothing over.
+
+    Per-day failures are logged and skipped — never crash today because
+    yesterday is broken.  Returns the list of dates rebuilt.
+    """
+    rebuilt: list[datetime.date] = []
+    for delta in range(1, lookback_days + 1):
+        prior_date = today - datetime.timedelta(days=delta)
+        npz_path = paths.centroids_path(prior_date, canonical=True)
+        if npz_path.exists():
+            continue
+        clusters_file = paths.clusters_path(prior_date, canonical=True)
+        items_file = paths.items_path(prior_date, canonical=True)
+        if not clusters_file.exists() or not items_file.exists():
+            continue  # No tracked material for this day — nothing to rebuild.
+
+        try:
+            parse_failures = 0
+
+            # Parse the day's items (raw — no published-URL filter, see docstring).
+            day_items: list[Item] = []
+            with items_file.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        day_items.append(Item.model_validate_json(line))
+                    except Exception as exc:
+                        parse_failures += 1
+                        logger.warning(
+                            "Rebuild: failed to parse Item line",
+                            extra={
+                                "component": "cluster",
+                                "path": str(items_file),
+                                "error": str(exc),
+                            },
+                        )
+
+            # Parse the day's clusters.
+            day_clusters: list[Cluster] = []
+            with clusters_file.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        day_clusters.append(Cluster.model_validate_json(line))
+                    except Exception as exc:
+                        parse_failures += 1
+                        logger.warning(
+                            "Rebuild: failed to parse Cluster line",
+                            extra={
+                                "component": "cluster",
+                                "path": str(clusters_file),
+                                "error": str(exc),
+                            },
+                        )
+
+            if parse_failures:
+                # Hard-skip: a centroid averaged over only the lines that
+                # parsed would silently diverge from the original day's math
+                # (see docstring).  No sidecar is better than a wrong one.
+                logger.warning(
+                    "Rebuild: %d unparseable line(s) in tracked files for %s; "
+                    "skipping day (a partial rebuild would silently diverge "
+                    "from the original centroids)",
+                    parse_failures,
+                    prior_date,
+                    extra={
+                        "component": "cluster",
+                        "date": str(prior_date),
+                        "parse_failures": parse_failures,
+                    },
+                )
+                continue
+
+            if not day_items or not day_clusters:
+                logger.warning(
+                    "Rebuild: no usable items/clusters for %s; skipping",
+                    prior_date,
+                    extra={"component": "cluster", "date": str(prior_date)},
+                )
+                continue
+
+            embeddings = _embed(day_items)
+            centroids = _compute_centroids(day_clusters, day_items, embeddings)
+            _write_centroids(npz_path, centroids)
+            rebuilt.append(prior_date)
+            logger.info(
+                "rebuilt centroids for %s (%d clusters)",
+                prior_date,
+                len(centroids),
+                extra={"component": "cluster", "date": str(prior_date)},
+            )
+        except Exception as exc:
+            logger.warning(
+                "Rebuild: failed for %s; proceeding without that day",
+                prior_date,
+                extra={
+                    "component": "cluster",
+                    "date": str(prior_date),
+                    "error": str(exc),
+                },
+            )
+    return rebuilt
+
+
 def _load_prior_centroids(
     today: datetime.date,
     lookback_days: int = CROSS_TIME_LOOKBACK_DAYS,
@@ -1155,12 +1301,101 @@ def _link_cross_time(
             else:
                 root_id = _resolve_chain_root(matched_id, prior_clusters)
 
+            # Chain-RESOLUTION self-ref guard: the guard above only catches the
+            # directly-matched prior id equaling today's own id.  Resolution can
+            # also land on today's id via a DIFFERENT direct match — a recurring
+            # singleton item_id weeks apart makes an old day's cluster share
+            # today's cluster_id and sit as some chain's root.  A self-ref is
+            # useless downstream, but the continuation signal is still real, so
+            # point at the nearest non-self prior cluster (the direct match)
+            # instead of dropping the link.
+            if root_id == cluster.cluster_id:
+                if matched_id == cluster.cluster_id:
+                    continue  # No non-self node anywhere in the chain.
+                root_id = matched_id
+
             # Direct attribute mutation is fine: prior_coverage_ref is a
             # declared field on Cluster. extra="forbid" only blocks undeclared
             # fields.
             cluster.prior_coverage_ref = root_id
             linked += 1
     return linked
+
+
+def _propagate_same_day_links(
+    clusters: list[Cluster],
+    today_centroids: dict[str, np.ndarray],
+) -> int:
+    """Second pass after ``_link_cross_time``: propagate chain roots within today.
+
+    Two same-day clusters can describe the same *incident* while staying
+    separate clusters on speech-act grounds — the Stage-3 cross-encoder
+    correctly splits e.g. an incident report from a commentary retelling it.
+    That split is right for merging (the items really are different speech
+    acts) but irrelevant to the question "is this incident already covered?".
+    When one sibling links to prior coverage and the other narrowly misses the
+    stricter cross-time bar, the unlinked sibling sails through uncapped and
+    the story repeats.  Observed 2026-08-04: a retelling linked to the prior
+    chain at 0.8455, while its sibling scored 0.7930 against history (below
+    the 0.82 cross-time threshold) despite sitting at 0.8318 same-day
+    similarity to the linked cluster — day three of the same incident ran
+    unlinked.
+
+    Fix: any cluster with no ``prior_coverage_ref`` whose centroid clears
+    WITHIN_DAY_COSINE_THRESHOLD (0.78) against a same-day cluster that HAS
+    one inherits that cluster's chain root.  The looser same-day bar is the
+    right one here because the cost asymmetry differs from linking: a false
+    positive only caps significance and adds a callback downstream — it never
+    merges or drops a story.
+
+    One extra pass over centroids already in memory.  Links set by this pass
+    do not themselves propagate further (the donor set is snapshotted before
+    the loop — no transitive chaining within one run).  Mutates clusters in
+    place.  Returns the count of propagated links.
+    """
+    donors = [
+        c
+        for c in clusters
+        if c.prior_coverage_ref is not None and c.cluster_id in today_centroids
+    ]
+    if not donors:
+        return 0
+
+    donor_matrix = np.stack(
+        [today_centroids[c.cluster_id] for c in donors]
+    )  # (L, D)
+
+    propagated = 0
+    for cluster in clusters:
+        if cluster.prior_coverage_ref is not None:
+            continue
+        vec = today_centroids.get(cluster.cluster_id)
+        if vec is None:
+            continue
+        sims: np.ndarray = donor_matrix @ vec
+        best_idx = int(np.argmax(sims))
+        best_sim = float(sims[best_idx])
+        if best_sim < WITHIN_DAY_COSINE_THRESHOLD:
+            continue
+        donor = donors[best_idx]
+        if donor.prior_coverage_ref == cluster.cluster_id:
+            # Degenerate: the donor's chain root IS this cluster's id (recurring
+            # item_id across days).  A self-ref is useless; skip.
+            continue
+        cluster.prior_coverage_ref = donor.prior_coverage_ref
+        propagated += 1
+        logger.info(
+            "Same-day link propagation: %s ('%s') inherits "
+            "prior_coverage_ref=%s from %s (cosine=%.4f >= %.2f)",
+            cluster.cluster_id,
+            cluster.canonical_title[:60],
+            donor.prior_coverage_ref,
+            donor.cluster_id,
+            best_sim,
+            WITHIN_DAY_COSINE_THRESHOLD,
+            extra={"component": "cluster"},
+        )
+    return propagated
 
 
 def _write_clusters(out_path: Path, clusters: list[Cluster]) -> None:
@@ -1220,6 +1455,11 @@ def cluster_day(
     staging_day = paths.staging_dir(run_date)
     staging_day.mkdir(parents=True, exist_ok=True)
 
+    # --- Step 0a: heal history — rebuild missing released centroid sidecars ---
+    # Runs before any history read so cross-time linking never builds against
+    # a hole left by a failed CI run (see _rebuild_missing_prior_centroids).
+    _rebuild_missing_prior_centroids(run_date, lookback_days)
+
     # --- Step 0: cross-issue URL filter (canonical-only exclusion index) -------
     published_set = _load_published_urls()
 
@@ -1261,6 +1501,11 @@ def cluster_day(
         clusters, today_centroids, prior_centroids, prior_clusters
     )
 
+    # --- Step 4b: same-day link propagation ------------------------------------
+    # Unlinked clusters that sit within the same-day threshold of a linked
+    # sibling inherit its chain root (see _propagate_same_day_links).
+    propagated = _propagate_same_day_links(clusters, today_centroids)
+
     # --- Step 5: write clusters.jsonl (staging) --------------------------------
     clusters_out = paths.clusters_path(run_date, canonical=False)
     _write_clusters(clusters_out, clusters)
@@ -1268,10 +1513,11 @@ def cluster_day(
     # --- Summary log line -------------------------------------------------------
     logger.info(
         "clustered %d items -> %d clusters | %d cross-time linked (canonical only)"
-        " | %d filtered as previously released -> %s",
+        " | %d same-day propagated | %d filtered as previously released -> %s",
         len(items),
         len(clusters),
         cross_linked,
+        propagated,
         filtered_count,
         clusters_out,
         extra={"component": "cluster", "date": str(run_date)},

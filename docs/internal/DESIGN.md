@@ -677,6 +677,17 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   (Schema v1 named this `cross_time_ref`; the v2 rename clarifies that
   the field flags topical recurrence, not progression. Pydantic alias
   keeps released v1 archive files parseable.)
+- **Same-day link propagation (2026-08-04):** after `_link_cross_time`, an
+  unlinked cluster inherits the chain root of a linked same-day cluster
+  when their centroid similarity clears `WITHIN_DAY_COSINE_THRESHOLD`
+  (0.78). The threshold split stays 0.78 same-day / 0.82 cross-time; the
+  propagation pass uses the same-day bar because its false-positive cost
+  is only a significance cap plus a callback — never a merge or a drop.
+- **Self-healing sidecars (2026-08-04):** at cluster-stage start, any
+  lookback day with tracked `clusters.jsonl` + `items.jsonl` but no
+  `embeddings/centroids.npz` is rebuilt by re-embedding under the pinned
+  model revision and averaging per cluster membership. The CI cache is a
+  warm layer only, never load-bearing. No schema change.
 - **Read contract:** consumers iterate; if a record fails to parse,
   Retrieval Engineer's writer is buggy and Eval Engineer surfaces it — a
   reader does not silently skip.
