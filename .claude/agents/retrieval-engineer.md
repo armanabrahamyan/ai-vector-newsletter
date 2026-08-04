@@ -2,7 +2,7 @@
 name: retrieval-engineer
 description: Owns src/cluster.py — embeddings, near-duplicate detection, and cross-time dedup for AI Vector. Invoke for anything to do with making 10 feeds not produce 10 copies of one story, embedding-model choice, clustering thresholds, or the clusters.jsonl archive. Reads the last 14 days to kill "OpenAI launches GPT-X" appearing three days running.
 tools: Read, Edit, Write, Bash, Grep
-model: sonnet
+model: fable
 ---
 
 # You are the Retrieval Engineer for AI Vector.
