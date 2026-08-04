@@ -1327,6 +1327,16 @@ That control is **the gate**: `src/gate.py`, one deterministic function
 (`decide(date) -> GateDecision`) that reads the day's artifacts and answers
 one question, `auto_merge` or `hold`. The answer is written to `gate.json`.
 
+**Forced release on staging-integrity failure (ratified 2026-08-04).** When
+`aiv release` refuses a thin draft (story minimums, section floors), the
+nightly workflow retries with `--force` and surfaces the failed checks at
+the top of the PR body under a `[THIN]` title — the run must not die,
+because the merge/close decision belongs to the operator and a failed run
+wastes the night's tokens. Two invariants keep this safe: the PR merge
+remains the only path to publish, and **a forced release must never
+auto-merge** — when auto-merge phases are implemented, the gate (or the
+merge step) must treat `forced=true` as an unconditional hold.
+
 **The gate does not change the human path.** `verify` and `review` remain
 advisory exactly as documented above: an `unavailable` verdict from either
 never blocks a human-run `aiv release`. The gate governs the *unattended*

@@ -9,7 +9,10 @@ name: Daily publish
 # - Canonical = data/released/ on main. The issue number assigned here is a
 #   proposal; it becomes a commitment at merge. A closed PR burns nothing.
 # - At most one release/ PR may be open at a time (numbering uniqueness).
-# - Never pass --force or --revise on an unattended run.
+# - --force is permitted ONLY as the staging-integrity fallback below
+#   (ratified 2026-08-04): the failure surfaces at the top of the PR body
+#   and the merge stays human. A forced release must never auto-merge.
+#   --revise is never passed on an unattended run.
 
 on:
   schedule:
@@ -247,8 +250,26 @@ jobs:
               fh.write("has_comment=true\n")
           PY
 
+      # Direction ratified 2026-08-04: a staging-integrity failure (thin
+      # issue) does NOT kill the run. The release is retried with --force,
+      # the failed checks are surfaced at the TOP of the PR body, and the
+      # merge/close call is the operator's. Safe because the PR merge is
+      # still the publish gate; a forced release must NEVER auto-merge in
+      # any future phase (see DESIGN.md, Unattended publish).
       - name: Release (promote staging to canonical on this runner)
-        run: aiv release --date "${{ steps.when.outputs.date }}"
+        id: release
+        run: |
+          DATE="${{ steps.when.outputs.date }}"
+          if aiv release --date "$DATE" > release_output.txt 2>&1; then
+            cat release_output.txt
+            echo "forced=false" >> "$GITHUB_OUTPUT"
+          else
+            cat release_output.txt
+            grep -E "^\s+- " release_output.txt > integrity_failures.txt || true
+            echo "Integrity check failed -- retrying with --force so the PR carries the decision."
+            aiv release --date "$DATE" --force
+            echo "forced=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Derive issue number and branch name
         id: ids
@@ -262,6 +283,7 @@ jobs:
         env:
           DATE: ${{ steps.when.outputs.date }}
           ISSUE_NUM: ${{ steps.ids.outputs.issue_num }}
+          RELEASE_FORCED: ${{ steps.release.outputs.forced }}
         run: |
           python <<'PY'
           import datetime as dt
@@ -338,7 +360,28 @@ jobs:
               f"https://raw.githack.com/{repo}/release/{date}-issue-{issue_num}"
               f"/docs/released/{date}.html"
           )
-          body = "\n".join([
+          forced_block = []
+          if os.environ.get("RELEASE_FORCED") == "true":
+              failures = "no detail captured"
+              fpath = Path("integrity_failures.txt")
+              if fpath.exists() and fpath.read_text().strip():
+                  failures = fpath.read_text().strip()
+              forced_block = [
+                  "## ⚠️ FORCED RELEASE — integrity check failed",
+                  "",
+                  "The staging-integrity gate refused this draft; it was",
+                  "force-promoted so the decision reaches you instead of a",
+                  "failed run. Failed checks:",
+                  "",
+                  "```",
+                  failures,
+                  "```",
+                  "",
+                  "Merge = publish it anyway. Close = skip the day.",
+                  "",
+              ]
+
+          body = "\n".join(forced_block + [
               "## What changes in tomorrow's issue",
               "",
               f"Issue #{issue_num} for {date} (automated nightly build): "
@@ -412,9 +455,13 @@ jobs:
       - name: Open release PR
         id: open_pr
         run: |
+          TITLE="chore(release): publish ${{ steps.when.outputs.date }} as #${{ steps.ids.outputs.issue_num }}"
+          if [ "${{ steps.release.outputs.forced }}" = "true" ]; then
+            TITLE="[THIN] $TITLE"
+          fi
           PR_URL=$(gh pr create --repo "${{ github.repository }}" \
             --base main --head "${{ steps.ids.outputs.branch }}" \
-            --title "chore(release): publish ${{ steps.when.outputs.date }} as #${{ steps.ids.outputs.issue_num }}" \
+            --title "$TITLE" \
             --body-file pr_body.md)
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
@@ -427,6 +474,7 @@ jobs:
           MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
           MAIL_TO: a.abrahamyan@gmail.com
           PR_URL: ${{ steps.open_pr.outputs.url }}
+          RELEASE_FORCED: ${{ steps.release.outputs.forced }}
           ISSUE_NUM: ${{ steps.ids.outputs.issue_num }}
           DATE: ${{ steps.when.outputs.date }}
         run: |
@@ -459,7 +507,9 @@ jobs:
           )
 
           msg = EmailMessage()
-          msg["Subject"] = f"AI Vector #{issue_num} ({date}) ready -- {gate_first}"
+          forced = os.environ.get("RELEASE_FORCED") == "true"
+          prefix = "[THIN] " if forced else ""
+          msg["Subject"] = f"{prefix}AI Vector #{issue_num} ({date}) ready -- {gate_first}"
           msg["From"] = to_addr
           msg["To"] = to_addr
           msg.set_content(
