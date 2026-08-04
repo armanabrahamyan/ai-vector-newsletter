@@ -3137,3 +3137,145 @@ class TestCrossTimeSelfRefFix:
             "nearest non-self prior cluster (the direct match), got "
             f"{clusters[0].prior_coverage_ref!r}"
         )
+
+    def test_argmax_self_without_ancestor_falls_back_to_best_nonself(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """Argmax-self residue (2026-08-03 incident): the self-hit must not
+        shadow an above-threshold non-self prior match.
+
+        Day N-2: c_other (different story, ref None), centroid at cosine 0.86
+        to today's vector — above CROSS_TIME_COSINE_THRESHOLD (0.82).
+        Day N-1: c_self (same item_id as today, ref None), centroid identical
+        to today's vector (cosine 1.0).
+        Day N: the item recurs -> today's cluster_id == c_self; argmax is the
+        self-hit at 1.0, and the self-node has no ancestor.
+
+        The pre-fix code bailed here, swallowing the 0.86 link (real case:
+        c_e779af306d834c95 dropped a 0.8594 match to c_7c79e068a7701c34).
+        Expected: prior_coverage_ref = c_other.
+        """
+        shared_vec = _unit([1.0] + [0.0] * (DIM - 1))
+        # cosine(shared_vec, other_vec) == 0.86 exactly (>= 0.82 threshold).
+        other_vec = _unit([0.86, float(np.sqrt(1.0 - 0.86**2))] + [0.0] * (DIM - 2))
+
+        other_date = fixed_date - datetime.timedelta(days=2)
+        self_date = fixed_date - datetime.timedelta(days=1)
+
+        self_cid = _expected_cluster_id(["recur-item"])
+        other_cid = _expected_cluster_id(["other-anchor"])
+
+        other_cluster_obj = Cluster(
+            cluster_id=other_cid,
+            item_ids=["other-anchor"],
+            canonical_title="Related earlier story",
+            sources=["SomeSource"],
+            earliest_published=_T1,
+            size=1,
+            prior_coverage_ref=None,
+        )
+        self_cluster_obj = Cluster(
+            cluster_id=self_cid,
+            item_ids=["recur-item"],
+            canonical_title="Slow feed story",
+            sources=["LLMQuant Newsletter"],
+            earliest_published=_T0,
+            size=1,
+            prior_coverage_ref=None,  # no ancestor: the pre-fix bail branch
+        )
+        self._plant_prior(tmp_data_root, other_date, other_cluster_obj, other_vec)
+        self._plant_prior(tmp_data_root, self_date, self_cluster_obj, shared_vec)
+
+        today_item = Item(
+            id="recur-item",
+            source="LLMQuant Newsletter",
+            source_type="rss",
+            url="https://llmquant.substack.com/p/some-article",
+            title="Slow feed story",
+            published_at=_T0,
+            raw_summary="content",
+            fetched_at=FIXED_NOW,
+        )
+        embeddings = np.stack([shared_vec])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(cluster_mod, "CROSS_TIME_COSINE_THRESHOLD", 0.82)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, [today_item])
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1
+        assert clusters[0].cluster_id == self_cid, "sanity: id collision is set up"
+        assert clusters[0].prior_coverage_ref == other_cid, (
+            "argmax-self with no ancestor must fall back to the best "
+            "above-threshold non-self prior match, got "
+            f"{clusters[0].prior_coverage_ref!r}"
+        )
+
+    def test_argmax_self_nonself_below_threshold_stays_none(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_data_root: Path, fixed_date: datetime.date
+    ) -> None:
+        """The non-self fallback keeps the cross-time bar: a sub-threshold
+        non-self match (cosine 0.50 < 0.82) must NOT be linked just because
+        the argmax was a self-hit.  Guards against an unconditional fallback.
+        """
+        shared_vec = _unit([1.0] + [0.0] * (DIM - 1))
+        # cosine(shared_vec, far_vec) == 0.50 (< 0.82 threshold).
+        far_vec = _unit([0.50, float(np.sqrt(1.0 - 0.50**2))] + [0.0] * (DIM - 2))
+
+        far_date = fixed_date - datetime.timedelta(days=2)
+        self_date = fixed_date - datetime.timedelta(days=1)
+
+        self_cid = _expected_cluster_id(["recur-item"])
+        far_cid = _expected_cluster_id(["far-anchor"])
+
+        far_cluster_obj = Cluster(
+            cluster_id=far_cid,
+            item_ids=["far-anchor"],
+            canonical_title="Unrelated story",
+            sources=["SomeSource"],
+            earliest_published=_T1,
+            size=1,
+            prior_coverage_ref=None,
+        )
+        self_cluster_obj = Cluster(
+            cluster_id=self_cid,
+            item_ids=["recur-item"],
+            canonical_title="Slow feed story",
+            sources=["LLMQuant Newsletter"],
+            earliest_published=_T0,
+            size=1,
+            prior_coverage_ref=None,
+        )
+        self._plant_prior(tmp_data_root, far_date, far_cluster_obj, far_vec)
+        self._plant_prior(tmp_data_root, self_date, self_cluster_obj, shared_vec)
+
+        today_item = Item(
+            id="recur-item",
+            source="LLMQuant Newsletter",
+            source_type="rss",
+            url="https://llmquant.substack.com/p/some-article",
+            title="Slow feed story",
+            published_at=_T0,
+            raw_summary="content",
+            fetched_at=FIXED_NOW,
+        )
+        embeddings = np.stack([shared_vec])
+        monkeypatch.setattr(cluster_mod, "_embed", lambda _items: embeddings)
+        monkeypatch.setattr(cluster_mod, "CROSS_TIME_COSINE_THRESHOLD", 0.82)
+
+        from src import paths
+        path = paths.items_path(fixed_date, canonical=False)
+        paths.staging_dir(fixed_date).mkdir(parents=True, exist_ok=True)
+        _write_items(path, [today_item])
+
+        clusters = cluster_mod.cluster_day(run_date=fixed_date)
+
+        assert len(clusters) == 1
+        assert clusters[0].prior_coverage_ref is None, (
+            "sub-threshold non-self match must not be linked via the "
+            f"argmax-self fallback; got {clusters[0].prior_coverage_ref!r}"
+        )

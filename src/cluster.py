@@ -1285,19 +1285,39 @@ def _link_cross_time(
             # cycle detector, and returns cluster_id — producing a useless
             # self-ref (prior_coverage_ref == cluster_id).  The fix: if the
             # best match IS the cluster itself, resolve the chain of THAT prior
-            # node's own prior_coverage_ref, skipping the self-hop.  If no
-            # non-self ancestor exists (first day the item appeared), leave
-            # prior_coverage_ref as None (correct: no real predecessor).
+            # node's own prior_coverage_ref, skipping the self-hop.  If the
+            # self-node has no usable ancestor, fall back to the best NON-self
+            # prior match: the self-hit (cosine 1.0) otherwise shadows every
+            # other prior centroid, swallowing an above-threshold link to a
+            # genuinely different prior story.  Observed 2026-08-03: the
+            # recurring cluster c_e779af306d834c95 matched itself (no
+            # ancestor) and bailed, dropping a 0.8594 match against
+            # c_7c79e068a7701c34 — same rationale as the chain-resolution
+            # fallback below: a real continuation must not be dropped.  Only
+            # when no non-self prior clears CROSS_TIME_COSINE_THRESHOLD does
+            # prior_coverage_ref stay None (correct: no real predecessor).
             if matched_id == cluster.cluster_id:
                 prior_node = prior_clusters.get(matched_id)
-                if prior_node is None or prior_node.prior_coverage_ref is None:
-                    # No ancestor — this IS the root; nothing to link to.
-                    continue
-                if prior_node.prior_coverage_ref == matched_id:
-                    # Self-loop on the prior node too — skip.
-                    continue
-                # Follow the chain from the prior node's ancestor.
-                root_id = _resolve_chain_root(prior_node.prior_coverage_ref, prior_clusters)
+                if (
+                    prior_node is None
+                    or prior_node.prior_coverage_ref is None
+                    or prior_node.prior_coverage_ref == matched_id
+                ):
+                    # No usable ancestor via the self-node.  Consider the best
+                    # non-self prior match before giving up.
+                    nonself_sims = sims.copy()
+                    nonself_sims[best_idx] = -np.inf
+                    nonself_idx = int(np.argmax(nonself_sims))
+                    nonself_sim = float(nonself_sims[nonself_idx])
+                    if nonself_sim < CROSS_TIME_COSINE_THRESHOLD:
+                        continue  # This IS the root; nothing to link to.
+                    matched_id = prior_ids[nonself_idx]
+                    root_id = _resolve_chain_root(matched_id, prior_clusters)
+                else:
+                    # Follow the chain from the prior node's ancestor.
+                    root_id = _resolve_chain_root(
+                        prior_node.prior_coverage_ref, prior_clusters
+                    )
             else:
                 root_id = _resolve_chain_root(matched_id, prior_clusters)
 
