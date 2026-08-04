@@ -2,7 +2,8 @@
 
 Covers:
   - Happy path: May 24 released data passes all assertions.
-  - Failure path: _thin_staging fixture fails hands_on + source fire rate.
+  - Failure path: _thin_staging fixture fails big_picture + currents
+    presence (ratified 2026-08-04 per-section floor) + source fire rate.
   - Path resolution: staging=True resolves to data/staging/<date>/,
     staging=False resolves to data/released/<date>/.
   - run_evals() staging=True skips label-dependent evals with the correct
@@ -99,8 +100,16 @@ def test_check_integrity_may24_released_passes():
     not _THIN_FIXTURE_DIR.exists(),
     reason="evals/fixtures/_thin_staging/ not present",
 )
-def test_check_integrity_thin_staging_fails_hands_on(tmp_path, monkeypatch):
-    """_thin_staging fixture fails because hands_on count < 3."""
+def test_check_integrity_thin_staging_fails_big_picture_and_currents(
+    tmp_path, monkeypatch
+):
+    """_thin_staging fixture fails the per-section presence floor (ratified
+    2026-08-04): big_picture and currents (0 stories each) fail; hands_on
+    (1 story) now PASSES because the floor moved from "hands_on >= 3" to
+    "every named section >= 1". This also covers the new "0 currents fires"
+    case — the fixture's third section is stored under the legacy
+    "on_the_radar" name (pre Phase-2 rename) and has 0 stories either way.
+    """
     from evals import run_evals as _eh
 
     # Point DATA_DIR at a temp tree that contains the thin staging fixture
@@ -119,15 +128,18 @@ def test_check_integrity_thin_staging_fails_hands_on(tmp_path, monkeypatch):
     failures, ok = check_integrity(datetime.date(2026, 5, 25), staging=True)
     assert not ok, "Expected failure but check_integrity returned ok=True"
 
-    # The hands_on assertion must be in the failure list.
-    hands_on_failures = [f for f in failures if "hands_on" in f.lower()]
-    assert hands_on_failures, (
-        f"Expected a hands_on failure but failures were: {failures}"
+    # big_picture and currents must both be pinned as failures.
+    assert any("0 big_picture stories" in f for f in failures), (
+        f"Expected a big_picture failure but failures were: {failures}"
+    )
+    assert any("0 currents stories" in f for f in failures), (
+        f"Expected a currents failure but failures were: {failures}"
     )
 
-    # Specifically: the fixture has 1 hands_on story (minimum 3 required).
-    assert any("1" in f for f in hands_on_failures), (
-        f"Expected '1 hands_on' in failure message, got: {hands_on_failures}"
+    # hands_on has 1 story, which now clears the >= 1 presence floor — it
+    # must NOT appear as a failing section.
+    assert not any("0 hands_on stories" in f for f in failures), (
+        f"hands_on has 1 story and should pass the new floor, got: {failures}"
     )
 
 
@@ -181,7 +193,14 @@ def test_check_integrity_passes_without_source_health(tmp_path, monkeypatch):
     HANDS_CID1 = "c_" + "b0c1d2e3f4a5"
     HANDS_CID2 = "c_" + "c0d1e2f3a4b5"
     HANDS_CID3 = "c_" + "d0e1f2a3b4c5"
-    ALL_CIDS   = [PULSE_CID, HANDS_CID1, HANDS_CID2, HANDS_CID3]
+    # big_picture + currents each need >= 1 story too (ratified 2026-08-04
+    # per-section presence floor — see check_integrity() docstring).
+    BIG_PICTURE_CID = "c_" + "e0f1a2b3c4d5"
+    CURRENTS_CID    = "c_" + "f0a1b2c3d4e5"
+    ALL_CIDS   = [
+        PULSE_CID, HANDS_CID1, HANDS_CID2, HANDS_CID3,
+        BIG_PICTURE_CID, CURRENTS_CID,
+    ]
 
     # Items: one per cluster (item IDs are free-form strings).
     items_text = "\n".join(
@@ -264,6 +283,13 @@ def test_check_integrity_passes_without_source_health(tmp_path, monkeypatch):
         "sections": [
             {
                 "schema_version": 1,
+                "name": "big_picture",
+                "intro_lead": "The big picture.",
+                "intro_body": "Context for leaders.",
+                "stories": [_story(BIG_PICTURE_CID)],
+            },
+            {
+                "schema_version": 1,
                 "name": "hands_on",
                 "intro_lead": "Hands on.",
                 "intro_body": "Build this week.",
@@ -272,6 +298,13 @@ def test_check_integrity_passes_without_source_health(tmp_path, monkeypatch):
                     _story(HANDS_CID2),
                     _story(HANDS_CID3),
                 ],
+            },
+            {
+                "schema_version": 1,
+                "name": "currents",
+                "intro_lead": "Currents.",
+                "intro_body": "Worth watching.",
+                "stories": [_story(CURRENTS_CID)],
             },
         ],
         "generated_at": "2026-06-01T10:00:00Z",

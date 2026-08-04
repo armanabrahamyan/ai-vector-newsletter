@@ -700,7 +700,8 @@ def release_promote(
 
     # --- Step 2b: staging integrity gate ---------------------------------
     # The eval-engineer-owned ``check_integrity()`` asserts source fire
-    # rate >= 0.80, pulse >= 1, hands_on >= 3, no score-≥35 cluster tiered
+    # rate >= 0.80, pulse >= 1, every named section >= 1 story (ratified
+    # 2026-08-04; formerly hands_on >= 3), no score-≥35 cluster tiered
     # as ``cut``, and full schema + referential integrity. A failing
     # staging draft is refused unless the operator explicitly opts in via
     # ``force=True`` (audited with a WARNING log line).

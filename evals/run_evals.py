@@ -1226,7 +1226,8 @@ def check_integrity(
       1. Schema + referential integrity (items, clusters, ranked, issue.json).
       2. Source fire rate >= 0.80 (from source_health.json).
       3. pulse.stories | length >= 1.
-      4. sum(hands_on section stories) >= 3.
+      4. every named section (big_picture, hands_on, currents) has >= 1
+         story (ratified 2026-08-04; formerly hands_on >= 3).
       5. No cluster with score >= 35 tiered as "cut" in ranked.jsonl,
          excluding ``novelty == "none"`` (legitimate prior-coverage cuts).
 
@@ -1381,28 +1382,38 @@ def check_integrity(
                 f"({sources_fired}/{sources_enabled} sources fired)"
             )
 
-    # (D2) Tier mix in issue.json: >= 1 pulse story, >= 3 hands_on stories
+    # (D2) Tier mix in issue.json: >= 1 pulse story and >= 1 story in each
+    # named section (ratified 2026-08-04; replaced the former hands_on >= 3
+    # floor -- per-section presence, not depth, is the structural minimum).
     if raw_issue is not None:
         pulse_block = raw_issue.get("pulse", {})
         pulse_stories = pulse_block.get("stories", []) if isinstance(pulse_block, dict) else []
         pulse_count = len(pulse_stories)
 
-        hands_on_count = 0
+        section_counts = {"big_picture": 0, "hands_on": 0, "currents": 0}
         for section in raw_issue.get("sections", []):
-            if section.get("name") == "hands_on":
-                hands_on_count = len(section.get("stories", []))
-                break
+            # Mirror src/models.py IssueSection._coerce_legacy_name: archived
+            # pre-Phase-2 (2026-05-30) issue.json rows carry name="on_the_radar"
+            # for the section now called "currents". The raw-dict pass here
+            # bypasses that pydantic coercion, so without this the floor would
+            # spuriously fire "0 currents stories" on pre-rename archive days
+            # that actually have content under the old name.
+            name = section.get("name")
+            if name == "on_the_radar":
+                name = "currents"
+            if name in section_counts:
+                section_counts[name] = len(section.get("stories", []))
 
         if pulse_count < 1:
             failures.append(
                 "PIPELINE HEALTH: issue.json has 0 pulse stories (minimum 1 required)"
             )
-        if hands_on_count < 3:
-            failures.append(
-                f"PIPELINE HEALTH: issue.json has {hands_on_count} hands_on "
-                f"{'story' if hands_on_count == 1 else 'stories'} "
-                f"(minimum 3 required)"
-            )
+        for name, count in section_counts.items():
+            if count < 1:
+                failures.append(
+                    f"PIPELINE HEALTH: issue.json has 0 {name} stories "
+                    f"(minimum 1 required)"
+                )
 
     # (D3) No cluster with score >= cut_floor was tagged 'cut' in ranked.jsonl
     # (routing inconsistency guard).
@@ -1696,24 +1707,31 @@ def eval_module_integrity(
         pulse_stories = pulse_block.get("stories", []) if isinstance(pulse_block, dict) else []
         pulse_count = len(pulse_stories)
 
-        hands_on_count = 0
+        section_counts = {"big_picture": 0, "hands_on": 0, "currents": 0}
         for section in raw_issue.get("sections", []):
-            if section.get("name") == "hands_on":
-                hands_on_count = len(section.get("stories", []))
-                break
+            # See matching comment in check_integrity()'s (D2) block above:
+            # coerce the legacy "on_the_radar" section name to "currents" so
+            # pre-Phase-2 archive days don't spuriously trip the floor.
+            name = section.get("name")
+            if name == "on_the_radar":
+                name = "currents"
+            if name in section_counts:
+                section_counts[name] = len(section.get("stories", []))
 
         health_details["issue_pulse_count"] = pulse_count
-        health_details["issue_hands_on_count"] = hands_on_count
+        health_details["issue_hands_on_count"] = section_counts["hands_on"]
+        health_details["issue_section_counts"] = dict(section_counts)
 
         if pulse_count < 1:
             health_failures_inline.append(
                 "PIPELINE HEALTH: issue.json has 0 pulse stories (minimum 1 required)"
             )
-        if hands_on_count < 3:
-            health_failures_inline.append(
-                f"PIPELINE HEALTH: issue.json has {hands_on_count} hands_on stories "
-                f"(minimum 3 required)"
-            )
+        for name, count in section_counts.items():
+            if count < 1:
+                health_failures_inline.append(
+                    f"PIPELINE HEALTH: issue.json has 0 {name} stories "
+                    f"(minimum 1 required)"
+                )
     else:
         health_details["issue_tier_mix_skipped"] = "issue.json not present"
 

@@ -99,13 +99,39 @@ def _hands_on_section(n: int) -> IssueSection:
 
 
 def _issue_with_hands_on(n: int) -> Issue:
+    """Issue with `n` hands_on stories and big_picture/currents left EMPTY.
+
+    Deliberately thin outside hands_on -- used to exercise the per-section
+    presence floor (ratified 2026-08-04: every named section needs >= 1
+    story; the former rule only checked hands_on >= 3 depth).
+    """
     return Issue(
         date=FIXED_DATE,
         pulse=IssueSection(name="pulse", stories=[_make_block(VALID_CLUSTER_ID, "try")]),
         sections=[
             IssueSection(name="big_picture", stories=[]),
             _hands_on_section(n),
-            IssueSection(name="on_the_radar", stories=[]),
+            IssueSection(name="currents", stories=[]),
+        ],
+        generated_at=FIXED_NOW,
+        prompt_versions={"rank": "v1", "summarise": "v1"},
+    )
+
+
+def _full_issue(hands_on_n: int) -> Issue:
+    """Issue with >= 1 story in every named section (post-2026-08-04 floor).
+
+    The genuinely "healthy" fixture for the passes-cleanly tests: a
+    well-formed issue must clear big_picture/hands_on/currents *presence*,
+    not just hands_on *depth*.
+    """
+    return Issue(
+        date=FIXED_DATE,
+        pulse=IssueSection(name="pulse", stories=[_make_block(VALID_CLUSTER_ID, "try")]),
+        sections=[
+            IssueSection(name="big_picture", stories=[_make_block(VALID_CLUSTER_ID_2, "act")]),
+            _hands_on_section(hands_on_n),
+            IssueSection(name="currents", stories=[_make_block("c_" + "e" * 12, "watch")]),
         ],
         generated_at=FIXED_NOW,
         prompt_versions={"rank": "v1", "summarise": "v1"},
@@ -205,16 +231,45 @@ def _write_full_staging(date: _dt.date, issue: Issue) -> None:
 
 
 class TestPublishGateRefusesThin:
-    def test_refuses_when_hands_on_below_three(self, gated_tmp: Path) -> None:
-        """The 2026-05-24 thin-release regression: only 1 hands_on story."""
+    def test_refuses_when_named_sections_empty(self, gated_tmp: Path) -> None:
+        """The 2026-05-24 thin-release regression, re-pinned to the ratified
+        per-section presence floor (2026-08-04): big_picture and currents
+        are empty, so the gate refuses -- even though hands_on itself
+        (1 story) now clears the floor on its own (>= 1, not >= 3)."""
         _write_full_staging(FIXED_DATE, _issue_with_hands_on(1))
         with pytest.raises(StagingIntegrityFailure) as exc_info:
             release_promote(FIXED_DATE)
-        # The failure message must name the failing assertion so an
+        # The failure messages must name the failing assertions so an
         # operator reading stderr knows what's wrong.
-        assert any("hands_on" in f for f in exc_info.value.failures)
+        assert any("big_picture" in f for f in exc_info.value.failures)
+        assert any("currents" in f for f in exc_info.value.failures)
+        # hands_on itself has 1 story and passes under the new floor --
+        # it must NOT be in the failure list.
+        assert not any("0 hands_on stories" in f for f in exc_info.value.failures)
         # And the date must be preserved on the exception for logging.
         assert exc_info.value.date == FIXED_DATE
+
+    def test_refuses_when_only_currents_is_empty(self, gated_tmp: Path) -> None:
+        """New case (ratified 2026-08-04): a currents-only gap fires on its
+        own -- big_picture and hands_on both have stories, only currents is
+        empty, and that alone is enough to refuse the release."""
+        issue = Issue(
+            date=FIXED_DATE,
+            pulse=IssueSection(name="pulse", stories=[_make_block(VALID_CLUSTER_ID, "try")]),
+            sections=[
+                IssueSection(name="big_picture", stories=[_make_block(VALID_CLUSTER_ID_2, "act")]),
+                _hands_on_section(1),
+                IssueSection(name="currents", stories=[]),
+            ],
+            generated_at=FIXED_NOW,
+            prompt_versions={"rank": "v1", "summarise": "v1"},
+        )
+        _write_full_staging(FIXED_DATE, issue)
+        with pytest.raises(StagingIntegrityFailure) as exc_info:
+            release_promote(FIXED_DATE)
+        assert any("0 currents stories" in f for f in exc_info.value.failures)
+        assert not any("big_picture" in f for f in exc_info.value.failures)
+        assert not any("0 hands_on stories" in f for f in exc_info.value.failures)
 
     def test_canonical_not_written_when_gate_fires(self, gated_tmp: Path) -> None:
         """The whole point of the gate: NO canonical write on failure."""
@@ -249,9 +304,13 @@ class TestPublishGateForceBypass:
             release_promote(FIXED_DATE, force=True)
         # The WARNING line(s) must include the word force AND the
         # failing-assertion text — operators reading audit logs need both.
+        # Under the ratified per-section floor, _issue_with_hands_on(1)
+        # fails on big_picture/currents (empty), not on hands_on (1 story
+        # clears the >= 1 presence floor).
         warning_text = "\n".join(r.message for r in caplog.records if r.levelno == logging.WARNING)
         assert "force" in warning_text.lower()
-        assert "hands_on" in warning_text
+        assert "big_picture" in warning_text
+        assert "currents" in warning_text
 
 
 # ===========================================================================
@@ -261,8 +320,13 @@ class TestPublishGateForceBypass:
 
 class TestPublishGatePassesHealthy:
     def test_healthy_staging_releases_cleanly(self, gated_tmp: Path) -> None:
-        """A well-formed 3-hands_on issue passes the gate and releases."""
-        _write_full_staging(FIXED_DATE, _issue_with_hands_on(3))
+        """A well-formed issue -- >= 1 story in every named section -- passes
+        the gate and releases. (Prior to the 2026-08-04 floor change this
+        used _issue_with_hands_on(3), which relied on hands_on >= 3 as the
+        only bar; that fixture now legitimately fails the presence floor
+        because big_picture/currents are empty, so the happy-path fixture
+        moved to _full_issue().)"""
+        _write_full_staging(FIXED_DATE, _full_issue(3))
         result = release_promote(FIXED_DATE)
         assert result.issue_number == 1  # first release of a fresh date
 
@@ -270,7 +334,7 @@ class TestPublishGatePassesHealthy:
         self, gated_tmp: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
         """No --force warnings should fire on a clean release."""
-        _write_full_staging(FIXED_DATE, _issue_with_hands_on(3))
+        _write_full_staging(FIXED_DATE, _full_issue(3))
         with caplog.at_level(logging.WARNING):
             release_promote(FIXED_DATE)
         # No "force" or "BYPASSING" tokens in any WARNING message

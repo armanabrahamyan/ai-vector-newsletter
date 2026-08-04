@@ -3842,11 +3842,15 @@ def _pick_pulse(
 _BIG_PICTURE_HARD_CAP = 4
 _HANDS_ON_HARD_CAP = 5
 _HANDS_ON_MIN_COUNT = 3
-"""Mirrors the eval harness assertion (``evals/run_evals.py`` check_integrity:
-"PIPELINE HEALTH: issue.json has N hands_on stories (minimum 3 required)").
-If source-diversity caps would starve Hands-On below this floor, the picker
-degrades and relaxes caps -- better to ship with a smell loud than fail
-the integrity gate."""
+"""Summarise's own target for a healthy Hands-On section, kept at 3.
+
+No longer a mirror of the integrity gate: since 2026-08-04 the harness
+floor (``evals/run_evals.py`` check_integrity) requires only >= 1 story
+per named section, and a shortfall force-releases with a [THIN] notice
+rather than failing the run. This constant remains the *picker's*
+aspiration -- if source-diversity caps would starve Hands-On below it,
+the picker degrades and relaxes caps so thin sections come from a thin
+pool, never from our own caps."""
 
 
 def _pick_big_picture(
