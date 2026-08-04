@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-03T21:43:46.946889Z",
+  "computed_verdict": "amber",
+  "one_line": "Drift on the sandbox-escape story is the day's main editorial risk; structure and empty Currents are secondary.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 1,
+        "kind": "story",
+        "story_id": "c_abee164295bbdd0c",
+        "section": "big_picture",
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "major",
+      "quote": "OpenAI agents hacked out of containment to win a test question",
+      "fix_kind": "structural",
+      "instruction": "This story covers the same OpenAI/Hugging Face sandbox-escape event already published in big_picture on 2026-08-02 ('An OpenAI agent escaped its sandbox and raided Hugging Face') and again in big_picture on 2026-08-03 ('OpenAI's agents hacked outside their brief, and that's an alignment problem'). Three consecutive issues, same incident, same section. Unless this story advances the narrative with genuinely new material not present in the prior two treatments, it must be cut or replaced. If the Technology Review angle adds a distinct mechanism (reward hacking framing) not covered before, the summary must explicitly reference what is new and the headline must signal the progression."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 1,
+        "kind": "story",
+        "story_id": "c_abee164295bbdd0c",
+        "section": "big_picture",
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "major",
+      "quote": "As models grow more capable, they hide it better.",
+      "fix_kind": "carry_forward",
+      "instruction": "This claim — that more capable models conceal reward hacking more effectively — appeared in the same-incident coverage across the prior two issues. If this story is retained, the summary must state explicitly what this source adds beyond the Redwood Research and Hugging Face accounts already published, and this sentence must be anchored to evidence in the Technology Review piece rather than restated as bare assertion."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 1,
+        "kind": "story",
+        "story_id": "c_1f5c1aec1944e11c",
+        "section": "big_picture",
+        "field": "summary"
+      },
+      "criterion": "trust_flags",
+      "severity": "minor",
+      "quote": "One benchmark (Microsoft-run, two Microsoft runtimes) found the harness halted runaway loops at 40 steps; the rival kept going to 300.",
+      "fix_kind": "text_edit",
+      "instruction": "The parenthetical '(Microsoft-run, two Microsoft runtimes)' is a default-restating trust flag: the body already names Microsoft as the vendor and the source is an InfoQ news item about Microsoft's own GA announcement. Delete the parenthetical; the calibration is already present in the surrounding prose. If the parenthetical is retained for a specific editorial reason, it must add information not already in the sentence (e.g., naming the rival runtime)."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 1,
+        "kind": "story",
+        "story_id": "c_87995d250262c017",
+        "section": "big_picture",
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "If you're deciding which roles AI can credibly augment first, where does entry-level analyst sit in your deployment roadmap?",
+      "fix_kind": "text_edit",
+      "instruction": "Big Picture closes must be a STRATEGIC QUESTION, which this is — but it is addressed to 'you' in a prescriptive, advisory register that edges toward investment/deployment advice. Reframe as an organisational or industry-level strategic question: e.g., 'If frontier models already clear the analytical bar for entry-level work, which firms will absorb that capability into headcount decisions first — and which will wait for a second replication?'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 1,
+        "kind": "section",
+        "story_id": null,
+        "section": "hands_on",
+        "field": "intro_lead"
+      },
+      "criterion": "shape_integrity",
+      "severity": "minor",
+      "quote": "Synthetic data does the lifting.",
+      "fix_kind": "text_edit",
+      "instruction": "The section contains only one story. An intro_lead that frames a 'pattern' across stories is misleading when there is a single item. Rewrite to acknowledge the single-story shape honestly: e.g., 'One framework, one benchmark, one directional signal.' This also avoids implying a pattern the section cannot support."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 1,
+        "kind": "section",
+        "story_id": null,
+        "section": "currents",
+        "field": "intro_lead"
+      },
+      "criterion": "section_intro",
+      "severity": "minor",
+      "quote": "No early signals today.",
+      "fix_kind": "human",
+      "instruction": "The Currents intro_lead is MANDATORY and must name the aggregate motion direction. 'No early signals today' is a null statement, not a directional framing. If Currents is genuinely empty, Arman must decide whether to suppress the section header entirely or carry a brief directional note about what to watch for tomorrow. A null intro_lead should not publish as-is."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 1,
+        "kind": "section",
+        "story_id": null,
+        "section": "currents",
+        "field": "intro_body"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "The watch resumes when thin-sourced movement returns to the fold.",
+      "fix_kind": "text_edit",
+      "instruction": "This is deferral language ('returns to the fold', 'the watch resumes') that does no editorial work. If the section is empty, the intro_body should either be omitted or replaced with a concrete forward-looking stake: what signal or source category would trigger a Currents item tomorrow. Remove the deferral phrasing."
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "630ab21784409314a85c1d180e38c0c3456b4a3ccca1c8957b83b68cbeac08f3",
+  "note": "verdict rule: major >= 1 (A reader would notice this. Ratifiable with notes, and worth a look before it ships.)"
+}
