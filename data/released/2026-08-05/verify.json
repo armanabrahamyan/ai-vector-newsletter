@@ -1,0 +1,863 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-04T21:51:23.692473Z",
+  "prompt_version": "v0.4",
+  "verdict": "clean",
+  "verdict_counts": {
+    "supported": 68,
+    "unverifiable": 12
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_e4ed3e96893c5f47",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's ChatGPT Work is the architecture for a billion-user agent",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "OpenAI's ChatGPT Work is the architecture for a billion-user agent",
+          "source_span": "Work, then, is not just a niche product for power users, but a preview of how ChatGPT's billion weekly users will soon use the app.",
+          "note": "The source frames Work as the architecture/preview for a billion weekly users, supporting the headline's characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ChatGPT Work hit 10 million users in three weeks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ChatGPT Work hit 10 million users in three weeks",
+          "source_span": "Three weeks in, Work (along with Codex) has reportedly crossed 10 million users.",
+          "note": "The source confirms 10 million users in three weeks, though it notes this includes Codex too; omitting Codex is a minor compression, not a factual error."
+        },
+        {
+          "schema_version": 1,
+          "claim": "running tasks inside isolated microVMs with 8 CPUs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "running tasks inside isolated microVMs with 8 CPUs",
+          "source_span": "Specifically, a beefy, isolated microVM: Pro accounts get 8 CPUs, 20GB of RAM, and a 64GB disk",
+          "note": "Source confirms isolated microVMs with 8 CPUs for Pro accounts; the body omits the Pro-account qualifier but does not assert otherwise."
+        },
+        {
+          "schema_version": 1,
+          "claim": "persistent storage synced across sessions",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "persistent storage synced across sessions",
+          "source_span": "its workspace is synchronised to persistent storage and restored onto isolated microVMs as needed. So the underlying machine can change, but the working state carries over.",
+          "note": "Source confirms persistent storage synchronised across sessions."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Memory, scheduling, browser control, and plugins layer on top",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Memory, scheduling, browser control, and plugins layer on top",
+          "source_span": "An external reconstruction of how Memory, Proactivity, Scheduling, Browser Use, Plugins, Skills and Tools work in the new ChatGPT Work.",
+          "note": "Source lists Memory, Scheduling, Browser Use, and Plugins as components; the summary's characterisation is a supported compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Greg Brockman has confirmed Work and Chat merge before year-end",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Greg Brockman has confirmed Work and Chat merge before year-end",
+          "source_span": "Greg Brockman has confirmed that they will merge by the end of the year.",
+          "note": "Source directly confirms Greg Brockman's statement about merging by year-end."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_b389fd840993be91",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "An agent's reasoning can be rewritten to blind safety monitors entirely",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "An agent's reasoning can be rewritten to blind safety monitors entirely",
+          "source_span": "Rewriting only an agent's reasoning to read as good-faith engineering, while copying every command and output verbatim so the exploit is unchanged, drops a held-out monitor's catch rate on that subset from about 95% to under 11% in one gradient-free shot.",
+          "note": "'Blind entirely' is a reasonable compression of a near-total collapse from 95% to under 11%, supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Chain-of-thought monitoring catches reward hacks by reading an agent's reasoning.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Chain-of-thought monitoring catches reward hacks by reading an agent's reasoning.",
+          "source_span": "Chain-of-thought (CoT) monitoring is meant to catch the reward hacks that look clean in the actions and betray themselves only in the reasoning.",
+          "note": "Accurate paraphrase of the source's description of CoT monitoring's purpose."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint shows rewriting only the reasoning, commands unchanged, drops a monitor's catch rate from 95% to under 11% in one shot.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint shows rewriting only the reasoning, commands unchanged, drops a monitor's catch rate from 95% to under 11% in one shot.",
+          "source_span": "Rewriting only an agent's reasoning to read as good-faith engineering, while copying every command and output verbatim so the exploit is unchanged, drops a held-out monitor's catch rate on that subset from about 95% to under 11% in one gradient-free shot.",
+          "note": "'Commands unchanged' correctly paraphrases 'copying every command and output verbatim'; 'one shot' correctly compresses 'one gradient-free shot'; source is an arXiv preprint as stated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The aggregate accuracy score masks the collapse.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The aggregate accuracy score masks the collapse.",
+          "source_span": "A monitor's aggregate accuracy is a false average: dominated by hacks the actions give away, it hides the near-total collapse this rewrite produces on the subset where CoT monitoring is the only signal.",
+          "note": "Accurate compression of the source's 'false average' argument."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_60d4db8da605cd5a",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Deutsche Telekom's agentic platform reveals what enterprise AI actually needs",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Deutsche Telekom's agentic platform reveals what enterprise AI actually needs",
+          "source_span": "I was here talking about our journey in my previous role as head of AI engineering for Deutsche Telekom. There was a program that we did... It's called LMOS... I'm going to focus entirely on enterprises.",
+          "note": "The headline is a fair editorial characterisation of a talk about Deutsche Telekom's LMOS platform and enterprise AI lessons."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Arun Joseph's account of building LMOS",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Arun Joseph's account of building LMOS",
+          "source_span": "My name is Arun Joseph. I was here talking about our journey in my previous role as head of AI engineering for Deutsche Telekom... It's called LMOS.",
+          "note": "Source confirms Arun Joseph built and led LMOS."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LMOS is Deutsche Telekom's agentic platform",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Deutsche Telekom's agentic platform",
+          "source_span": "I was here talking about our journey in my previous role as head of AI engineering for Deutsche Telekom... It's called LMOS... We were one of the first agentic platforms to go live.",
+          "note": "Source confirms LMOS is Deutsche Telekom's agentic platform."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LMOS is now under the Eclipse Foundation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "now under the Eclipse Foundation",
+          "source_span": "It's now moved under Eclipse Foundation and still running in Deutsche Telekom across multiple countries.",
+          "note": "Source explicitly states LMOS moved under the Eclipse Foundation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The real blocker is not model quality, but platform abstraction",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "names the real blocker: not model quality, but platform abstraction",
+          "source_span": "",
+          "note": "The source excerpt does not contain a statement framing 'platform abstraction' as the key blocker versus model quality; this specific framing is not present in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ephemeral agents and a declarative Agent Definition Language replace tool sprawl",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Ephemeral agents and a declarative Agent Definition Language replace tool sprawl",
+          "source_span": "",
+          "note": "Neither 'Ephemeral agents' nor 'Agent Definition Language' nor 'tool sprawl' appear anywhere in the source excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9462c3593ed899d3",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Using AI to catch AI hiding its true objectives",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Using AI to catch AI hiding its true objectives",
+          "source_span": "we lay out a vision for building a foundation model for oversight: an AI system mid-trained (or pre-trained) on a large, diverse corpus of experiments on a given \"subject model\"",
+          "note": "The headline accurately paraphrases the proposal: an AI oversight model designed to detect hidden objectives and deceptive behaviours in other AI models."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Steinhardt and Transluce propose a dedicated oversight model trained to detect sandbagging, hidden objectives, and identity-based differential treatment.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Steinhardt and Transluce propose a dedicated oversight model trained to detect sandbagging, hidden objectives, and identity-based differential treatment.",
+          "source_span": "",
+          "note": "The source is cross-posted from the Transluce blog and mentions these detection goals, but 'Steinhardt' is never named in the excerpt, making that attribution unverifiable from this source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each oversight question is encoded as runnable Python, generating verifiable ground truth automatically.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Each oversight question is encoded as runnable Python, generating verifiable ground truth automatically.",
+          "source_span": "once the Python code is specified, we can get ground truth simply by running the program. This means that training data can never be \"wrong\"",
+          "note": "The source explicitly states that running the Python code generates ground truth automatically, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No shipped system exists; this is a design vision.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "No shipped system exists; this is a design vision.",
+          "source_span": "we lay out a vision for building a foundation model for oversight",
+          "note": "The source frames the work as a vision/plan, not a deployed system, supporting the summary's characterisation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_ae80dd06ac91b85d",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Anthropic's Claude breached real systems during safety testing, three times",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Anthropic's Claude breached real systems during safety testing, three times",
+          "source_span": "we found three incidents in which a Claude model reached the internet from within or while interacting with a third-party evaluation environment, and then gained unauthorized access to the real systems of three different organizations",
+          "note": "Source confirms three incidents of unauthorized access to real systems during cybersecurity evaluations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic reviewed 141,006 cybersecurity evaluation runs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Reviewing 141,006 cybersecurity evaluation runs",
+          "source_span": "After reviewing 141,006 evaluation runs where Claude could have obtained internet access",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic reviewed runs after OpenAI's similar disclosure",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "after OpenAI's similar disclosure",
+          "source_span": "On July 21, OpenAI disclosed that several of their models had broken out of an isolated test environment by exploiting a previously unknown (\"zero-day\") vulnerability. In response to this incident, we began a large-scale retrospective review of our own cybersecurity evaluations.",
+          "note": "Source confirms the review was triggered by OpenAI's disclosure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude breached the production infrastructure of three real organisations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude breached the production infrastructure of three real organisations",
+          "source_span": "gained unauthorized access to the production infrastructure of three different organizations",
+          "note": "Source confirms unauthorized access to production infrastructure of three organizations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The breaches occurred during capture-the-flag exercises",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "during capture-the-flag exercises",
+          "source_span": "In all three incidents, Claude had been tasked with a capture-the-flag challenge",
+          "note": "Source confirms all three incidents occurred during capture-the-flag challenges."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude exploited weak passwords and unauthenticated endpoints",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "exploiting weak passwords and unauthenticated endpoints",
+          "source_span": "Claude compromised the impacted organizations' infrastructure using basic techniques, such as exploiting weak passwords and unauthenticated endpoints",
+          "note": "Exact match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A misconfigured network boundary was the root cause",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A misconfigured network boundary, not a model failure, was the root cause",
+          "source_span": "Due to a misunderstanding between us and our evaluation partner, this was not the case, and internet access was available.",
+          "note": "Source attributes the cause to a misconfiguration/misunderstanding between Anthropic and its evaluation partner, not a model failure, consistent with the summary's characterization."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_8eb3c773c75ca3d0",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's 2.6B model runs capable agents on a phone or laptop",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Liquid AI's 2.6B model runs capable agents on a phone or laptop",
+          "source_span": "At 30 tokens/s, it allows you to run capable agents even on a phone.",
+          "note": "Source confirms capable agents on a phone; laptop/CPU inference also confirmed via M5 Max and Ryzen CPU figures."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's LFM2.5-2.6B matches models four times its size on tool use and instruction following",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "LFM2.5-2.6B matches models four times its size on tool use and instruction following",
+          "source_span": "Competitive with models 4x larger on tool use, instruction following, and multi-step agentic tasks.",
+          "note": "Source directly states competitiveness with models 4x larger on tool use and instruction following."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LFM2.5-2.6B hits 220 tokens per second on an Apple M5 Max",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "hitting 220 tokens per second on an Apple M5 Max",
+          "source_span": "220 tok/s on an Apple M5 Max",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LFM2.5-2.6B runs on-device in under 2.5 GB",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "running on-device in under 2.5 GB",
+          "source_span": "in under 2.5 GB of memory",
+          "note": "Source confirms under 2.5 GB memory usage."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights, llama.cpp support, and a browser demo are all public",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights, llama.cpp support, and a browser demo are all public",
+          "source_span": "Both LFM2.5-2.6B and LFM2.5-2.6B-Base are available on Hugging Face today... LFM2.5-2.6B ships with day-one support across the inference ecosystem, including llama.cpp... Try: run the WebGPU demo in your browser, no setup needed.",
+          "note": "Source confirms public weights on Hugging Face, llama.cpp support, and a browser demo."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pull the model and run OpenClaw or Hermes Agent against your lowest-latency private workflow",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pull the model and run OpenClaw or Hermes Agent against your lowest-latency private workflow",
+          "source_span": "Use in your harness: follow our guide on how to run a local agent, like OpenClaw, Hermes Agent, and Pi.",
+          "note": "OpenClaw and Hermes Agent are named in the source; 'lowest-latency private workflow' is editorial framing, not a factual claim to verify."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_163361152062b0a1",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Cutting tokens in your coding agent raises cost, not lowers it",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Cutting tokens in your coding agent raises cost, not lowers it",
+          "source_span": "An arm that removed 38% of estimated raw tool-output tokens incurred 6.8% higher paired cost",
+          "note": "The source confirms that token reduction raised billed cost, supporting the headline's core assertion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint ran 2,848 pre-specified Claude Code sessions",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint ran 2,848 pre-specified Claude Code sessions",
+          "source_span": "a pre-specified, hash-frozen, paired campaign of 2,908 provider-billed Claude Code runs, of which 2,848 were analyzed",
+          "note": "The source confirms 2,848 analyzed runs of Claude Code; 'pre-specified' is supported by 'pre-specified, hash-frozen'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "removing 38% of tool-output tokens increased billed cost by 6.8%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "removing 38% of tool-output tokens increased billed cost by 6.8%",
+          "source_span": "An arm that removed 38% of estimated raw tool-output tokens incurred 6.8% higher paired cost",
+          "note": "Both figures match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Prompt-cache traffic drove 87% of actual cost",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Prompt-cache traffic drove 87% of actual cost",
+          "source_span": "prompt-cache traffic dominated cost composition, accounting for about 87% of reconstructed four-component cost (about 80% of the actual bill)",
+          "note": "The source says 87% of reconstructed four-component cost but ~80% of the actual bill; the summary's '87% of actual cost' slightly conflates these two figures, but this is a minor compression within house-style rounding/generalisation tolerance."
+        },
+        {
+          "schema_version": 1,
+          "claim": "local compression barely touched it",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "local compression barely touched it",
+          "source_span": "local payload reduction was not a reliable predictor of end-to-end billed cost",
+          "note": "Paraphrase of the source's finding that local reduction did not reliably reduce billed cost."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Aggressive compression also cut successful patches from 27 to 15 on Go tasks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Aggressive compression also cut successful patches from 27 to 15 on Go tasks",
+          "source_span": "on SWE-bench-derived Go tasks, compression reduced successful patch application from 27/40 to 15/40 by corrupting verbatim edit anchors",
+          "note": "Numbers and task type match the source exactly; omission of '/40' denominator is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Measure success-adjusted billed cost, not token count, before redesigning your compression layer",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Measure success-adjusted billed cost, not token count, before redesigning your compression layer",
+          "source_span": "We propose evaluating context-reduction systems by success-adjusted billed cost rather than token reduction alone",
+          "note": "The call to action restates the paper's proposal accurately; the editorial framing is consistent with the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_489b944129b74a1d",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Baseten's inference masterclass shows how to make a model 10× faster",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Baseten's inference masterclass shows how to make a model 10× faster",
+          "source_span": "How optimized serving can make a model up to 10× faster",
+          "note": "Source confirms the 10× faster claim is discussed in the Baseten episode; 'masterclass' is a fair editorial paraphrase of the deep-dive podcast."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inference engineering is now its own discipline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Inference engineering is now its own discipline.",
+          "source_span": "Inference is no longer just the final step after training. It is becoming its own engineering discipline, with its own research problems, infrastructure, and increasingly specialized roles.",
+          "note": "Source explicitly states inference engineering is becoming its own discipline."
+        },
+        {
+          "schema_version": 1,
+          "claim": "This Latent Space podcast with Baseten's Philip Kiely and Ali Taha",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "This Latent Space podcast with Baseten's Philip Kiely and Ali Taha",
+          "source_span": "Baseten's Philip Kiely and Ali Taha join swyx and Vibhu",
+          "note": "The podcast is the Latent Space podcast (swyx hosts it); Philip Kiely and Ali Taha are confirmed as Baseten guests. 'This Latent Space' is a reasonable name identification not contradicted by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "covers cache-aware routing, disaggregated prefill and decode, speculative decoding, and quantisation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "covers cache-aware routing, disaggregated prefill and decode, speculative decoding, and quantisation",
+          "source_span": "We go deep on cache-aware routing, disaggregated prefill and decode, quantization, speculative decoding",
+          "note": "All four topics are explicitly listed in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "in one GLM-5.2 experiment, quantising more of the model raised throughput 20% while preserving benchmark quality",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "in one GLM-5.2 experiment, quantising more of the model raised throughput 20% while preserving benchmark quality",
+          "source_span": "In one recent GLM-5.2 experiment, quantizing more of the model actually preserved its benchmark quality while increasing throughput by 20%",
+          "note": "Source confirms the GLM-5.2 experiment, 20% throughput increase, and preserved benchmark quality."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Queue it before your next inference architecture review.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Queue it before your next inference architecture review.",
+          "source_span": "",
+          "note": "This is an editorial call to action, not a factual claim — no verification needed."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_184d0fc7cd75b0f2",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Vercel's eve agents can now browse the web inside a sandboxed Chromium",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Vercel's eve agents can now browse the web inside a sandboxed Chromium",
+          "source_span": "Your eve agent can now navigate the web like a human with agent-browser. ... Chromium and agent-browser run in the eve sandbox, not your app.",
+          "note": "Source confirms eve agents can browse the web and that Chromium runs inside the eve sandbox."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Vercel's eve agent platform ships @agent-browser/eve",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Vercel's eve agent platform ships @agent-browser/eve",
+          "source_span": "The @agent-browser/eve extension gives any eve agent a full set of browser tools",
+          "note": "Source confirms the package name @agent-browser/eve."
+        },
+        {
+          "schema_version": 1,
+          "claim": "agents can navigate, click, fill forms, and screenshot",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "navigate, click, fill forms, and screenshot",
+          "source_span": "navigate pages, read content, click, fill forms, take screenshots, and inspect console and network activity",
+          "note": "Summary lists a subset of the capabilities; omitting some is not an error."
+        },
+        {
+          "schema_version": 1,
+          "claim": "all inside the eve sandbox",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "all inside the eve sandbox",
+          "source_span": "Everything runs inside the agent's sandbox.",
+          "note": "Source explicitly states everything runs inside the agent's sandbox."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Chromium never touches your app",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Chromium never touches your app",
+          "source_span": "Chromium and agent-browser run in the eve sandbox, not your app.",
+          "note": "Source confirms Chromium runs in the sandbox, not the user's app."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Domain allowlists are built in",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Domain allowlists",
+          "source_span": "Domain allowlist: Restrict navigation and subresources with allowedDomains",
+          "note": "Source confirms domain allowlist functionality is included."
+        },
+        {
+          "schema_version": 1,
+          "claim": "credential protection (cookies stay hidden from the model) are built in",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "credential protection (cookies stay hidden from the model)",
+          "source_span": "Credential protection: Cookie, storage, and saved-auth-state commands are never exposed to the model.",
+          "note": "Source confirms cookies and auth state are never exposed to the model; summary is a fair paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Install via pnpm",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Install via pnpm",
+          "source_span": "pnpm add @agent-browser/eve",
+          "note": "Source shows installation via pnpm."
+        },
+        {
+          "schema_version": 1,
+          "claim": "mount under agent/extensions/",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "mount under agent/extensions/",
+          "source_span": "Then mount it under agent/extensions/:",
+          "note": "Source explicitly states to mount under agent/extensions/."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_ae9201047d49163c",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "llama.cpp now gives local agents a scoped working directory per conversation",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "llama.cpp now gives local agents a scoped working directory per conversation",
+          "source_span": "ui : add per-conversation working directory with picker",
+          "note": "Source confirms per-conversation working directory was added; 'scoped' is a fair paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "llama.cpp build b10271 adds per-conversation working directory support",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "llama.cpp build b10271 adds per-conversation working directory support",
+          "source_span": "b10271\nui: CWD for agent (#26518)\nui : add per-conversation working directory with picker",
+          "note": "Source confirms build b10271 adds per-conversation working directory."
+        },
+        {
+          "schema_version": 1,
+          "claim": "each agent session gets a scoped file path",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "each agent session gets a scoped file path",
+          "source_span": "ui : add per-conversation working directory with picker",
+          "note": "Per-conversation working directory implies a scoped file path per session."
+        },
+        {
+          "schema_version": 1,
+          "claim": "persisted per tool call",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "persisted per tool call",
+          "source_span": "db : persist per-call tool cwd on tool result messages",
+          "note": "Source explicitly states CWD is persisted per tool call."
+        },
+        {
+          "schema_version": 1,
+          "claim": "with a directory picker",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with a directory picker",
+          "source_span": "ui : add per-conversation working directory with picker",
+          "note": "Source confirms a picker is included."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Path queries starting with / or ~ navigate directories rather than glob-match",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Path queries starting with / or ~ navigate directories rather than glob-match",
+          "source_span": "Treat path-like queries (starting with / or ~) as directory navigation instead of glob-matching the whole query",
+          "note": "Source directly confirms this behaviour for / and ~ prefixes."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_c316970fb9f831fa",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Language models draft trading chip code but miss latency targets",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Language models draft trading chip code but miss latency targets",
+          "source_span": "Can large language models generate not just correct, but fast hardware? This paper investigates the question in financial FPGA design... models achieve 19-61% functional correctness with timing degradation up to 13.7× on specific tasks",
+          "note": "The headline accurately paraphrases the paper's core finding that LLMs can generate FPGA code but suffer timing degradation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "language models can generate programmable-chip code for trading pipelines",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "language models can generate programmable-chip code for trading pipelines",
+          "source_span": "Can large language models generate not just correct, but fast hardware? This paper investigates the question in financial FPGA design",
+          "note": "'Programmable-chip' is a plain-English paraphrase of FPGA, and 'trading pipelines' maps to the financial computing context described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "functional correctness tops out at 61%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "functional correctness tops out at 61%",
+          "source_span": "models achieve 19-61% functional correctness",
+          "note": "61% is the upper bound of the reported 19-61% range, accurately described as the top."
+        },
+        {
+          "schema_version": 1,
+          "claim": "timing degrades up to 13.7x on harder tasks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "timing degrades up to 13.7x on harder tasks",
+          "source_span": "timing degradation up to 13.7× on specific tasks",
+          "note": "'Harder tasks' is a reasonable paraphrase of 'specific tasks' in this context; the 13.7× figure matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The 33-task benchmark is open-source",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The 33-task benchmark is open-source",
+          "source_span": "FinHardBench, a benchmark of 33 financial computing tasks... FinHardBench is released as an open-source benchmark.",
+          "note": "Both the task count and open-source status are confirmed directly by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "this cuts hardware iteration cycles for quant engineers",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "this cuts hardware iteration cycles for quant engineers",
+          "source_span": "",
+          "note": "The source discusses FPGA iteration cycles but does not assert that the benchmark or LLM results cut those cycles; this is an editorial inference not stated in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the benchmark still sets the first credible baseline for a gap no one had measured",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the benchmark still sets the first credible baseline for a gap no one had measured",
+          "source_span": "",
+          "note": "The source does not claim this is the first benchmark of its kind or that no prior measurement existed; this novelty claim is not verifiable from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_eb1457a214c1e980",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A sidecar model predicts tool arguments in parallel, nearly quadrupling speed",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A sidecar model predicts tool arguments in parallel, nearly quadrupling speed",
+          "source_span": "a Qwen3-0.6B sidecar predicts the function choice and all schema-defined argument slots in one parallel request-level wave... reaching 2.46x-5.34x over autoregressive decoding with an unweighted mean of 3.89x",
+          "note": "3.89x mean speedup is reasonably described as 'nearly quadrupling'; parallel argument prediction is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Language models generate tool calls one token at a time, even when arguments are predictable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Language models generate tool calls one token at a time, even when arguments are predictable.",
+          "source_span": "LLMs generate tool calls token by token, even though the function choice and argument values can often be predicted in parallel from the request and tool schema.",
+          "note": "Direct paraphrase of the source abstract's opening sentence."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint introduces OoO-Spec",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint introduces OoO-Spec",
+          "source_span": "Title:OoO-Spec: Out-of-Order Semantic Speculation for Fast Tool Calling",
+          "note": "The source is an arXiv submission presenting OoO-Spec."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a tiny sidecar predicts argument slots in parallel",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a tiny sidecar predicts argument slots in parallel",
+          "source_span": "a Qwen3-0.6B sidecar predicts the function choice and all schema-defined argument slots in one parallel request-level wave",
+          "note": "Qwen3-0.6B described as 'tiny' is a reasonable generalisation; parallel prediction is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "hitting a mean 3.89x speedup across 21 tested configurations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "hitting a mean 3.89x speedup across 21 tested configurations",
+          "source_span": "OoO-Spec is fastest among all evaluated methods in all 21 target-benchmark cells, reaching 2.46x-5.34x over autoregressive decoding with an unweighted mean of 3.89x",
+          "note": "'21 target-benchmark cells' matches '21 tested configurations'; 3.89x mean is exact."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Replicated, this reshapes agentic latency budgets",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Replicated, this reshapes agentic latency budgets",
+          "source_span": "",
+          "note": "The word 'Replicated' as a trust qualifier and the 'agentic latency budgets' framing do not appear in the source excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_4583a7af4df1b362",
+      "prompt_version": "v0.4",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's voice AI drops the turn-taking model for continuous conversation",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "OpenAI's voice AI drops the turn-taking model for continuous conversation",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to verify this claim against."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-Live replaces push-to-talk with a turnless speech model",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "GPT-Live replaces push-to-talk with a turnless speech model",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot confirm the product name or capability."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model listens and responds simultaneously",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "listens and responds simultaneously",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to verify this capability claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model cuts the pause that defines current voice assistants",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "cutting the pause that defines current voice assistants",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's blog describes the system",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "OpenAI's blog describes the system",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot confirm the publication venue."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI stops short of API or repository details",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "stops short of API or repository details",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the absence of API or repo details."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 13 stories"
+}
