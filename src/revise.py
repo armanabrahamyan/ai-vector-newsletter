@@ -267,6 +267,7 @@ def _field_bounds() -> dict[str, tuple[int, int]]:
     fallback = {
         "headline": (1, 200),
         "summary": (1, 1200),
+        "take": (1, 200),
         "intro_lead": (1, 80),
         "intro_body": (1, 400),
     }
@@ -274,6 +275,7 @@ def _field_bounds() -> dict[str, tuple[int, int]]:
     for name, model in (
         ("headline", SummaryBlock),
         ("summary", SummaryBlock),
+        ("take", SummaryBlock),
         ("intro_lead", IssueSection),
         ("intro_body", IssueSection),
     ):
@@ -1164,6 +1166,13 @@ _FIELD_GUIDANCE = {
         "Hands-On on an imperative action with a specific artefact and "
         "trigger, Currents on a two-sided calibrated stake. If the closing "
         "sentence is not what the instruction is about, leave it as it is."
+    ),
+    "take": (
+        "This is the story's TAKE -- one declarative sentence stating the "
+        "publication's position, 8-16 words (hard cap 18). Never a question, "
+        "never an imperative, no hedges, no labels like 'Bottom line:'. It "
+        "must assert a consequence, not restate the body or instruct the "
+        "reader."
     ),
     "intro_lead": (
         "This is a section INTRO LEAD -- a short bold phrase, a handful of "

@@ -71,8 +71,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from typing import get_args
+
 from src import paths
 from src.models import (
+    ClaimLocation,
     ClaimVerdict as ClaimVerdictModel,
     StoryVerification,
     VerificationReport,
@@ -80,13 +83,48 @@ from src.models import (
 from src.rank import JSON_RETRY_BUDGET, _extract_json_object, _llm_call
 
 
-VERIFY_PROMPT_VERSION = "v0.4"
+VERIFY_PROMPT_VERSION = "v0.6"
 r"""Pydantic-friendly version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``verify-v0.1-2026-06-22``. Bump on prompt-content changes so the
+Audit tag: ``verify-v0.6-2026-08-08``. Bump on prompt-content changes so the
 eval harness can correlate the recall / precision / unverifiable numbers
 against prompt revisions.
+
+v0.6 (2026-08-08, "the take"): take-text claims are adjudicated. When a
+story carries a ``take`` (SummaryBlock.take, schema v4), the verifier
+prompt gains a TAKE section + scope rules: checkable factual assertions in
+the take (capabilities, numbers, named actors -- "breaks every parser
+downstream" is checkable) are extracted with ``location="take"`` and
+judged against the same excerpts; a take that is PURE editorial/craft
+judgment yields one ``unverifiable`` claim covering the take (never a
+crash, never silently skipped). The additions are CONDITIONAL on a
+non-empty take -- with ``take=""`` the prompt is byte-identical to v0.4,
+so the Eval 7 fixture path (headline+body, no takes) is calibration-
+neutral by construction.
+
+Location contract (DESIGN.md "The take", 2026-08-08): the ``ClaimLocation``
+vocabulary deliberately STAYS ``headline | body`` -- a take-specific value
+was considered and deferred (the contradicted-claim hard block fires on
+any contradicted claim regardless of location, so a third value adds
+granularity, not safety). The judge and the internal ``ClaimVerdict``
+dataclass use ``location="take"`` for audit attribution; at the pydantic
+persistence boundary (``_verify_one_story``) take-drawn claims are
+recorded as ``location="body"``. ``_MODEL_SUPPORTS_TAKE_LOCATION`` is the
+forward-compat seam: if the enum ever gains "take", the coercion stops on
+its own.
+
+v0.5 was consumed by an unshipped seam-broadening calibration experiment
+(supported-claim phrasing expansion -- made precision AND recall worse;
+see the NOTE in ``verify()``); the version number is skipped to keep the
+audit trail unambiguous.
 """
+
+_MODEL_SUPPORTS_TAKE_LOCATION = "take" in get_args(ClaimLocation)
+"""Forward-compat seam on ``models.ClaimLocation``. Currently False BY
+DESIGN (DESIGN.md defers a take-specific location value): take-drawn
+claims are persisted with ``location="body"``. If the enum is later
+widened, take claims start persisting their true location with no code
+change here."""
 
 _VERIFY_TEMPERATURE_DEFAULT = 0.0
 """Low temperature: verification is a judgment task we want stable across
@@ -177,7 +215,7 @@ class ClaimVerdict:
 
 
 _VALID_VERDICTS = {"supported", "unsupported", "contradicted", "unverifiable"}
-_VALID_LOCATIONS = {"headline", "body"}
+_VALID_LOCATIONS = {"headline", "body", "take"}
 
 
 # ---------------------------------------------------------------------------
@@ -243,7 +281,9 @@ def _numeric_key(token: str) -> str:
     return t
 
 
-def compute_hints(headline: str, body: str, source_excerpt: str) -> list[str]:
+def compute_hints(
+    headline: str, body: str, source_excerpt: str, take: str = ""
+) -> list[str]:
     """Deterministic pre-pass: surface numbers / versions / entities that
     appear in the summary but NOT (verbatim) in the source excerpt.
 
@@ -253,6 +293,11 @@ def compute_hints(headline: str, body: str, source_excerpt: str) -> list[str]:
     second"), an out-of-excerpt fact (unverifiable), or a genuine error
     (contradicted / unsupported). The LLM decides which.
 
+    ``take`` (v0.6): the story's take, scanned for hint tokens exactly
+    like the headline and body -- a number or named actor asserted in the
+    take is as checkable as one in the body. Empty (the default, and the
+    Eval 7 fixture path) changes nothing.
+
     Empty source excerpt -> no hints (every claim is unverifiable; hinting
     adds nothing).
     """
@@ -260,6 +305,8 @@ def compute_hints(headline: str, body: str, source_excerpt: str) -> list[str]:
         return []
 
     summary = f"{headline}\n{body}"
+    if take.strip():
+        summary = f"{summary}\n{take.strip()}"
     src_norm = _normalise(source_excerpt)
     src_compact = re.sub(r"\s+", "", src_norm)  # for numeric membership
 
@@ -450,16 +497,44 @@ into your own words.
 """
 
 
+_TAKE_SCOPE_BLOCK = """\
+THE TAKE -- how to adjudicate it (only present when the story has one):
+
+The TAKE below is the publication's one-line editorial POSITION, rendered
+under the body. Editorial judgment itself is out of scope (as above) --
+but a take often EMBEDS checkable factual assertions: a capability
+("breaks every parser downstream"), a number, a named actor, an
+availability claim. Extract THOSE as claims with location "take", judged
+under the same verdict rubric as headline/body claims.
+
+Produce AT LEAST ONE claim with location "take". If the take is PURELY
+editorial or craft judgment with no checkable factual content ("the
+credible safety story starts with domain grounding"), emit exactly one
+claim -- the full take text -- with verdict "unverifiable" and a note
+saying it is an editorial position with nothing factual to check. Never
+skip the take silently, and never mark a pure position "unsupported"
+just because the source does not editorialise.
+"""
+
+
 def _build_verify_prompt(
     headline: str,
     body: str,
     source_excerpt: str,
     hints: list[str],
+    take: str = "",
 ) -> str:
-    """Assemble the verifier prompt. Self-contained for offline audit."""
+    """Assemble the verifier prompt. Self-contained for offline audit.
+
+    ``take`` (v0.6): when non-empty, a TAKE block + scope rules are added
+    and the location vocabulary widens to include "take". When empty (the
+    default -- and the Eval 7 fixture path), the assembled prompt is
+    byte-identical to the v0.4 prompt, keeping the Eval 7 calibration
+    numbers attributable to judge behaviour, not prompt drift."""
     headline = headline.strip()
     body = body.strip()
     source_excerpt = source_excerpt.strip()
+    take = (take or "").strip()
 
     if source_excerpt:
         source_block = source_excerpt
@@ -481,9 +556,24 @@ def _build_verify_prompt(
         hints_block = "  (none)"
         hints_intro = "DETERMINISTIC HINTS:"
 
+    # v0.6: everything take-related is CONDITIONAL so the no-take path
+    # (Eval 7 fixtures, pre-take archives) stays byte-identical to v0.4.
+    if take:
+        what_to_check = "a published HEADLINE, BODY, and TAKE"
+        take_scope = f"{_TAKE_SCOPE_BLOCK}\n"
+        take_input_block = f"\nTAKE (the publication's position line):\n{take}\n"
+        location_vocab = "<headline | body | take>"
+        span_desc = "<the exact headline/body/take text carrying this claim>"
+    else:
+        what_to_check = "a published HEADLINE and BODY"
+        take_scope = ""
+        take_input_block = ""
+        location_vocab = "<headline | body>"
+        span_desc = "<the exact headline/body text carrying this claim>"
+
     return f"""\
 You are the factual-accuracy verifier for AI Vector, a daily AI newsletter.
-Your job: decompose a published HEADLINE and BODY into atomic factual claims
+Your job: decompose {what_to_check} into atomic factual claims
 and judge each claim against the SOURCE EXCERPT the summary was derived from.
 
 You are checking for factual divergence ONLY. AI Vector's house style
@@ -493,7 +583,7 @@ for genuine factual divergence. A trigger-happy verifier gets ignored, so being
 right about the legitimate compressions matters as much as catching the errors.
 
 {_SCOPE_BLOCK}
-{_VERDICT_RUBRIC}
+{take_scope}{_VERDICT_RUBRIC}
 
 {hints_intro}
 {hints_block}
@@ -503,7 +593,7 @@ HEADLINE:
 
 BODY:
 {body or "(empty)"}
-
+{take_input_block}
 SOURCE EXCERPT:
 {source_block}
 
@@ -513,9 +603,9 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
   "claims": [
     {{
       "claim": "<near-verbatim span of the headline or body>",
-      "location": "<headline | body>",
+      "location": "{location_vocab}",
       "verdict": "<supported | unsupported | contradicted | unverifiable>",
-      "summary_span": "<the exact headline/body text carrying this claim>",
+      "summary_span": "{span_desc}",
       "source_span": "<exact supporting OR contradicting source quote; empty if none>",
       "note": "<one short sentence: why this verdict>"
     }}
@@ -590,6 +680,7 @@ def verify_rich(
     body: str,
     source_excerpt: str,
     *,
+    take: str = "",
     temperature: float | None = None,
 ) -> list[ClaimVerdict]:
     """Run the verifier and return rich ClaimVerdict objects.
@@ -599,6 +690,12 @@ def verify_rich(
     ``JSON_RETRY_BUDGET``). On total failure returns ``[]`` -- the caller (and
     the eval harness) treats an empty list as "all claims error", which is the
     correct fail-loud behaviour for a verification stage that could not run.
+
+    ``take`` (v0.6): the story's position line (SummaryBlock.take). When
+    non-empty, take-text claims are extracted with ``location="take"`` and
+    adjudicated against the same excerpt; a pure editorial-judgment take
+    lands as one ``unverifiable`` claim, never a crash. When empty, the
+    prompt is byte-identical to v0.4 (the Eval 7 fixture path).
 
     Empty source excerpt short-circuits the LLM entirely: every claim would be
     unverifiable, but we still need the claim DECOMPOSITION, so we DO call the
@@ -610,8 +707,8 @@ def verify_rich(
             os.getenv("LLM_TEMPERATURE_VERIFY", str(_VERIFY_TEMPERATURE_DEFAULT))
         )
 
-    hints = compute_hints(headline, body, source_excerpt)
-    prompt = _build_verify_prompt(headline, body, source_excerpt, hints)
+    hints = compute_hints(headline, body, source_excerpt, take=take)
+    prompt = _build_verify_prompt(headline, body, source_excerpt, hints, take=take)
 
     attempts = JSON_RETRY_BUDGET + 1
     current_prompt = prompt
@@ -917,18 +1014,31 @@ def _verify_one_story(
     story_id = str(block.get("story_id", ""))
     headline = str(block.get("headline", "") or "")
     body = str(block.get("summary", "") or "")
+    take = str(block.get("take", "") or "")
     source_urls = block.get("source_urls") or []
 
     source_excerpt = _union_excerpts(source_urls, url_to_excerpt)
 
-    rich = verify_rich(headline, body, source_excerpt)
+    # v0.6: the take is ALWAYS part of the claim-extraction input when
+    # present -- DESIGN.md's integrity requirement ("both advisory stages
+    # MUST see it"). The judge attributes take claims location="take"
+    # internally; they are persisted as "body" per the location contract
+    # (see module docstring).
+    rich = verify_rich(headline, body, source_excerpt, take=take)
 
     claims: list[ClaimVerdictModel] = []
     for v in rich:
+        location = v.location
+        if location == "take" and not _MODEL_SUPPORTS_TAKE_LOCATION:
+            # The DESIGNED persistence mapping (DESIGN.md defers a
+            # take-specific ClaimLocation value): take-drawn claims are
+            # recorded as body claims. Also covers a judge that
+            # hallucinates the location on a no-take story.
+            location = "body"
         claims.append(ClaimVerdictModel(
             claim=v.claim,
             verdict=v.verdict,  # type: ignore[arg-type]
-            location=v.location,  # type: ignore[arg-type]
+            location=location,  # type: ignore[arg-type]
             summary_span=v.summary_span,
             source_span=v.source_span,
             note=v.note,

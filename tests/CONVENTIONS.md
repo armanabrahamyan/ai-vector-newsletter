@@ -238,6 +238,28 @@ job, not yours. Pydantic guarantees the type.
 
 ---
 
+## 12. A feature that crosses module seams needs one test that crosses them too
+
+When a feature touches several modules' contracts at once (a new
+`SummaryBlock` field consumed by summarise, render, review, and verify is
+the canonical case — 2026-08-08's "take"), each module engineer correctly
+tests their own boundary in isolation. That is necessary but not
+sufficient: every one of those tests can pass while a key-name typo, a
+dict-rebuild at an intermediate seam, or a dropped kwarg silently breaks
+the real pipeline, because each test hand-builds its own input at its own
+boundary rather than receiving the previous stage's real output.
+
+**Add exactly one seam test** that runs the real functions end to end,
+mocking only each stage's already-established LLM boundary (never the
+unit under test). Assert the SAME string/value survives every hop —
+`summarise()` output → a real `Issue` → `model_dump_json` /
+`model_validate_json` round trip → the real template render → the
+downstream stage's field index or claim input. One test earns its keep
+here; ten would be redundant with the module-local tests that already
+exist. See `tests/test_take_seam.py` for the worked example.
+
+---
+
 ## When to push back
 
 If a module engineer's PR adds a test that violates these conventions,

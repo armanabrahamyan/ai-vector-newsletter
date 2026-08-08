@@ -2152,13 +2152,13 @@ class TestVoiceDiversityVersionBump:
     """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
     must move with it so the audit trail picks up the shift."""
 
-    def test_summarise_prompt_version_is_v0_21_3(self) -> None:
-        # v0.21.3 (2026-07-05): close-variety is cross-story; per-story
-        # prompting cannot coordinate it -- feed prior section closes
-        # into each subsequent story prompt (feed-forward close context
-        # for hands_on + currents). Audit tag: summarise-v0.21.3-2026-07-05.
+    def test_summarise_prompt_version_is_v0_22(self) -> None:
+        # v0.22 (2026-08-08): "the take" -- every story returns a take
+        # field (the publication's one-sentence position); tier shapes,
+        # code-side take validation, issue-wide take feed-forward, and
+        # cross-day take lookback. Audit tag: summarise-v0.22-2026-08-08.
         from src.summarise import SUMMARISE_PROMPT_VERSION
-        assert SUMMARISE_PROMPT_VERSION == "v0.21.3"
+        assert SUMMARISE_PROMPT_VERSION == "v0.22"
 
 
 # ===========================================================================
@@ -2326,9 +2326,11 @@ class TestSummariseOneThreadsPriorCloses:
         )
         captured: dict[str, str] = {}
 
-        def fake_call_and_parse(prompt, temperature, cluster_id):
+        def fake_call_and_parse(prompt, temperature, cluster_id,
+                                take_word_cap=18):
             # 2026-08-08 cache split: _summarise_one hands the
             # (prefix, variable) tuple to _call_and_parse_summary.
+            # v0.22: it also passes take_word_cap.
             captured["prompt"] = "".join(prompt)
             return _SummaryDraft(
                 headline="A CUDA-free kernel cuts inference cost in half",
@@ -2340,6 +2342,10 @@ class TestSummariseOneThreadsPriorCloses:
                     "suite on your own stack this week."
                 ),
                 signal="try",
+                take=(
+                    "CUDA-free kernels make consumer hardware a serious "
+                    "inference budget line."
+                ),
             )
 
         monkeypatch.setattr(
@@ -3057,8 +3063,11 @@ from src.summarise import (  # noqa: E402
     _HEADLINE_RULES_BLOCK,
     _PULSE_CLOSING_SHAPE,
     _PULSE_HINT_FOR_HEAD_TIER,
+    _PULSE_TAKE_SHAPE,
     _PULSE_VOICE_BLOCK,
     _SUMMARY_PROMPT_STATIC_PREFIX,
+    _TAKE_BLOCK,
+    _TAKE_SHAPE_PER_SECTION,
     _VOICE_BLOCK,
     _VOICE_PER_SECTION,
     _CallbackRef,
@@ -3067,12 +3076,13 @@ from src.summarise import (  # noqa: E402
     _load_items_index,
     _load_ranked,
     _render_prior_closes_block,
+    _render_prior_takes_block,
 )
 
 _SUMMARISE_ARCHIVE_DAYS = ("2026-08-04", "2026-08-05")
 
 
-def _golden_v0213_single_string_prompt(
+def _golden_v022_single_string_prompt(
     story,
     cluster,
     items,
@@ -3081,13 +3091,17 @@ def _golden_v0213_single_string_prompt(
     section_override=None,
     voice_diversity_block="",
     prior_section_closes=None,
+    prior_takes=None,
 ) -> str:
-    """VERBATIM copy of the v0.21.3 (pre-cache-split) single-string
-    ``_build_summary_prompt`` body -- the golden reference for the
-    byte-equality gate. If a deliberate prompt change lands in
-    summarise.py, this copy must be updated in the same PR alongside a
-    SUMMARISE_PROMPT_VERSION bump; an accidental byte drift shows up here
-    as a failure."""
+    """VERBATIM copy of the v0.22 single-string ``_build_summary_prompt``
+    body (prefix + variable joined) -- the golden reference for the
+    byte-equality gate. Updated from the v0.21.3 copy in the same PR as
+    the v0.22 take prompt change + SUMMARISE_PROMPT_VERSION bump (the
+    prefix hash moved deliberately; the structural invariants -- concat
+    equals the joined prompt, one stable prefix across calls -- are what
+    this pins). If a deliberate prompt change lands in summarise.py, this
+    copy must be updated in the same PR alongside a version bump; an
+    accidental byte drift shows up here as a failure."""
     excerpts = excerpts or {}
     item_lines: list[str] = []
     for it in items[:5]:  # a bit more context than the rank prompt
@@ -3139,7 +3153,11 @@ def _golden_v0213_single_string_prompt(
     )
 
     if section_override == "pulse":
-        section_voice = _PULSE_VOICE_BLOCK + "\n\n" + _PULSE_CLOSING_SHAPE
+        section_voice = (
+            _PULSE_VOICE_BLOCK
+            + "\n\n" + _PULSE_CLOSING_SHAPE
+            + "\n\n" + _PULSE_TAKE_SHAPE
+        )
         voice_header = (
             "SECTION VOICE (override=pulse; this story has been elevated\n"
             "to The Pulse and is being re-summarised under Pulse rules):"
@@ -3149,6 +3167,9 @@ def _golden_v0213_single_string_prompt(
         closing_shape = _CLOSING_SHAPE_PER_SECTION.get(story.tier, "")
         if closing_shape:
             section_voice = section_voice + "\n\n" + closing_shape
+        take_shape = _TAKE_SHAPE_PER_SECTION.get(story.tier, "")
+        if take_shape:
+            section_voice = section_voice + "\n\n" + take_shape
         if story.tier in ("big_picture", "hands_on"):
             section_voice = (
                 section_voice
@@ -3171,13 +3192,14 @@ def _golden_v0213_single_string_prompt(
     if section_override == "pulse":
         close_reminder_tail = (
             "\n- PULSE OVERRIDE (FINAL REMINDER): this is The Pulse. The "
-            "close MUST be a PLAIN TAKE -- a short editorial JUDGEMENT "
-            "(1-2 declarative sentences) naming what is TRUE NOW given "
-            "the day's shift. NOT a question. NOT a prescription "
-            "(\"raise this at...\", \"test against...\", \"audit your...\"). "
-            "NOT an imperative verb at the end. The Pulse names where "
-            "the field moved today; the rest of the issue is for "
-            "decisions to make about it.\n"
+            "plain-take JUDGEMENT goes in the \"take\" FIELD -- one "
+            "declarative sentence naming what is TRUE NOW given the "
+            "day's shift. NOT a question. NOT a prescription (\"raise "
+            "this at...\", \"test against...\", \"audit your...\"). NOT "
+            "an imperative verb. The BODY ends on the day's direction "
+            "and must NOT restate the take. The Pulse names where the "
+            "field moved today; the rest of the issue is for decisions "
+            "to make about it.\n"
         )
     elif story.tier == "big_picture":
         close_reminder_tail = (
@@ -3215,6 +3237,23 @@ def _golden_v0213_single_string_prompt(
     else:
         close_reminder_tail = ""
 
+    if section_override != "pulse" and story.tier == "currents":
+        take_cap_note = (
+            "hard cap 18 words; up to 22 ONLY when genuine two-sidedness "
+            "needs the room"
+        )
+    else:
+        take_cap_note = "HARD cap 18 words"
+    take_reminder_tail = (
+        "\n- THE TAKE (FINAL REMINDER): return \"take\" -- ONE declarative "
+        "sentence, 8-16 words (" + take_cap_note + "), stating the "
+        "publication's position per the TAKE SHAPE above. It must pass "
+        "the test \"It is now the case that [take]\". No question mark, "
+        "no leading imperative verb, no hedges (may / could / potentially "
+        "/ appears / arguably), no labels, and it must NOT restate a body "
+        "sentence -- it adds the position the body stopped short of.\n"
+    )
+
     prior_closes_segment = ""
     if section_override != "pulse" and prior_section_closes:
         prior_closes_block = _render_prior_closes_block(
@@ -3222,6 +3261,12 @@ def _golden_v0213_single_string_prompt(
         )
         if prior_closes_block:
             prior_closes_segment = f"\n{prior_closes_block}\n"
+
+    prior_takes_segment = ""
+    if prior_takes:
+        prior_takes_block = _render_prior_takes_block(list(prior_takes))
+        if prior_takes_block:
+            prior_takes_segment = f"\n{prior_takes_block}\n"
 
     return f"""\
 You are writing one story for AI Vector -- a daily newsletter about
@@ -3231,7 +3276,8 @@ selected for the issue; your job is to write it well.
 {_VOICE_BLOCK}
 {_HEADLINE_RULES_BLOCK}
 {_EDITORIAL_FOCUS_BLOCK}
-{_FINANCE_LENS_BLOCK}{section_voice_block}{voice_diversity_segment}
+{_FINANCE_LENS_BLOCK}
+{_TAKE_BLOCK}{section_voice_block}{voice_diversity_segment}
 RANKER NOTES (from the rank stage, for context only -- not for echoing):
   score: {story.score} / 100
   breakdown: {breakdown_str}
@@ -3369,12 +3415,13 @@ ITEMS:
                    without code / benchmarks.
   Choose by what the body actually argues. A body whose close sends the
   design to a review rather than to production is "discuss", not "act".
-{prior_closes_segment}{close_reminder_tail}
+{prior_closes_segment}{prior_takes_segment}{close_reminder_tail}{take_reminder_tail}
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
   "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
   "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
+  "take": "<ONE declarative sentence, 8-16 words, HARD 18-word cap: the publication's position>",
   "signal": "<one of: act | try | read | watch | discuss>"
 }}
 """
@@ -3436,7 +3483,12 @@ class TestSummaryPromptCacheSplit:
                 pulse_done = True
                 yield (
                     {**base, "section_override": "pulse",
-                     "voice_diversity_block": _TEST_VOICE_DIVERSITY_BLOCK},
+                     "voice_diversity_block": _TEST_VOICE_DIVERSITY_BLOCK,
+                     # v0.22: the Pulse rewrite receives issue-wide takes.
+                     "prior_takes": [
+                         "Agent output is a pipeline contract now, not a "
+                         "console log.",
+                     ]},
                     f"{day}/{story.cluster_id}/pulse-override",
                 )
             if not enriched_done and items:
@@ -3453,18 +3505,22 @@ class TestSummaryPromptCacheSplit:
                      "voice_diversity_block": _TEST_VOICE_DIVERSITY_BLOCK,
                      "prior_section_closes": [
                          "Swap the loop this week; measure the flaw rate.",
+                     ],
+                     "prior_takes": [
+                         "Close-variety is a caching property now, not a "
+                         "prompt nicety.",
                      ]},
-                    f"{day}/{story.cluster_id}/callback+excerpt+closes",
+                    f"{day}/{story.cluster_id}/callback+excerpt+closes+takes",
                 )
 
-    def test_concatenated_parts_equal_v0213_single_string_over_real_archive(
+    def test_concatenated_parts_equal_v022_single_string_over_real_archive(
         self,
     ) -> None:
-        """prefix + variable must equal the pre-split single-string prompt
-        BYTE FOR BYTE for every case. This is the core caching-safety
-        invariant: the split may change message structure only, never the
-        bytes the model reads. Coverage asserted below: all three tiers,
-        the Pulse override, and a callback-bearing story."""
+        """prefix + variable must equal the single-string prompt BYTE FOR
+        BYTE for every case. This is the core caching-safety invariant:
+        the split may change message structure only, never the bytes the
+        model reads. Coverage asserted below: all three tiers, the Pulse
+        override, and a callback-bearing story."""
         tiers_seen: set[str] = set()
         pulse_seen = False
         callback_seen = False
@@ -3472,7 +3528,7 @@ class TestSummaryPromptCacheSplit:
         for day in _SUMMARISE_ARCHIVE_DAYS:
             for kwargs, label in self._cases_for_day(day):
                 prefix, variable = _build_summary_prompt(**kwargs)
-                golden = _golden_v0213_single_string_prompt(**kwargs)
+                golden = _golden_v022_single_string_prompt(**kwargs)
                 assert prefix + variable == golden, f"byte drift for {label}"
                 checked += 1
                 if kwargs.get("section_override") == "pulse":
@@ -3493,8 +3549,10 @@ class TestSummaryPromptCacheSplit:
         """Exactly one prefix across every story, tier, and the Pulse
         override -- any per-story byte leaking into the prefix means zero
         cache hits. The boundary is structural: the prefix ends with
-        _FINANCE_LENS_BLOCK (the last static block), and the tier-dependent
-        section voice starts the variable part."""
+        _TAKE_BLOCK (the last static block since v0.22 -- the
+        tier-independent take teaching is byte-identical across tiers, so
+        it is prefix material), and the tier-dependent section voice
+        starts the variable part."""
         prefixes: set[str] = set()
         for day in _SUMMARISE_ARCHIVE_DAYS:
             for kwargs, _label in self._cases_for_day(day):
@@ -3508,11 +3566,14 @@ class TestSummaryPromptCacheSplit:
         )
         the_prefix = next(iter(prefixes))
         assert the_prefix == _SUMMARY_PROMPT_STATIC_PREFIX
-        assert the_prefix.endswith(_FINANCE_LENS_BLOCK)
-        # Verified 2026-08-08: the prefix is 30,736 bytes = 8,265 billed
-        # tokens -- far above the 1,024/4,096-token cache minimums. Guard
-        # a floor well above the minimum so a block shrink can't silently
-        # drop the prefix below cacheability.
+        assert the_prefix.endswith(_TAKE_BLOCK)
+        assert _FINANCE_LENS_BLOCK in the_prefix
+        # Verified 2026-08-08 (v0.22): the prefix is 33,218 bytes (~8.9k
+        # billed tokens; was 30,736 at v0.21.3 -- the prefix HASH moved
+        # with the deliberate take-block addition) -- far above the
+        # 1,024/4,096-token cache minimums. Guard a floor well above the
+        # minimum so a block shrink can't silently drop the prefix below
+        # cacheability.
         assert len(the_prefix.encode("utf-8")) > 20_000
 
     def test_variable_part_carries_no_prefix_content(self) -> None:
@@ -3527,7 +3588,8 @@ class TestSummaryPromptCacheSplit:
         items = _items_for_cluster(cluster, items_by_id)
         _, variable = _build_summary_prompt(story, cluster, items, callbacks=[])
         for block in (_VOICE_BLOCK, _HEADLINE_RULES_BLOCK,
-                      _EDITORIAL_FOCUS_BLOCK, _FINANCE_LENS_BLOCK):
+                      _EDITORIAL_FOCUS_BLOCK, _FINANCE_LENS_BLOCK,
+                      _TAKE_BLOCK):
             assert block not in variable
 
     # -- Retry discipline (THE TRAP) ----------------------------------------
@@ -3573,11 +3635,13 @@ class TestSummaryPromptCacheSplit:
         overlong = _json.dumps({
             "headline": "A headline within caps for the length retry",
             "summary": " ".join(["word"] * 70),  # 70 words > 60-word cap
+            "take": "Retry discipline is now a caching property, not a prompt nicety.",
             "signal": "try",
         })
         within = _json.dumps({
             "headline": "A headline within caps for the length retry",
             "summary": " ".join(["word"] * 40),
+            "take": "Retry discipline is now a caching property, not a prompt nicety.",
             "signal": "try",
         })
         prompt = self._split_prompt_fixture()
@@ -3594,7 +3658,7 @@ class TestSummaryPromptCacheSplit:
         assert isinstance(first, tuple) and isinstance(second, tuple)
         assert second[0] == first[0]
         assert second[1].startswith(first[1])
-        assert "BREACHED the HARD length caps" in second[1]
+        assert "BREACHED the HARD caps or the take spec" in second[1]
 
     def test_plain_string_prompt_still_supported(self) -> None:
         """Legacy tolerance: a plain-string prompt flows through unchanged
@@ -3608,3 +3672,482 @@ class TestSummaryPromptCacheSplit:
         second = mock_llm.call_args_list[1].args[0]
         assert first == "PLAIN PROMPT"
         assert isinstance(second, str) and second.startswith("PLAIN PROMPT")
+
+
+# ===========================================================================
+# v0.22 (2026-08-08): "the take" -- generation, validation, feed-forward.
+#
+# The take is a NEW per-story field (SummaryBlock.take, schema v4): one
+# declarative sentence stating the publication's position, with its own
+# 8-16 word budget (hard cap 18; Currents may run to 22). These tests pin
+# the CODE-side half of the ratified voice spec: the checkable banned
+# forms, the corrective-retry discipline (cache-safe), the field's journey
+# into SummaryBlock, the issue-wide feed-forward, and the cross-day
+# lookback. The un-checkable half (leading imperative, second person,
+# universalisms, anti-pattern frames) lives in the prompt + reviewer and
+# is exercised by Eval 3 / Eval 9, not unit tests.
+# ===========================================================================
+
+class TestTakeViolations:
+    """Each rule earns its place by failing against the defect it guards
+    -- every case here flips red if its check is deleted."""
+
+    @staticmethod
+    def _draft(take, summary=None):
+        from src.summarise import _SummaryDraft
+        return _SummaryDraft(
+            headline="A headline",
+            summary=summary or (
+                "The shift is real and the mechanism is public. The repo "
+                "ships benchmarks on consumer hardware. Clone it and rerun "
+                "the latency suite on your own stack this week."
+            ),
+            signal="try",
+            take=take,
+        )
+
+    def test_clean_take_passes(self) -> None:
+        from src.summarise import _take_violations
+        d = self._draft(
+            "Reasoning on stderr is the small decision that makes agent "
+            "output pipeable."
+        )
+        assert _take_violations(d) == []
+
+    def test_missing_and_empty_take_flagged(self) -> None:
+        from src.summarise import _take_violations
+        assert _take_violations(self._draft(None)) != []
+        assert _take_violations(self._draft("   ")) != []
+
+    def test_word_cap_18_default(self) -> None:
+        from src.summarise import _take_violations
+        eighteen = " ".join(["word"] * 18)
+        nineteen = " ".join(["word"] * 19)
+        assert not any(
+            "HARD cap" in v for v in _take_violations(self._draft(eighteen))
+        )
+        assert any(
+            "HARD cap" in v or "cap is 18" in v
+            for v in _take_violations(self._draft(nineteen))
+        )
+
+    def test_currents_cap_allows_22_not_23(self) -> None:
+        from src.summarise import _TAKE_MAX_WORDS_CURRENTS, _take_violations
+        twenty_two = " ".join(["word"] * 22)
+        twenty_three = " ".join(["word"] * 23)
+        assert not any(
+            "cap" in v
+            for v in _take_violations(
+                self._draft(twenty_two), _TAKE_MAX_WORDS_CURRENTS)
+        )
+        assert any(
+            "cap is 22" in v
+            for v in _take_violations(
+                self._draft(twenty_three), _TAKE_MAX_WORDS_CURRENTS)
+        )
+
+    def test_question_mark_flagged(self) -> None:
+        from src.summarise import _take_violations
+        d = self._draft("Is domain grounding the real safety story now?")
+        assert any("question mark" in v for v in _take_violations(d))
+
+    def test_each_hedge_word_flagged(self) -> None:
+        from src.summarise import _take_violations
+        for hedge in ("may", "could", "potentially", "appears", "arguably"):
+            d = self._draft(f"Domain grounding {hedge} become the safety baseline for banks.")
+            assert any(
+                "hedge" in v for v in _take_violations(d)
+            ), f"hedge {hedge!r} not caught"
+
+    def test_hedge_match_is_word_boundary(self) -> None:
+        from src.summarise import _take_violations
+        # "codified" contains no hedge; "Mayfair" must not match "may".
+        d = self._draft("Mayfair desks have codified agent review into sign-off.")
+        assert not any("hedge" in v for v in _take_violations(d))
+
+    def test_banned_labels_flagged(self) -> None:
+        from src.summarise import _take_violations
+        for label in ("So what: it lands.", "Bottom line: it lands.",
+                      "This matters because it lands."):
+            d = self._draft(label)
+            assert any(
+                "label" in v for v in _take_violations(d)
+            ), f"label {label!r} not caught"
+
+    def test_body_substring_restatement_flagged(self) -> None:
+        from src.summarise import _take_violations
+        d = self._draft(
+            "The repo ships benchmarks on consumer hardware.",
+        )
+        assert any("restates" in v for v in _take_violations(d))
+
+    def test_high_content_word_overlap_flagged(self) -> None:
+        from src.summarise import _take_restates_body
+        body = (
+            "Anthropic moved agent reasoning onto stderr in this release. "
+            "Something else happened too."
+        )
+        # Every content word of the take appears in body sentence 1.
+        assert _take_restates_body(
+            "Anthropic moved agent reasoning onto stderr.", body
+        )
+
+    def test_low_overlap_not_flagged(self) -> None:
+        from src.summarise import _take_restates_body
+        body = (
+            "Anthropic moved agent reasoning onto stderr in this release. "
+            "The change ships in v2.1 with no flag required."
+        )
+        assert not _take_restates_body(
+            "Pipeable output is the quiet contract agent vendors now "
+            "compete on.", body
+        )
+
+
+class TestTakeParsing:
+    def test_take_parsed_and_stripped(self) -> None:
+        from src.summarise import _parse_summary_json
+        raw = (
+            '{"headline": "H", "summary": "S", '
+            '"take": "  The position is stated plainly.  ", "signal": "try"}'
+        )
+        draft = _parse_summary_json(raw)
+        assert draft is not None
+        assert draft.take == "The position is stated plainly."
+
+    def test_missing_or_blank_take_is_none(self) -> None:
+        from src.summarise import _parse_summary_json
+        no_take = _parse_summary_json('{"headline": "H", "summary": "S"}')
+        assert no_take is not None and no_take.take is None
+        blank = _parse_summary_json(
+            '{"headline": "H", "summary": "S", "take": "   "}'
+        )
+        assert blank is not None and blank.take is None
+
+    def test_non_string_take_degrades_to_none(self) -> None:
+        from src.summarise import _parse_summary_json
+        draft = _parse_summary_json(
+            '{"headline": "H", "summary": "S", "take": 42}'
+        )
+        assert draft is not None and draft.take is None
+
+
+class TestTakeCorrectiveRetry:
+    """The take joins the length caps in the single corrective retry, and
+    the retry keeps the cache discipline (prefix byte-identical,
+    corrective text appended to the variable part)."""
+
+    @staticmethod
+    def _split_prompt():
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        )
+        return _build_summary_prompt(story, cluster, [item], callbacks=[])
+
+    @staticmethod
+    def _payload(take):
+        import json as _json
+        return _json.dumps({
+            "headline": "A headline within caps for the take retry",
+            "summary": " ".join(["word"] * 40),
+            "take": take,
+            "signal": "try",
+        })
+
+    def test_take_violation_triggers_retry_and_accepts_fix(self) -> None:
+        from src.summarise import _call_and_parse_summary
+        bad = self._payload("Could this potentially be the missing piece?")
+        good = self._payload(
+            "Pipeable agent output is now a vendor contract, not a "
+            "console habit."
+        )
+        prompt = self._split_prompt()
+        with _patch(
+            "src.summarise._llm_call", side_effect=[bad, good],
+        ) as mock_llm:
+            draft = _call_and_parse_summary(prompt, 0.6, "c_0123456789abcdef")
+        assert draft is not None
+        assert draft.take.startswith("Pipeable agent output")
+        assert mock_llm.call_count == 2
+        first = mock_llm.call_args_list[0].args[0]
+        second = mock_llm.call_args_list[1].args[0]
+        assert isinstance(first, tuple) and isinstance(second, tuple)
+        assert second[0] == first[0], (
+            "take-retry prefix must stay byte-identical (cache discipline)"
+        )
+        assert second[1].startswith(first[1])
+        assert "BREACHED the HARD caps or the take spec" in second[1]
+
+    def test_still_violating_take_ships_soft(self) -> None:
+        """Both attempts violate -> the draft still ships (take kept for
+        the reviewer's evidence trail), mirroring the length-cap soft
+        fail. A hard drop here would cost a top-N story over one line."""
+        from src.summarise import _call_and_parse_summary
+        bad = self._payload("Is this the missing piece?")
+        with _patch(
+            "src.summarise._llm_call", side_effect=[bad, bad],
+        ) as mock_llm:
+            draft = _call_and_parse_summary(
+                self._split_prompt(), 0.6, "c_0123456789abcdef"
+            )
+        assert mock_llm.call_count == 2
+        assert draft is not None
+        assert draft.take == "Is this the missing piece?"
+
+    def test_missing_take_retry_then_none_ships(self) -> None:
+        import json as _json
+        from src.summarise import _call_and_parse_summary
+        no_take = _json.dumps({
+            "headline": "A headline within caps for the take retry",
+            "summary": " ".join(["word"] * 40),
+            "signal": "try",
+        })
+        with _patch(
+            "src.summarise._llm_call", side_effect=[no_take, no_take],
+        ):
+            draft = _call_and_parse_summary(
+                self._split_prompt(), 0.6, "c_0123456789abcdef"
+            )
+        assert draft is not None
+        assert draft.take is None  # review flags the missing take
+
+
+class TestTakeIntoSummaryBlock:
+    """The draft's take must reach SummaryBlock.take (the Architect's
+    schema-v4 contract, landed 2026-08-08)."""
+
+    def _run_summarise_one(self, monkeypatch, take):
+        from src import summarise as summarise_mod
+        from src.summarise import _SummaryDraft
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        )
+
+        def fake_call_and_parse(prompt, temperature, cluster_id,
+                                take_word_cap=18):
+            return _SummaryDraft(
+                headline="A CUDA-free kernel cuts inference cost in half",
+                summary=(
+                    "The shift is real and the mechanism is public. The "
+                    "kernel drops CUDA entirely and the repo ships "
+                    "benchmarks on consumer hardware. Weights and tooling "
+                    "are public. Clone the repo and rerun the latency "
+                    "suite on your own stack this week."
+                ),
+                signal="try",
+                take=take,
+            )
+
+        monkeypatch.setattr(
+            summarise_mod, "_call_and_parse_summary", fake_call_and_parse,
+        )
+        monkeypatch.setattr(
+            summarise_mod, "_fetch_source_excerpt", lambda url: "",
+        )
+        return summarise_mod._summarise_one(
+            story=story, cluster=cluster, items=[item], callbacks=[],
+        )
+
+    def test_take_persisted_on_block(self, monkeypatch) -> None:
+        take = (
+            "Consumer hardware is a serious inference budget line now."
+        )
+        block = self._run_summarise_one(monkeypatch, take)
+        assert block is not None
+        assert block.take == take
+
+    def test_none_take_persisted_as_none(self, monkeypatch) -> None:
+        block = self._run_summarise_one(monkeypatch, None)
+        assert block is not None
+        assert block.take is None
+
+    def test_over_model_cap_take_degrades_to_none_not_lost_story(
+        self, monkeypatch,
+    ) -> None:
+        """A take past SummaryBlock's 200-char pydantic cap must cost the
+        TAKE, not the story (guarded in _take_field_kwargs). Mutation
+        check: without the guard, SummaryBlock validation raises and the
+        block returns None."""
+        block = self._run_summarise_one(monkeypatch, "x" * 250)
+        assert block is not None
+        assert block.take is None
+
+
+class TestTakeFeedForward:
+    def test_render_block_empty_and_numbered(self) -> None:
+        from src.summarise import _render_prior_takes_block
+        assert _render_prior_takes_block([]) == ""
+        block = _render_prior_takes_block(["Take one lands.", "Take two lands."])
+        assert "TAKES ALREADY WRITTEN IN THIS ISSUE" in block
+        assert '1. "Take one lands."' in block
+        assert '2. "Take two lands."' in block
+
+    def test_all_tiers_receive_prior_takes_including_big_picture(self) -> None:
+        for tier in ("big_picture", "hands_on", "currents"):
+            story, cluster, item = (
+                TestPriorClosesInPrompt._make_story_cluster_item(tier)
+            )
+            prompt = "".join(_build_summary_prompt(
+                story, cluster, [item], callbacks=[],
+                prior_takes=["Frame diversity is an issue-wide property."],
+            ))
+            assert "TAKES ALREADY WRITTEN IN THIS ISSUE" in prompt, tier
+            assert "THE TAKE (FINAL REMINDER)" in prompt, tier
+
+    def test_pulse_override_receives_prior_takes(self) -> None:
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("big_picture")
+        )
+        prompt = "".join(_build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            section_override="pulse",
+            prior_takes=["Frame diversity is an issue-wide property."],
+        ))
+        assert "TAKES ALREADY WRITTEN IN THIS ISSUE" in prompt
+        assert "TAKE SHAPE (PULSE)" in prompt
+
+    def test_currents_reminder_carries_22_word_exception(self) -> None:
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("currents")
+        )
+        prompt = "".join(
+            _build_summary_prompt(story, cluster, [item], callbacks=[])
+        )
+        assert "up to 22 ONLY when genuine two-sidedness" in prompt
+
+    def test_summarise_loop_threads_takes_issue_wide(self, monkeypatch,
+                                                     tmp_path) -> None:
+        """Story 2 sees story 1's take in its prompt regardless of tier
+        -- the loop-level property the per-prompt tests can't reach."""
+        import datetime as dt
+        from src import summarise as summarise_mod
+        from src.summarise import _SummaryDraft
+
+        seen_prompts: list[str] = []
+        takes = iter([
+            "Agent plans are audit artefacts now, not scratch space.",
+            "Second story position lands here.",
+        ])
+
+        def fake_call_and_parse(prompt, temperature, cluster_id,
+                                take_word_cap=18):
+            seen_prompts.append("".join(prompt))
+            return _SummaryDraft(
+                headline="A headline for the loop test",
+                summary=(
+                    "The shift is real and the mechanism is public. The "
+                    "repo ships benchmarks on consumer hardware. Weights "
+                    "are public. Clone the repo and rerun the latency "
+                    "suite on your own stack before the next eval cycle."
+                ),
+                signal="try",
+                take=next(takes),
+            )
+
+        b1 = TestPriorClosesInPrompt._make_story_cluster_item("big_picture")
+        b2 = TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        story2 = b2[0].model_copy(update={"cluster_id": "c_fedcba9876543210"})
+        cluster2 = b2[1].model_copy(update={
+            "cluster_id": "c_fedcba9876543210", "item_ids": ["i_y"],
+        })
+        item2 = b2[2].model_copy(update={"id": "i_y"})
+
+        monkeypatch.setattr(
+            summarise_mod, "_call_and_parse_summary", fake_call_and_parse,
+        )
+        monkeypatch.setattr(
+            summarise_mod, "_fetch_source_excerpt", lambda url: "",
+        )
+
+        blocks = []
+        takes_so_far: list[str] = []
+        for story, cluster, item in ((b1[0], b1[1], b1[2]),
+                                     (story2, cluster2, item2)):
+            block = summarise_mod._summarise_one(
+                story=story, cluster=cluster, items=[item], callbacks=[],
+                prior_takes=list(takes_so_far),
+            )
+            assert block is not None
+            if block.take:
+                takes_so_far.append(block.take)
+            blocks.append(block)
+
+        assert "TAKES ALREADY WRITTEN" not in seen_prompts[0]
+        assert (
+            '"Agent plans are audit artefacts now, not scratch space."'
+            in seen_prompts[1]
+        )
+
+
+class TestTakeVoiceDiversityLookback:
+    def test_past_takes_collected_and_rendered(self, monkeypatch,
+                                               tmp_path) -> None:
+        import datetime as dt
+        import json as _json
+        from src import paths as paths_mod
+        from src.summarise import (
+            _load_recent_intros_and_closings,
+            _render_voice_diversity_block,
+        )
+
+        day = dt.date(2026, 8, 7)
+        released = tmp_path / "released" / day.isoformat()
+        released.mkdir(parents=True)
+        payload = {
+            "pulse": {"stories": [{
+                "headline": "H", "summary": "Body one. Body two.",
+                "take": "The pulse take names what is true now.",
+            }]},
+            "sections": [{
+                "name": "currents",
+                "intro_lead": "Watch the benchmarks.",
+                "stories": [{
+                    "headline": "H2", "summary": "S one. S two.",
+                    "take": "A replication reshapes the shortlist; a miss indicts the suite.",
+                }],
+            }],
+        }
+        (released / "issue.json").write_text(
+            _json.dumps(payload), encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            paths_mod, "RELEASED_ROOT", tmp_path / "released",
+        )
+
+        recent = _load_recent_intros_and_closings(dt.date(2026, 8, 8))
+        assert len(recent) == 1
+        assert recent[0].first_story_takes["pulse"] == (
+            "The pulse take names what is true now."
+        )
+        assert "currents" in recent[0].first_story_takes
+
+        rendered = _render_voice_diversity_block(recent, [])
+        assert "take: 'The pulse take names what is true now.'" in rendered
+
+    def test_pre_take_archive_yields_no_take_lines(self, monkeypatch,
+                                                   tmp_path) -> None:
+        import datetime as dt
+        import json as _json
+        from src import paths as paths_mod
+        from src.summarise import (
+            _load_recent_intros_and_closings,
+            _render_voice_diversity_block,
+        )
+
+        day = dt.date(2026, 8, 6)
+        released = tmp_path / "released" / day.isoformat()
+        released.mkdir(parents=True)
+        payload = {
+            "pulse": {"stories": [{"headline": "H", "summary": "A. B."}]},
+            "sections": [],
+        }
+        (released / "issue.json").write_text(
+            _json.dumps(payload), encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            paths_mod, "RELEASED_ROOT", tmp_path / "released",
+        )
+        recent = _load_recent_intros_and_closings(dt.date(2026, 8, 8))
+        assert len(recent) == 1
+        assert recent[0].first_story_takes == {}
+        assert " take: " not in _render_voice_diversity_block(recent, [])

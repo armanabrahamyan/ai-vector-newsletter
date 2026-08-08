@@ -1,0 +1,201 @@
+# evals/fixtures/take-drift/cases.yaml -- Eval 10 labelled synthetic cases
+#
+# STATUS: PROPOSAL (2026-08-08), pending ratification alongside the Eval 10
+# thresholds in run_evals.py (opener family: first 3 non-article words, max
+# 2 stories or 30% of an issue's takes; cross-issue: word-level 4-grams,
+# flagged in >= 3 distinct issues of a 10-issue lookback).
+#
+# The "take" (ratified 2026-08-08) is the per-story declarative italic
+# line (SummaryBlock.take). These cases seed the two deterministic drift
+# failure modes -- within-issue opener templating and cross-issue frame
+# recurrence -- plus the near-misses that must NOT flag. Consumed by
+# evals/test_take_drift_lint.py; each case is a mutation that proves the
+# counter load-bearing (remove the counter, the case goes green).
+#
+# NOT auto-run by the dataset loop: this directory carries no issue.json
+# (same pattern as fixtures/factual-accuracy/).
+
+schema_version: 1
+
+# ---------------------------------------------------------------------------
+# Counter (a): per-issue opener-shape families.
+# expect_violation_families lists the normalised families that MUST flag;
+# empty list = the case must stay clean.
+# ---------------------------------------------------------------------------
+
+opener_cases:
+
+  - id: clean_full_issue
+    note: >
+      Eleven takes, eleven distinct opener families -- the healthy shape of
+      a full issue. Must not flag.
+    takes:
+      - "The bar for agent audits just moved."
+      - "Cheap models are now good enough for triage."
+      - "Vendor benchmarks stopped being evidence this week."
+      - "Compliance teams inherit this problem next quarter."
+      - "Open weights changed the procurement calculus."
+      - "Latency is the new accuracy fight."
+      - "Every eval harness is now a product surface."
+      - "Regulators are reading the same papers you are."
+      - "Context windows quietly became a cost centre."
+      - "Fine-tuning lost another argument to retrieval."
+      - "Your test suite is the moat now."
+    expect_violation_families: []
+
+  - id: family_count_violation
+    note: >
+      Three takes sharing the family "agents are cheaper" in an
+      eleven-take issue: 3/11 = 27% is UNDER the 30% share rule, so this
+      case isolates the count rule (>2 stories). Mutation target: relax
+      the count rule and this goes green.
+    takes:
+      - "Agents are cheaper than the pilot suggested."
+      - "Agents are cheaper when the router does triage."
+      - "The agents are cheaper to audit than to retrain."   # leading article stripped
+      - "Vendor benchmarks stopped being evidence this week."
+      - "Compliance teams inherit this problem next quarter."
+      - "Open weights changed the procurement calculus."
+      - "Latency is the new accuracy fight."
+      - "Every eval harness is now a product surface."
+      - "Regulators are reading the same papers you are."
+      - "Context windows quietly became a cost centre."
+      - "Your test suite is the moat now."
+    expect_violation_families: ["agents are cheaper"]
+
+  - id: family_share_violation
+    note: >
+      Two takes sharing a family in a six-take issue: 2/6 = 33% > 30%,
+      but 2 stories does not break the count rule. Isolates the share
+      rule. Mutation target: relax the share rule and this goes green.
+    takes:
+      - "The bar for agent audits just moved."
+      - "Bar for agent audits is now regulator-set."   # article-stripped same family
+      - "Cheap models are now good enough for triage."
+      - "Open weights changed the procurement calculus."
+      - "Latency is the new accuracy fight."
+      - "Your test suite is the moat now."
+    expect_violation_families: ["bar for agent"]
+
+  - id: pair_in_full_issue_clean
+    note: >
+      The same two-take family inside an ELEVEN-take issue: 2/11 = 18%
+      and count 2 -- inside both limits. The share rule must be
+      issue-size-relative, not an absolute pair ban.
+    takes:
+      - "The bar for agent audits just moved."
+      - "Bar for agent audits is now regulator-set."
+      - "Cheap models are now good enough for triage."
+      - "Vendor benchmarks stopped being evidence this week."
+      - "Compliance teams inherit this problem next quarter."
+      - "Open weights changed the procurement calculus."
+      - "Latency is the new accuracy fight."
+      - "Every eval harness is now a product surface."
+      - "Regulators are reading the same papers you are."
+      - "Context windows quietly became a cost centre."
+      - "Your test suite is the moat now."
+    expect_violation_families: []
+
+  - id: singleton_small_issue_clean
+    note: >
+      Three takes, all distinct: each singleton family is 33% of the
+      issue, over the 30% line -- but a family of ONE is not repetition.
+      Guards the >=2-members precondition on the share rule.
+    takes:
+      - "The bar for agent audits just moved."
+      - "Cheap models are now good enough for triage."
+      - "Your test suite is the moat now."
+    expect_violation_families: []
+
+  - id: case_and_punctuation_normalised
+    note: >
+      Same family through case, punctuation, and article differences --
+      the normalisation IS the counter. Three variants trip the count
+      rule in an eleven-take issue.
+    takes:
+      - "The bar has moved for agent evals."
+      - "bar has moved; procurement follows."
+      - "A bar has moved, and budgets with it."
+      - "Cheap models are now good enough for triage."
+      - "Vendor benchmarks stopped being evidence this week."
+      - "Compliance teams inherit this problem next quarter."
+      - "Open weights changed the procurement calculus."
+      - "Latency is the new accuracy fight."
+      - "Every eval harness is now a product surface."
+      - "Regulators are reading the same papers you are."
+      - "Your test suite is the moat now."
+    expect_violation_families: ["bar has moved"]
+
+# ---------------------------------------------------------------------------
+# Counter (b): cross-issue 4-gram recurrence.
+# lookback maps prior released dates -> that issue's take lines. The
+# candidate is always dated AFTER every lookback date. expect_violation_
+# ngrams lists 4-grams that MUST flag; empty = must stay clean.
+# ---------------------------------------------------------------------------
+
+ngram_cases:
+
+  - id: frame_in_three_prior_issues
+    note: >
+      "is the new accuracy" recurs in exactly 3 of the last 10 issues'
+      takes -- at threshold, must flag. Mutation target: raise the
+      threshold to 4 and this goes green.
+    candidate_date: "2026-08-08"
+    candidate_takes:
+      - "Latency is the new accuracy fight."
+      - "Your test suite is the moat now."
+    lookback:
+      "2026-07-28": ["Throughput is the new accuracy story."]
+      "2026-07-30": ["Cost is the new accuracy debate."]
+      "2026-08-02": ["Grounding is the new accuracy war."]
+      "2026-08-04": ["Open weights changed the procurement calculus."]
+    expect_violation_ngrams: ["is the new accuracy"]
+
+  - id: frame_in_two_prior_issues_clean
+    note: >
+      Same frame in only 2 prior issues -- one under threshold, must not
+      flag. An echo is not yet a template.
+    candidate_date: "2026-08-08"
+    candidate_takes:
+      - "Latency is the new accuracy fight."
+    lookback:
+      "2026-07-30": ["Cost is the new accuracy debate."]
+      "2026-08-02": ["Grounding is the new accuracy war."]
+      "2026-08-04": ["Open weights changed the procurement calculus."]
+    expect_violation_ngrams: []
+
+  - id: old_issue_outside_lookback_excluded
+    note: >
+      The frame appears in 3 prior issues, but one of them is the 11th
+      issue back -- outside the 10-issue lookback, so only 2 count.
+      Guards the window bound. Mutation target: widen the window to 11
+      and this flags.
+    candidate_date: "2026-08-08"
+    candidate_takes:
+      - "Latency is the new accuracy fight."
+    lookback:
+      "2026-07-10": ["Throughput is the new accuracy story."]  # 11th back -- excluded
+      "2026-07-14": ["Open weights changed the procurement calculus."]
+      "2026-07-16": ["Your test suite is the moat now."]
+      "2026-07-18": ["Compliance teams inherit this problem next quarter."]
+      "2026-07-20": ["Regulators are reading the same papers you are."]
+      "2026-07-22": ["Context windows quietly became a cost centre."]
+      "2026-07-24": ["Fine-tuning lost another argument to retrieval."]
+      "2026-07-26": ["Every eval harness is now a product surface."]
+      "2026-07-30": ["Cost is the new accuracy debate."]
+      "2026-08-02": ["Grounding is the new accuracy war."]
+      "2026-08-04": ["Cheap models are now good enough for triage."]
+    expect_violation_ngrams: []
+
+  - id: within_issue_repeat_not_double_counted
+    note: >
+      The 4-gram repeats across TODAY'S takes but appears in only one
+      prior issue: within-issue repetition is counter (a)'s job; counter
+      (b) counts DISTINCT PRIOR ISSUES only. Must not flag.
+    candidate_date: "2026-08-08"
+    candidate_takes:
+      - "Latency is the new accuracy fight."
+      - "Grounding is the new accuracy war."
+    lookback:
+      "2026-08-04": ["Cost is the new accuracy debate."]
+    expect_violation_ngrams: []

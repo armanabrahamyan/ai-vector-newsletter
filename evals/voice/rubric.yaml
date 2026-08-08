@@ -29,7 +29,14 @@
 # re-anchor the exemplars from the next ratified issue.
 
 schema_version: 1
-rubric_version: "v0.2-2026-07-04"
+# v0.3 (2026-08-08, ratified): the take (SummaryBlock.take, summarise
+# v0.22) folds into the `direction` dimension -- three anchors
+# (consequence-not-instruction / non-transferability / frame-novelty)
+# plus the take_quality per-story criterion. Deliberately NOT a sixth
+# dimension: the 25% aggregate voice gate was ratified against a
+# five-dimension denominator, and a sixth would silently loosen it.
+# Bumping rubric_version invalidates the judge cache by design.
+rubric_version: "v0.3-2026-08-08"
 corpus_basis:
   ratified_issues: ["2026-05-23 .. 2026-07-03 (23 released issues)"]
   rulings_basis: >
@@ -156,6 +163,33 @@ voice_dimensions:
       "[do X] before [milestone]"; every Currents close "if it
       replicates / if it doesn't") is a defect (R-1/R-2): the reader's
       eye predicts the scaffold and skips the most actionable line.
+      [TAKE, v0.22] Each story now carries a one-line declarative take
+      (italic, after the body), scored INSIDE this dimension through
+      three anchors. (A) consequence-not-instruction: the take must
+      parse as "It is now the case that [take]" -- an imperative, a
+      question, or a hedged forecast in the take is a turn-type leak.
+      Green: "Model-risk sign-off now covers agent plans, not just
+      model outputs." Red: "Map your agent surface before the next
+      audit cycle." (instruction is the Hands-On BODY close's job).
+      (B) non-transferability: paste the take under the nearest sibling
+      story's headline -- still plausible = fail; plausible under most
+      stories = fail hard (a horoscope, not a position). Green:
+      "Reasoning on stderr is the small decision that makes agent
+      output pipeable." Red: "Agentic AI just crossed a line the
+      industry can't uncross." -- parses under A, pastes onto every
+      agent story this month; the voice-OK-signal-weak case this anchor
+      exists to catch. (C) frame novelty: Eval 10's deterministic
+      counters (opener families in-issue, 4-grams across the last 10
+      released issues) run BEFORE the judge and arrive as evidence; the
+      judge covers only the residue code cannot see -- paraphrased
+      recurrence and structural templates ("X is the new Y") that
+      survive synonym substitution. CLOSE RELOCATION (v0.22): the Pulse
+      plain take, the Currents two-sided stake, and Big Picture's
+      consequence sentence now live in the take field; Hands-On keeps
+      its imperative body close and the take carries the stake. Judge
+      the turn-type contract across BODY + TAKE as a unit -- a body
+      that still ends on the relocated close AND repeats it in the take
+      is the "said once" violation, not compliance.
     anchors:
       "0": >
         Bodies end on a summary of what shipped, with no judgement.
@@ -165,10 +199,18 @@ voice_dimensions:
         "interesting for teams working in X"). No specific decision
         named. OR closes leak turn-types across sections (imperatives on
         Big Picture, questions on the Pulse).
+        [TAKE] Takes are instructions or questions dressed as takes
+        ("Ask your vendor about retraining schedules" as a take line),
+        or hedged non-positions ("This may prove significant for agent
+        teams"). Fails anchor A across the issue.
       "50": >
         Roughly half the stories close on a specific decision; the rest
         coast. OR the right turn-types but one grammatical mould carries
         nearly every close in a section.
+        [TAKE] Takes are declarative but transferable: half of them
+        would read fine under a sibling headline ("Agent evals just got
+        more important" works on any story in the section). Anchor B
+        failures dominate even where anchor A passes.
       "75": >
         Almost every story ends on its section's turn-type. Closes vary
         in surface grammar (no more than ~2 of one mould per section) so
@@ -179,10 +221,19 @@ voice_dimensions:
         "thin sourcing, one Reddit thread" under a big claim is the ONE
         licensed magnitude-mismatch flag -- said once, flag or stake,
         never both.)
+        [TAKE] Every take parses as "It is now the case that..." and is
+        pinned to its own story's specifics (names the mechanism, actor,
+        or constraint that only this story supplies). No opener family
+        repeats beyond the Eval 10 limits; no frame echoes the recent
+        lookback, paraphrase included.
       "100": >
         Every story closes on its section's turn-type, in varied surface
         grammar, tied to the specific decision the story informs, never
         a department or group.
+        [TAKE] Takes read as the publication's position forming in real
+        time -- each one quotable alone, none interchangeable, the set
+        across the issue visibly written by the same editor without one
+        template between them.
 
   - name: finance_lens_presence
     weight: 15
@@ -573,6 +624,40 @@ per_story_criteria:
           yet a decision." -- 30 words, but "the pattern here is" is a
           tic; "deserves a watch" lifts language from the section name.
           Borderline -- could land sharper.
+
+  - name: take_quality
+    description: >
+      Per story, for stories that carry a take (v0.22+). Label
+      not_applicable for pre-take issues and for stories whose take was
+      legitimately cut (take=None). The take is the publication's
+      position line: one declarative sentence, 8-16 words (hard 18),
+      italic, after the body. Scored per the three [TAKE] anchors under
+      the direction dimension. Labels: schema_version 2 begins with the
+      first take-era labels file; decision_tied_close is re-scoped per
+      section under v2 (Hands-On body close unchanged; Pulse /
+      Big Picture / Currents assessed over body + take, body must not
+      duplicate the relocated close) and NEVER compared across schema
+      versions -- the two-issue v1 series is closed as history.
+    sub_tests:
+      consequence_not_instruction:
+        check: >
+          Anchor A parse test: prepend "It is now the case that" -- the
+          take must still parse as a claim about the world. Imperatives,
+          questions, hedged forecasts fail. (Code already rejects '?'
+          and hedge words; judge this for the imperative-with-no-hedge
+          residue.)
+      non_transferable:
+        check: >
+          Anchor B paste test: under the nearest sibling story's
+          headline, still plausible = fail; plausible under most
+          stories = fail hard.
+      frame_novelty:
+        check: >
+          Anchor C, judged with Eval 10 counter output as evidence:
+          borderline when the frame is fresh in-issue but echoes the
+          lookback in paraphrase; fail when it echoes verbatim (counter
+          already flagged) or a house template is visibly forming
+          ("X is the new Y" surviving synonym substitution).
 
 # ---------------------------------------------------------------------------
 # Judge instructions (Phase C reference). The LLM-judge prompt will:

@@ -165,6 +165,24 @@
       max-width: 38em;
       text-wrap: pretty;
     }
+    /* The take: the writer's one-line read on the story. Body family,
+       italic, same size as the body it follows. Never the serif italic
+       (reserved for the tagline) and never the accent colour. */
+    .av-pulse-take {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 18px;
+      line-height: 1.65;
+      color: #1a1a17;
+      margin: 0 0 18px;
+      max-width: 30em;
+      text-align: left;
+      text-wrap: pretty;
+    }
+    /* Applied only when a take follows: tightens the gap so the take reads
+       as part of the story, not as a second paragraph. */
+    .av-pulse-body--with-take { margin-bottom: 14px; }
     .av-pulse-meta {
       display: flex;
       align-items: center;
@@ -235,6 +253,23 @@
       max-width: 38em;
       text-wrap: pretty;
     }
+    /* The take: see .av-pulse-take. Same left edge as the body (the scan
+       column is non-negotiable), no prefix, no label, no marker. */
+    .av-story-take {
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 17px;
+      line-height: 1.7;
+      color: #1a1a17;
+      margin: 0 0 14px;
+      max-width: 30em;
+      text-align: left;
+      text-wrap: pretty;
+    }
+    /* Applied only when a take follows, so stories without one keep the
+       14px body margin they have always had. */
+    .av-story-body--with-take { margin-bottom: 10px; }
     .av-story-foot {
       display: flex;
       align-items: center;
@@ -287,9 +322,11 @@
     /* ── Currents (terse) ─────────────────────────────────── */
     .av-section.currents .av-story { margin: 0 0 22px; }
     .av-section.currents .av-story-body { font-size: 16px; }
+    .av-section.currents .av-story-take { font-size: 16px; }
     /* legacy alias for archived issues still carrying on_the_radar class */
     .av-section.on_the_radar .av-story { margin: 0 0 22px; }
     .av-section.on_the_radar .av-story-body { font-size: 16px; }
+    .av-section.on_the_radar .av-story-take { font-size: 16px; }
 
     /* ── verify flags (staging preview only) ──────────────── */
     .av-verify-flag {
@@ -357,6 +394,7 @@
       .av-pulse { padding: 24px 22px 22px; }
       .av-pulse-title { font-size: 26px; }
       .av-pulse-body { font-size: 17px; }
+      .av-pulse-take { font-size: 17px; }
       .av-section-title { font-size: 22px; }
       .av-story-title { font-size: 20px; }
       .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
@@ -413,7 +451,10 @@
         <span>The Pulse &middot; Story of the day</span>
       </div>
       <h2 class="av-pulse-title">{{ p.headline }}</h2>
-      <p class="av-pulse-body">{{ p.summary }}</p>
+      <p class="av-pulse-body{% if p.take %} av-pulse-body--with-take{% endif %}">{{ p.summary }}</p>
+      {%- if p.take %}
+      <p class="av-pulse-take">{{ p.take }}</p>
+      {%- endif %}
       <div class="av-pulse-meta">
         {% for url in p.source_urls %}
           <a class="av-pulse-link" href="{{ url }}">{{ url | source_label }}&nbsp;&rarr;</a>
@@ -449,7 +490,10 @@
           {% for story in section.stories %}
             <article class="av-story">
               <h3 class="av-story-title">{{ story.headline }}</h3>
-              <p class="av-story-body">{{ story.summary }}</p>
+              <p class="av-story-body{% if story.take %} av-story-body--with-take{% endif %}">{{ story.summary }}</p>
+              {%- if story.take %}
+              <p class="av-story-take">{{ story.take }}</p>
+              {%- endif %}
               <div class="av-story-foot">
                 {% if story.signal %}
                   <span class="av-pill av-pill-{{ story.signal }}">{{ story.signal }}</span>

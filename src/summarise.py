@@ -91,9 +91,47 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.21.3"
+SUMMARISE_PROMPT_VERSION = "v0.22"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.21.3-2026-07-05``. v0.21.3 (structural fix for the
+``summarise-v0.22-2026-08-08``. v0.22 ("the take" -- ratified
+2026-08-08): every story now returns a ``take`` field alongside headline
+/ summary / signal -- one declarative sentence stating the publication's
+position, rendered as an italic final line (schema: ``SummaryBlock.take``,
+Architect's contract). Changes:
+  - ``_TAKE_BLOCK`` (tier-independent teaching: speech act, the "It is
+    now the case that [take]" test, 8-16 word budget with HARD 18-word
+    cap, banned forms, anti-pattern catalogue) appended to the STATIC
+    cache prefix -- identical across tiers, so prefix material per the
+    2026-08-08 cache-split discipline. The prefix hash changes; the
+    structural properties (concat == joined prompt, one prefix across
+    all calls) are re-pinned by the updated golden test.
+  - Per-tier take SHAPE in the tier block (variable part,
+    ``_TAKE_SHAPE_PER_SECTION`` + ``_PULSE_TAKE_SHAPE``): Pulse -- the
+    plain-take close LIFTS OUT of the body into the take field (no new
+    sentence); Big Picture -- the first-order consequence sentence
+    previously written penultimate moves to the take, the strategic
+    question stays the body's last sentence; Currents -- the calibrated
+    stake moves from the body's end into the take, both branches
+    consequence-form, compressed toward <= 18 words (soft; up to 22
+    allowed rather than butchering two-sidedness -- the one section
+    exception); Hands-On -- genuinely new: the take is the stake the
+    imperative close lacks, and the imperative close stays in the body.
+  - Code-side post-generation validation (``_take_violations``): missing
+    take, '?', hedge words (may/could/potentially/appears/arguably),
+    label prefixes ("So what:", "Bottom line:", "This matters because"),
+    body restatement (substring, or >= 60% content-word overlap with any
+    single body sentence), and the word caps. One corrective retry
+    (cache-safe: appended to the variable part); still-violating drafts
+    ship with a WARNING (soft fail; review flags them). Un-checkable
+    bans (leading imperative, second person, universalisms) live in the
+    prompt + reviewer.
+  - Feed-forward extends to takes across ALL tiers including
+    big_picture (``prior_takes`` -> TAKES ALREADY WRITTEN block; takes
+    feed forward directly as a field, no sentence extraction), and the
+    cross-day voice-diversity lookback now also collects past takes.
+  - The body keeps its 30-60 word cap unchanged; the take has its OWN
+    budget in its own field.
+v0.21.3 (structural fix for the
 thrice-failed Hands-On close-mould veto; root cause finally
 identified): close-variety is a CROSS-STORY property, but stories are
 summarised independently -- the model writing story 3 has never seen
@@ -1365,40 +1403,85 @@ _CLOSING_SHAPE_PER_SECTION: dict[str, str] = {
         "same closing mould; vary the grammar story to story."
     ),
     "currents": (
-        "CLOSING SHAPE -- CALIBRATED STAKE\n"
-        "End on a two-sided watch-condition with stakes on BOTH branches.\n"
-        "Two-sidedness is the INTENT; \"If X holds, Y; if not, Z\" is ONE\n"
-        "grammar for it, not the required shape. Both branches must carry\n"
-        "REAL stakes -- one-sided \"if X, Y\" without an inverse FAILS;\n"
-        "false-binaries where one branch is impossible FAIL; placebo\n"
-        "stakes (\"if not, we'll know more next quarter\") FAIL. The\n"
-        "reader should know what to watch for AND what it will matter for\n"
-        "on either outcome.\n"
-        "Examples (use as calibration, not templates):\n"
-        "  - \"If ITS-Mina replicates, attention-free forecasting is a\n"
-        "    real architecture line and your shortlist needs revisiting.\n"
-        "    If it doesn't, the benchmark suite itself becomes the story\n"
-        "    -- and that matters more than any single model claim.\"\n"
-        "  - \"If the FinGuard claim holds under audit, every customer-\n"
-        "    facing deployment without a regulation-grounded check is a\n"
-        "    compliance gap waiting to be found. If it doesn't, the gap\n"
-        "    is the audit.\"\n"
-        "SURFACE VARIETY (two-sidedness is FIXED; its grammar is NOT). Do\n"
-        "NOT reach for \"If X, Y; if not, Z\" every time -- cap it at ~2 per\n"
-        "section. Alternatives that still carry the calibrated stake:\n"
-        "  - stake-first: \"The bet is that latent reasoning survives audit;\n"
-        "    the hedge is that even if it doesn't, the monitoring gap it\n"
-        "    exposes is already yours to close.\"\n"
-        "  - watch-condition: \"Worth watching until a second lab\n"
-        "    replicates or kills it; either way, staleness as its own\n"
-        "    failure class is the takeaway.\"\n"
-        "  - magnitude-framed: \"Replicated, this reshapes latency-aware\n"
-        "    design. Unreplicated, it is still the best evidence yet that\n"
-        "    the benchmark suite, not the model, is the story.\"\n"
+        "CLOSING SHAPE -- CALIBRATED STAKE, NOW IN THE TAKE (v0.22)\n"
+        "The two-sided calibrated stake that used to end the body has\n"
+        "MOVED to the \"take\" field -- see the TAKE SHAPE below. Do NOT\n"
+        "also write it into the body. The body's final sentence instead\n"
+        "lands on the maturity signal: what EXISTS and what it is worth\n"
+        "today (presence-form, per the Currents WHY rule above) -- e.g.\n"
+        "\"a single-vendor benchmark, but the harness is public\". The\n"
+        "body close stays hedged-arrival in register; the stake-carrying\n"
+        "judgement is the take's job now.\n"
         "Within an issue, consecutive Currents items must NOT share the\n"
         "same closing mould; vary the grammar item to item."
     ),
 }
+
+
+# v0.22 (2026-08-08): per-tier TAKE SHAPE -- the tier-specific half of the
+# take contract. The tier-independent rules (speech act, budget, banned
+# forms, anti-patterns) live in _TAKE_BLOCK inside the STATIC prefix;
+# these blocks are variable-part material because they differ per tier.
+_TAKE_SHAPE_PER_SECTION: dict[str, str] = {
+    "big_picture": (
+        "TAKE SHAPE (BIG PICTURE) -- THE CONSEQUENCE SENTENCE MOVES\n"
+        "The first-order consequence sentence you would previously have\n"
+        "written second-to-last in the body IS the take now. Write it in\n"
+        "the \"take\" field: one declarative sentence naming what this\n"
+        "story makes true for the named actors. Do NOT duplicate it in\n"
+        "the body. The body still ENDS on the STRATEGIC QUESTION -- the\n"
+        "question stays the body's last sentence, exactly as before.\n"
+        "Example take: \"Model-risk sign-off now covers agent plans, not\n"
+        "just model outputs.\""
+    ),
+    "hands_on": (
+        "TAKE SHAPE (HANDS-ON) -- THE STAKE THE IMPERATIVE LACKS\n"
+        "New for this section: the take supplies the STAKE that the\n"
+        "imperative close does not carry -- why the move matters, stated\n"
+        "as a position, not an instruction. The imperative close STAYS in\n"
+        "the body, exactly as before; the take asserts what makes it\n"
+        "worth doing. Example take: \"Reasoning on stderr is the small\n"
+        "decision that makes agent output pipeable.\" The take never\n"
+        "opens with a verb telling the reader to do something -- that is\n"
+        "the body close's job."
+    ),
+    "currents": (
+        "TAKE SHAPE (CURRENTS) -- THE CALIBRATED STAKE, COMPRESSED\n"
+        "The two-sided calibrated stake IS the take now: both branches,\n"
+        "each stated as a CONSEQUENCE (what becomes true), not as advice.\n"
+        "One-sided stakes FAIL; false binaries FAIL; placebo branches\n"
+        "(\"if not, we'll know more next quarter\") FAIL.\n"
+        "Compress toward 18 words or fewer. Currents is the ONE section\n"
+        "where the take may run to 22 words when genuine two-sidedness\n"
+        "needs the room -- never butcher both branches to hit 18, and\n"
+        "never pad to 22.\n"
+        "Example takes (calibration, not templates):\n"
+        "  - \"A replication makes attention-free forecasting a real\n"
+        "    architecture line; a failure indicts the benchmark suite.\"\n"
+        "  - \"Held up, this is a compliance gap in every unguarded\n"
+        "    deployment; unconfirmed, the audit itself is the gap.\"\n"
+        "Do NOT reuse the \"Replicated, X; unreplicated, Y\" frame -- it\n"
+        "is a named anti-pattern (see THE TAKE rules above)."
+    ),
+}
+
+
+# v0.22: take shape under the Pulse override. The Pulse is EXEMPT from
+# writing a new sentence: the plain-take close that used to end the Pulse
+# body LIFTS OUT into the take field. Paired with the amended
+# _PULSE_CLOSING_SHAPE below.
+_PULSE_TAKE_SHAPE = (
+    "TAKE SHAPE (PULSE) -- THE PLAIN TAKE LIFTS OUT OF THE BODY\n"
+    "The Pulse writes NO new sentence for the take. The short editorial\n"
+    "judgement that used to be the body's closing plain take now goes in\n"
+    "the \"take\" field instead: ONE declarative sentence (8-16 words,\n"
+    "hard cap 18 -- tighter than the old 1-2 sentence close), naming\n"
+    "what is TRUE NOW given the day's shift. The BODY must still satisfy\n"
+    "the PULSE VOICE rules above on its own: the day's direction in\n"
+    "plain editorial prose, direction-note in the body, no\n"
+    "section-trope opening -- and it must land cleanly WITHOUT the take\n"
+    "sentence, ending on the direction rather than restating the take."
+)
 
 # v0.12 (2026-05-31): Pulse-specific voice block, used by the Pulse
 # re-summarise pass (``_resummarise_as_pulse``). When a story is elevated
@@ -1433,22 +1516,20 @@ _PULSE_VOICE_BLOCK = (
 # the PRIMARY closing shape inside the Pulse re-summarise prompt
 # (``section_override="pulse"`` in ``_build_summary_prompt``).
 _PULSE_CLOSING_SHAPE = (
-    "PULSE CLOSING SHAPE -- PLAIN TAKE (HIGHEST PRECEDENCE)\n"
-    "If this story is elevated to The Pulse, the close is a short editorial\n"
-    "JUDGEMENT (1-2 declarative sentences) -- the publication's position on\n"
-    "this story today. This OVERRIDES BOTH the generic body-close rule and\n"
-    "the Big-Picture STRATEGIC QUESTION shape above. NEVER a question\n"
-    "(\"Who owns...?\"); NEVER a prescription (\"Test this against X\");\n"
-    "the last character must be a FULL STOP. A plain take NAMES WHAT'S\n"
-    "TRUE NOW given this story -- the shift and what it means -- not what\n"
-    "the reader should do about it.\n"
-    "Examples (use as calibration, not templates):\n"
-    "  - \"General safety filters built for the open web are reaching the\n"
-    "    limits of their fit for regulated work. Domain-grounded\n"
-    "    filtering is where the credible safety story starts now.\"\n"
-    "  - \"Anthropic just told you the truth about a release. That's the\n"
-    "    news. Whether to swap is a procurement question; whether the lab\n"
-    "    is honest is the strategic one.\""
+    "PULSE CLOSING SHAPE -- PLAIN TAKE, IN THE TAKE FIELD (v0.22)\n"
+    "If this story is elevated to The Pulse, the publication's plain-take\n"
+    "judgement goes in the \"take\" FIELD, not at the end of the body --\n"
+    "one declarative sentence naming what is TRUE NOW given this story.\n"
+    "NEVER a question (\"Who owns...?\"); NEVER a prescription (\"Test\n"
+    "this against X\"); the last character is a FULL STOP. The BODY then\n"
+    "ends on the day's direction in the Pulse voice, WITHOUT restating\n"
+    "the take. This overrides BOTH the generic body-close rule and the\n"
+    "Big-Picture STRATEGIC QUESTION shape above.\n"
+    "Example takes (use as calibration, not templates):\n"
+    "  - \"Domain-grounded filtering is where the credible safety story\n"
+    "    starts now.\"\n"
+    "  - \"Whether the lab is honest is the strategic question, not\n"
+    "    whether to swap.\""
 )
 
 
@@ -1474,18 +1555,76 @@ carry a finance angle. That is correct.
 """
 
 
+# v0.22 (2026-08-08): THE TAKE -- tier-independent teaching. This block is
+# identical across every tier and the Pulse override, so it is STATIC
+# PREFIX material (cache discipline). The per-tier take SHAPE lives in the
+# tier block (variable part) -- see _TAKE_SHAPE_PER_SECTION below.
+_TAKE_BLOCK = """\
+THE TAKE -- the publication's position, in its own field
+
+Alongside headline / summary / signal you return "take": ONE declarative
+sentence stating AI Vector's position on this story. It renders as an
+italic final line under the body. It is a SEPARATE field with its OWN
+budget -- the body keeps its 30-60 word cap unchanged; do not spend body
+words on the take or take words on the body.
+
+SPEECH ACT. Assertive / declarative, present or present-perfect tense.
+The take is NOT the close: the close (question / imperative / stake)
+stays in the body per the section's closing shape and hands the turn to
+the reader; the take states what the publication holds true. Operational
+test before returning: "It is now the case that [take]" must parse as a
+sensible sentence. If it doesn't, you wrote a close, not a take.
+
+LENGTH. 8-16 words; aim for 10-13. HARD CAP 18 words -- a longer take is
+rejected and you will be asked to rewrite. The take must stand alone: a
+reader who reads ONLY the headline and the take should still get the
+position.
+
+BANNED FORMS (checked in code and by the editor; a take that trips one
+gets flagged or rejected):
+  - No question mark, anywhere.
+  - No hedges: may / could / potentially / appears / arguably.
+  - No leading imperative verb -- the take asserts, it never instructs.
+  - No labels: "So what:", "Bottom line:", "This matters because".
+  - No second person UNLESS anchored to a concrete noun the reader owns
+    ("your retrieval stack" is fine; "you should care" is not).
+  - No universalisms ("changes everything", "nothing will be the same").
+  - No body restatement: the take must not repeat a body sentence or
+    share most of its content words with one. It ADDS the position the
+    body stopped short of stating.
+
+ANTI-PATTERN CATALOGUE -- moulds the editor has already flagged; do not
+reach for these frames:
+  - "...is the [X] that was missing"
+  - "That moves X from [abstract] to [concrete]"
+  - "The [metric] masks the [failure]"
+  - "Replicated, X; unreplicated, Y" (named repeat offender: three times
+    in two issues despite guards -- do not use it in a take)
+  - "X is now a Y problem, not a Z one" (at most ONE per issue; assume a
+    prior story already used it)
+  - consultant filler: "table stakes", "the new X", "the moat"
+  - self-referential: "and that is the story"
+A good take is a specific proposition about the field, priced in plain
+words: "Reasoning on stderr is the small decision that makes agent
+output pipeable."
+"""
+
+
 # ---------------------------------------------------------------------------
 # Prompt-cache static prefix (2026-08-08).
 #
-# The first ~8.3k tokens of every per-story summarise prompt (header +
-# voice + headline rules + editorial focus + finance lens) are assembled
-# purely from the module constants above -- no per-story, per-day, or
-# per-config interpolation. Assembled ONCE at import time so byte identity
-# across all N per-story calls (and the Pulse re-summarise) is structural,
-# not incidental. ``_build_summary_prompt`` returns this as the cacheable
-# prefix; ``rank._llm_call_anthropic`` marks it ``cache_control:
-# ephemeral``. The per-day voice-diversity block sits AFTER the section
-# voice block, so it is variable-part material, never prefix material.
+# The first ~9k tokens of every per-story summarise prompt (header +
+# voice + headline rules + editorial focus + finance lens + the v0.22
+# tier-independent take teaching) are assembled purely from the module
+# constants above -- no per-story, per-day, or per-config interpolation.
+# Assembled ONCE at import time so byte identity across all N per-story
+# calls (and the Pulse re-summarise) is structural, not incidental.
+# ``_build_summary_prompt`` returns this as the cacheable prefix;
+# ``rank._llm_call_anthropic`` marks it ``cache_control: ephemeral``. The
+# per-day voice-diversity block sits AFTER the section voice block, so it
+# is variable-part material, never prefix material. The per-TIER take
+# shape is variable-part material too; only the tier-independent take
+# rules live here (they are byte-identical across tiers by construction).
 # ---------------------------------------------------------------------------
 
 _SUMMARY_PROMPT_STATIC_PREFIX = f"""\
@@ -1496,7 +1635,8 @@ selected for the issue; your job is to write it well.
 {_VOICE_BLOCK}
 {_HEADLINE_RULES_BLOCK}
 {_EDITORIAL_FOCUS_BLOCK}
-{_FINANCE_LENS_BLOCK}"""
+{_FINANCE_LENS_BLOCK}
+{_TAKE_BLOCK}"""
 
 
 # ---------------------------------------------------------------------------
@@ -1623,6 +1763,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
     # harmless (it only widens the do-not-reuse set).
     blocks: list[tuple[RankedStory, SummaryBlock]] = []
     closes_by_tier: dict[str, list[str]] = {}
+    takes_so_far: list[str] = []
     for story in top:
         cluster = clusters_by_id.get(story.cluster_id)
         if cluster is None:
@@ -1644,6 +1785,7 @@ def summarise(date: _dt.date | None = None) -> Issue:
                 story=story, cluster=cluster, items=items, callbacks=callbacks,
                 voice_diversity_block=voice_diversity_block,
                 prior_section_closes=prior_section_closes,
+                prior_takes=list(takes_so_far),
             )
         except Exception:  # noqa: BLE001 -- never crash the issue on one bad story
             _LOG.exception(
@@ -1657,6 +1799,12 @@ def summarise(date: _dt.date | None = None) -> Issue:
             close = _extract_closing_sentence(block.summary)
             if close:
                 closes_by_tier.setdefault(story.tier, []).append(close)
+        # v0.22: takes feed forward across ALL tiers (issue-wide frame
+        # diversity). Read from the draft via the block when the model
+        # carries the field; a None take (soft-fail path) feeds nothing.
+        accepted_take = getattr(block, "take", None)
+        if accepted_take:
+            takes_so_far.append(accepted_take)
         blocks.append((story, block))
 
     if not blocks:
@@ -1959,15 +2107,19 @@ def _iter_blocks(issue_payload: dict[str, Any]) -> Iterable[dict[str, Any]]:
 
 @dataclass(frozen=True)
 class _PastIssueVoice:
-    """One past issue's intros + closings, in the shape the prompt needs.
-    ``intro_leads`` maps section name -> the LEAD phrase used that day
-    (None when the section had no intro -- Pulse always; older issues
+    """One past issue's intros + closings + takes, in the shape the prompt
+    needs. ``intro_leads`` maps section name -> the LEAD phrase used that
+    day (None when the section had no intro -- Pulse always; older issues
     occasionally for the others). ``first_story_closings`` maps section
     name (including ``pulse``) -> the closing sentence of that section's
-    first story, truncated to ``_VOICE_DIVERSITY_CLOSING_TRUNC`` chars."""
+    first story, truncated to ``_VOICE_DIVERSITY_CLOSING_TRUNC`` chars.
+    ``first_story_takes`` (v0.22) maps section name (including ``pulse``)
+    -> the first story's ``take``, same truncation; empty for pre-v0.22
+    archive issues (the field is simply absent there)."""
     issue_date: _dt.date
     intro_leads: dict[str, str]
     first_story_closings: dict[str, str]
+    first_story_takes: dict[str, str] = field(default_factory=dict)
 
 
 def _closing_sentence(summary: str) -> str:
@@ -2041,8 +2193,21 @@ def _load_recent_intros_and_closings(
 
         intro_leads: dict[str, str] = {}
         closings: dict[str, str] = {}
+        takes: dict[str, str] = {}
 
-        # Pulse: no intro_lead (the Pulse IS the framing); only the closing.
+        def _truncated_take(block: dict[str, Any]) -> str:
+            """First-story take, truncated like closings. Empty for
+            pre-v0.22 archive issues (no ``take`` key) -- v0.22."""
+            raw_take = block.get("take")
+            if not isinstance(raw_take, str) or not raw_take.strip():
+                return ""
+            t = raw_take.strip()
+            if len(t) > _VOICE_DIVERSITY_CLOSING_TRUNC:
+                t = t[:_VOICE_DIVERSITY_CLOSING_TRUNC].rstrip() + "..."
+            return t
+
+        # Pulse: no intro_lead (the Pulse IS the framing); only the closing
+        # (+ the take since v0.22).
         pulse = payload.get("pulse") or {}
         if isinstance(pulse, dict):
             stories = pulse.get("stories") or []
@@ -2052,6 +2217,9 @@ def _load_recent_intros_and_closings(
                     closing = _closing_sentence(first.get("summary") or "")
                     if closing:
                         closings["pulse"] = closing
+                    take = _truncated_take(first)
+                    if take:
+                        takes["pulse"] = take
 
         # The other three sections: each may carry an intro_lead and a
         # first-story closing. Currents legacy alias on_the_radar also
@@ -2076,11 +2244,15 @@ def _load_recent_intros_and_closings(
                     closing = _closing_sentence(first.get("summary") or "")
                     if closing:
                         closings[section_key] = closing
+                    take = _truncated_take(first)
+                    if take:
+                        takes[section_key] = take
 
         out.append(_PastIssueVoice(
             issue_date=day,
             intro_leads=intro_leads,
             first_story_closings=closings,
+            first_story_takes=takes,
         ))
     return out
 
@@ -2211,18 +2383,25 @@ def _render_voice_diversity_block(
                     section_lines.append(
                         f"    - {date_iso} close: {close!r}"
                     )
+                # v0.22: past takes join the do-not-repeat set -- take
+                # frame diversity spans days as well as stories.
+                take = past.first_story_takes.get(section_name)
+                if take:
+                    section_lines.append(
+                        f"    - {date_iso} take: {take!r}"
+                    )
             if section_lines:
                 parts.append(f"  [{section_name}]")
                 parts.extend(section_lines)
 
         parts.append("")
         parts.append(
-            "Today's intros and closings must NOT reuse the constructions "
-            "above. Vary the sentence shape AND the underlying epistemic "
-            "posture. Two sections of today's issue cannot share a thesis "
-            "statement. If today's news genuinely is similar to a recent "
-            "issue's, the editorial POSITION may recur -- but the PROSE "
-            "must not."
+            "Today's intros, closings, and takes must NOT reuse the "
+            "constructions above. Vary the sentence shape AND the "
+            "underlying epistemic posture. Two sections of today's issue "
+            "cannot share a thesis statement. If today's news genuinely "
+            "is similar to a recent issue's, the editorial POSITION may "
+            "recur -- but the PROSE must not."
         )
 
     if anti_patterns:
@@ -2246,17 +2425,31 @@ class _SummaryDraft:
     """Intermediate shape parsed from the LLM JSON, before pydantic. Keeps
     parser logic and constructor logic clean. v0.2: direction_note and
     finance_angle no longer separate fields -- both live in summary prose.
-    v0.9 (Phase B): adds ``signal`` (editorial verdict pill)."""
+    v0.9 (Phase B): adds ``signal`` (editorial verdict pill). v0.22: adds
+    ``take`` (the publication's one-sentence position; None when the LLM
+    failed to produce one -- shipped as-is and flagged by review)."""
     headline: str
     summary: str
     signal: str | None = None
+    take: str | None = None
 
 
 _CLOSE_FEEDFORWARD_TIERS = ("hands_on", "currents")
 """Tiers whose closes are fed forward into subsequent same-tier story
 prompts (v0.21.3). These are the two mould-prone sections (Hands-On
-imperative closes, Currents calibrated stakes); big_picture's
-strategic-question turn-type binds fine per-story and is not fed."""
+imperative closes, Currents body closes); big_picture's
+strategic-question turn-type binds fine per-story and is not fed.
+NOTE (v0.22): TAKES feed forward separately, across ALL tiers including
+big_picture -- take frame diversity is issue-wide, not per-section. See
+``_render_prior_takes_block``."""
+
+_SUMMARY_BLOCK_HAS_TAKE = "take" in SummaryBlock.model_fields
+"""v0.22 contract seam: ``SummaryBlock.take`` is added by the Architect's
+concurrent models.py change (schema bump). Feature-detected so summarise
+keeps producing issues (with a loud WARNING, takes dropped) if this module
+lands first -- SummaryBlock is ``extra=\"forbid\"``, so passing an unknown
+field would otherwise fail EVERY block and kill the issue. Once the model
+change lands this constant is True and the seam is inert."""
 
 _SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
 """Sentence-boundary splitter for ``_extract_closing_sentence``. Splits
@@ -2300,6 +2493,27 @@ def _render_prior_closes_block(prior_closes: list[str]) -> str:
     return "\n".join(lines)
 
 
+def _render_prior_takes_block(prior_takes: list[str]) -> str:
+    """Render the TAKES ALREADY WRITTEN prompt block (v0.22).
+
+    Takes feed forward directly as a field -- no sentence extraction
+    needed (they ARE single sentences by contract). Issue-wide, across
+    all tiers including big_picture, because take frame diversity is an
+    issue-wide property: the reviewer flags two takes sharing a
+    syntactic frame at minor, three at major. Empty input renders ""
+    (the first story of the run sees no block).
+    """
+    if not prior_takes:
+        return ""
+    lines = [
+        "TAKES ALREADY WRITTEN IN THIS ISSUE (do not reuse their "
+        "syntactic frame -- two takes sharing a frame get flagged):"
+    ]
+    for i, take in enumerate(prior_takes, start=1):
+        lines.append(f'  {i}. "{take}"')
+    return "\n".join(lines)
+
+
 def _summarise_one(
     story: RankedStory,
     cluster: Cluster,
@@ -2307,6 +2521,7 @@ def _summarise_one(
     callbacks: list[_CallbackRef],
     voice_diversity_block: str = "",
     prior_section_closes: list[str] | None = None,
+    prior_takes: list[str] | None = None,
 ) -> SummaryBlock | None:
     """One LLM call. Returns a validated ``SummaryBlock`` or ``None`` if
     the call / parse / validation failed after the retry budget.
@@ -2314,7 +2529,11 @@ def _summarise_one(
     ``prior_section_closes`` (v0.21.3): closing sentences of summaries
     already accepted for the SAME tier in this run, threaded into the
     prompt so the close-variety rules become followable (feed-forward
-    close context). ``None`` / empty means no block is injected."""
+    close context). ``None`` / empty means no block is injected.
+
+    ``prior_takes`` (v0.22): takes already accepted in this run, across
+    ALL tiers -- take frame diversity is issue-wide. Fed forward as-is
+    (a take IS one sentence; no extraction)."""
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
 
     # v0.4: fetch the article body for up to the top-3 items so the LLM
@@ -2330,9 +2549,16 @@ def _summarise_one(
         story, cluster, items, callbacks, excerpts,
         voice_diversity_block=voice_diversity_block,
         prior_section_closes=prior_section_closes,
+        prior_takes=prior_takes,
     )
 
-    draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
+    take_word_cap = (
+        _TAKE_MAX_WORDS_CURRENTS if story.tier == "currents"
+        else _TAKE_MAX_WORDS
+    )
+    draft = _call_and_parse_summary(
+        prompt, temperature, cluster.cluster_id, take_word_cap=take_word_cap,
+    )
     if draft is None:
         return None
 
@@ -2353,6 +2579,7 @@ def _summarise_one(
             source_urls=source_urls,  # type: ignore[arg-type]
             prior_coverage_ref=cluster.prior_coverage_ref,
             signal=draft.signal,  # type: ignore[arg-type]
+            **_take_field_kwargs(draft.take, cluster.cluster_id),
         )
     except Exception:  # noqa: BLE001
         _LOG.exception(
@@ -2364,6 +2591,39 @@ def _summarise_one(
     return block
 
 
+_TAKE_MODEL_MAX_CHARS = 200
+"""Mirror of ``SummaryBlock.take``'s pydantic ``max_length`` (schema v4,
+2026-08-08). A take past this would fail block validation and cost the
+WHOLE story; ``_take_field_kwargs`` degrades it to None instead (review
+then flags the missing take -- one flagged line beats one lost story)."""
+
+
+def _take_field_kwargs(take: str | None, cluster_id: str) -> dict[str, Any]:
+    """SummaryBlock kwargs for the v0.22 ``take`` field, guarded by the
+    ``_SUMMARY_BLOCK_HAS_TAKE`` contract seam. Returns ``{}`` (with a loud
+    WARNING when a take would be lost) if the models.py schema bump is
+    absent -- SummaryBlock is ``extra="forbid"``, so an unguarded pass
+    would fail every block and cost the whole issue. Also drops (to None,
+    WARNING) a take that would fail the model's own 200-char cap."""
+    if _SUMMARY_BLOCK_HAS_TAKE:
+        if take and len(take) > _TAKE_MODEL_MAX_CHARS:
+            _LOG.warning(
+                "summarise: take for cluster_id=%s is %d chars (> model cap "
+                "%d) even after the corrective retry -- shipping take=None "
+                "so the story survives; review will flag the missing take",
+                cluster_id, len(take), _TAKE_MODEL_MAX_CHARS,
+            )
+            take = None
+        return {"take": take}
+    if take:
+        _LOG.warning(
+            "summarise: SummaryBlock has no 'take' field (models.py schema "
+            "bump not landed?) -- DROPPING the generated take for "
+            "cluster_id=%s: %r", cluster_id, take,
+        )
+    return {}
+
+
 def _resummarise_as_pulse(
     story: RankedStory,
     cluster: Cluster,
@@ -2371,6 +2631,7 @@ def _resummarise_as_pulse(
     callbacks: list[_CallbackRef],
     original_block: SummaryBlock,
     voice_diversity_block: str = "",
+    prior_takes: list[str] | None = None,
 ) -> SummaryBlock | None:
     """Re-run the per-story summarise prompt under the Pulse-specific
     voice + closing shape (v0.12, 2026-05-31).
@@ -2409,6 +2670,7 @@ def _resummarise_as_pulse(
         story, cluster, items, callbacks, excerpts,
         section_override="pulse",
         voice_diversity_block=voice_diversity_block,
+        prior_takes=prior_takes,
     )
 
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
@@ -2427,6 +2689,7 @@ def _resummarise_as_pulse(
             source_urls=list(original_block.source_urls),  # type: ignore[arg-type]
             prior_coverage_ref=original_block.prior_coverage_ref,
             signal=draft.signal,  # type: ignore[arg-type]
+            **_take_field_kwargs(draft.take, cluster.cluster_id),
         )
     except Exception:  # noqa: BLE001
         _LOG.exception(
@@ -2520,6 +2783,7 @@ def _build_summary_prompt(
     section_override: str | None = None,
     voice_diversity_block: str = "",
     prior_section_closes: list[str] | None = None,
+    prior_takes: list[str] | None = None,
 ) -> tuple[str, str]:
     """Assemble the per-story summarisation prompt with voice + skills
     inlined and callback context attached when present.
@@ -2562,7 +2826,15 @@ def _build_summary_prompt(
     WRITTEN block is injected immediately before the close reminder tail
     (write-site recency is the mechanism that binds, per the v0.21.1/2
     findings), and the Hands-On FINAL REMINDER references it. Ignored
-    under the Pulse override (the plain take has no scaffold to vary).
+    under the Pulse override (the body close has no scaffold to vary).
+
+    ``prior_takes`` (v0.22): takes already accepted in this run, ACROSS
+    ALL tiers including big_picture (frame diversity on takes is an
+    issue-wide property: two takes sharing a syntactic frame anywhere in
+    the issue get flagged by the reviewer). Fed forward directly as a
+    field -- no sentence extraction needed. Injected at the write site,
+    same recency mechanism as prior_section_closes; also injected under
+    the Pulse override (the Pulse take counts toward frame diversity).
     """
     excerpts = excerpts or {}
     item_lines: list[str] = []
@@ -2632,7 +2904,11 @@ def _build_summary_prompt(
     # framings were the rule the LLM kept honouring (concrete shape wins);
     # giving Pulse exclusive precedence is the fix.
     if section_override == "pulse":
-        section_voice = _PULSE_VOICE_BLOCK + "\n\n" + _PULSE_CLOSING_SHAPE
+        section_voice = (
+            _PULSE_VOICE_BLOCK
+            + "\n\n" + _PULSE_CLOSING_SHAPE
+            + "\n\n" + _PULSE_TAKE_SHAPE
+        )
         voice_header = (
             "SECTION VOICE (override=pulse; this story has been elevated\n"
             "to The Pulse and is being re-summarised under Pulse rules):"
@@ -2642,6 +2918,9 @@ def _build_summary_prompt(
         closing_shape = _CLOSING_SHAPE_PER_SECTION.get(story.tier, "")
         if closing_shape:
             section_voice = section_voice + "\n\n" + closing_shape
+        take_shape = _TAKE_SHAPE_PER_SECTION.get(story.tier, "")
+        if take_shape:
+            section_voice = section_voice + "\n\n" + take_shape
         if story.tier in ("big_picture", "hands_on"):
             section_voice = (
                 section_voice
@@ -2683,13 +2962,14 @@ def _build_summary_prompt(
     if section_override == "pulse":
         close_reminder_tail = (
             "\n- PULSE OVERRIDE (FINAL REMINDER): this is The Pulse. The "
-            "close MUST be a PLAIN TAKE -- a short editorial JUDGEMENT "
-            "(1-2 declarative sentences) naming what is TRUE NOW given "
-            "the day's shift. NOT a question. NOT a prescription "
-            "(\"raise this at...\", \"test against...\", \"audit your...\"). "
-            "NOT an imperative verb at the end. The Pulse names where "
-            "the field moved today; the rest of the issue is for "
-            "decisions to make about it.\n"
+            "plain-take JUDGEMENT goes in the \"take\" FIELD -- one "
+            "declarative sentence naming what is TRUE NOW given the "
+            "day's shift. NOT a question. NOT a prescription (\"raise "
+            "this at...\", \"test against...\", \"audit your...\"). NOT "
+            "an imperative verb. The BODY ends on the day's direction "
+            "and must NOT restate the take. The Pulse names where the "
+            "field moved today; the rest of the issue is for decisions "
+            "to make about it.\n"
         )
     elif story.tier == "big_picture":
         close_reminder_tail = (
@@ -2734,6 +3014,27 @@ def _build_summary_prompt(
     else:
         close_reminder_tail = ""
 
+    # v0.22: terse per-tier take reminder at the write site (recency is
+    # the mechanism that binds, per the v0.21.1/2 findings; the full
+    # teaching lives in the static-prefix _TAKE_BLOCK). Currents carries
+    # the one sanctioned cap exception.
+    if section_override != "pulse" and story.tier == "currents":
+        take_cap_note = (
+            "hard cap 18 words; up to 22 ONLY when genuine two-sidedness "
+            "needs the room"
+        )
+    else:
+        take_cap_note = "HARD cap 18 words"
+    take_reminder_tail = (
+        "\n- THE TAKE (FINAL REMINDER): return \"take\" -- ONE declarative "
+        "sentence, 8-16 words (" + take_cap_note + "), stating the "
+        "publication's position per the TAKE SHAPE above. It must pass "
+        "the test \"It is now the case that [take]\". No question mark, "
+        "no leading imperative verb, no hedges (may / could / potentially "
+        "/ appears / arguably), no labels, and it must NOT restate a body "
+        "sentence -- it adds the position the body stopped short of.\n"
+    )
+
     # v0.21.3: feed-forward close context. Closes already accepted for
     # the SAME tier in this run, injected at the write site (immediately
     # before the close reminder tail / JSON schema -- recency binds).
@@ -2746,6 +3047,15 @@ def _build_summary_prompt(
         )
         if prior_closes_block:
             prior_closes_segment = f"\n{prior_closes_block}\n"
+
+    # v0.22: feed-forward take context -- issue-wide (all tiers AND the
+    # Pulse override), because take frame diversity is an issue-wide
+    # property the reviewer checks (2 shared frames = minor, 3 = major).
+    prior_takes_segment = ""
+    if prior_takes:
+        prior_takes_block = _render_prior_takes_block(list(prior_takes))
+        if prior_takes_block:
+            prior_takes_segment = f"\n{prior_takes_block}\n"
 
     # 2026-08-08: the return became (static_prefix, variable_part) -- see
     # the docstring. The variable part starts at the first tier-dependent
@@ -2889,12 +3199,13 @@ ITEMS:
                    without code / benchmarks.
   Choose by what the body actually argues. A body whose close sends the
   design to a review rather than to production is "discuss", not "act".
-{prior_closes_segment}{close_reminder_tail}
+{prior_closes_segment}{prior_takes_segment}{close_reminder_tail}{take_reminder_tail}
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
   "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
   "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
+  "take": "<ONE declarative sentence, 8-16 words, HARD 18-word cap: the publication's position>",
   "signal": "<one of: act | try | read | watch | discuss>"
 }}
 """
@@ -2908,6 +3219,121 @@ _HEADLINE_MAX_WORDS = 12
 _HEADLINE_MAX_CHARS = 90
 _BODY_MIN_WORDS = 30
 _BODY_MAX_WORDS = 60
+
+# v0.22 take caps + banned-form machinery. The take targets 8-16 words
+# (10-13 ideal) per the ratified voice spec; only the HARD cap is enforced
+# in code (the target range is prompt + reviewer territory -- a 7-word
+# take is thin, not broken). Currents may run to 22 words rather than
+# butcher a genuinely two-sided stake -- the one section exception.
+_TAKE_MAX_WORDS = 18
+_TAKE_MAX_WORDS_CURRENTS = 22
+
+_TAKE_HEDGE_RE = re.compile(
+    r"\b(?:may|could|potentially|appears|arguably)\b", re.IGNORECASE
+)
+"""The checkable hedge vocabulary from the ratified spec. Word-boundary,
+case-insensitive. ("May" the month is a theoretical false positive; in an
+editorial take the cost of a spurious corrective retry is one cheap call,
+and the soft-fail path keeps the draft either way.)"""
+
+_TAKE_BANNED_LABELS = ("so what:", "bottom line:", "this matters because")
+"""Label constructions banned anywhere in a take (case-insensitive
+substring check). The take asserts a position; it never announces one."""
+
+_TAKE_BODY_OVERLAP_LIMIT = 0.6
+"""A take sharing >= this fraction of its content words with any single
+body sentence counts as a body restatement (the spec's "< 60%" rule)."""
+
+_TAKE_CONTENT_STOPWORDS = frozenset({
+    "the", "a", "an", "of", "to", "and", "or", "on", "in", "is", "are",
+    "was", "were", "be", "been", "being", "for", "with", "that", "this",
+    "these", "those", "its", "it", "as", "at", "by", "from", "not", "now",
+    "but", "has", "have", "had", "will", "your", "you", "their", "they",
+})
+"""Function words excluded from the take/body overlap check -- shared
+grammar must not count as shared content."""
+
+
+def _content_words(text: str) -> set[str]:
+    """Lowercased content-word set for the restatement check. Plain code,
+    deterministic (No Token Wasted)."""
+    tokens = re.findall(r"[a-z0-9']+", (text or "").lower())
+    return {t for t in tokens if t not in _TAKE_CONTENT_STOPWORDS}
+
+
+def _take_restates_body(take: str, body: str) -> bool:
+    """True when the take is a body restatement: a verbatim substring of
+    the body (whitespace-collapsed, case-insensitive), OR sharing >=
+    ``_TAKE_BODY_OVERLAP_LIMIT`` of its content words with any SINGLE body
+    sentence. The take must ADD the position the body stopped short of
+    stating -- an italic line that repeats the body is dead weight."""
+    take_norm = re.sub(r"\s+", " ", (take or "")).strip().lower()
+    body_norm = re.sub(r"\s+", " ", (body or "")).strip().lower()
+    if not take_norm or not body_norm:
+        return False
+    if take_norm.rstrip(".") and take_norm.rstrip(".") in body_norm:
+        return True
+    take_words = _content_words(take)
+    if not take_words:
+        return False
+    for sentence in _SENTENCE_SPLIT_RE.split(body):
+        sentence_words = _content_words(sentence)
+        if not sentence_words:
+            continue
+        overlap = len(take_words & sentence_words) / len(take_words)
+        if overlap >= _TAKE_BODY_OVERLAP_LIMIT:
+            return True
+    return False
+
+
+def _take_violations(
+    draft: _SummaryDraft, take_word_cap: int = _TAKE_MAX_WORDS
+) -> list[str]:
+    """Code-checkable take violations against the ratified voice spec
+    (v0.22). Returns human-readable strings; empty list = within spec.
+
+    Checked here (deterministic): presence, the hard word cap, '?', the
+    hedge vocabulary, label constructions, and body restatement. NOT
+    checked here (needs judgment -- prompt + reviewer own it): leading
+    imperative verb, second-person outside "your <concrete noun>",
+    universalisms, and the anti-pattern catalogue."""
+    issues: list[str] = []
+    take = (draft.take or "").strip()
+    if not take:
+        issues.append(
+            'the "take" field is missing or empty -- it is REQUIRED: one '
+            "declarative sentence stating the publication's position"
+        )
+        return issues
+    tw = len(take.split())
+    if tw > take_word_cap:
+        issues.append(
+            f"take is {tw} words (HARD cap is {take_word_cap})"
+        )
+    if "?" in take:
+        issues.append(
+            "take contains a question mark (a take asserts; the question "
+            "belongs to the body close)"
+        )
+    hedge = _TAKE_HEDGE_RE.search(take)
+    if hedge:
+        issues.append(
+            f"take contains the hedge {hedge.group(0)!r} (banned: may / "
+            "could / potentially / appears / arguably)"
+        )
+    lowered = take.lower()
+    for label in _TAKE_BANNED_LABELS:
+        if label in lowered:
+            issues.append(
+                f"take contains the banned label construction {label!r}"
+            )
+    if _take_restates_body(take, draft.summary):
+        issues.append(
+            "take restates the body (verbatim overlap or >= 60% shared "
+            "content words with a body sentence) -- it must add the "
+            "position the body stopped short of stating"
+        )
+    return issues
 
 
 def _length_violations(draft: _SummaryDraft) -> list[str]:
@@ -2940,10 +3366,13 @@ def _length_violations(draft: _SummaryDraft) -> list[str]:
 
 
 def _call_and_parse_summary(
-    prompt: "str | tuple[str, str]", temperature: float, cluster_id: str
+    prompt: "str | tuple[str, str]", temperature: float, cluster_id: str,
+    take_word_cap: int = _TAKE_MAX_WORDS,
 ) -> _SummaryDraft | None:
     """LLM call + retry on parse failure (one retry, mirrors rank.py) +
-    a separate single retry on length-cap violation (tasks #73 + #74).
+    a separate single retry on length-cap OR take-spec violation (tasks
+    #73 + #74; take checks added at v0.22 -- ``take_word_cap`` is 18, or
+    22 for Currents, the one section exception).
 
     ``prompt`` is either the legacy single string or the cache-split
     ``(static_prefix, variable_part)`` tuple from
@@ -3005,14 +3434,16 @@ def _call_and_parse_summary(
     if draft is None:
         return None
 
-    # --- Length-cap enforcement (single corrective retry) ---------------
-    violations = _length_violations(draft)
+    # --- Length-cap + take-spec enforcement (single corrective retry) ----
+    violations = _length_violations(draft) + _take_violations(
+        draft, take_word_cap
+    )
     if not violations:
         return draft
 
     _LOG.info(
-        "summarise: length cap breached for cluster_id=%s on first pass: %s -- "
-        "requesting one corrective regenerate",
+        "summarise: caps/take-spec breached for cluster_id=%s on first "
+        "pass: %s -- requesting one corrective regenerate",
         cluster_id, "; ".join(violations),
     )
     # Corrective text APPENDED to the variable part (cache discipline --
@@ -3020,14 +3451,18 @@ def _call_and_parse_summary(
     corrective_variable = (
         variable
         + "\n\nCORRECTION -- Your previous response to the request above "
-        "BREACHED the HARD length caps. The following violations were "
-        "found:\n\n"
+        "BREACHED the HARD caps or the take spec. The following "
+        "violations were found:\n\n"
         + "\n".join(f"  - {v}" for v in violations)
         + "\n\nRewrite the JSON so that:\n"
         f"  - headline is AT MOST {_HEADLINE_MAX_WORDS} words AND AT MOST "
         f"{_HEADLINE_MAX_CHARS} characters\n"
         f"  - summary is BETWEEN {_BODY_MIN_WORDS} AND {_BODY_MAX_WORDS} "
-        "words (the Pulse is held to the same cap)\n\n"
+        "words (the Pulse is held to the same cap)\n"
+        '  - "take" is PRESENT: ONE declarative sentence, 8-16 words '
+        f"(hard cap {take_word_cap}), no question mark, no hedges (may / "
+        "could / potentially / appears / arguably), no labels, not a "
+        "restatement of a body sentence\n\n"
         "COUNT THE WORDS AND CHARACTERS before returning. Keep the same "
         "facts, tone, trust flag, and decision-tied close; just tighten "
         "the language. Cut adjectives, hedges, and spec-sheet detail "
@@ -3041,27 +3476,31 @@ def _call_and_parse_summary(
     except Exception:  # noqa: BLE001
         _LOG.warning(
             "summarise: corrective LLM call failed for cluster_id=%s -- "
-            "keeping first-pass draft (still over cap)", cluster_id,
+            "keeping first-pass draft (still in violation)", cluster_id,
         )
         return draft
     retried = _parse_summary_json(raw)
     if retried is None:
         _LOG.warning(
             "summarise: corrective response failed to parse for cluster_id=%s "
-            "-- keeping first-pass draft (still over cap)", cluster_id,
+            "-- keeping first-pass draft (still in violation)", cluster_id,
         )
         return draft
-    new_violations = _length_violations(retried)
+    new_violations = _length_violations(retried) + _take_violations(
+        retried, take_word_cap
+    )
     if new_violations:
         _LOG.warning(
-            "summarise: cluster_id=%s STILL over cap after corrective retry: "
-            "%s -- keeping the tighter of the two drafts (this is a soft "
-            "fail; the issue ships but the judge will flag it)",
+            "summarise: cluster_id=%s STILL in violation after corrective "
+            "retry: %s -- keeping the better of the two drafts (this is a "
+            "soft fail; the issue ships but the judge/review will flag it)",
             cluster_id, "; ".join(new_violations),
         )
-        # Prefer the retried draft if it's strictly tighter than the
-        # original on at least one axis and no worse on the others; otherwise
-        # keep the first draft. Cheap, deterministic.
+        # Prefer the retried draft when it resolves more violations, or
+        # when it is strictly tighter on every length axis and no worse.
+        # Cheap, deterministic.
+        if len(new_violations) < len(violations):
+            return retried
         if (
             len(retried.headline) <= len(draft.headline)
             and len(retried.headline.split()) <= len(draft.headline.split())
@@ -3070,11 +3509,12 @@ def _call_and_parse_summary(
             return retried
         return draft
     _LOG.info(
-        "summarise: corrective retry brought cluster_id=%s within caps "
-        "(headline=%dw/%dc, body=%dw)",
+        "summarise: corrective retry brought cluster_id=%s within spec "
+        "(headline=%dw/%dc, body=%dw, take=%dw)",
         cluster_id,
         len(retried.headline.split()), len(retried.headline),
         len(retried.summary.split()),
+        len((retried.take or "").split()),
     )
     return retried
 
@@ -3108,10 +3548,19 @@ def _parse_summary_json(raw: str) -> _SummaryDraft | None:
         candidate = signal_raw.strip().lower()
         if candidate in {"act", "try", "read", "watch", "discuss"}:
             signal = candidate
+    # v0.22: take is required by the prompt but optional in the parsed
+    # shape -- a missing take triggers the corrective retry in
+    # _call_and_parse_summary, and a still-missing take ships as None
+    # (review flags it as major). Non-string garbage degrades to None.
+    take_raw = payload.get("take")
+    take: str | None = None
+    if isinstance(take_raw, str) and take_raw.strip():
+        take = take_raw.strip()
     return _SummaryDraft(
         headline=headline.strip(),
         summary=summary.strip(),
         signal=signal,
+        take=take,
     )
 
 
@@ -3273,6 +3722,10 @@ def _maybe_resummarise_pulse(
     """Re-summarise the Pulse-elected cluster under the Pulse-specific
     prompt and replace its entry in ``by_id`` in place.
 
+    v0.22: the re-summarise prompt is fed the takes of every OTHER
+    summarised story (derived from ``by_id``) so the Pulse take also
+    honours issue-wide frame diversity.
+
     Why a separate helper. Keeping the orchestration outside
     ``_assemble_sections`` proper makes the call site read as a single
     discrete step (and matches the structure of
@@ -3317,6 +3770,15 @@ def _maybe_resummarise_pulse(
     if cluster.prior_coverage_ref and callbacks_by_root is not None:
         callbacks = callbacks_by_root.get(cluster.prior_coverage_ref, [])
 
+    # v0.22: issue-wide take feed-forward for the Pulse rewrite -- every
+    # other story's take, in by_id iteration order (insertion order = the
+    # order they were written). The pulse story's own head-tier take is
+    # excluded: it is being rewritten, not varied against.
+    prior_takes = [
+        t for cid, (_s, b) in by_id.items()
+        if cid != pulse_id and (t := getattr(b, "take", None))
+    ]
+
     original_section = story.tier  # "big_picture" / "hands_on" / "currents"
     try:
         new_block = _resummarise_as_pulse(
@@ -3326,6 +3788,7 @@ def _maybe_resummarise_pulse(
             callbacks=callbacks,
             original_block=original_block,
             voice_diversity_block=voice_diversity_block,
+            prior_takes=prior_takes,
         )
     except Exception:  # noqa: BLE001 -- never crash the issue on the re-summarise
         _LOG.exception(

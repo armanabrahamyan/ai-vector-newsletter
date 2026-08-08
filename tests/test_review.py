@@ -1433,3 +1433,163 @@ class TestAivReviewCli:
         )
         assert result.exit_code == 0
         assert not (paths.staging_dir(date) / "review.md").exists()
+
+
+# ---------------------------------------------------------------------------
+# v1.1 (2026-08-08): the take enters the review surface.
+#
+# Contract under test: the take is quotable text (indexed per story), the
+# reviewer SEES it, the prompt teaches the take_shape criterion, and a
+# take-targeting finding passes/fails the verbatim-quote filter exactly
+# like headline/summary findings do.
+# ---------------------------------------------------------------------------
+
+def _payload_with_takes() -> dict[str, Any]:
+    payload = _make_issue_payload()
+    payload["pulse"]["stories"][0]["take"] = (
+        "Local-first inference is the procurement default now."
+    )
+    payload["sections"][0]["stories"][0]["take"] = (
+        "Model-risk sign-off now covers agent plans, not just outputs."
+    )
+    return payload
+
+
+class TestTakeInReviewSurface:
+    def test_take_indexed_as_quotable_field(self) -> None:
+        from src.review import index_issue_fields
+        idx = index_issue_fields(_payload_with_takes())
+        assert idx[f"story:{_story_id(0)}:take"] == (
+            "Local-first inference is the procurement default now."
+        )
+
+    def test_legacy_issue_indexes_no_take_keys(self) -> None:
+        from src.review import index_issue_fields
+        idx = index_issue_fields(_make_issue_payload())
+        assert not any(key.endswith(":take") for key in idx)
+
+    def test_prompt_shows_take_lines_only_when_present(self) -> None:
+        from src.review import _format_issue_for_prompt
+        with_takes = _format_issue_for_prompt(
+            _payload_with_takes(), label="X",
+        )
+        assert (
+            "take: Local-first inference is the procurement default now."
+            in with_takes
+        )
+        legacy = _format_issue_for_prompt(_make_issue_payload(), label="X")
+        assert "take:" not in legacy
+
+    def test_prompt_teaches_take_shape_criterion(self) -> None:
+        from src.review import _build_review_prompt
+        prompt = _build_review_prompt(_payload_with_takes(), [])
+        assert "take_shape" in prompt
+        assert "It is now the case that" in prompt
+        assert "SKIP THIS CRITERION ENTIRELY" in prompt
+        assert '"field": "<headline | summary | take | intro_lead | intro_body>"' in prompt
+
+    def test_take_shape_in_published_criteria(self) -> None:
+        from src.review import REVIEW_CRITERIA
+        assert "take_shape" in REVIEW_CRITERIA
+
+    def test_take_finding_with_real_quote_is_kept(self) -> None:
+        from src.review import _resolve_and_filter_findings
+        finding = {
+            "target": {"kind": "story", "story_id": _story_id(0),
+                       "section": "pulse", "field": "take"},
+            "criterion": "take_shape",
+            "severity": "major",
+            "quote": "Local-first inference is the procurement default now.",
+            "fix_kind": "text_edit",
+            "instruction": "Recast without the consultant frame.",
+        }
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [finding], _payload_with_takes(),
+        )
+        assert len(kept) == 1 and not dropped and malformed == 0
+        assert kept[0].target.field == "take"
+
+    def test_take_finding_with_invented_quote_is_dropped(self) -> None:
+        from src.review import _resolve_and_filter_findings
+        finding = {
+            "target": {"kind": "story", "story_id": _story_id(0),
+                       "section": "pulse", "field": "take"},
+            "criterion": "take_shape",
+            "severity": "major",
+            "quote": "A sentence that is not in the take.",
+            "fix_kind": "text_edit",
+            "instruction": "Recast it.",
+        }
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [finding], _payload_with_takes(),
+        )
+        assert not kept and len(dropped) == 1 and malformed == 0
+
+    def test_take_finding_on_legacy_issue_is_dropped_as_unresolvable(
+        self,
+    ) -> None:
+        """No take on the story -> no story:<id>:take key -> the finding
+        cannot resolve to text on disk and lands in dropped_findings."""
+        from src.review import _resolve_and_filter_findings
+        finding = {
+            "target": {"kind": "story", "story_id": _story_id(0),
+                       "section": "pulse", "field": "take"},
+            "criterion": "take_shape",
+            "severity": "major",
+            "quote": "Anything at all.",
+            "fix_kind": "text_edit",
+            "instruction": "Write a take.",
+        }
+        kept, dropped, _malformed = _resolve_and_filter_findings(
+            [finding], _make_issue_payload(),
+        )
+        assert not kept and len(dropped) == 1
+
+    def test_review_prompt_version_is_v1_1(self) -> None:
+        from src.review import REVIEW_PROMPT_VERSION
+        assert REVIEW_PROMPT_VERSION == "v1.1"
+
+    def test_take_shape_on_takeless_issue_dropped_even_with_valid_quote(
+        self,
+    ) -> None:
+        """The deterministic legacy guard (v1.1): a take_shape finding
+        against an issue with NO takes is dropped even when its quote
+        resolves against another field -- the criterion cannot apply.
+        Guards the defect the first wired Eval 9 run measured
+        (2026-08-08): the reviewer filed a take_shape major against a
+        pre-take fixture, quoting the story's headline, and the quote
+        filter alone kept it."""
+        from src.review import _resolve_and_filter_findings
+        payload = _make_issue_payload()
+        finding = {
+            "target": {"kind": "story", "story_id": _story_id(0),
+                       "section": "pulse", "field": "headline"},
+            "criterion": "take_shape",
+            "severity": "major",
+            "quote": "Today's defining story",  # real headline text
+            "fix_kind": "text_edit",
+            "instruction": "Write the missing take.",
+        }
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [finding], payload,
+        )
+        assert not kept and len(dropped) == 1 and malformed == 0
+
+    def test_take_shape_kept_when_issue_carries_takes(self) -> None:
+        """Mutation partner for the legacy guard: on a take-bearing issue
+        the same criterion survives (the guard must key on take presence,
+        not blanket-drop the criterion)."""
+        from src.review import _resolve_and_filter_findings
+        finding = {
+            "target": {"kind": "story", "story_id": _story_id(0),
+                       "section": "pulse", "field": "take"},
+            "criterion": "take_shape",
+            "severity": "minor",
+            "quote": "Local-first inference is the procurement default now.",
+            "fix_kind": "text_edit",
+            "instruction": "Vary the frame.",
+        }
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [finding], _payload_with_takes(),
+        )
+        assert len(kept) == 1 and not dropped and malformed == 0

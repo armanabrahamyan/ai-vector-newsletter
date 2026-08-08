@@ -270,10 +270,16 @@ ReviewTargetKind = Literal["story", "section"]
 """What a `ReviewFinding` is about: one story (a `SummaryBlock`) or one
 section's editorial framing (an `IssueSection` intro)."""
 
-ReviewTargetField = Literal["headline", "summary", "intro_lead", "intro_body"]
-"""The exact field a finding points at. ``headline`` / ``summary`` belong to
-story targets; ``intro_lead`` / ``intro_body`` to section targets (enforced
-by the validator on `ReviewTarget`).
+ReviewTargetField = Literal[
+    "headline", "summary", "take", "intro_lead", "intro_body"
+]
+"""The exact field a finding points at. ``headline`` / ``summary`` / ``take``
+belong to story targets; ``intro_lead`` / ``intro_body`` to section targets
+(enforced by the validator on `ReviewTarget`).
+
+``take`` added 2026-08-08 with `SummaryBlock.take` (the publication's
+position line): reader-facing assertive prose must be reviewable at the
+same field-level precision as the headline and body.
 
 Naming a FIELD rather than "the story" is what makes a finding actionable
 without judgement: `revise.py` looks the field up, hands the model only
@@ -844,9 +850,14 @@ class SummaryBlock(BaseModel):
     StoryVerification | None = None`` field, populated by the advisory verify
     stage. Additive + nullable -- older issue.json files (schema_version <= 2)
     parse cleanly with ``verification=None``.
+
+    Schema v4 (2026-08-08): added the optional nullable ``take: str | None =
+    None`` field -- the publication's position line, one declarative italic
+    sentence rendered last in the story unit. Additive + nullable -- every
+    issue.json written before this date parses cleanly with ``take=None``.
     """
 
-    schema_version: int = 3
+    schema_version: int = 4
     story_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """= Cluster.cluster_id; the canonical handle for a story."""
 
@@ -860,6 +871,29 @@ class SummaryBlock(BaseModel):
     Schema v4 (2026-05-23): direction note and finance angle are now embedded
     in the summary prose *when relevant*, not surfaced as separate fields.
     They are philosophies of the newsletter (rhythm + lens), not labels.
+    """
+
+    take: Annotated[str, Field(min_length=1, max_length=200)] | None = None
+    """
+    The take (schema v4, 2026-08-08): the publication's position on the
+    story -- one declarative line, rendered last in the story unit, in
+    italics. Editorially 8-16 words, hard cap 18; the 200-char structural
+    cap here is deliberate headroom over that editorial limit.
+
+    Pydantic enforces STRUCTURE only (stripped, non-empty if present,
+    <= 200 chars). Form constraints -- word count, declarative mood, no
+    trailing question mark -- are enforced by `summarise.py`'s code-side
+    validation and judged by the reviewer, not here: they are editorial
+    rules that move with the voice spec, not archive-integrity rules.
+
+    Nullable: ``None`` means either a pre-take archive issue (everything
+    written before 2026-08-08) or a story whose take was cut by summarise's
+    body-cap collision ladder. Absence is normal, never an error.
+
+    Integrity requirement (ratified 2026-08-08): the take is reader-facing
+    assertive prose, so it MUST be visible to both the verify stage (claims
+    drawn from it are checked like body claims) and the reviewer (findings
+    may target ``field="take"`` -- see `ReviewTargetField`).
     """
 
     source_urls: Annotated[list[HttpUrl], Field(min_length=1)]
@@ -907,6 +941,18 @@ class SummaryBlock(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    @field_validator("take", mode="before")
+    @classmethod
+    def _strip_take(cls, v: Any) -> Any:
+        """Strip surrounding whitespace before the length constraints run,
+        so a whitespace-only take fails ``min_length=1`` (non-empty if
+        present) instead of sneaking through as padding. A writer that wants
+        "no take" says ``None`` explicitly; an empty or blank string is a
+        writer bug and is rejected at the boundary."""
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
 
 # ---------------------------------------------------------------------------
@@ -1006,9 +1052,15 @@ class Issue(BaseModel):
     now carries the new shape. The optional ``"verify"`` key may now appear
     in ``prompt_versions``. Older issue.json files (schema_version <= 5)
     parse unchanged.
+
+    schema_version=7 (2026-08-08): no field change on `Issue` itself; the
+    bump tracks the SummaryBlock v3->v4 change (added the optional
+    nullable ``take`` position line), same transitive-envelope rule as v6.
+    Older issue.json files (schema_version <= 6) parse unchanged with
+    ``take=None`` on every block.
     """
 
-    schema_version: int = 6
+    schema_version: int = 7
     issue_number: Annotated[int, Field(ge=1)] | None = None
     """
     Sequential, 1-indexed, monotonically increasing across RELEASED
@@ -1717,9 +1769,13 @@ class ReviewTarget(BaseModel):
     flat" is an opinion nobody can act on deterministically; "the
     ``intro_lead`` of the ``hands_on`` section" is a string on disk that a
     reviewer quoted from and a reviser can rewrite.
+
+    Schema v2 (2026-08-08): story targets may now name ``field="take"``
+    (the `SummaryBlock.take` position line). Value-space widening only; v1
+    records parse unchanged.
     """
 
-    schema_version: int = 1
+    schema_version: int = 2
     kind: ReviewTargetKind
     """``story`` (a SummaryBlock) or ``section`` (an IssueSection intro)."""
 
@@ -1736,8 +1792,8 @@ class ReviewTarget(BaseModel):
     the renderer group findings by section without re-joining `issue.json`."""
 
     field: ReviewTargetField
-    """The exact field. ``headline`` / ``summary`` for story targets;
-    ``intro_lead`` / ``intro_body`` for section targets."""
+    """The exact field. ``headline`` / ``summary`` / ``take`` for story
+    targets; ``intro_lead`` / ``intro_body`` for section targets."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -1753,10 +1809,10 @@ class ReviewTarget(BaseModel):
                 raise ValueError(
                     "ReviewTarget(kind='story') requires story_id."
                 )
-            if self.field not in ("headline", "summary"):
+            if self.field not in ("headline", "summary", "take"):
                 raise ValueError(
-                    f"ReviewTarget(kind='story') field must be 'headline' or "
-                    f"'summary'; got {self.field!r}."
+                    f"ReviewTarget(kind='story') field must be 'headline', "
+                    f"'summary', or 'take'; got {self.field!r}."
                 )
         else:  # section
             if self.story_id is not None:
@@ -1836,9 +1892,14 @@ class ReviewReport(BaseModel):
     evidence into a decision. That separation is what makes the verdict
     auditable -- you can re-derive it from ``findings`` and the table
     without re-running the LLM.
+
+    Schema v2 (2026-08-08): no field change on `ReviewReport` itself; the
+    bump tracks the ReviewTarget v1->v2 change (story targets may now name
+    ``field="take"``), since the review.json envelope now carries the
+    widened vocabulary. v1 records parse unchanged.
     """
 
-    schema_version: int = 1
+    schema_version: int = 2
     generated_at: datetime
     """UTC timestamp when the review stage wrote this report."""
 

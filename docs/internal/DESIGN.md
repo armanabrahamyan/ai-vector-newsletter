@@ -396,11 +396,13 @@ SectionName = Literal[
 
 
 class SummaryBlock(BaseModel):
-    schema_version: int = 3                                                 # v2 renames cross_time_ref -> prior_coverage_ref (alias retained); v3 (2026-06-29) adds optional `verification` from the advisory verify stage
-    # NOTE: this doc snippet omits the v4 drop of direction_note/finance_angle for brevity; src/models.py is authoritative.
+    schema_version: int = 4                                                 # v2 renames cross_time_ref -> prior_coverage_ref (alias retained); v3 (2026-06-29) adds optional `verification`; v4 (2026-08-08) adds optional `take`
+    # NOTE: this doc snippet omits the drop of direction_note/finance_angle for brevity; src/models.py is authoritative.
     story_id: Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]           # = Cluster.cluster_id (the canonical handle for a story)
     headline: Annotated[str, Field(min_length=1, max_length=200)]           # editorial headline (LLM-written, may differ from canonical_title)
     summary: Annotated[str, Field(min_length=1, max_length=1200)]           # the story body — link out, never reproduce full article
+    take: Optional[Annotated[str, Field(min_length=1, max_length=200)]] = None
+                                                                            # v4 (2026-08-08): the publication's position line — one declarative sentence, rendered last in the story unit, italic. Stripped; non-empty if present. None = pre-take archive OR cut by the body-cap collision ladder. See "The take" below.
     direction_note: Annotated[str, Field(max_length=400)] = ""              # "where this points" — required for pulse/where_heading; "" allowed elsewhere
     finance_angle: Optional[Annotated[str, Field(max_length=400)]] = None   # FS lens, when the story earns one (see finance-lens skill)
     source_urls: Annotated[list[HttpUrl], Field(min_length=1)]              # links to original sources; render attributes attribution
@@ -436,7 +438,7 @@ from pydantic import BaseModel, Field
 
 
 class Issue(BaseModel):
-    schema_version: int = 5                                                 # bump on shape change; v5 adds `revision: int = 0` (same-date re-release)
+    schema_version: int = 7                                                 # bump on shape change; v5 adds `revision: int = 0` (same-date re-release); v6/v7 are transitive envelope bumps tracking SummaryBlock v3 (verification) and v4 (take)
     issue_number: Optional[Annotated[int, Field(ge=1)]] = None              # None in staging; assigned at release time (max canonical + 1). See Archive: staging vs canonical
     revision: Annotated[int, Field(ge=0)] = 0                               # 0 on first release; bumped by `aiv release --revise` (same-date re-release). Renders as #N.M when > 0. See Issue Number Registry -> Same-date re-release (revision bump)
     date: date                                                              # the issue date (YYYY-MM-DD); matches the archive folder
@@ -472,6 +474,46 @@ public identifier moves from `#2` to `#2.1`, `#2.2`, etc. — signalling
 staging/release transition, the revision-bump path, and edge cases are
 pinned in the [Issue Number Registry](#issue-number-registry) and
 [Archive: staging vs canonical](#archive-staging-vs-canonical).
+
+### The take — the publication's position line
+
+Ratified 2026-08-08. Every story may carry a **take**: one declarative
+italic line, rendered **last** in the story unit, stored as
+`SummaryBlock.take` (schema v4, nullable).
+
+**What it is.** The publication's position on the story — an assertion in
+AI Vector's own voice. It is a *distinct speech act from the close*: the
+summary's closing sentence finishes the story's argument (question,
+action, stake, per the section's closing shape); the take states what
+*we* think. Editorially 8–16 words, hard cap 18. The pydantic cap is 200
+characters — deliberate headroom over the editorial limit, because form
+rules move with the voice spec, not with the archive contract.
+
+**Where constraints live.** Pydantic enforces structure only: stripped,
+non-empty if present, ≤ 200 chars. Word count, declarative mood, and
+"never ends with a question mark" are enforced by `summarise.py`'s
+code-side validation and judged by the reviewer. The experience-designer's
+spec owns rendering; the editor's voice spec owns wording.
+
+**Nullability semantics.** `take = None` means one of exactly two things:
+(a) a pre-take archive issue — everything released before 2026-08-08
+parses unchanged with `take = None` on every block; or (b) a story whose
+take was cut by summarise's body-cap collision ladder on the day it was
+written. Absence is normal and renders as "no take line"; it is never an
+error and never back-filled into history.
+
+**Verify / review visibility (integrity requirement).** The take is
+reader-facing assertive prose, so both advisory stages MUST see it:
+
+- **Verify:** the take's text is part of the claim-extraction input for
+  its story. Claims drawn from the take carry `location = "body"` — the
+  `ClaimLocation` vocabulary stays `headline | body`; a take-specific
+  location value was considered and deferred (the contradicted-claim hard
+  block already fires on any contradicted claim regardless of location,
+  so granularity, not safety, is what a third value would add).
+- **Review:** findings may target `field = "take"` on a story target
+  (`ReviewTargetField` widened, `ReviewTarget` v2), with the same
+  verbatim-quote check and `revise.py` routing as headline and summary.
 
 ### Issue Number Registry
 
@@ -2054,3 +2096,6 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-08-02 | `RevisionChange`, `RevisionCycle` (new models); `revisions.jsonl` (new archive file) | — | v1 | The revision engine's audit trail. One `RevisionCycle` per line — one line per invocation, not per edit — appended (never rewritten) so the file reads as the edit history of the day's draft. `RevisionCycle` (schema_version, date, `cycle` 1-indexed within the date, `mode` shadow\|live, `changes`, operator_instruction, generated_at, prompt_version, review_prompt_version, `issue_sha256_before`/`_after`, note) with two validators: a shadow cycle carries no `applied` change and no `issue_sha256_after`; a live cycle leaves nothing merely `proposed`. `RevisionChange` (target, finding_ids, before, after, recommendation, rationale, `status` proposed\|applied\|rejected, reject_reason) with a validator: a rejection must say why, and an applied change must actually change something. `before`/`after` hold the FULL field text, not a diff — the record has to be readable a month later without the issue it came from. See [The revision loop](#the-revision-loop). | First introduction — no on-disk migration. Already in `render._OPTIONAL_PERIPHERAL_FILES`, so promotion needed no change. `gate.py` reads only `cycle` and each change's `status`, and treats an absent file as "no revision ran"; the informational `revision_status` check never blocks, so a malformed log degrades to a surfaced note rather than a held issue. |
 | 2026-08-02 | `gate.json` policy (`gate_version`, not `schema_version`) | v1 | v2 | `GateDecision.schema_version` is UNCHANGED — the shape did not move. What moved is the policy: (1) `review.json` became the primary review artifact, with `review.md` frontmatter as the fallback for absence only; (2) a new non-blocking `revision_status` check reports cycles run and applied/rejected counts from `revisions.jsonl`. **No blocking check changed its behaviour and no hold-reason token was added, removed, or renamed** — a day that held under v1 holds under v2 for the same reason. `GateReviewState.path` now names whichever artifact actually answered (`review.json` or `review.md`), which is how a reader of `gate.json` tells which one the decision rested on. | No migration. `gate.json` files written under policy v1 remain valid `GateDecision` records and parse unchanged; they simply carry `gate_version: "v1"` and no `revision_status` check, which is exactly what a policy version is for. Readers must not assume a fixed check list — iterate `checks` by name. |
 | 2026-05-24 | `Issue` | v4 | v5 | Added `revision: int = 0` (`ge=0`). Same-date re-release (opt-in via `aiv release --revise`) preserves `issue_number` and bumps `revision` instead of consuming a new integer in the registry. Display identifier is now `Issue.display_number` -> `"{issue_number}"` when `revision == 0`, else `"{issue_number}.{revision}"` (`#2`, `#2.1`, `#2.2`). The integer registry semantics are unchanged: uniqueness, monotonic-increase, and `paths.all_released_dates()` all still operate on the integer base; `revision` is a per-date secondary counter. Templates render `issue.display_number`; landing-page archive entries carry `display_number` alongside `issue_number`. See [Issue Number Registry -> Same-date re-release (revision bump)](#issue-number-registry). Motivating case: prompt drift fix on issue #2 (2026-05-24) re-shipped as #2.1 instead of burning #3. | Existing canonical archive (issues #1, #2 on disk) loads transparently: missing `revision` field defaults to 0 via pydantic; `display_number` returns `"1"`, `"2"`. v4 readers handling v5 records: pydantic `extra="forbid"` on `Issue` means a v4 reader of a v5 record would reject the unknown `revision` field. **Mitigation:** this repo upgrades all readers in the same PR (one binary, no external consumers). v5 readers handling v4 records: `revision` defaults to 0, display behaviour is identical to v4. No on-disk migration script is required. |
+| 2026-08-08 | `SummaryBlock` | v3 | v4 | Added optional nullable `take: str \| None = None` — the publication's position line: one declarative italic sentence rendered last in the story unit (ratified 2026-08-08; see [The take](#the-take--the-publications-position-line)). Pydantic enforces structure only (stripped via a before-validator, non-empty if present, `max_length=200` — headroom over the editorial 8–16-word / hard-18 cap); form constraints (word count, declarative mood, no trailing `?`) are enforced in `summarise.py`'s code-side validation and judged by the reviewer, not in the model. `None` = pre-take archive issue OR a take cut by summarise's body-cap collision ladder; absence is normal, never an error. | Existing issue.json (SummaryBlock schema_version <= 3) parse unchanged with `take = None` — all 34 released issues validate without rewrite. Verified by `tests/test_models.py::TestSummaryBlockTake::test_released_pre_take_issue_parses_with_take_none`, which parses `data/released/2026-07-11/issue.json` (issue #29) end-to-end and asserts `take is None` on every block. Same all-readers-upgrade-together mitigation as prior `extra="forbid"` additive changes. |
+| 2026-08-08 | `Issue` | v6 | v7 | No field change on `Issue` itself; the bump tracks the transitive SummaryBlock v3->v4 change (issue.json now carries the optional `take` field), same envelope rule as the v5->v6 bump. | Older issue.json (schema_version <= 6) parse unchanged; the v7 envelope simply admits the new optional SummaryBlock field. |
+| 2026-08-08 | `ReviewTargetField` (literal), `ReviewTarget`, `ReviewReport` | v1 | v2 | `ReviewTargetField` value-space widened from `{headline, summary, intro_lead, intro_body}` to `{headline, summary, take, intro_lead, intro_body}`; the `ReviewTarget` story-kind validator accepts `take` alongside `headline`/`summary` (section targets still reject it). Integrity requirement: the take is reader-facing assertive prose and must be reviewable at field-level precision, with the same verbatim-quote check and `revise.py` routing as headline/summary. `ReviewReport` v1->v2 is the transitive envelope bump (review.json may now carry `field="take"` rows). `ClaimLocation` (verify) is deliberately UNCHANGED — take-derived claims carry `location="body"`; the contradicted-claim hard block fires on any location, so a third value would add granularity, not safety, and is deferred. | No on-disk migration. Existing review.json rows never used `take`, so v1 records parse unchanged under v2 (widening only). A v1 reader loading a v2 row with `field="take"` would reject the unknown enum value; mitigation as ever: all in-repo readers upgrade in the same wave. Downstream (same wave, owned by LLM Engineer): `review.py` prompt + `_field_index` must surface the take; `verify.py` claim extraction must include it; `revise.py` `_field_bounds` / `_FIELD_GUIDANCE` must learn the field before acting on a `take` finding. |

@@ -770,6 +770,14 @@ def eval_ranking_quality(
 # Aggregate fail-rate threshold. Tunable — v0 default per the plan.
 VOICE_FAIL_THRESHOLD = 0.25
 
+# Current voice-labels schema (ratified 2026-08-08). v2 begins with the
+# first take-era labels file: decision_tied_close re-scoped per section
+# (summarise v0.22 relocated the close into the take for Pulse /
+# Big Picture / Currents; Hands-On unchanged). Labels with a different
+# schema_version (absent = 1) are excluded from agreement — the v1
+# series (two issues) is closed as history, never mixed across versions.
+LABELS_SCHEMA_VERSION = 2
+
 
 def _score_to_numeric(score: str) -> float:
     """Convert pass/borderline/fail/error to a 0-1 value for aggregation."""
@@ -798,6 +806,15 @@ def _compute_agreement_rate(judge_results: list[dict], editor_labels: Optional[d
     Returns None when no editor labels are available.
     """
     if editor_labels is None:
+        return None
+
+    # Labelling-schema continuity (ratified 2026-08-08): summarise v0.22
+    # relocated the close into the take for 3 of 4 sections, so v1-era
+    # labels answer a different question than v2-era labels under the
+    # same keys. Agreement is computed only for labels matching the
+    # current schema; the two-issue v1 series is closed as history
+    # (absent field defaults to 1), never mixed into v2 trends.
+    if editor_labels.get("schema_version", 1) != LABELS_SCHEMA_VERSION:
         return None
 
     agreed = 0
@@ -1935,6 +1952,33 @@ def _extract_feature_vector(
     # verifier_flag_rate before the verify stage landed.
     reviewer_verdict, reviewer_verdict_ordinal = _read_reviewer_verdict(_issue_date)
 
+    # take_presence_rate / take_frame_diversity (take-drift PROPOSAL,
+    # 2026-08-08) — tracked with the same graceful-absence contract as
+    # verifier_flag_rate: None until the SummaryBlock.take schema change
+    # lands and issues start carrying takes.
+    #   presence  = fraction of stories carrying a non-empty take; None when
+    #               NO story dict has the field at all (pre-take schema).
+    #   diversity = distinct opener families / take count, in (0, 1]; 1.0
+    #               means every take opens with its own frame. None when the
+    #               issue has no takes. Bidirectional read: diversity
+    #               sliding LOW = the take is templating; presence sliding
+    #               low = summarise quietly stopped writing them.
+    take_presence_rate: Optional[float] = None
+    take_frame_diversity: Optional[float] = None
+    _has_take_field = any(isinstance(s, dict) and "take" in s for s in stories)
+    _takes = [
+        s["take"] for s in stories
+        if isinstance(s, dict)
+        and isinstance(s.get("take"), str) and s["take"].strip()
+    ]
+    if _has_take_field and story_count > 0:
+        take_presence_rate = len(_takes) / story_count
+    if _takes:
+        _families = {
+            f for f in (_take_opener_family(t) for t in _takes) if f
+        }
+        take_frame_diversity = len(_families) / len(_takes)
+
     return {
         "story_count": story_count,
         "avg_summary_length": avg_summary_length,
@@ -1944,6 +1988,8 @@ def _extract_feature_vector(
         "verifier_flag_rate": verifier_flag_rate,  # None until verify stage lands
         "reviewer_verdict": reviewer_verdict,  # None until gate.py/review.py has run for this date
         "reviewer_verdict_ordinal": reviewer_verdict_ordinal,  # green=0, amber=1, red=2; None otherwise
+        "take_presence_rate": take_presence_rate,  # None until takes ship
+        "take_frame_diversity": take_frame_diversity,  # None until takes ship
     }
 
 
@@ -2046,6 +2092,7 @@ def _write_drift_snapshot(
     js_divergences: dict[str, float],
     flags: list[str],
     reviewer_red_floor: Optional[dict[str, Any]] = None,
+    take_floors: Optional[dict[str, Any]] = None,
 ) -> None:
     """Write a drift snapshot to evals/drift/baselines/<date>.json atomically."""
     DRIFT_BASELINES_DIR.mkdir(parents=True, exist_ok=True)
@@ -2057,6 +2104,7 @@ def _write_drift_snapshot(
         "js_divergences": js_divergences,
         "flags": flags,
         "reviewer_red_floor": reviewer_red_floor or {},
+        "take_floors": take_floors or {},
     }
     target = DRIFT_BASELINES_DIR / f"{candidate_date}.json"
     tmp = target.with_suffix(".tmp")
@@ -2245,6 +2293,26 @@ def check_drift(
         z = (_rvo_candidate - mean) / effective_stdev
         z_scores["reviewer_verdict_ordinal"] = round(z, 4)
 
+    # take_presence_rate / take_frame_diversity (take-drift PROPOSAL,
+    # 2026-08-08): tracked with the same "at least half the baseline must
+    # have non-None data" gate as verifier_flag_rate — silent until the
+    # SummaryBlock.take rollout accumulates enough released history.
+    for _take_metric in ("take_presence_rate", "take_frame_diversity"):
+        _tk_baseline = [
+            fv.get(_take_metric)
+            for fv in baseline_fvs
+            if fv.get(_take_metric) is not None
+        ]
+        _tk_candidate = candidate_fv.get(_take_metric)
+        if len(_tk_baseline) >= max(1, len(baseline_fvs) // 2) and _tk_candidate is not None:
+            n = len(_tk_baseline)
+            mean = sum(_tk_baseline) / n
+            variance = sum((v - mean) ** 2 for v in _tk_baseline) / n
+            stdev = math.sqrt(variance)
+            effective_stdev = max(stdev, _DRIFT_STDEV_FLOOR)
+            z = (_tk_candidate - mean) / effective_stdev
+            z_scores[_take_metric] = round(z, 4)
+
     # ------------------------------------------------------------------
     # 5. Compute Jensen-Shannon divergences for distribution metrics.
     # ------------------------------------------------------------------
@@ -2328,6 +2396,86 @@ def check_drift(
         )
 
     # ------------------------------------------------------------------
+    # 6b. Take floor rules (take-drift PROPOSAL, 2026-08-08) — the same
+    # constant-series-blindness pattern as the reviewer red floor above,
+    # applied to the two take features:
+    #
+    #   takes_vanished — once takes are an established habit (>= 10 window
+    #     days at presence >= 0.9), a candidate with presence None/0 means
+    #     the field silently stopped being written. The z-score cannot see
+    #     this: presence=None is EXCLUDED from the mean/stdev by the
+    #     graceful-absence contract, so the disappearance never scores.
+    #
+    #   frame_diversity_floor — a take line that templates at a CONSTANT
+    #     rate (say diversity pinned at 0.8 every day) becomes its own
+    #     baseline: mean 0.8, near-zero variance, z ~ 0 forever. The
+    #     absolute check: over >= 10 take-bearing window days, NO day with
+    #     fully-distinct opener frames (max diversity < 1.0) escalates.
+    #     Exact 3-word-opener collisions are unlikely by accident, so a
+    #     month without one all-distinct day means a template is riding
+    #     along under the z-score's floor.
+    # ------------------------------------------------------------------
+    _TAKE_FLOOR_WINDOW_DAYS = 30
+    _TAKE_FLOOR_MIN_SAMPLES = 10
+    _TAKE_PRESENCE_HABIT = 0.9  # presence >= this counts as "takes are a habit"
+
+    take_floor_window_start = candidate_date - __import__("datetime").timedelta(days=_TAKE_FLOOR_WINDOW_DAYS)
+    _take_window_dates = [
+        d for d in all_released if take_floor_window_start <= d < candidate_date
+    ]
+    _window_presence: list[float] = []
+    _window_diversity: list[float] = []
+    for d in _take_window_dates:
+        _w_issue = _load_json(released_root / d.isoformat() / "issue.json")
+        if _w_issue is None:
+            continue
+        _w_takes = _iter_issue_takes(_w_issue)
+        _w_stories = 0
+        _pb = _w_issue.get("pulse", {}) or {}
+        for _sec in [_pb] + list(_w_issue.get("sections", []) or []):
+            if isinstance(_sec, dict):
+                _w_stories += len(_sec.get("stories", []) or [])
+        if _issue_has_take_field(_w_issue) and _w_stories > 0:
+            _window_presence.append(len(_w_takes) / _w_stories)
+        if _w_takes:
+            _w_families = {
+                f for f in (_take_opener_family(t) for _sid, t in _w_takes) if f
+            }
+            _window_diversity.append(len(_w_families) / len(_w_takes))
+
+    take_floors: dict[str, Any] = {
+        "window_days": _TAKE_FLOOR_WINDOW_DAYS,
+        "min_samples": _TAKE_FLOOR_MIN_SAMPLES,
+        "presence_habit_threshold": _TAKE_PRESENCE_HABIT,
+        "window_presence_samples": len(_window_presence),
+        "window_diversity_samples": len(_window_diversity),
+        "takes_vanished": False,
+        "frame_diversity_floor": False,
+    }
+
+    _habit_days = sum(1 for p in _window_presence if p >= _TAKE_PRESENCE_HABIT)
+    _cand_presence = candidate_fv.get("take_presence_rate")
+    if _habit_days >= _TAKE_FLOOR_MIN_SAMPLES and (_cand_presence is None or _cand_presence == 0.0):
+        take_floors["takes_vanished"] = True
+        flags.append(
+            f"floor:takes_vanished ({_habit_days} window days at presence "
+            f">={_TAKE_PRESENCE_HABIT:.0%}, today "
+            f"{'no take field' if _cand_presence is None else 'presence 0'}) "
+            "-- summarise may have silently stopped writing takes; "
+            "None-presence is invisible to the z-score by design."
+        )
+
+    if len(_window_diversity) >= _TAKE_FLOOR_MIN_SAMPLES and max(_window_diversity) < 1.0:
+        take_floors["frame_diversity_floor"] = True
+        flags.append(
+            f"floor:take_frame_diversity ({len(_window_diversity)} take-bearing "
+            f"days, max diversity {max(_window_diversity):.2f} < 1.0) -- no "
+            "fully-distinct-frame day in the window; a constant template "
+            "rate is invisible to the z-score. Escalate to Editor + LLM "
+            "Engineer for a take-frame review."
+        )
+
+    # ------------------------------------------------------------------
     # 7. Write snapshot.
     # ------------------------------------------------------------------
     try:
@@ -2339,6 +2487,7 @@ def check_drift(
             js_divergences=js_divergences,
             flags=flags,
             reviewer_red_floor=reviewer_red_floor,
+            take_floors=take_floors,
         )
     except OSError:
         # Snapshot write failure is non-fatal — log in details.
@@ -2357,6 +2506,7 @@ def check_drift(
             "z_scores": z_scores,
             "js_divergences": js_divergences,
             "reviewer_red_floor": reviewer_red_floor,
+            "take_floors": take_floors,
             "flags": flags,
             "flag_count": len(flags),
             "thresholds": {
@@ -3393,6 +3543,330 @@ def eval_reading_experience_lint(dataset_dir: Optional[Path]) -> EvalResult:
 
 
 # ---------------------------------------------------------------------------
+# Eval 10 — take-drift lint (deterministic; PROPOSAL pending ratification).
+#
+# The "take" (ratified 2026-08-08) is a per-story declarative italic line
+# (SummaryBlock.take, schema change landing concurrently). Its failure mode
+# is not being wrong — it is being INTERCHANGEABLE: opener families that
+# templatise within an issue, and frames that recur across issues until the
+# reader's eye skips the line. Both are surface-detectable, so per the
+# No Token Wasted principle they are CODE, not judge calls:
+#
+#   (a) per-issue opener-shape counter — normalise each take's first three
+#       words (lowercase, punctuation stripped, leading articles removed);
+#       a "family" covering > _TAKE_OPENER_MAX_STORIES stories OR
+#       > _TAKE_OPENER_MAX_SHARE of the issue's takes is a violation.
+#       Singleton families never violate the share rule (one take is not
+#       repetition, whatever fraction of a small issue it is).
+#   (b) cross-issue 4-gram counter — word-level 4-grams of today's takes
+#       vs. the takes of the last _TAKE_NGRAM_LOOKBACK_ISSUES released
+#       issues; any 4-gram present in >= _TAKE_NGRAM_ISSUE_THRESHOLD
+#       distinct prior issues is a violation. (Within-issue repetition is
+#       counter (a)'s job; this one only counts distinct prior issues.)
+#
+# The third guard — universality / transferability ("would this take be
+# just as plausible pasted onto a sibling story?") — is a judgment call
+# and deliberately NOT coded here. It lives as anchor B of the proposed
+# take amendment to the voice rubric's `direction` dimension (see
+# evals/voice/rubric.take-anchors.PROPOSAL.yaml).
+#
+# GOVERNANCE: TAKE_LINT_ENFORCED=False until Arman ratifies the guard set
+# as a gate — until then the check runs on every dataset (staging
+# included, like Eval 8), reports loudly in details.failures, and always
+# passes. Issues with no `take` fields (the entire archive today) report
+# status="no_takes" and pass: absence is a schema generation, not a
+# defect. Flip TAKE_LINT_ENFORCED on ratification only.
+# ---------------------------------------------------------------------------
+
+TAKE_LINT_ENFORCED = False
+"""PROPOSAL seam: becomes a hard gate only on Arman's ratification."""
+
+_TAKE_ARTICLES = frozenset({"a", "an", "the"})
+_TAKE_OPENER_FAMILY_WORDS = 3
+_TAKE_OPENER_MAX_STORIES = 2   # a family on >2 stories in one issue = violation
+_TAKE_OPENER_MAX_SHARE = 0.30  # or >30% of the issue's takes (families of >=2 only)
+_TAKE_NGRAM_N = 4
+_TAKE_NGRAM_LOOKBACK_ISSUES = 10
+_TAKE_NGRAM_ISSUE_THRESHOLD = 3  # 4-gram in >=3 distinct prior issues = violation
+
+_TAKE_TOKEN_RE = re.compile(r"[a-z0-9]+(?:['’][a-z0-9]+)?")
+
+
+def _take_tokens(text: str) -> list[str]:
+    """Lowercased word tokens of a take line, punctuation stripped.
+
+    Intra-word apostrophes survive ("isn't" is one token); everything else
+    non-alphanumeric is a separator. Deterministic and dependency-free.
+    """
+    return _TAKE_TOKEN_RE.findall((text or "").lower())
+
+
+def _take_opener_family(take: str) -> str:
+    """Normalised opener family: first three non-article words, joined.
+
+    Articles are stripped from the token stream BEFORE taking the first
+    three, so "The bar has moved" and "Bar has moved fast" share a family.
+    Takes with fewer than three non-article words family on what remains
+    (an empty take yields the empty family, which callers exclude).
+    """
+    words = [t for t in _take_tokens(take) if t not in _TAKE_ARTICLES]
+    return " ".join(words[:_TAKE_OPENER_FAMILY_WORDS])
+
+
+def _take_ngrams(take: str, n: int = _TAKE_NGRAM_N) -> set[str]:
+    """Word-level n-grams of a take (articles KEPT — a repeated frame
+    repeats its articles too; cross-issue detection wants surface form)."""
+    tokens = _take_tokens(take)
+    return {
+        " ".join(tokens[i:i + n]) for i in range(len(tokens) - n + 1)
+    }
+
+
+def _iter_issue_takes(issue: dict) -> list[tuple[str, str]]:
+    """Return ``(story_id, take)`` for every story carrying a non-empty
+    take. Tolerates the field's absence entirely (pre-take archive)."""
+    out: list[tuple[str, str]] = []
+    pulse = issue.get("pulse", {}) or {}
+    sections = [pulse] + list(issue.get("sections", []) or [])
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        for story in section.get("stories", []) or []:
+            take = story.get("take")
+            if isinstance(take, str) and take.strip():
+                out.append((story.get("story_id", "unknown"), take))
+    return out
+
+
+def _issue_has_take_field(issue: dict) -> bool:
+    """True when ANY story dict carries a ``take`` key (even empty) —
+    distinguishes 'schema pre-dates the take' from 'takes not written'."""
+    pulse = issue.get("pulse", {}) or {}
+    sections = [pulse] + list(issue.get("sections", []) or [])
+    for section in sections:
+        if isinstance(section, dict):
+            for story in section.get("stories", []) or []:
+                if isinstance(story, dict) and "take" in story:
+                    return True
+    return False
+
+
+def _load_lookback_take_ngrams(
+    candidate_name: str,
+    released_root: Path,
+) -> list[tuple[str, set[str]]]:
+    """``(date_str, union-of-4-gram-sets)`` for the last
+    _TAKE_NGRAM_LOOKBACK_ISSUES released issues strictly before
+    *candidate_name* (lexicographic on YYYY-MM-DD == chronological).
+    Issues without takes contribute empty sets — the lookback window is
+    defined by ISSUES, not by take-bearing issues, so the threshold's
+    denominator stays stable through the rollout."""
+    if not released_root.exists():
+        return []
+    prior_dates = sorted(
+        child.name for child in released_root.iterdir()
+        if child.is_dir()
+        and child.name < candidate_name
+        and (child / "issue.json").exists()
+    )[-_TAKE_NGRAM_LOOKBACK_ISSUES:]
+    out: list[tuple[str, set[str]]] = []
+    for d in prior_dates:
+        issue = _load_json(released_root / d / "issue.json")
+        grams: set[str] = set()
+        if issue:
+            for _sid, take in _iter_issue_takes(issue):
+                grams |= _take_ngrams(take)
+        out.append((d, grams))
+    return out
+
+
+def check_take_drift(
+    issue: dict,
+    candidate_name: str,
+    *,
+    released_root: Optional[Path] = None,
+) -> dict:
+    """Core deterministic take-drift counters. Importable + testable.
+
+    Returns a dict with keys: take_count, opener_families,
+    opener_violations, ngram_violations, lookback (metadata), failures.
+    """
+    released_root = released_root or (DATA_DIR / "released")
+    takes = _iter_issue_takes(issue)
+    take_count = len(takes)
+    failures: list[str] = []
+
+    # -- (a) per-issue opener-shape counter -----------------------------
+    family_members: dict[str, list[str]] = {}
+    for sid, take in takes:
+        family = _take_opener_family(take)
+        if not family:
+            continue
+        family_members.setdefault(family, []).append(sid)
+
+    opener_violations: list[dict] = []
+    for family, members in sorted(family_members.items()):
+        count = len(members)
+        share = (count / take_count) if take_count else 0.0
+        over_count = count > _TAKE_OPENER_MAX_STORIES
+        over_share = count >= 2 and share > _TAKE_OPENER_MAX_SHARE
+        if over_count or over_share:
+            opener_violations.append({
+                "family": family,
+                "stories": members,
+                "count": count,
+                "share": round(share, 4),
+                "rule": "count" if over_count else "share",
+            })
+            failures.append(
+                f"take-opener family \"{family}\" covers {count}/{take_count} "
+                f"takes ({share:.0%}) on {', '.join(members)} — limit is "
+                f"{_TAKE_OPENER_MAX_STORIES} stories or "
+                f"{_TAKE_OPENER_MAX_SHARE:.0%} of an issue"
+            )
+
+    # -- (b) cross-issue 4-gram counter ---------------------------------
+    # Only computable when the candidate has a date-shaped name (fixture
+    # datasets like "_synthetic" have no position in the archive timeline).
+    lookback: dict[str, Any] = {
+        "window_issues": _TAKE_NGRAM_LOOKBACK_ISSUES,
+        "threshold_issues": _TAKE_NGRAM_ISSUE_THRESHOLD,
+        "computed": False,
+        "lookback_dates": [],
+        "lookback_issues_with_takes": 0,
+    }
+    ngram_violations: list[dict] = []
+    try:
+        date.fromisoformat(candidate_name[:10])
+        dated = True
+    except ValueError:
+        dated = False
+
+    if dated and take_count:
+        prior = _load_lookback_take_ngrams(candidate_name[:10], released_root)
+        lookback["computed"] = True
+        lookback["lookback_dates"] = [d for d, _ in prior]
+        lookback["lookback_issues_with_takes"] = sum(
+            1 for _, grams in prior if grams
+        )
+        candidate_grams: dict[str, list[str]] = {}
+        for sid, take in takes:
+            for gram in _take_ngrams(take):
+                candidate_grams.setdefault(gram, []).append(sid)
+        for gram, sids in sorted(candidate_grams.items()):
+            hit_dates = [d for d, grams in prior if gram in grams]
+            if len(hit_dates) >= _TAKE_NGRAM_ISSUE_THRESHOLD:
+                ngram_violations.append({
+                    "ngram": gram,
+                    "stories": sids,
+                    "prior_issues": hit_dates,
+                })
+                failures.append(
+                    f"take 4-gram \"{gram}\" ({', '.join(sids)}) already "
+                    f"appeared in {len(hit_dates)} of the last "
+                    f"{len(prior)} released issues' takes "
+                    f"({', '.join(hit_dates)}) — threshold is "
+                    f"{_TAKE_NGRAM_ISSUE_THRESHOLD}"
+                )
+
+    return {
+        "take_count": take_count,
+        "opener_families": {
+            fam: members for fam, members in sorted(family_members.items())
+        },
+        "opener_violations": opener_violations,
+        "ngram_violations": ngram_violations,
+        "lookback": lookback,
+        "failures": failures,
+    }
+
+
+def eval_take_drift(
+    dataset_dir: Optional[Path],
+    *,
+    released_root: Optional[Path] = None,
+) -> EvalResult:
+    """Eval 10 — deterministic take-drift lint over a dataset's issue.json.
+
+    Status contract:
+      "skipped"        — no dataset dir / no issue.json.
+      "no_takes"       — issue has no take fields (pre-take schema) or the
+                         field exists but no story carries a take. Passes.
+      "informational"  — takes present, TAKE_LINT_ENFORCED=False (today).
+                         Violations reported loudly in details.failures;
+                         always passes until ratified as a gate.
+      "pass"/"fail"    — post-ratification behaviour (enforced).
+    """
+    if dataset_dir is None or not dataset_dir.exists():
+        return EvalResult(
+            name="take_drift_lint",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Dataset directory not found: {dataset_dir}"},
+        )
+    issue = _load_json(dataset_dir / "issue.json")
+    if issue is None:
+        return EvalResult(
+            name="take_drift_lint",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"issue.json not found in {dataset_dir}"},
+        )
+
+    result = check_take_drift(
+        issue, dataset_dir.name, released_root=released_root
+    )
+
+    if result["take_count"] == 0:
+        return EvalResult(
+            name="take_drift_lint",
+            passed=True,
+            metric=None,
+            status="no_takes",
+            details={
+                "dataset": dataset_dir.name,
+                "take_field_present": _issue_has_take_field(issue),
+                "message": (
+                    "no takes in this issue — pre-take schema or takes "
+                    "not generated; nothing to lint"
+                ),
+            },
+        )
+
+    violation_count = (
+        len(result["opener_violations"]) + len(result["ngram_violations"])
+    )
+    if TAKE_LINT_ENFORCED:
+        passed = violation_count == 0
+        status = "pass" if passed else "fail"
+    else:
+        passed = True
+        status = "informational"
+
+    return EvalResult(
+        name="take_drift_lint",
+        passed=passed,
+        metric=float(violation_count),
+        status=status,
+        details={
+            "dataset": dataset_dir.name,
+            "enforced": TAKE_LINT_ENFORCED,
+            "thresholds": {
+                "opener_family_words": _TAKE_OPENER_FAMILY_WORDS,
+                "opener_max_stories": _TAKE_OPENER_MAX_STORIES,
+                "opener_max_share": _TAKE_OPENER_MAX_SHARE,
+                "ngram_n": _TAKE_NGRAM_N,
+                "ngram_lookback_issues": _TAKE_NGRAM_LOOKBACK_ISSUES,
+                "ngram_issue_threshold": _TAKE_NGRAM_ISSUE_THRESHOLD,
+            },
+            **result,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # Eval 9 — reviewer-gate calibration (Phase 2 auto-publish gate).
 #
 # STATUS: PROPOSAL, pending ratification (2026-08-02). Built against the
@@ -3980,6 +4454,7 @@ def _print_pretty(report: dict) -> None:
             "informational": "[INFO]",        # Eval 8: pre-ruling day, counts only
             "reviewer_not_wired": "[SEAM]",    # Eval 9: fixture-ready, reviewer pending
             "insufficient_data": "[DEGRADED]", # Eval 9 phase C: no gate.json to join yet
+            "no_takes": "[INFO]",              # Eval 10: pre-take issue, nothing to lint
         }.get(r["status"], "[?]")
         metric_str = f" metric={r['metric']:.3f}" if r["metric"] is not None else ""
         print(f"  {icon} {r['name']}{metric_str}")
@@ -4125,6 +4600,7 @@ _REFERENCE_EVALS = {
     "drift_detection",
     "factual_accuracy",   # Eval 7: verifier calibration (seam: green until verifier wired)
     "reading_experience_lint",  # Eval 8: deterministic R-8/R-9 lint (no LLM)
+    "take_drift_lint",    # Eval 10 (PROPOSAL): deterministic take-drift counters (no LLM)
     "reviewer_gate",      # Eval 9 (PROPOSAL): reviewer-gate calibration (seam: green until reviewer wired)
     "gate_agreement",     # Eval 9 phase C (PROPOSAL): gate.json vs. publish-commit join
 }
@@ -4223,6 +4699,12 @@ def run_evals(
             # Gates only datasets dated >= READING_LINT_EFFECTIVE_DATE;
             # earlier days and synthetic fixtures report informational counts.
             "reading_experience_lint": lambda: eval_reading_experience_lint(dataset_dir),
+            # Eval 10 (PROPOSAL, pending ratification): deterministic take-drift
+            # counters (opener-family + cross-issue 4-gram). Runs on staging like
+            # Eval 8; informational (never fails) until TAKE_LINT_ENFORCED is
+            # flipped on ratification. Reports status="no_takes" green on the
+            # pre-take archive.
+            "take_drift_lint": lambda: eval_take_drift(dataset_dir),
             # Eval 9 (PROPOSAL, pending ratification): reviewer-gate calibration.
             # The reviewer=None seam means this runs green (status=reviewer_not_wired)
             # until the LLM Engineer's reviewer restructure lands and the LLM Engineer

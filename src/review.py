@@ -91,13 +91,35 @@ from src.models import (
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT_VERSION = "v1.0"
+REVIEW_PROMPT_VERSION = "v1.1"
 """Versioned prompt string written into ``review.json`` and the
 ``review.md`` frontmatter so the eval harness can correlate verdict
 movement against prompt revisions.
 
 Bump when the prompt content (criteria, instructions, output format)
-changes substantively. Audit tag: ``review-v1.0-2026-08-02``.
+changes substantively. Audit tag: ``review-v1.1-2026-08-08``.
+
+v1.1 (2026-08-08, "the take"): the reviewer now sees each story's
+``take`` (SummaryBlock.take, schema v4) and reviews its shape. Changes,
+all prompt-content plus the matching code surfaces:
+  (a) Each story block in the prompt carries a ``take:`` line;
+      ``index_issue_fields`` indexes ``story:<id>:take`` so take findings
+      pass the verbatim-quote filter (``ReviewTargetField`` gained
+      ``"take"`` in the same-day models.py schema bump).
+  (b) New criterion ``take_shape``: missing take on a story = major
+      (quote the story's final body sentence, field "summary" -- there is
+      no take text to quote); take ending '?' or opening on an imperative
+      verb = major; two takes sharing a syntactic frame in one issue =
+      minor, three or more = major; a take whose proposition repeats the
+      section's intro_lead = minor (register collision); hedges, label
+      constructions, or universalisms in a take = major. Take criteria
+      are SKIPPED entirely when no story in the issue carries a take
+      (legacy / pre-v0.22 issues re-reviewed from the archive).
+  (c) ``closing_shape`` recalibrated for v0.22 prose: the Pulse plain
+      take and the Currents calibrated stake now live in the take FIELD;
+      the Pulse body ends on the day's direction and the Currents body on
+      a presence-form maturity signal -- the old body-end shapes must not
+      be demanded back.
 
 v1.0 (2026-08-02): the STRUCTURED reviewer. Four changes, all
 prompt-content:
@@ -226,6 +248,7 @@ REVIEW_CRITERIA: frozenset[str] = frozenset({
     "pulse_pick",
     "voice_adherence",
     "closing_shape",
+    "take_shape",
     "section_routing",
     "section_intro",
     "trust_flags",
@@ -651,8 +674,8 @@ def run_review(
     note_parts = [f"verdict rule: {verdict_reason}"]
     if dropped:
         note_parts.append(
-            f"{len(dropped)} finding(s) dropped: quote not found verbatim in "
-            "the target text"
+            f"{len(dropped)} finding(s) dropped: quote not found verbatim "
+            "in the target text, or criterion inapplicable to this issue"
         )
     if malformed:
         note_parts.append(f"{malformed} finding(s) dropped: malformed shape")
@@ -746,7 +769,7 @@ your set of findings will add up to.
 EVERY FINDING CARRIES A VERBATIM QUOTE
 ======================================
 The `quote` field must be an EXACT span copied from the field you are
-pointing at -- the story's headline, the story's summary, or the section's
+pointing at -- the story's headline, summary, or take, or the section's
 intro_lead / intro_body, as shown below. Code checks each quote against the
 live text and SILENTLY DROPS any finding whose quote is not found. A finding
 you cannot quote is a finding you cannot make. Do not paraphrase into the
@@ -801,16 +824,51 @@ voice_adherence  -- per EDITORIAL.md, per section:
   Flag hedge accumulation, deferral ("it remains to be seen", "time will
   tell"), and adjectives doing the work of an editorial position.
 
-closing_shape  -- the last sentence of each story:
-  * Pulse: a PLAIN TAKE (sharp declarative). No question, no prescription,
-    no hedge.
-  * Big Picture: a STRATEGIC QUESTION.
+closing_shape  -- the last sentence of each story's BODY (since the take
+  field exists, two shapes moved out of the body -- do not demand them
+  back):
+  * Pulse: the body ends on the day's DIRECTION in plain editorial prose;
+    the plain-take judgement lives in the take field now. Flag a body
+    that ends by restating the take, or a question/prescription ending.
+  * Big Picture: a STRATEGIC QUESTION (unchanged -- still the body's last
+    sentence).
   * Hands-On: an IMPERATIVE ACTION sharpened to a specific artefact +
-    trigger. Generic "test before you trust" fails the shape.
-  * Currents: a CALIBRATED STAKE -- two-sided, real stakes on both branches.
-    "If X, Y; if not, Z" is ONE grammar for it, not the required scaffold;
-    stake-first, watch-condition, and magnitude-framed closes are equally
-    valid. Judge the two-sidedness, not the surface mould.
+    trigger (unchanged). Generic "test before you trust" fails the shape.
+  * Currents: the body ends on a PRESENCE-FORM maturity signal (what
+    exists and what it is worth today); the two-sided CALIBRATED STAKE
+    lives in the take field now. Judge the take's two-sidedness under
+    take_shape, not here. Flag a Currents body that still carries a full
+    "If X, Y; if not, Z" stake AND a stake-bearing take -- say it once.
+  On a legacy issue with no takes anywhere, judge the pre-take shapes
+  instead (Pulse plain-take close, Currents calibrated-stake close).
+
+take_shape  -- the `take:` line under each story is the publication's
+  position: ONE declarative sentence, 8-16 words (hard cap 18; Currents
+  may run to 22 for genuine two-sidedness), present or present-perfect.
+  The operational test: "It is now the case that [take]" must parse. The
+  take is NOT the close -- the close stays in the body and hands the turn
+  to the reader; the take states what the publication holds true.
+  SKIP THIS CRITERION ENTIRELY when NO story in the issue carries a take
+  (a legacy issue predating the field).
+  Flag, by severity:
+  * A story with NO take (while other stories have one): major. There is
+    no take text to quote, so target the story's `summary` field and
+    quote its FINAL SENTENCE verbatim; instruction = write the missing
+    take. fix_kind "text_edit".
+  * A take ending in '?' or OPENING on an imperative verb: major (quote
+    the take, field `take`).
+  * Hedges (may / could / potentially / appears / arguably), label
+    constructions ("So what:", "Bottom line:", "This matters because"),
+    or universalisms ("changes everything"): major.
+  * TWO takes in the issue sharing a syntactic frame (same scaffold,
+    different nouns -- e.g. both "X is now a Y problem, not a Z one"):
+    minor, filed on the LATER story's take. THREE or more sharing a
+    frame: major.
+  * A take whose proposition repeats the section's intro_lead (register
+    collision -- the reader meets the same idea twice in adjacent
+    registers): minor, quoting the take.
+  * A take that restates a body sentence rather than adding the position
+    the body stopped short of: minor.
 
 section_routing  -- a story whose voice and content belong in a different
   section than the one it is in. fix_kind is "structural" (code cannot fix
@@ -880,7 +938,7 @@ characterise the day.
         "kind": "story",
         "story_id": "<the story_id shown with the story; omit for section targets>",
         "section": "<pulse | big_picture | hands_on | currents>",
-        "field": "<headline | summary | intro_lead | intro_body>"
+        "field": "<headline | summary | take | intro_lead | intro_body>"
       },
       "criterion": "<one of the criterion tokens above>",
       "severity": "<blocking | major | minor | note>",
@@ -968,6 +1026,12 @@ def _format_issue_for_prompt(
             lines.append(f"  - headline: {story.get('headline', '')}")
         if not compact:
             lines.append(f"    summary: {story.get('summary', '')}")
+            # v1.1: the take is reviewable text (take_shape criterion).
+            # Shown only when present -- a legacy issue renders no take
+            # lines at all, which is the signal to skip take criteria.
+            take = story.get("take")
+            if isinstance(take, str) and take.strip():
+                lines.append(f"    take: {take.strip()}")
             prior = story.get("prior_coverage_ref")
             if prior:
                 lines.append(f"    prior_coverage_ref: {prior}")
@@ -1098,7 +1162,8 @@ def _resolve_and_filter_findings(
       * ``kept`` -- findings whose target resolved to real text AND whose
         quote appears in that text.
       * ``dropped`` -- well-formed findings whose quote is NOT in the target
-        text, or whose target names a story/section the issue does not have.
+        text, whose target names a story/section the issue does not have,
+        or (v1.1) carrying ``take_shape`` against an issue with no takes.
         Recorded for the audit trail; excluded from the verdict.
       * ``malformed_count`` -- entries that could not be built into a
         ``ReviewFinding`` at all (missing fields, bad vocabulary). Counted
@@ -1112,6 +1177,17 @@ def _resolve_and_filter_findings(
     kept: list[ReviewFinding] = []
     dropped: list[ReviewFinding] = []
     malformed = 0
+
+    # v1.1: deterministic legacy guard for the take criteria. The prompt
+    # says "SKIP take_shape entirely when no story carries a take", but a
+    # prompt rule is a request; this is the enforcement (No Token Wasted:
+    # a criterion that cannot apply is dropped by code, not by hoping the
+    # model read the footnote). Measured need: the first wired Eval 9 run
+    # (2026-08-08) caught the reviewer filing a take_shape major against a
+    # pre-take fixture issue.
+    issue_has_takes = any(
+        key.endswith(":take") for key in field_texts
+    )
 
     for index, entry in enumerate(raw_findings, start=1):
         finding_id = f"f{index:03d}"
@@ -1131,6 +1207,15 @@ def _resolve_and_filter_findings(
                 "review: finding %s carries unpublished criterion %r",
                 finding_id, finding.criterion,
             )
+
+        if finding.criterion == "take_shape" and not issue_has_takes:
+            dropped.append(finding)
+            _LOG.warning(
+                "review: dropping finding %s -- take_shape filed against "
+                "an issue with no takes (pre-take/legacy); the criterion "
+                "does not apply", finding_id,
+            )
+            continue
 
         key = target_key(finding.target)
         text = field_texts.get(key)
@@ -1218,8 +1303,8 @@ def target_key(target: ReviewTarget) -> str:
 
 def index_issue_fields(issue_payload: dict[str, Any]) -> dict[str, str]:
     """Build ``{target_key: current text}`` for every quotable field in the
-    issue -- every story's headline and summary, every section's intro_lead
-    and intro_body.
+    issue -- every story's headline, summary, and take (when present),
+    every section's intro_lead and intro_body.
 
     Walks the raw JSON payload rather than the pydantic ``Issue`` so
     schema-version skew between a staged file and this code can never crash
@@ -1232,7 +1317,10 @@ def index_issue_fields(issue_payload: dict[str, Any]) -> dict[str, str]:
         story_id = story.get("story_id")
         if not isinstance(story_id, str) or not story_id:
             return
-        for field in ("headline", "summary"):
+        # "take" joined the quotable story fields at v1.1 (schema v4);
+        # absent/None on legacy issues, in which case no key is emitted
+        # and any take-targeting finding is dropped as unresolvable.
+        for field in ("headline", "summary", "take"):
             value = story.get(field)
             if isinstance(value, str) and value:
                 out[f"story:{story_id}:{field}"] = value

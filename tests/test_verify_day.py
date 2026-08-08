@@ -226,3 +226,128 @@ class TestVerifyDayFailureSoft:
         by_id = {s.story_id: s for s in report.stories}
         assert by_id[_PULSE_ID].claims == []
         assert len(by_id[_BP_ID].claims) == 1
+
+
+# ---------------------------------------------------------------------------
+# v0.6 (2026-08-08): take adjudication.
+#
+# Contract under test (DESIGN.md "The take"): (1) the no-take prompt path
+# is UNCHANGED (Eval 7's fixtures carry no takes, so its calibration must
+# be attributable to judge behaviour, not prompt drift); (2) a story's
+# take is ALWAYS part of the claim-extraction input (integrity
+# requirement); (3) take-drawn claims persist as location="body" -- the
+# ClaimLocation vocabulary deliberately stays two-valued (a take value
+# was considered and deferred).
+# ---------------------------------------------------------------------------
+
+class TestTakeAdjudication:
+    def test_no_take_prompt_carries_no_take_material(self) -> None:
+        """take="" must not perturb the prompt: no TAKE scope block, no
+        TAKE input block, and the two-value location vocabulary. (Full
+        byte-identity vs the committed v0.4 rendering was proven by
+        executing both builders side by side on 2026-08-08 -- this pins
+        the conditionality so a refactor cannot make the blocks
+        unconditional without going red.)"""
+        prompt_default = verify._build_verify_prompt("H", "B", "S", [])
+        prompt_empty = verify._build_verify_prompt("H", "B", "S", [], take="")
+        assert prompt_default == prompt_empty
+        assert "TAKE" not in prompt_default.replace(
+            "MISTAKE", ""  # defensive: no incidental substring
+        )
+        assert '"location": "<headline | body>"' in prompt_default
+
+    def test_take_prompt_adds_scope_input_and_location(self) -> None:
+        take = "Breaks every parser downstream."
+        prompt = verify._build_verify_prompt("H", "B", "S", [], take=take)
+        assert "THE TAKE -- how to adjudicate it" in prompt
+        assert f"TAKE (the publication's position line):\n{take}" in prompt
+        assert '"location": "<headline | body | take>"' in prompt
+        assert 'AT LEAST ONE claim with location "take"' in prompt
+
+    def test_compute_hints_scans_take_tokens(self) -> None:
+        hints = verify.compute_hints(
+            "Headline", "Body with no numbers.",
+            "The source discusses parsers.",
+            take="Throughput drops 37% under the new default.",
+        )
+        assert any("37" in h for h in hints)
+        # Without the take, the number is invisible to the pre-pass.
+        assert not any(
+            "37" in h
+            for h in verify.compute_hints(
+                "Headline", "Body with no numbers.",
+                "The source discusses parsers.",
+            )
+        )
+
+    def test_parser_accepts_take_location(self) -> None:
+        raw = json.dumps({"claims": [{
+            "claim": "Breaks every parser downstream",
+            "location": "take",
+            "verdict": "unsupported",
+        }]})
+        parsed = verify._parse_verify_json(raw)
+        assert parsed is not None
+        assert parsed[0].location == "take"
+
+    def test_verify_day_always_passes_take_to_the_judge(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """DESIGN.md integrity requirement: the take is part of the
+        claim-extraction input whenever present -- with the ClaimLocation
+        enum at its current two values (the deliberate, deferred state),
+        NOT only under some future widening."""
+        issue = _make_staged_issue()
+        payload = json.loads(issue.model_dump_json())
+        # Denormalised raw edit: give the Pulse story a take. (Written
+        # raw so the test also passes before/after SummaryBlock.take --
+        # verify_day reads the raw payload, never the pydantic model.)
+        payload["pulse"]["stories"][0]["take"] = (
+            "Local-first inference is the procurement default now."
+        )
+        path = paths.issue_path(FIXED_DATE, canonical=False)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        _write_excerpts(FIXED_DATE, [])
+
+        seen: dict[str, str] = {}
+
+        def _stub_verify_rich(headline, body, source_excerpt, *, take="",
+                              **kw):
+            seen[headline] = take
+            return [ClaimVerdict(
+                claim="c", verdict="unverifiable", location="body",
+            )]
+
+        monkeypatch.setattr(verify, "verify_rich", _stub_verify_rich)
+        assert verify._MODEL_SUPPORTS_TAKE_LOCATION is False  # current enum
+        verify.verify_day(FIXED_DATE)
+        assert seen["A new model runs on a single consumer GPU"] == (
+            "Local-first inference is the procurement default now."
+        )
+        # The take-less Big Picture story passes take="".
+        assert seen["A bank ships an agent into production"] == ""
+
+    def test_take_location_persists_as_body_per_location_contract(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """DESIGN.md location contract: the judge's location="take"
+        attribution persists as location="body" (the enum deliberately
+        stays two-valued). Also covers the defensive case of a judge
+        hallucinating the location on a no-take story."""
+        issue = _make_staged_issue()
+        _write_staged_issue(issue)
+        _write_excerpts(FIXED_DATE, [])
+
+        def _stub_verify_rich(headline, body, source_excerpt, **kw):
+            return [ClaimVerdict(
+                claim="c", verdict="supported", location="take",
+            )]
+
+        monkeypatch.setattr(verify, "verify_rich", _stub_verify_rich)
+        monkeypatch.setattr(verify, "_MODEL_SUPPORTS_TAKE_LOCATION", False)
+        report = verify.verify_day(FIXED_DATE)
+        assert len(report.stories) == 2
+        for story in report.stories:
+            assert story.claims, "claims lost to a location coercion gap"
+            assert story.claims[0].location == "body"

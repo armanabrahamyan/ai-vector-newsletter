@@ -18,6 +18,7 @@ from src.models import (
     Issue,
     IssueSection,
     RankedStory,
+    ReviewTarget,
     SourceHealth,
     SourceHealthReport,
     StoryVerification,
@@ -536,3 +537,86 @@ class TestVerificationReport:
         )
         assert report.verdict == "unavailable"
         assert report.stories == []
+
+
+# ===========================================================================
+# SummaryBlock.take -- the position line (schema v4, 2026-08-08).
+# Structural rules only: stripped, non-empty if present, nullable. Form
+# (word count, declarative mood) belongs to summarise.py + the reviewer.
+# ===========================================================================
+
+class TestSummaryBlockTake:
+    def _block(self, **overrides: object) -> SummaryBlock:
+        kwargs: dict = dict(
+            story_id=VALID_CLUSTER_ID,
+            headline="h",
+            summary="s",
+            source_urls=["https://example.com/a"],
+        )
+        kwargs.update(overrides)
+        return SummaryBlock(**kwargs)
+
+    def test_take_defaults_to_none(self) -> None:
+        """Nullability is the backwards-compat contract: a block without a
+        take (pre-take archive, or cut by the body-cap collision ladder)
+        must construct and mean "no take", not fail."""
+        assert self._block().take is None
+
+    def test_take_round_trips_through_json(self) -> None:
+        """The field must survive dump -> load unchanged; extra='forbid'
+        means this test goes red if the field is ever removed while
+        archives still carry it."""
+        block = self._block(take="Position lines are speech acts, not summaries.")
+        reloaded = SummaryBlock.model_validate_json(block.model_dump_json())
+        assert reloaded.take == "Position lines are speech acts, not summaries."
+        assert reloaded.schema_version == 4
+
+    def test_take_is_stripped(self) -> None:
+        """The before-validator strips; downstream renderers and the
+        reviewer's verbatim-quote check must never see padding."""
+        assert self._block(take="  edges matter  ").take == "edges matter"
+
+    def test_whitespace_only_take_rejected(self) -> None:
+        """Strip-then-min_length interplay (ours, not pydantic's default):
+        a blank take is a writer bug, not an absent take -- absence is
+        spelled None. Without _strip_take, '   ' would pass min_length=1."""
+        with pytest.raises(ValidationError):
+            self._block(take="   ")
+
+    def test_released_pre_take_issue_parses_with_take_none(self) -> None:
+        """A real released issue.json written before the take existed
+        (SummaryBlock schema_version 3) must validate under the v4 model
+        with take=None on every block -- the whole point of the nullable
+        contract. Mirrors the prior_coverage_ref alias test above: pin the
+        archive-compat promise so a future 'cleanup' fails here first."""
+        from pathlib import Path
+
+        archive = Path("data/released/2026-07-11/issue.json")
+        if not archive.exists():
+            pytest.skip("data/released/2026-07-11/ not present in this environment")
+        issue = Issue.model_validate_json(archive.read_text(encoding="utf-8"))
+        blocks = list(issue.pulse.stories)
+        for section in issue.sections:
+            blocks.extend(section.stories)
+        assert blocks, "released issue unexpectedly carries no stories"
+        assert all(b.take is None for b in blocks)
+
+
+# ===========================================================================
+# ReviewTarget.field == "take" -- the reviewer must be able to point a
+# finding at the position line (integrity requirement, 2026-08-08).
+# ===========================================================================
+
+class TestReviewTargetTakeField:
+    def test_story_target_accepts_take(self) -> None:
+        target = ReviewTarget(
+            kind="story", story_id=VALID_CLUSTER_ID, field="take"
+        )
+        assert target.field == "take"
+
+    def test_section_target_rejects_take(self) -> None:
+        """The take is a story field; a section finding pointing at it
+        cannot be resolved to text on disk and must be rejected at the
+        boundary, same as a section finding pointing at 'headline'."""
+        with pytest.raises(ValidationError, match="intro_lead"):
+            ReviewTarget(kind="section", section="hands_on", field="take")

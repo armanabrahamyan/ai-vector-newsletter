@@ -880,6 +880,75 @@ class TestLiveMode:
 
 
 # ---------------------------------------------------------------------------
+# The take field (2026-08-08).
+#
+# SummaryBlock.take (schema v4) joined FIELD_BOUNDS / _FIELD_GUIDANCE the
+# same day it landed on the model. `_revise_one_field` does
+# `FIELD_BOUNDS[field_name]` with no `.get()` fallback -- a field missing
+# from that table is not a silent no-op, it is a KeyError that takes the
+# whole revise cycle down. Nothing else in the suite exercised a
+# field="take" finding through a real cycle before this gap was closed.
+# ---------------------------------------------------------------------------
+
+_TAKE_A = "Local-first inference is the procurement default now."
+
+
+def _issue_payload_with_take() -> dict[str, Any]:
+    payload = _issue_payload()
+    payload["pulse"]["stories"][0]["take"] = _TAKE_A
+    return payload
+
+
+class TestTakeFieldRevision:
+    def test_take_is_in_the_bounds_table(self) -> None:
+        """Cheapest possible guard: fails at collection-adjacent speed,
+        before the KeyError a missing entry would cause mid-cycle."""
+        from src.revise import FIELD_BOUNDS
+        assert "take" in FIELD_BOUNDS
+
+    def test_take_finding_is_applied_without_keyerror(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The seam: a field="take" finding reaches a live, applied
+        revision -- FIELD_BOUNDS lookup, guidance lookup, and the
+        validation gate all resolve cleanly for the new field."""
+        _stage(tmp_data_root, [_finding(
+            field="take", quote=_TAKE_A,
+            instruction="Recast without the consultant frame.",
+        )], issue=_issue_payload_with_take())
+        with patch(
+            "src.revise._call_revise_llm",
+            return_value="Pipeable agent output is now a vendor contract.",
+        ):
+            report = revise_day(DATE, shadow=False)
+        assert report.applied == 1
+        payload = json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+        assert payload["pulse"]["stories"][0]["take"] == (
+            "Pipeable agent output is now a vendor contract."
+        )
+
+    def test_over_bound_take_replacement_is_rejected(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Pins the 200-char structural cap FIELD_BOUNDS reads off
+        SummaryBlock.take -- the same bound pydantic itself enforces at
+        the SummaryBlock boundary, caught here BEFORE the write."""
+        _stage(tmp_data_root, [_finding(
+            field="take", quote=_TAKE_A,
+            instruction="Expand on the reasoning.",
+        )], issue=_issue_payload_with_take())
+        with patch("src.revise._call_revise_llm", return_value="x " * 150):
+            report = revise_day(DATE, shadow=False)
+        assert report.rejected == 1
+        payload = json.loads(
+            paths.issue_path(DATE, canonical=False).read_text(encoding="utf-8")
+        )
+        assert payload["pulse"]["stories"][0]["take"] == _TAKE_A
+
+
+# ---------------------------------------------------------------------------
 # The operator instruction.
 # ---------------------------------------------------------------------------
 

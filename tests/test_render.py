@@ -19,9 +19,11 @@ import pytest
 from src import paths as _paths
 from src.models import Issue, IssueSection, SummaryBlock
 from src.render import (
+    TEMPLATE_NAME,
     AlreadyReleased,
     NotReleased,
     _aest,
+    _build_env,
     _read_minutes,
     _source_label,
     release_promote,
@@ -398,6 +400,188 @@ class TestSectionIntro:
         html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
         assert "Lead phrase only." in html
         assert '<p class="av-section-intro"' in html
+
+
+# ===========================================================================
+# TestTake — the take: an italic final line per story, rendered only when
+# SummaryBlock.take is present and non-empty (ratified 2026-08-08).
+#
+# The rendering assertions run through the real render(mode='preview'), so
+# each one covers the whole chain: SummaryBlock(take=...) -> issue.json ->
+# parse -> template. The no-take assertions guard the 34 released archive
+# pages, which must keep rendering byte-identically.
+# ===========================================================================
+
+def _issue_with_takes(story_take: str | None, pulse_take: str | None) -> Issue:
+    """A minimal two-story issue (pulse + one hands_on story) whose takes are
+    set from the arguments. `None` means the story carries no take."""
+    return Issue(
+        date=FIXED_DATE,
+        pulse=IssueSection(
+            name="pulse",
+            stories=[
+                SummaryBlock(
+                    story_id=VALID_CLUSTER_ID,
+                    headline="Pulse headline",
+                    summary="Pulse summary sentence for the take tests.",
+                    source_urls=["https://example.com/pulse"],
+                    take=pulse_take,
+                )
+            ],
+        ),
+        sections=[
+            IssueSection(
+                name="hands_on",
+                stories=[
+                    SummaryBlock(
+                        story_id=VALID_CLUSTER_ID_2,
+                        headline="Hands-on headline",
+                        summary="Story summary sentence for the take tests.",
+                        source_urls=["https://example.com/story"],
+                        take=story_take,
+                    )
+                ],
+            )
+        ],
+        generated_at=FIXED_NOW,
+        prompt_versions={"rank": "v1", "summarise": "v1"},
+    )
+
+
+def _render_template(issue: Issue, *, show_verify_flags: bool = False) -> str:
+    """Render issue.html.j2 with the exact context src.render.render() uses.
+    Used only where the Issue cannot survive a validating round-trip (the
+    empty-string take, which the model rejects at the boundary)."""
+    env = _build_env()
+    template = env.get_template(TEMPLATE_NAME)
+    return template.render(
+        issue=issue,
+        read_minutes=_read_minutes(issue),
+        dup_risk_dates=[],
+        show_verify_flags=show_verify_flags,
+    )
+
+
+class TestTake:
+    def _render(
+        self,
+        story_take: str | None,
+        pulse_take: str | None,
+    ) -> str:
+        _write_staging(FIXED_DATE, _issue_with_takes(story_take, pulse_take))
+        return render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+
+    # --- rendered element -------------------------------------------------
+
+    def test_story_take_renders_as_classed_paragraph(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        html = self._render("The interrupt API is the point.", None)
+        assert (
+            '<p class="av-story-take">The interrupt API is the point.</p>' in html
+        )
+
+    def test_pulse_take_renders_as_classed_paragraph(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        html = self._render(None, "Parity, not novelty.")
+        assert '<p class="av-pulse-take">Parity, not novelty.</p>' in html
+
+    def test_take_sits_between_body_and_foot(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        html = self._render("Ordering matters.", None)
+        body_at = html.index('<p class="av-story-body')
+        take_at = html.index('<p class="av-story-take">')
+        foot_at = html.index('<div class="av-story-foot">')
+        assert body_at < take_at < foot_at
+
+    def test_pulse_take_sits_between_body_and_meta(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        html = self._render(None, "Position, then provenance.")
+        body_at = html.index('<p class="av-pulse-body')
+        take_at = html.index('<p class="av-pulse-take">')
+        meta_at = html.index('<div class="av-pulse-meta">')
+        assert body_at < take_at < meta_at
+
+    def test_body_gets_tightening_modifier_only_when_take_present(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        html = self._render("Grouped with its story.", "Same for the pulse.")
+        assert '<p class="av-story-body av-story-body--with-take">' in html
+        assert '<p class="av-pulse-body av-pulse-body--with-take">' in html
+
+    # --- escaping: take text is LLM output ---------------------------------
+
+    def test_story_take_is_html_escaped(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        html = self._render(
+            'Watch <script>alert("bank")</script> & the desk\'s call', None
+        )
+        assert "<script>alert" not in html
+        assert "&lt;script&gt;alert(&#34;bank&#34;)&lt;/script&gt;" in html
+        assert "&amp; the desk&#39;s call" in html
+
+    def test_pulse_take_is_html_escaped(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        html = self._render(None, "<b>bold</b> & risky")
+        assert "<b>bold</b>" not in html
+        assert "&lt;b&gt;bold&lt;/b&gt; &amp; risky" in html
+
+    # --- absence: the archive must not change ------------------------------
+
+    def test_no_take_renders_no_element(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        _write_staging(FIXED_DATE, rich_issue)
+        html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+        # The stylesheet always carries .av-story-take / .av-pulse-take rules;
+        # assert on the rendered elements, not the class names.
+        assert '<p class="av-story-take">' not in html
+        assert '<p class="av-pulse-take">' not in html
+
+    def test_no_take_leaves_body_classes_untouched(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        _write_staging(FIXED_DATE, rich_issue)
+        html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+        assert '<p class="av-story-body">' in html
+        assert '<p class="av-pulse-body">' in html
+        assert 'av-story-body av-story-body--with-take' not in html
+        assert 'av-pulse-body av-pulse-body--with-take' not in html
+
+    def test_no_take_leaves_no_whitespace_gap(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """Byte-identity guard for the 34 released archive pages: with no
+        take, the conditional block must collapse completely — body </p>
+        followed directly by the foot div on the next line, no blank line and
+        no extra indentation."""
+        _write_staging(FIXED_DATE, rich_issue)
+        html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+        assert '</p>\n              <div class="av-story-foot">' in html
+        assert '</p>\n      <div class="av-pulse-meta">' in html
+
+    def test_empty_string_take_renders_no_element(self) -> None:
+        """Defence in depth. SummaryBlock rejects a blank take at the
+        boundary (min_length=1 after strip), so this state cannot reach a
+        validating load — but the template must not emit an empty italic
+        line if it ever does. model_copy bypasses validation to construct it."""
+        issue = _issue_with_takes(None, None)
+        section = issue.sections[0]
+        mutated = issue.model_copy(update={
+            "sections": [
+                section.model_copy(update={
+                    "stories": [section.stories[0].model_copy(update={"take": ""})],
+                }),
+            ],
+        })
+        html = _render_template(mutated)
+        assert '<p class="av-story-take">' not in html
+        assert '<p class="av-story-body">' in html
 
 
 # ===========================================================================
