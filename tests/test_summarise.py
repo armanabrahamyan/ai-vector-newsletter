@@ -1886,7 +1886,9 @@ class TestClosingShapePromptContent:
             title="t", published_at=FIXED_EARLIER,
             raw_summary="", fetched_at=FIXED_NOW, trust_weight=2,
         )
-        return _build_summary_prompt(story, cluster, [item], callbacks=[])
+        # 2026-08-08 cache split: the builder returns (prefix, variable);
+        # voice/content assertions run against the joined bytes.
+        return "".join(_build_summary_prompt(story, cluster, [item], callbacks=[]))
 
     def test_big_picture_carries_strategic_question_closing(self) -> None:
         prompt = self._prompt_for_tier("big_picture")
@@ -2257,12 +2259,12 @@ class TestPriorClosesInPrompt:
 
     def test_hands_on_prompt_carries_block_and_reminder_reference(self) -> None:
         story, cluster, item = self._make_story_cluster_item("hands_on")
-        prompt = _build_summary_prompt(
+        prompt = "".join(_build_summary_prompt(
             story, cluster, [item], callbacks=[],
             prior_section_closes=[
                 "Pull the weights and run your own guardrail eval."
             ],
-        )
+        ))
         assert "CLOSES ALREADY WRITTEN IN THIS SECTION" in prompt
         assert '1. "Pull the weights and run your own guardrail eval."' in prompt
         # The reminder references the list...
@@ -2277,7 +2279,9 @@ class TestPriorClosesInPrompt:
 
     def test_hands_on_prompt_without_closes_has_no_dangling_reference(self) -> None:
         story, cluster, item = self._make_story_cluster_item("hands_on")
-        prompt = _build_summary_prompt(story, cluster, [item], callbacks=[])
+        prompt = "".join(
+            _build_summary_prompt(story, cluster, [item], callbacks=[])
+        )
         # First story in the section: no block, no reference to a list
         # that isn't there -- the static v0.21.2 reminder still applies.
         assert "CLOSES ALREADY WRITTEN" not in prompt
@@ -2285,12 +2289,12 @@ class TestPriorClosesInPrompt:
 
     def test_currents_prompt_carries_block(self) -> None:
         story, cluster, item = self._make_story_cluster_item("currents")
-        prompt = _build_summary_prompt(
+        prompt = "".join(_build_summary_prompt(
             story, cluster, [item], callbacks=[],
             prior_section_closes=[
                 "Worth watching until a second lab replicates or kills it.",
             ],
-        )
+        ))
         assert "CLOSES ALREADY WRITTEN IN THIS SECTION" in prompt
         assert (
             '1. "Worth watching until a second lab replicates or kills it."'
@@ -2301,11 +2305,11 @@ class TestPriorClosesInPrompt:
         # The Pulse plain take is a different speech act; feed-forward
         # closes must not leak into the re-summarise prompt.
         story, cluster, item = self._make_story_cluster_item("hands_on")
-        prompt = _build_summary_prompt(
+        prompt = "".join(_build_summary_prompt(
             story, cluster, [item], callbacks=[],
             section_override="pulse",
             prior_section_closes=["Some earlier close."],
-        )
+        ))
         assert "CLOSES ALREADY WRITTEN IN THIS SECTION" not in prompt
 
 
@@ -2323,7 +2327,9 @@ class TestSummariseOneThreadsPriorCloses:
         captured: dict[str, str] = {}
 
         def fake_call_and_parse(prompt, temperature, cluster_id):
-            captured["prompt"] = prompt
+            # 2026-08-08 cache split: _summarise_one hands the
+            # (prefix, variable) tuple to _call_and_parse_summary.
+            captured["prompt"] = "".join(prompt)
             return _SummaryDraft(
                 headline="A CUDA-free kernel cuts inference cost in half",
                 summary=(
@@ -2394,9 +2400,9 @@ class TestHeadlineRulesInPrompt:
             title="t", published_at=FIXED_EARLIER, raw_summary="",
             fetched_at=FIXED_NOW, trust_weight=2,
         )
-        prompt = _build_summary_prompt(
+        prompt = "".join(_build_summary_prompt(
             story, cluster, [item], callbacks=[],
-        )
+        ))
         # The section title is present (one line we can grep for without
         # fragility against minor copy edits).
         assert "HEADLINE RULES" in prompt
@@ -2815,10 +2821,10 @@ class TestVoiceDiversityBlockReachesPromptBuilders:
             "  [big_picture]\n"
             "    - 2026-06-02 lead: 'Speed is outrunning safety.'\n"
         )
-        prompt = _build_summary_prompt(
+        prompt = "".join(_build_summary_prompt(
             story, cluster, [item], callbacks=[],
             voice_diversity_block=block,
-        )
+        ))
         assert "VOICE DIVERSITY" in prompt
         assert "Speed is outrunning safety." in prompt
 
@@ -2846,10 +2852,10 @@ class TestVoiceDiversityBlockReachesPromptBuilders:
             title="t", published_at=FIXED_EARLIER, raw_summary="",
             fetched_at=FIXED_NOW, trust_weight=2,
         )
-        prompt = _build_summary_prompt(
+        prompt = "".join(_build_summary_prompt(
             story, cluster, [item], callbacks=[],
             voice_diversity_block="",
-        )
+        ))
         assert "VOICE DIVERSITY" not in prompt
 
     def test_section_intro_prompt_includes_block(
@@ -3016,3 +3022,589 @@ class TestQuietDayCurrentsIntro:
         from src import summarise as summarise_mod
         assert len(summarise_mod._QUIET_DAY_CURRENTS_INTRO_LEAD) <= 80
         assert len(summarise_mod._QUIET_DAY_CURRENTS_INTRO_BODY) <= 400
+
+
+# ===========================================================================
+# Prompt-cache split (2026-08-08) -- summarise's mirror of rank's
+# tests/test_rank.py::TestPromptCacheSplit. Four invariants:
+#
+#   1. BYTE EQUALITY -- prefix + variable must equal the pre-split v0.21.3
+#      single-string prompt BYTE FOR BYTE, over real released-archive
+#      stories covering all three tiers, the Pulse override, a
+#      callback-bearing story, excerpts, voice diversity, and prior
+#      closes. (The split is a message-structure change ONLY; that is why
+#      SUMMARISE_PROMPT_VERSION did not move.)
+#   2. PREFIX STABILITY -- one byte-identical prefix across every story /
+#      tier / override (it is a module constant assembled from static
+#      blocks), ending exactly at the verified boundary after
+#      _FINANCE_LENS_BLOCK, comfortably above the cache-minimum size.
+#   3. RETRY DISCIPLINE (THE TRAP) -- the pre-split code PREPENDED
+#      corrective text on both the JSON-parse retry and the length-cap
+#      retry, which changes byte 0 and forces a full cache miss + wasted
+#      cache write. Both retries must now APPEND to the variable part;
+#      the prefix block is byte-identical across attempts.
+#   4. LEGACY TOLERANCE -- a plain-string prompt still flows through
+#      _call_and_parse_summary unchanged (interface compatibility).
+# ===========================================================================
+
+from pathlib import Path as _Path  # noqa: E402
+from unittest.mock import patch as _patch  # noqa: E402
+
+from src.summarise import (  # noqa: E402
+    _CLOSING_SHAPE_PER_SECTION,
+    _EDITORIAL_FOCUS_BLOCK,
+    _FINANCE_LENS_BLOCK,
+    _HEADLINE_RULES_BLOCK,
+    _PULSE_CLOSING_SHAPE,
+    _PULSE_HINT_FOR_HEAD_TIER,
+    _PULSE_VOICE_BLOCK,
+    _SUMMARY_PROMPT_STATIC_PREFIX,
+    _VOICE_BLOCK,
+    _VOICE_PER_SECTION,
+    _CallbackRef,
+    _items_for_cluster,
+    _load_clusters_index,
+    _load_items_index,
+    _load_ranked,
+    _render_prior_closes_block,
+)
+
+_SUMMARISE_ARCHIVE_DAYS = ("2026-08-04", "2026-08-05")
+
+
+def _golden_v0213_single_string_prompt(
+    story,
+    cluster,
+    items,
+    callbacks,
+    excerpts=None,
+    section_override=None,
+    voice_diversity_block="",
+    prior_section_closes=None,
+) -> str:
+    """VERBATIM copy of the v0.21.3 (pre-cache-split) single-string
+    ``_build_summary_prompt`` body -- the golden reference for the
+    byte-equality gate. If a deliberate prompt change lands in
+    summarise.py, this copy must be updated in the same PR alongside a
+    SUMMARISE_PROMPT_VERSION bump; an accidental byte drift shows up here
+    as a failure."""
+    excerpts = excerpts or {}
+    item_lines: list[str] = []
+    for it in items[:5]:  # a bit more context than the rank prompt
+        title = it.title.strip()
+        summary = (it.raw_summary or "").strip()
+        if len(summary) > 800:
+            summary = summary[:800].rstrip() + "..."
+        url_str = str(it.url)
+        excerpt = (excerpts.get(url_str) or "").strip()
+        if excerpt:
+            indented = "\n".join(f"    {line}" for line in excerpt.splitlines())
+            excerpt_block = f"  source_excerpt: |\n{indented}"
+        else:
+            excerpt_block = (
+                "  source_excerpt: (not retrievable -- source-body fetch "
+                "failed or returned empty; write only from title + summary "
+                "and SAY what's unknown)"
+            )
+        item_lines.append(
+            f"- [{it.source}, trust={it.trust_weight}] {title}\n"
+            f"  url: {it.url}\n"
+            f"  summary: {summary}\n"
+            f"{excerpt_block}"
+        )
+    items_block = "\n".join(item_lines) or "  (no items resolved)"
+
+    callback_block = ""
+    if callbacks:
+        cb_lines = ["CALLBACK CONTEXT -- past appearances of this story chain:"]
+        for cb in callbacks:
+            num_part = f"issue #{cb.issue_number}" if cb.issue_number else "earlier"
+            cb_lines.append(
+                f"  - {cb.issue_date.isoformat()} ({num_part}): "
+                f"headline={cb.headline!r}\n"
+                f"    direction_note={cb.direction_note!r}\n"
+                f"    summary_excerpt={cb.summary_excerpt!r}"
+            )
+        cb_lines.append(
+            "If today's piece is a meaningful update on what we previously "
+            "flagged, consider a brief callback (\"Last week we flagged X; "
+            "today's update is...\"). Don't force it. If the past coverage "
+            "and today's update don't connect tightly, skip the callback."
+        )
+        callback_block = "\n".join(cb_lines) + "\n\n"
+
+    rationale = (story.rationale or "").strip()
+    breakdown_str = ", ".join(
+        f"{k}:{v}" for k, v in story.breakdown.items()
+    )
+
+    if section_override == "pulse":
+        section_voice = _PULSE_VOICE_BLOCK + "\n\n" + _PULSE_CLOSING_SHAPE
+        voice_header = (
+            "SECTION VOICE (override=pulse; this story has been elevated\n"
+            "to The Pulse and is being re-summarised under Pulse rules):"
+        )
+    else:
+        section_voice = _VOICE_PER_SECTION.get(story.tier, "")
+        closing_shape = _CLOSING_SHAPE_PER_SECTION.get(story.tier, "")
+        if closing_shape:
+            section_voice = section_voice + "\n\n" + closing_shape
+        if story.tier in ("big_picture", "hands_on"):
+            section_voice = (
+                section_voice
+                + "\n\n" + _PULSE_HINT_FOR_HEAD_TIER
+                + "\n\n" + _PULSE_CLOSING_SHAPE
+            )
+        voice_header = (
+            f"SECTION VOICE (tier={story.tier}; this story will land in the\n"
+            f"matching section unless the editor relabels):"
+        )
+    section_voice_block = (
+        f"\n{voice_header}\n{section_voice}\n"
+        if section_voice else ""
+    )
+
+    voice_diversity_segment = (
+        f"\n{voice_diversity_block}\n" if voice_diversity_block else ""
+    )
+
+    if section_override == "pulse":
+        close_reminder_tail = (
+            "\n- PULSE OVERRIDE (FINAL REMINDER): this is The Pulse. The "
+            "close MUST be a PLAIN TAKE -- a short editorial JUDGEMENT "
+            "(1-2 declarative sentences) naming what is TRUE NOW given "
+            "the day's shift. NOT a question. NOT a prescription "
+            "(\"raise this at...\", \"test against...\", \"audit your...\"). "
+            "NOT an imperative verb at the end. The Pulse names where "
+            "the field moved today; the rest of the issue is for "
+            "decisions to make about it.\n"
+        )
+    elif story.tier == "big_picture":
+        close_reminder_tail = (
+            "\n- BIG PICTURE CLOSE (FINAL REMINDER): this story closes on "
+            "the STRATEGIC QUESTION shape above; the final sentence ends "
+            "in a question mark. For this tier the question IS the "
+            "decision-tied close; closing on an instruction to the reader "
+            "instead of a question FAILS the shape. (If the picker later "
+            "elevates this story to The Pulse, it is re-summarised under "
+            "Pulse rules in a separate pass.)\n"
+        )
+    elif story.tier == "hands_on":
+        vary_reference = (
+            " against the CLOSES ALREADY WRITTEN list above (reuse NONE "
+            "of their closing constructions or scaffolds)"
+            if prior_section_closes else ""
+        )
+        close_reminder_tail = (
+            "\n- HANDS-ON CLOSE (FINAL REMINDER): the close is an "
+            "imperative with a NAMED artefact and a source-supported "
+            "trigger. VARY THE CONSTRUCTION" + vary_reference +
+            ": the trailing \"... before "
+            "[milestone]\" scaffold is capped at ~2 per section and "
+            "consecutive stories must NEVER share it. Trigger-first "
+            "(\"Before X, do Y\") is the SAME scaffold -- vary the "
+            "FRAME, not just the word order. When the scaffold is "
+            "already used, prefer: condition-first (\"Already on "
+            "N? ...\") or a bare imperative with stakes (\"...; the "
+            "vendor numbers won't transfer\"). The TRIGGER is a factual "
+            "claim: an event the source supports or a generic "
+            "practitioner milestone (\"your next eval cycle\", \"before "
+            "you rely on it in production\") -- NEVER an invented "
+            "source-specific cadence.\n"
+        )
+    else:
+        close_reminder_tail = ""
+
+    prior_closes_segment = ""
+    if section_override != "pulse" and prior_section_closes:
+        prior_closes_block = _render_prior_closes_block(
+            list(prior_section_closes)
+        )
+        if prior_closes_block:
+            prior_closes_segment = f"\n{prior_closes_block}\n"
+
+    return f"""\
+You are writing one story for AI Vector -- a daily newsletter about
+Agentic AI and Generative AI. The cluster was already RANKED and
+selected for the issue; your job is to write it well.
+
+{_VOICE_BLOCK}
+{_HEADLINE_RULES_BLOCK}
+{_EDITORIAL_FOCUS_BLOCK}
+{_FINANCE_LENS_BLOCK}{section_voice_block}{voice_diversity_segment}
+RANKER NOTES (from the rank stage, for context only -- not for echoing):
+  score: {story.score} / 100
+  breakdown: {breakdown_str}
+  audience_tags: {list(story.audience_tags)}
+  rationale: {rationale}
+
+CLUSTER
+  cluster_id: {cluster.cluster_id}
+  canonical_title: {cluster.canonical_title}
+  sources: {list(cluster.sources)}
+  earliest_published: {cluster.earliest_published.isoformat()}
+  has_prior_coverage: {"yes (chain root=" + cluster.prior_coverage_ref + ")" if cluster.prior_coverage_ref else "no"}
+
+ITEMS:
+{items_block}
+
+{callback_block}INSTRUCTIONS
+- HEADLINE: follow the HEADLINE rules above. Lead with the consequence
+  or action, not the name. HARD CAPS: maximum 12 words AND maximum 90
+  characters. Both are enforced -- a headline that exceeds either is
+  rejected and you will be asked to rewrite. COUNT the words AND
+  characters before returning. Model names and version numbers belong
+  in the BODY, not the title.
+- BODY: 30 to 60 words HARD CAP. 61 words is a fail. The Pulse is held
+  to the SAME cap (60 words). Count before returning. SHAPE: shift ->
+  shipped -> judgement-tied-to-decision. Must include: one concrete
+  number or mechanism; a trust flag if warranted (does the evidence
+  DEVIATE from its class default -- replication present, competitor-run,
+  non-obvious scoring method, claim heavier than evidence? If not, name
+  the source class in the body and write no flag.); a close tied to a
+  SPECIFIC decision, not a department or group. If you cannot fit all
+  three in 60 words, cut a clause or sharpen a verb -- the cap holds.
+- LANGUAGE: plain English. No acronyms a non-specialist wouldn't
+  recognise (spell out, replace, or drop). No spec-sheet stacking:
+  ONE news number, the rest replaced with their consequence. Model
+  names and versions live in the body, never the title.
+- PUNCTUATION: NO em-dashes. Do NOT use "--" or "—" anywhere in the
+  headline or body. Use commas, parentheses, semicolons, or full stops
+  instead. Regular hyphens in compound words are fine.
+- HONESTY: use ONLY facts present in source_excerpt (or the title /
+  summary / cluster metadata if the excerpt is missing). If a number,
+  licence, or artefact (weights / code / demo) is NOT stated in the
+  source, do NOT assert it -- and do NOT inventory its absence either
+  ("benchmarks not yet published", "licence not specified" are both
+  out). Describe what the source DOES state; stay silent about the
+  rest. AFFIRMATIVE-PRESENCE OBLIGATION: when the source STATES an
+  artifact is available (code, weights, dataset, tooling public), the
+  summary MUST say so affirmatively ("dataset and tooling are
+  public") -- that is the signal a builder acts on, and it clears all
+  three gates.
+- TRUST HEDGES ARE FACTUAL CLAIMS -- PRESENCE-FORM -- AND NON-DEFAULT.
+  THREE GATES, all mandatory; a flag that fails ANY one does not appear:
+    1. SOURCE-SUPPORTED: the characterisation is one the source
+       explicitly supports (the paper says the benchmarks are its own;
+       the post is the vendor's own numbers). Never invented, never
+       decoration.
+    2. PRESENCE-FORM: it describes evidence that EXISTS, never what is
+       missing.
+    3. INFORMATIVE VS THE CLASS DEFAULT: it tells the reader something
+       the source-class name in the body did not already tell them.
+  The class attribution in the body carries the default calibration
+  for FREE. Deviation taxonomy (default needs NO flag; deviation EARNS
+  one):
+    * arXiv preprint. Default: single team, not peer-reviewed, authors'
+      own scoring. Deviation: independent replication PRESENT;
+      third-party scoring; multi-lab authorship on a dramatic claim.
+    * Vendor blog / release notes. Default: vendor's own numbers and
+      framing. Deviation: benchmark presented as if neutral; a
+      COMPETITOR ran the comparison; an independent audit is cited.
+    * Named-author experiment / blog. Default: one practitioner's
+      setup, n=1. Deviation: reproduced by others; production scale.
+    * Reddit / forum thread. Default: anecdote, n=1. Deviation: rarely;
+      a big claim resting on it (see magnitude routing below).
+  Non-obvious scoring METHOD also deviates: "scored by an ensemble of
+  LLM judges" is informative in a way "authors' own" is not.
+  RESTATING THE DEFAULT IS BANNED; the fix is DELETE the flag and let
+  the class name in the body carry it.
+    Wrong (restates default): "a preprint from a single research team."
+      Right: body says "an arXiv preprint", no separate flag.
+    Wrong: "Vendor-published benchmark" when the body already names the
+      vendor. Right (deviation): "the vendor benchmarked its
+      competitor's model."
+    Wrong: "one research team's analysis" (single-team IS the preprint
+      default). Wrong: "single-source" on a podcast interview (of
+      course it is).
+    Wrong: "self-reported" when the source describes scoring by an
+      ensemble of LLM judges (name the ensemble; that IS the flag).
+    Wrong: "no independent replication" when the paper triangulates
+      against two independent systems.
+    Wrong: "benchmarks are self-reported" when the source describes
+      experiments on real data with no such framing.
+- CLAIM-MAGNITUDE ROUTING: a claim far heavier than its evidence (a
+  field-redefining result in a single-team preprint; a big number from
+  one thread) belongs in the CLOSE -- the Currents calibrated stake or
+  the Big Picture strategic question -- NOT in the flag. One exception:
+  "thin sourcing, one Reddit thread" under a big claim is a legitimate
+  FLAG, because there the deviation IS the magnitude/evidence mismatch.
+  Either way, say it ONCE: flag or stake, never both.
+- THREE-GATE REWRITES (real defects from released issues; the most
+  common fix is now: name the class in the body, write NO flag):
+    "No code is public yet." -> delete; if the source states
+      availability, say it affirmatively ("code and weights are
+      public").
+    "Single-source interview; no independent benchmarks." -> delete
+      both clauses; "a single podcast interview" in the body carries
+      the calibration.
+    "...the paper's own LLM judges, with no independent replication
+      yet" -> "scored by the paper's own LLM-judge ensemble." (the
+      METHOD is the informative part; the absence clause goes).
+    "Vendor release notes only; no independent benchmarks." -> name
+      the class in the body ("Anthropic's release notes"); no flag.
+    "Single research team; peer review pending." -> body says "an
+      arXiv preprint"; no separate flag.
+  ALLOWED: when the source ITSELF states the absence, report the
+  actor's statement or decision -- "the paper says code will be
+  released on acceptance", "weights withheld for safety" are
+  actor-statements, not voids (all three gates still apply).
+- Direction and finance lens live in the prose -- NEVER labels.
+- If callback context is present and the connection is tight, weave a
+  brief reference in ("last week we flagged X; today's update is..."). If
+  the connection is weak, skip it.
+- Australian English throughout.
+- Link out; never reproduce full articles.
+- SIGNAL: pick ONE verdict pill that captures what the reader should DO:
+    * "act"     -- vendor / contract / architecture decision worth making
+                   this quarter. Typical for Big Picture stories with a
+                   nameable prioritisation change.
+    * "try"     -- drop into a sandbox this week. Typical for Hands-On
+                   tools / repos / techniques you can clone or pip-install.
+    * "read"    -- absorb the framing; no clear action yet. Use sparingly.
+    * "watch"   -- too thin / too early to act on; monitor for follow-up.
+                   Default for Currents items.
+    * "discuss" -- design concept worth raising at a review, not yet
+                   shippable. Right call for single-source frameworks
+                   without code / benchmarks.
+  Choose by what the body actually argues. A body whose close sends the
+  design to a review rather than to production is "discuss", not "act".
+{prior_closes_segment}{close_reminder_tail}
+Return ONLY a single JSON object (no markdown fences, no commentary):
+
+{{
+  "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
+  "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
+  "signal": "<one of: act | try | read | watch | discuss>"
+}}
+"""
+
+
+def _load_summarise_archive_day(day: str):
+    """Load a real released day's ranked + clusters + items. Fails loud if
+    the tracked archive is missing -- the byte-equality gate must not
+    silently skip."""
+    base = _Path("data/released") / day
+    assert base.exists(), (
+        f"released archive day {day} missing at {base} -- the byte-equality "
+        "gate needs real archive data (data/released/ is tracked in git)"
+    )
+    ranked = [
+        r for r in _load_ranked(base / "ranked.jsonl") if r.tier != "cut"
+    ]
+    clusters_by_id = _load_clusters_index(base / "clusters.jsonl")
+    items_by_id = _load_items_index(base / "items.jsonl")
+    assert ranked, f"no non-cut ranked stories in {base / 'ranked.jsonl'}"
+    return ranked, clusters_by_id, items_by_id
+
+
+_TEST_VOICE_DIVERSITY_BLOCK = (
+    "VOICE DIVERSITY -- the editor will flag repeats from recent issues\n"
+    "RECENTLY USED CONSTRUCTIONS -- do not repeat:\n"
+    "  [big_picture]\n"
+    "    - 2026-08-03 lead: 'Speed is outrunning safety.'"
+)
+
+_TEST_CALLBACK = _CallbackRef(
+    issue_date=_dt.date(2026, 8, 1),
+    issue_number=29,
+    headline="Agent frameworks converge on a shared tool protocol",
+    direction_note="If this holds, tool-call lock-in weakens by Q4.",
+    summary_excerpt="Three vendors adopted the same tool-call schema...",
+)
+
+
+class TestSummaryPromptCacheSplit:
+    def _cases_for_day(self, day: str):
+        """Yield (kwargs, label) prompt-builder cases for one archive day:
+        every non-cut story as-is, plus a Pulse override on the first
+        head-tier story, plus a callback-bearing + excerpt-bearing + prior-
+        closes variant."""
+        ranked, clusters_by_id, items_by_id = _load_summarise_archive_day(day)
+        pulse_done = False
+        enriched_done = False
+        for story in ranked:
+            cluster = clusters_by_id.get(story.cluster_id)
+            if cluster is None:
+                continue
+            items = _items_for_cluster(cluster, items_by_id)
+            base = dict(
+                story=story, cluster=cluster, items=items, callbacks=[],
+            )
+            yield base, f"{day}/{story.cluster_id}/tier={story.tier}"
+            if not pulse_done and story.tier in ("big_picture", "hands_on"):
+                pulse_done = True
+                yield (
+                    {**base, "section_override": "pulse",
+                     "voice_diversity_block": _TEST_VOICE_DIVERSITY_BLOCK},
+                    f"{day}/{story.cluster_id}/pulse-override",
+                )
+            if not enriched_done and items:
+                enriched_done = True
+                excerpts = {
+                    str(items[0].url): (
+                        "First excerpt line with a number: 42%.\n"
+                        "Second line keeps the indentation branch honest."
+                    ),
+                }
+                yield (
+                    {**base, "callbacks": [_TEST_CALLBACK],
+                     "excerpts": excerpts,
+                     "voice_diversity_block": _TEST_VOICE_DIVERSITY_BLOCK,
+                     "prior_section_closes": [
+                         "Swap the loop this week; measure the flaw rate.",
+                     ]},
+                    f"{day}/{story.cluster_id}/callback+excerpt+closes",
+                )
+
+    def test_concatenated_parts_equal_v0213_single_string_over_real_archive(
+        self,
+    ) -> None:
+        """prefix + variable must equal the pre-split single-string prompt
+        BYTE FOR BYTE for every case. This is the core caching-safety
+        invariant: the split may change message structure only, never the
+        bytes the model reads. Coverage asserted below: all three tiers,
+        the Pulse override, and a callback-bearing story."""
+        tiers_seen: set[str] = set()
+        pulse_seen = False
+        callback_seen = False
+        checked = 0
+        for day in _SUMMARISE_ARCHIVE_DAYS:
+            for kwargs, label in self._cases_for_day(day):
+                prefix, variable = _build_summary_prompt(**kwargs)
+                golden = _golden_v0213_single_string_prompt(**kwargs)
+                assert prefix + variable == golden, f"byte drift for {label}"
+                checked += 1
+                if kwargs.get("section_override") == "pulse":
+                    pulse_seen = True
+                elif kwargs.get("callbacks"):
+                    callback_seen = True
+                else:
+                    tiers_seen.add(kwargs["story"].tier)
+        assert checked >= 10, f"only {checked} cases checked -- vacuous run"
+        assert tiers_seen >= {"big_picture", "hands_on", "currents"}, (
+            f"tier coverage incomplete: {tiers_seen}"
+        )
+        assert pulse_seen and callback_seen
+
+    def test_prefix_is_byte_identical_across_stories_tiers_and_override(
+        self,
+    ) -> None:
+        """Exactly one prefix across every story, tier, and the Pulse
+        override -- any per-story byte leaking into the prefix means zero
+        cache hits. The boundary is structural: the prefix ends with
+        _FINANCE_LENS_BLOCK (the last static block), and the tier-dependent
+        section voice starts the variable part."""
+        prefixes: set[str] = set()
+        for day in _SUMMARISE_ARCHIVE_DAYS:
+            for kwargs, _label in self._cases_for_day(day):
+                prefix, variable = _build_summary_prompt(**kwargs)
+                prefixes.add(prefix)
+                assert variable.startswith("\nSECTION VOICE ("), (
+                    "variable part must start at the section voice block"
+                )
+        assert len(prefixes) == 1, (
+            f"expected one shared prefix, got {len(prefixes)} distinct"
+        )
+        the_prefix = next(iter(prefixes))
+        assert the_prefix == _SUMMARY_PROMPT_STATIC_PREFIX
+        assert the_prefix.endswith(_FINANCE_LENS_BLOCK)
+        # Verified 2026-08-08: the prefix is 30,736 bytes = 8,265 billed
+        # tokens -- far above the 1,024/4,096-token cache minimums. Guard
+        # a floor well above the minimum so a block shrink can't silently
+        # drop the prefix below cacheability.
+        assert len(the_prefix.encode("utf-8")) > 20_000
+
+    def test_variable_part_carries_no_prefix_content(self) -> None:
+        """The static blocks must not repeat inside the variable part --
+        duplication would silently double-charge the tokens the split is
+        meant to cache."""
+        ranked, clusters_by_id, items_by_id = _load_summarise_archive_day(
+            _SUMMARISE_ARCHIVE_DAYS[0]
+        )
+        story = ranked[0]
+        cluster = clusters_by_id[story.cluster_id]
+        items = _items_for_cluster(cluster, items_by_id)
+        _, variable = _build_summary_prompt(story, cluster, items, callbacks=[])
+        for block in (_VOICE_BLOCK, _HEADLINE_RULES_BLOCK,
+                      _EDITORIAL_FOCUS_BLOCK, _FINANCE_LENS_BLOCK):
+            assert block not in variable
+
+    # -- Retry discipline (THE TRAP) ----------------------------------------
+
+    @staticmethod
+    def _split_prompt_fixture() -> tuple[str, str]:
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        )
+        return _build_summary_prompt(story, cluster, [item], callbacks=[])
+
+    def test_json_retry_prefix_block_byte_identical_to_first_attempt(
+        self,
+    ) -> None:
+        """THE TRAP (pre-split): the JSON-parse retry PREPENDED corrective
+        text ('...Original request follows.' + prompt), changing byte 0 ->
+        guaranteed cache miss plus a wasted cache write. Pin the fix: the
+        retry's prefix block is byte-identical to the first attempt's and
+        the corrective text is appended after the variable part."""
+        prompt = self._split_prompt_fixture()
+        responses = ["not json at all", "still not json"]
+        with _patch("src.summarise._llm_call", side_effect=responses) as mock_llm:
+            from src.summarise import _call_and_parse_summary
+            draft = _call_and_parse_summary(prompt, 0.6, "c_0123456789abcdef")
+        assert draft is None
+        assert mock_llm.call_count == 2
+        first = mock_llm.call_args_list[0].args[0]
+        second = mock_llm.call_args_list[1].args[0]
+        assert isinstance(first, tuple) and isinstance(second, tuple)
+        assert second[0] == first[0], (
+            "retry prefix must be byte-identical or the cache never hits"
+        )
+        assert second[1].startswith(first[1]), (
+            "corrective text must be APPENDED after the variable part"
+        )
+        assert "was not valid JSON" in second[1]
+
+    def test_length_cap_retry_prefix_block_byte_identical(self) -> None:
+        """Same pin for the length-cap corrective retry (tasks #73 + #74)
+        -- the second PREPEND site in the pre-split code."""
+        import json as _json
+
+        overlong = _json.dumps({
+            "headline": "A headline within caps for the length retry",
+            "summary": " ".join(["word"] * 70),  # 70 words > 60-word cap
+            "signal": "try",
+        })
+        within = _json.dumps({
+            "headline": "A headline within caps for the length retry",
+            "summary": " ".join(["word"] * 40),
+            "signal": "try",
+        })
+        prompt = self._split_prompt_fixture()
+        with _patch(
+            "src.summarise._llm_call", side_effect=[overlong, within],
+        ) as mock_llm:
+            from src.summarise import _call_and_parse_summary
+            draft = _call_and_parse_summary(prompt, 0.6, "c_0123456789abcdef")
+        assert draft is not None
+        assert len(draft.summary.split()) == 40  # corrective draft accepted
+        assert mock_llm.call_count == 2
+        first = mock_llm.call_args_list[0].args[0]
+        second = mock_llm.call_args_list[1].args[0]
+        assert isinstance(first, tuple) and isinstance(second, tuple)
+        assert second[0] == first[0]
+        assert second[1].startswith(first[1])
+        assert "BREACHED the HARD length caps" in second[1]
+
+    def test_plain_string_prompt_still_supported(self) -> None:
+        """Legacy tolerance: a plain-string prompt flows through unchanged
+        (str in, str out to _llm_call; retry appends to the string)."""
+        responses = ["not json", "also not json"]
+        with _patch("src.summarise._llm_call", side_effect=responses) as mock_llm:
+            from src.summarise import _call_and_parse_summary
+            draft = _call_and_parse_summary("PLAIN PROMPT", 0.6, "c_x")
+        assert draft is None
+        first = mock_llm.call_args_list[0].args[0]
+        second = mock_llm.call_args_list[1].args[0]
+        assert first == "PLAIN PROMPT"
+        assert isinstance(second, str) and second.startswith("PLAIN PROMPT")

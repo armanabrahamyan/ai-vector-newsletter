@@ -1475,6 +1475,31 @@ carry a finance angle. That is correct.
 
 
 # ---------------------------------------------------------------------------
+# Prompt-cache static prefix (2026-08-08).
+#
+# The first ~8.3k tokens of every per-story summarise prompt (header +
+# voice + headline rules + editorial focus + finance lens) are assembled
+# purely from the module constants above -- no per-story, per-day, or
+# per-config interpolation. Assembled ONCE at import time so byte identity
+# across all N per-story calls (and the Pulse re-summarise) is structural,
+# not incidental. ``_build_summary_prompt`` returns this as the cacheable
+# prefix; ``rank._llm_call_anthropic`` marks it ``cache_control:
+# ephemeral``. The per-day voice-diversity block sits AFTER the section
+# voice block, so it is variable-part material, never prefix material.
+# ---------------------------------------------------------------------------
+
+_SUMMARY_PROMPT_STATIC_PREFIX = f"""\
+You are writing one story for AI Vector -- a daily newsletter about
+Agentic AI and Generative AI. The cluster was already RANKED and
+selected for the issue; your job is to write it well.
+
+{_VOICE_BLOCK}
+{_HEADLINE_RULES_BLOCK}
+{_EDITORIAL_FOCUS_BLOCK}
+{_FINANCE_LENS_BLOCK}"""
+
+
+# ---------------------------------------------------------------------------
 # Public entry point.
 # ---------------------------------------------------------------------------
 
@@ -2495,9 +2520,24 @@ def _build_summary_prompt(
     section_override: str | None = None,
     voice_diversity_block: str = "",
     prior_section_closes: list[str] | None = None,
-) -> str:
+) -> tuple[str, str]:
     """Assemble the per-story summarisation prompt with voice + skills
     inlined and callback context attached when present.
+
+    2026-08-08 -- prompt-cache split (message-structure change ONLY; not a
+    SUMMARISE_PROMPT_VERSION bump): returns ``(static_prefix,
+    variable_part)`` instead of one string. The prefix is
+    ``_SUMMARY_PROMPT_STATIC_PREFIX`` (header + voice + headline rules +
+    editorial focus + finance lens -- byte-identical across every story,
+    tier, and the Pulse override); the split boundary sits immediately
+    after ``_FINANCE_LENS_BLOCK``, right before the tier-dependent section
+    voice block. ``prefix + variable`` equals the pre-split single-string
+    prompt BYTE FOR BYTE (pinned by
+    tests/test_summarise.py::TestSummaryPromptCacheSplit), so the model
+    reads exactly the same bytes -- caching changes billing, not
+    behaviour. ``rank._llm_call`` accepts the tuple and sends
+    ``cache_control: ephemeral`` on the prefix block (Anthropic provider;
+    other providers get the joined string).
 
     ``excerpts`` maps item URL -> source body text (fetched lazily by
     ``_summarise_one`` for the top items in the cluster). When provided,
@@ -2707,15 +2747,11 @@ def _build_summary_prompt(
         if prior_closes_block:
             prior_closes_segment = f"\n{prior_closes_block}\n"
 
-    return f"""\
-You are writing one story for AI Vector -- a daily newsletter about
-Agentic AI and Generative AI. The cluster was already RANKED and
-selected for the issue; your job is to write it well.
-
-{_VOICE_BLOCK}
-{_HEADLINE_RULES_BLOCK}
-{_EDITORIAL_FOCUS_BLOCK}
-{_FINANCE_LENS_BLOCK}{section_voice_block}{voice_diversity_segment}
+    # 2026-08-08: the return became (static_prefix, variable_part) -- see
+    # the docstring. The variable part starts at the first tier-dependent
+    # byte (the section voice block).
+    variable_part = f"""\
+{section_voice_block}{voice_diversity_segment}
 RANKER NOTES (from the rank stage, for context only -- not for echoing):
   score: {story.score} / 100
   breakdown: {breakdown_str}
@@ -2862,6 +2898,7 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
   "signal": "<one of: act | try | read | watch | discuss>"
 }}
 """
+    return _SUMMARY_PROMPT_STATIC_PREFIX, variable_part
 
 
 # Length caps -- mirrored from the prompt + the judge rubric in
@@ -2903,10 +2940,21 @@ def _length_violations(draft: _SummaryDraft) -> list[str]:
 
 
 def _call_and_parse_summary(
-    prompt: str, temperature: float, cluster_id: str
+    prompt: "str | tuple[str, str]", temperature: float, cluster_id: str
 ) -> _SummaryDraft | None:
     """LLM call + retry on parse failure (one retry, mirrors rank.py) +
     a separate single retry on length-cap violation (tasks #73 + #74).
+
+    ``prompt`` is either the legacy single string or the cache-split
+    ``(static_prefix, variable_part)`` tuple from
+    ``_build_summary_prompt``. Retry discipline (2026-08-08, mirrors
+    rank's v0.6.1 fix): corrective text is APPENDED to the variable part,
+    never prepended to the whole prompt -- prepending would change byte 0
+    of the cached prefix and force a full cache miss plus a wasted cache
+    write on every retry. The prefix block is byte-identical across
+    attempts (pinned by
+    tests/test_summarise.py::TestSummaryPromptCacheSplit), so retries hit
+    the cache the first attempt just wrote.
 
     Order of operations:
       1. Call the LLM. If JSON parse fails, retry once with a corrective
@@ -2917,12 +2965,21 @@ def _call_and_parse_summary(
          the draft (log a warning) -- we'd rather ship a marginally-
          overlong headline than lose a top-N story.
     """
+    is_split = isinstance(prompt, tuple)
+    prefix, variable = prompt if is_split else ("", prompt)
+
+    def _assemble(var: str) -> "str | tuple[str, str]":
+        return (prefix, var) if is_split else var
+
     attempts = JSON_RETRY_BUDGET + 1
-    current_prompt = prompt
+    current_variable = variable
     draft: _SummaryDraft | None = None
     for attempt in range(1, attempts + 1):
         try:
-            raw = _llm_call(current_prompt, temperature=temperature, max_tokens=1600)
+            raw = _llm_call(
+                _assemble(current_variable),
+                temperature=temperature, max_tokens=1600,
+            )
         except Exception:  # noqa: BLE001
             _LOG.exception(
                 "summarise: LLM call failed for cluster_id=%s (attempt %d/%d)",
@@ -2937,11 +2994,13 @@ def _call_and_parse_summary(
             cluster_id, attempt, attempts,
         )
         if attempt < attempts:
-            current_prompt = (
-                "Your previous response was not valid JSON matching the "
-                "schema below. Return JSON ONLY (no markdown fences, no "
-                "prose) matching the schema. Original request follows.\n\n"
-                + prompt
+            # Appended AFTER the variable part (cache discipline -- see
+            # docstring): the cached prefix stays byte-identical.
+            current_variable = (
+                variable
+                + "\n\nCORRECTION -- Your previous response was not valid "
+                "JSON matching the schema above. Return JSON ONLY (no "
+                "markdown fences, no prose) matching the schema."
             )
     if draft is None:
         return None
@@ -2956,9 +3015,13 @@ def _call_and_parse_summary(
         "requesting one corrective regenerate",
         cluster_id, "; ".join(violations),
     )
-    corrective = (
-        "Your previous response BREACHED the HARD length caps. The "
-        "following violations were found:\n\n"
+    # Corrective text APPENDED to the variable part (cache discipline --
+    # same reasoning as the JSON-parse retry above).
+    corrective_variable = (
+        variable
+        + "\n\nCORRECTION -- Your previous response to the request above "
+        "BREACHED the HARD length caps. The following violations were "
+        "found:\n\n"
         + "\n".join(f"  - {v}" for v in violations)
         + "\n\nRewrite the JSON so that:\n"
         f"  - headline is AT MOST {_HEADLINE_MAX_WORDS} words AND AT MOST "
@@ -2968,12 +3031,13 @@ def _call_and_parse_summary(
         "COUNT THE WORDS AND CHARACTERS before returning. Keep the same "
         "facts, tone, trust flag, and decision-tied close; just tighten "
         "the language. Cut adjectives, hedges, and spec-sheet detail "
-        "first. Return ONLY JSON, no markdown fences, no commentary. "
-        "Original request follows.\n\n"
-        + prompt
+        "first. Return ONLY JSON, no markdown fences, no commentary."
     )
     try:
-        raw = _llm_call(corrective, temperature=temperature, max_tokens=1600)
+        raw = _llm_call(
+            _assemble(corrective_variable),
+            temperature=temperature, max_tokens=1600,
+        )
     except Exception:  # noqa: BLE001
         _LOG.warning(
             "summarise: corrective LLM call failed for cluster_id=%s -- "
