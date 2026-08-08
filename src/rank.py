@@ -72,12 +72,24 @@ from src.models import RUBRIC_WEIGHTS, SECTION_WEIGHTS, Cluster, Item, RankedSto
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-RANK_PROMPT_VERSION = "v0.6"
+RANK_PROMPT_VERSION = "v0.6.1"
 r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``rank-v0.6-2026-05-30``. Bump (e.g. ``v0.5``) when the prompt
-content changes -- so the eval harness can correlate score movement against
+Audit tag: ``rank-v0.6.1-2026-08-08``. Bump when the prompt content
+changes -- so the eval harness can correlate score movement against
 prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
+
+v0.6.1 (2026-08-08): MESSAGE-STRUCTURE-ONLY change -- prompt caching.
+The first-attempt prompt BYTES are identical to v0.6; the prompt is now
+sent to the Anthropic API as two content blocks (shared prefix with
+``cache_control: ephemeral`` + per-cluster variable part) instead of one
+string, split at the structural boundary just after the literal
+``"CLUSTER\ncanonical_title: "`` (see ``_build_rank_prompt_parts``).
+The only byte-level difference is on the JSON/validation RETRY path:
+corrective text used to be PREPENDED to the whole prompt (changing byte 0
+and forcing a full cache miss); it is now APPENDED after the variable
+part so the cached prefix block stays byte-identical across attempts.
+Patch-level bump so the archive records the transition.
 """
 
 # Failed experiment: v0.2 (2026-05-24, #75) sharpened the `big_picture`
@@ -796,7 +808,7 @@ def _rank_one(
     """Score one cluster with the LLM. Returns ``None`` on parse/validation
     failure after retries -- the caller logs and skips. Never raises on
     LLM/parse errors so a single bad cluster doesn't poison the issue."""
-    prompt = _build_rank_prompt(
+    prompt = _build_rank_prompt_parts(
         cluster, items_by_id, rubric_block, trust_weights, today=today,
     )
     temperature = float(os.getenv("LLM_TEMPERATURE_RANK", "0.2"))
@@ -927,16 +939,32 @@ Given this prior coverage, your JSON response MUST include a "novelty" field:
 """
 
 
-def _build_rank_prompt(
+def _build_rank_prompt_parts(
     cluster: Cluster,
     items_by_id: dict[str, Item],
     rubric_block: str,
     trust_weights: dict[str, int],
     *,
     today: _dt.date | None = None,
-) -> str:
-    """Assemble the per-cluster ranking prompt. Editorial-focus + rubric
-    are inlined (the prompt is self-contained for offline audit).
+) -> tuple[str, str]:
+    """Assemble the per-cluster ranking prompt as ``(shared_prefix,
+    variable_part)``. Editorial-focus + rubric are inlined (the prompt is
+    self-contained for offline audit).
+
+    Prompt caching (2026-08-08, v0.6.1): the concatenation
+    ``shared_prefix + variable_part`` is byte-identical to the historical
+    single-string prompt -- the split changes message STRUCTURE only, never
+    bytes (pinned by tests/test_rank.py::TestPromptCacheSplit). The split
+    point is the stable structural boundary just after the literal
+    ``"CLUSTER\\ncanonical_title: "``: everything before it (intro +
+    editorial focus + rubric, ~3,084 billed tokens with rubric v0.7 --
+    comfortably above the 1,024-token Sonnet cache minimum) is byte-
+    identical for every cluster within a run and across days as long as
+    ``config/rubric.yaml`` is unchanged, so ``_llm_call_anthropic`` marks
+    it with ``cache_control: {"type": "ephemeral"}`` (5-min TTL, refreshed
+    free on every hit). Verified 2026-08-08 with real paired calls:
+    call 1 ``cache_creation_input_tokens=3084``, call 2
+    ``cache_read_input_tokens=3084``.
 
     When ``cluster.prior_coverage_ref`` is set, attempts to inject a PRIOR
     COVERAGE block (task #89) with the prior story's headline + summary
@@ -968,7 +996,9 @@ def _build_rank_prompt(
         else ""
     )
 
-    return f"""\
+    # The cacheable shared prefix. MUST stay byte-identical across clusters:
+    # nothing per-cluster may leak in before the split point.
+    prefix = f"""\
 You are scoring a single AI-news cluster for AI Vector -- a daily,
 agent-assisted AI newsletter for engineers, data scientists, and the
 senior leaders they work with, with a financial-services lens.
@@ -977,7 +1007,10 @@ senior leaders they work with, with a financial-services lens.
 {rubric_block}
 
 CLUSTER
-canonical_title: {cluster.canonical_title}
+canonical_title: """
+
+    variable = f"""\
+{cluster.canonical_title}
 cluster_id: {cluster.cluster_id}
 sources: {list(cluster.sources)}
 earliest_published: {cluster.earliest_published.isoformat()}
@@ -1014,6 +1047,24 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
   "rationale": "<one sentence, <= 240 chars, specific not generic>"{novelty_schema_hint}
 }}
 """
+    return prefix, variable
+
+
+def _build_rank_prompt(
+    cluster: Cluster,
+    items_by_id: dict[str, Item],
+    rubric_block: str,
+    trust_weights: dict[str, int],
+    *,
+    today: _dt.date | None = None,
+) -> str:
+    """Joined single-string form of ``_build_rank_prompt_parts`` -- kept for
+    audit tooling and tests that want the full prompt text. Byte-identical
+    to the pre-v0.6.1 single-string prompt by construction."""
+    prefix, variable = _build_rank_prompt_parts(
+        cluster, items_by_id, rubric_block, trust_weights, today=today,
+    )
+    return prefix + variable
 
 
 def _select_items_for_prompt(
@@ -1040,7 +1091,7 @@ def _select_items_for_prompt(
 
 
 def _call_and_parse_rank(
-    prompt: str,
+    prompt: "str | tuple[str, str]",
     temperature: float,
     cluster_id: str,
     *,
@@ -1049,6 +1100,15 @@ def _call_and_parse_rank(
     """Issue the LLM call, parse JSON, retry once on parse OR pydantic
     validation failure with a corrective nudge. Returns ``None`` after the
     retry budget is spent -- the caller logs and skips.
+
+    ``prompt`` is either the legacy single string or the cache-split
+    ``(shared_prefix, variable_part)`` tuple from
+    ``_build_rank_prompt_parts``. Retry discipline (v0.6.1, 2026-08-08):
+    corrective text is APPENDED to the variable part, never prepended to
+    the whole prompt -- prepending would change byte 0 of the cached
+    prefix and force a full cache miss plus a wasted cache write on every
+    retry. The prefix block is byte-identical across attempts (pinned by
+    tests/test_rank.py::TestPromptCacheSplit).
 
     Two modes:
 
@@ -1063,9 +1123,14 @@ def _call_and_parse_rank(
       same single-retry budget. v0.5 (2026-05-26) -- ships the
       audience_tags=[] retry path.
     """
+    is_split = isinstance(prompt, tuple)
+    prefix, variable = prompt if is_split else ("", prompt)
     attempts = JSON_RETRY_BUDGET + 1
-    current_prompt = prompt
+    current_variable = variable
     for attempt in range(1, attempts + 1):
+        current_prompt: str | tuple[str, str] = (
+            (prefix, current_variable) if is_split else current_variable
+        )
         try:
             raw = _llm_call(current_prompt, temperature=temperature, max_tokens=800)
         except Exception:  # noqa: BLE001
@@ -1082,11 +1147,14 @@ def _call_and_parse_rank(
                 cluster_id, attempt, attempts,
             )
             if attempt < attempts:
-                current_prompt = (
-                    "Your previous response was not valid JSON matching the "
-                    "schema below. Return JSON ONLY (no markdown fences, no "
-                    "prose) matching the schema. Original request follows.\n\n"
-                    + prompt
+                # Appended AFTER the variable part (cache discipline --
+                # see docstring): the cached prefix stays byte-identical.
+                current_variable = (
+                    variable
+                    + "\n\nCORRECTION -- Your previous response was not "
+                    "valid JSON matching the schema above. Return JSON "
+                    "ONLY (no markdown fences, no prose) matching the "
+                    "schema."
                 )
             continue
 
@@ -1110,15 +1178,17 @@ def _call_and_parse_rank(
                 cluster_id, attempt, attempts, err_msg,
             )
             if attempt < attempts:
-                current_prompt = (
-                    "Your prior response failed validation: "
-                    f"{err_msg}\n\n"
+                # Appended AFTER the variable part (cache discipline --
+                # see docstring): the cached prefix stays byte-identical.
+                current_variable = (
+                    variable
+                    + "\n\nCORRECTION -- Your prior response failed "
+                    f"validation: {err_msg}\n"
                     "Fix the failing field(s) and return the SAME JSON "
                     "schema. Reminder: `audience_tags` must contain at "
                     "least one of \"hands_on\", \"big_picture\", "
                     "\"finance\", \"general\" -- use \"general\" if no "
-                    "other tag fits. Original request follows.\n\n"
-                    + prompt
+                    "other tag fits."
                 )
     return None
 
@@ -1505,8 +1575,17 @@ def _assign_initial_tier(
 # one place.
 # ---------------------------------------------------------------------------
 
-def _llm_call(prompt: str, *, temperature: float, max_tokens: int) -> str:
+def _llm_call(
+    prompt: "str | tuple[str, str]", *, temperature: float, max_tokens: int
+) -> str:
     """Issue one LLM call and return the raw response text.
+
+    ``prompt`` is either a plain string (summarise / verify / review /
+    preflight callers -- unchanged) or a ``(cached_prefix, variable)``
+    tuple (rank's cache-split prompt, 2026-08-08). The Anthropic branch
+    receives the tuple intact and sends two content blocks with
+    ``cache_control`` on the prefix; every other provider receives the
+    joined single string, byte-identical to the pre-split prompt.
 
     Reads ``LLM_PROVIDER``, ``LLM_ENDPOINT``, ``LLM_API_KEY``, ``LLM_MODEL``,
     ``LLM_TIMEOUT_SECONDS`` from the environment. Does NOT log the API key.
@@ -1527,12 +1606,15 @@ def _llm_call(prompt: str, *, temperature: float, max_tokens: int) -> str:
     if provider == "anthropic":
         return _llm_call_anthropic(prompt, model=model, temperature=temperature,
                                    max_tokens=max_tokens, timeout=timeout)
+    # Non-Anthropic providers get the joined single string -- no caching
+    # semantics, bytes identical to the historical one-string prompt.
+    joined = prompt if isinstance(prompt, str) else "".join(prompt)
     if provider == "bedrock":
-        return _llm_call_bedrock(prompt, model=model, temperature=temperature,
+        return _llm_call_bedrock(joined, model=model, temperature=temperature,
                                  max_tokens=max_tokens, timeout=timeout)
     if provider in {"openai", "litellm", "ollama"}:
         return _llm_call_openai_compatible(
-            prompt, model=model, temperature=temperature,
+            joined, model=model, temperature=temperature,
             max_tokens=max_tokens, timeout=timeout,
         )
     raise NotImplementedError(
@@ -1550,10 +1632,21 @@ _MODELS_REJECTING_TEMPERATURE: set[str] = set()
 
 
 def _llm_call_anthropic(
-    prompt: str, *, model: str, temperature: float, max_tokens: int, timeout: float
+    prompt: "str | tuple[str, str]", *, model: str, temperature: float,
+    max_tokens: int, timeout: float
 ) -> str:
     """Anthropic-SDK call. Honours ``LLM_ENDPOINT`` if set (e.g. for a
     bank-internal Anthropic-compatible proxy).
+
+    Prompt caching (2026-08-08): when ``prompt`` is a ``(prefix, variable)``
+    tuple with a non-empty prefix, the user message is sent as TWO content
+    blocks -- the prefix marked ``cache_control: {"type": "ephemeral"}``
+    (5-minute TTL, refreshed free on every hit; write costs 1.25x base
+    input, hits cost 0.10x) followed by the variable part. The
+    concatenated bytes equal the single-string prompt exactly, so model
+    behaviour is unchanged (caching has no effect on output generation).
+    Plain-string prompts (summarise / verify / review / preflight) are
+    sent exactly as before.
 
     Some Claude 4.7+ models reject ``temperature``/``top_p``/``top_k`` at
     runtime (the model uses adaptive sampling). We try with temperature
@@ -1572,10 +1665,25 @@ def _llm_call_anthropic(
         client_kwargs["base_url"] = base_url
     client = anthropic.Anthropic(**client_kwargs)
 
+    content: Any
+    if isinstance(prompt, tuple) and prompt[0]:
+        content = [
+            {
+                "type": "text",
+                "text": prompt[0],
+                "cache_control": {"type": "ephemeral"},
+            },
+            {"type": "text", "text": prompt[1]},
+        ]
+    else:
+        # Plain string, or a degenerate tuple with an empty prefix (an
+        # empty text block cannot be cached -- send the joined string).
+        content = prompt if isinstance(prompt, str) else "".join(prompt)
+
     create_kwargs: dict[str, Any] = {
         "model": model,
         "max_tokens": max_tokens,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": content}],
     }
     if model not in _MODELS_REJECTING_TEMPERATURE:
         create_kwargs["temperature"] = temperature
@@ -1592,12 +1700,22 @@ def _llm_call_anthropic(
             raise
     # Record token usage for the cost-reporting accumulator (src/llm_usage.py)
     # before anything else can raise -- the SDK's `.usage` carries actual
-    # billed counts, not an estimate.
+    # billed counts, not an estimate. With prompt caching, `input_tokens`
+    # covers only the tokens AFTER the last cache breakpoint; the cached
+    # prefix is billed via `cache_creation_input_tokens` (writes, 1.25x) /
+    # `cache_read_input_tokens` (hits, 0.10x) -- record all four or the
+    # metrics log silently misreports cost.
     usage = getattr(resp, "usage", None)
     llm_usage.record(
         model,
         getattr(usage, "input_tokens", 0) or 0,
         getattr(usage, "output_tokens", 0) or 0,
+        cache_creation_input_tokens=(
+            getattr(usage, "cache_creation_input_tokens", 0) or 0
+        ),
+        cache_read_input_tokens=(
+            getattr(usage, "cache_read_input_tokens", 0) or 0
+        ),
     )
     # Concatenate text blocks. SDK returns a list of content blocks; the
     # ranking + summarisation prompts both request plain text/JSON, so we

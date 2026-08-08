@@ -33,17 +33,27 @@ import pytest
 from src.models import Cluster, Item
 from src.rank import (
     _DEFAULT_TIER_THRESHOLDS,
+    _EDITORIAL_FOCUS_BLOCK,
     _FRESHNESS_INFERRED_CAP,
     _PRIOR_COVERAGE_NOVELTY_CAPS,
     _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
+    MAX_ITEMS_IN_CLUSTER_PROMPT,
     _ParsedScore,
     _apply_freshness_inferred_penalty,
     _apply_prior_coverage_penalty,
     _assign_initial_tier,
+    _build_prior_coverage_block,
     _build_rank_prompt,
+    _build_rank_prompt_parts,
+    _build_rubric_block,
+    _llm_call_anthropic,
     _llm_call_openai_compatible,
+    _load_clusters,
+    _load_items_index,
+    _load_trust_weights,
     _lookup_prior_coverage,
     _rank_one,
+    _select_items_for_prompt,
     _weighted_score,
     rank,
 )
@@ -860,9 +870,15 @@ class TestAudienceTagsRetry:
             for rec in caplog.records
         ), "validation-error log line should fire on the first attempt"
         # And the corrective nudge text reaches the LLM call on attempt 2.
-        retry_prompt = mock_llm.call_args_list[1].args[0]
-        assert "Your prior response failed validation" in retry_prompt
-        assert "audience_tags" in retry_prompt
+        # Since the cache split (v0.6.1) the rank prompt travels as a
+        # (prefix, variable) tuple; the corrective text lands in the
+        # variable part AFTER the cached prefix, which stays byte-identical
+        # across attempts (else every retry is a full cache miss).
+        first_prefix, _first_variable = mock_llm.call_args_list[0].args[0]
+        retry_prefix, retry_variable = mock_llm.call_args_list[1].args[0]
+        assert retry_prefix == first_prefix
+        assert "Your prior response failed validation" in retry_variable
+        assert "audience_tags" in retry_variable
 
     def test_retry_on_validation_error_then_skip_when_both_fail(
         self,
@@ -1567,3 +1583,359 @@ class TestRankedStoryScoreBySection:
                 tier="hands_on",
                 prompt_version="v0.6",
             )
+
+
+# ===========================================================================
+# Prompt caching split (v0.6.1, 2026-08-08)
+#
+# rank's per-cluster prompt is now built as (shared_prefix, variable_part)
+# and sent to the Anthropic API as two content blocks, with
+# `cache_control: {"type": "ephemeral"}` on the prefix. The tests below pin
+# the four load-bearing invariants:
+#
+#   1. BYTE EQUALITY -- prefix + variable equals the pre-split v0.6
+#      single-string prompt exactly, checked against a verbatim golden copy
+#      of the v0.6 template over real released-archive clusters (two days).
+#      Caching must never change what the model reads.
+#   2. PREFIX STABILITY -- the prefix is byte-identical across every
+#      cluster and across days (given one rubric.yaml); it ends exactly at
+#      the verified structural boundary "CLUSTER\ncanonical_title: " and
+#      stays comfortably above the 1,024-token Sonnet cache minimum.
+#   3. RETRY DISCIPLINE -- the JSON-parse / validation retry appends its
+#      corrective text AFTER the cached prefix (into the variable block).
+#      The pre-v0.6.1 code PREPENDED it, changing byte 0 and forcing a
+#      full cache miss + wasted cache write on every retry.
+#   4. TRANSPORT SHAPE -- the Anthropic branch sends two content blocks
+#      (cache_control on the first) whose concatenation equals the full
+#      prompt; plain-string callers (summarise/verify/review) and
+#      non-Anthropic providers are byte-for-byte unchanged.
+# ===========================================================================
+
+_ARCHIVE_DAYS = ("2026-08-04", "2026-08-05")
+_RUBRIC_PATH = Path("config/rubric.yaml")
+_SOURCES_PATH = Path("config/sources.yaml")
+_CACHE_BOUNDARY = "CLUSTER\ncanonical_title: "
+
+
+def _golden_v06_single_string_prompt(
+    cluster: Cluster,
+    items_by_id: dict[str, Item],
+    rubric_block: str,
+    trust_weights: dict[str, int],
+    *,
+    today: _dt.date | None = None,
+) -> str:
+    """VERBATIM copy of the v0.6 (pre-cache-split) ``_build_rank_prompt``
+    body -- the golden reference for the byte-equality gate. If a deliberate
+    prompt change lands in rank.py, this copy must be updated in the same
+    PR alongside a RANK_PROMPT_VERSION bump; an accidental byte drift shows
+    up here as a failure."""
+    items = _select_items_for_prompt(cluster, items_by_id, trust_weights)
+    items_block_lines: list[str] = []
+    for it in items:
+        title = it.title.strip()
+        summary = (it.raw_summary or "").strip()
+        if len(summary) > 600:
+            summary = summary[:600].rstrip() + "..."
+        items_block_lines.append(
+            f"- [{it.source}, trust={it.trust_weight}] {title}\n  {summary}"
+        )
+    items_block = "\n".join(items_block_lines) or "  (no item summaries available)"
+
+    prior_coverage_block = _build_prior_coverage_block(cluster, today=today)
+    novelty_schema_hint = (
+        ',\n  "novelty": "<one of: \\"none\\", \\"minor\\", \\"major\\">"'
+        if prior_coverage_block
+        else ""
+    )
+
+    return f"""\
+You are scoring a single AI-news cluster for AI Vector -- a daily,
+agent-assisted AI newsletter for engineers, data scientists, and the
+senior leaders they work with, with a financial-services lens.
+
+{_EDITORIAL_FOCUS_BLOCK}
+{rubric_block}
+
+CLUSTER
+canonical_title: {cluster.canonical_title}
+cluster_id: {cluster.cluster_id}
+sources: {list(cluster.sources)}
+earliest_published: {cluster.earliest_published.isoformat()}
+size: {cluster.size}
+has_prior_coverage: {"yes (prior_coverage_ref=" + cluster.prior_coverage_ref + ")" if cluster.prior_coverage_ref else "no"}
+
+ITEMS (top {MAX_ITEMS_IN_CLUSTER_PROMPT} by source trust):
+{items_block}
+{prior_coverage_block}
+INSTRUCTIONS
+Score the cluster against the rubric. Apply the EDITORIAL FOCUS pre-filter
+first -- Tier-3 stories MUST score significance <= 25. Audience tags are
+independent of score: pick the subset of {{hands_on, big_picture, finance, general}}
+that this story is actually for. `hands_on` = practitioner (DS / engineer)
+audience; `big_picture` = senior-leader audience.
+
+AUDIENCE TAGS -- REQUIRED: pick at least one tag from exactly this set:
+"hands_on", "big_picture", "finance", "general". The list must never be
+empty. If no other tag fits, use "general".
+
+Return ONLY a single JSON object (no markdown fences, no commentary):
+
+{{
+  "cluster_id": "{cluster.cluster_id}",
+  "score": <int 0-100>,
+  "breakdown": {{
+    "significance": <int 0-100>,
+    "hands_on_utility": <int 0-100>,
+    "big_picture_relevance": <int 0-100>,
+    "financial_services_impact": <int 0-100>,
+    "freshness_momentum": <int 0-100>
+  }},
+  "audience_tags": [<at least one of: "hands_on", "big_picture", "finance", "general">],
+  "rationale": "<one sentence, <= 240 chars, specific not generic>"{novelty_schema_hint}
+}}
+"""
+
+
+def _load_archive_day(day: str) -> tuple[list[Cluster], dict[str, Item], _dt.date]:
+    """Load a real released day's clusters + items. Fails loud if the
+    tracked archive is missing -- the byte-equality gate must not silently
+    skip."""
+    base = Path("data/released") / day
+    assert base.exists(), (
+        f"released archive day {day} missing at {base} -- the byte-equality "
+        "gate needs real archive data (data/released/ is tracked in git)"
+    )
+    clusters = _load_clusters(base / "clusters.jsonl")
+    items = _load_items_index(base / "items.jsonl")
+    assert clusters, f"no clusters loaded from {base / 'clusters.jsonl'}"
+    return clusters, items, _dt.date.fromisoformat(day)
+
+
+class TestPromptCacheSplit:
+    def test_concatenated_parts_equal_v06_single_string_over_real_archive(
+        self,
+    ) -> None:
+        """prefix + variable must equal the pre-split single-string prompt
+        BYTE FOR BYTE, for every cluster of two real released days. This is
+        the core caching-safety invariant: the split may change message
+        structure only, never the bytes the model reads."""
+        rubric_block = _build_rubric_block(_RUBRIC_PATH)
+        trust_weights = _load_trust_weights(_SOURCES_PATH)
+        checked = 0
+        for day in _ARCHIVE_DAYS:
+            clusters, items_by_id, today = _load_archive_day(day)
+            for cluster in clusters:
+                prefix, variable = _build_rank_prompt_parts(
+                    cluster, items_by_id, rubric_block, trust_weights,
+                    today=today,
+                )
+                golden = _golden_v06_single_string_prompt(
+                    cluster, items_by_id, rubric_block, trust_weights,
+                    today=today,
+                )
+                assert prefix + variable == golden, (
+                    f"byte drift for cluster {cluster.cluster_id} ({day})"
+                )
+                checked += 1
+        assert checked >= 10, f"only {checked} clusters checked -- vacuous run"
+
+    def test_prefix_is_byte_identical_across_clusters_and_days(self) -> None:
+        """One rubric config -> exactly one prefix, ending at the verified
+        structural boundary. Any per-cluster byte leaking into the prefix
+        would produce a distinct prefix per cluster and zero cache hits."""
+        rubric_block = _build_rubric_block(_RUBRIC_PATH)
+        trust_weights = _load_trust_weights(_SOURCES_PATH)
+        prefixes: set[str] = set()
+        for day in _ARCHIVE_DAYS:
+            clusters, items_by_id, today = _load_archive_day(day)
+            for cluster in clusters:
+                prefix, _ = _build_rank_prompt_parts(
+                    cluster, items_by_id, rubric_block, trust_weights,
+                    today=today,
+                )
+                prefixes.add(prefix)
+        assert len(prefixes) == 1, (
+            f"expected one shared prefix, got {len(prefixes)} distinct"
+        )
+        the_prefix = next(iter(prefixes))
+        assert the_prefix.endswith(_CACHE_BOUNDARY)
+        # Verified 2026-08-08: the prefix is 11,422 bytes = 3,084 billed
+        # tokens with rubric v0.7 -- the Sonnet cache minimum is 1,024
+        # tokens. Guard a floor well above the minimum so a rubric shrink
+        # can't silently drop the prefix below cacheability.
+        assert len(the_prefix.encode("utf-8")) > 8000
+
+    def test_variable_part_carries_no_prefix_content(self) -> None:
+        """The variable part must start with the cluster title (the byte
+        right after the boundary), not repeat any shared-prefix content."""
+        rubric_block = _build_rubric_block(_RUBRIC_PATH)
+        clusters, items_by_id, today = _load_archive_day(_ARCHIVE_DAYS[0])
+        cluster = clusters[0]
+        _, variable = _build_rank_prompt_parts(
+            cluster, items_by_id, rubric_block, {}, today=today,
+        )
+        assert variable.startswith(cluster.canonical_title)
+        # The INSTRUCTIONS section legitimately *references* "EDITORIAL
+        # FOCUS"; what must not appear is the shared block itself.
+        assert _EDITORIAL_FOCUS_BLOCK not in variable
+
+    def test_json_retry_prefix_block_byte_identical_to_first_attempt(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """THE TRAP (pre-v0.6.1): the JSON-parse retry PREPENDED corrective
+        text to the prompt, changing byte 0 -> guaranteed cache miss plus a
+        wasted cache write. Pin the fix: the retry's prefix block is
+        byte-identical to the first attempt's, and the corrective text is
+        appended after the variable part."""
+        monkeypatch.setenv("LLM_TEMPERATURE_RANK", "0.2")
+        responses = ["not json at all", "still not json"]
+        with patch("src.rank._llm_call", side_effect=responses) as mock_llm:
+            story = _rank_one(
+                cluster=_rank_one_test_cluster(),
+                items_by_id=_rank_one_items_by_id(),
+                rubric_block="(rubric)",
+                trust_weights={},
+            )
+        assert story is None
+        assert mock_llm.call_count == 2
+        first = mock_llm.call_args_list[0].args[0]
+        second = mock_llm.call_args_list[1].args[0]
+        assert isinstance(first, tuple) and isinstance(second, tuple)
+        assert second[0] == first[0], (
+            "retry prefix must be byte-identical or the cache never hits"
+        )
+        assert second[1].startswith(first[1]), (
+            "corrective text must be APPENDED after the variable part"
+        )
+        assert "was not valid JSON" in second[1]
+
+    def test_validation_retry_prefix_block_byte_identical(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Same pin for the pydantic-validation retry path (v0.5's
+        audience_tags=[] corrective nudge)."""
+        monkeypatch.setenv("LLM_TEMPERATURE_RANK", "0.2")
+        responses = [_payload_with_tags("[]"), _payload_with_tags("[]")]
+        with patch("src.rank._llm_call", side_effect=responses) as mock_llm:
+            story = _rank_one(
+                cluster=_rank_one_test_cluster(),
+                items_by_id=_rank_one_items_by_id(),
+                rubric_block="(rubric)",
+                trust_weights={},
+            )
+        assert story is None
+        first = mock_llm.call_args_list[0].args[0]
+        second = mock_llm.call_args_list[1].args[0]
+        assert second[0] == first[0]
+        assert second[1].startswith(first[1])
+        assert "failed validation" in second[1]
+
+    # -- Transport shape (Anthropic branch) ---------------------------------
+
+    @staticmethod
+    def _install_fake_anthropic(
+        monkeypatch: pytest.MonkeyPatch, captured: list,
+    ) -> None:
+        """Substitute a minimal fake `anthropic` module so we can capture
+        the exact `messages.create` kwargs without a network call."""
+        import sys
+        import types
+        from types import SimpleNamespace
+
+        fake = types.ModuleType("anthropic")
+
+        class BadRequestError(Exception):
+            pass
+
+        class _Messages:
+            def create(self, **kwargs):
+                captured.append(kwargs)
+                usage = SimpleNamespace(
+                    input_tokens=50,
+                    output_tokens=5,
+                    cache_creation_input_tokens=3084,
+                    cache_read_input_tokens=0,
+                )
+                return SimpleNamespace(
+                    usage=usage, content=[SimpleNamespace(text="{}")],
+                )
+
+        class _Anthropic:
+            def __init__(self, **kwargs):
+                self.messages = _Messages()
+
+        fake.Anthropic = _Anthropic
+        fake.BadRequestError = BadRequestError
+        monkeypatch.setitem(sys.modules, "anthropic", fake)
+
+    def test_anthropic_split_prompt_sends_two_blocks_with_cache_control(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from src import llm_usage
+
+        captured: list = []
+        self._install_fake_anthropic(monkeypatch, captured)
+        llm_usage.reset()
+        try:
+            out = _llm_call_anthropic(
+                ("PREFIX-", "VARIABLE"), model="claude-sonnet-4-6",
+                temperature=0.0, max_tokens=16, timeout=5.0,
+            )
+            assert out == "{}"
+            content = captured[0]["messages"][0]["content"]
+            assert content == [
+                {
+                    "type": "text",
+                    "text": "PREFIX-",
+                    "cache_control": {"type": "ephemeral"},
+                },
+                {"type": "text", "text": "VARIABLE"},
+            ]
+            # The two blocks concatenate to the exact single-string prompt.
+            assert content[0]["text"] + content[1]["text"] == "PREFIX-VARIABLE"
+            # Cache token usage from the SDK usage object reaches the
+            # accumulator (else metrics_log silently misreports cost).
+            snap = llm_usage.snapshot()
+            stage = snap["stages"]["unknown"]
+            assert stage["cache_creation_input_tokens"] == 3084
+            assert stage["cache_read_input_tokens"] == 0
+            assert stage["input_tokens"] == 50
+        finally:
+            llm_usage.reset()
+
+    def test_anthropic_plain_string_prompt_stays_single_string(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """summarise / verify / review / preflight pass plain strings --
+        their message shape must be byte-for-byte unchanged."""
+        from src import llm_usage
+
+        captured: list = []
+        self._install_fake_anthropic(monkeypatch, captured)
+        llm_usage.reset()
+        try:
+            _llm_call_anthropic(
+                "PLAIN PROMPT", model="claude-sonnet-4-6",
+                temperature=0.2, max_tokens=16, timeout=5.0,
+            )
+            assert captured[0]["messages"][0]["content"] == "PLAIN PROMPT"
+        finally:
+            llm_usage.reset()
+
+    def test_non_anthropic_provider_receives_joined_single_string(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The openai-compatible path (and bedrock, via the same `_llm_call`
+        join) must receive prefix + variable as ONE string -- no content
+        blocks, no cache_control, bytes identical to the pre-split prompt."""
+        from src.rank import _llm_call
+
+        monkeypatch.setenv("LLM_PROVIDER", "openai")
+        monkeypatch.setenv("LLM_MODEL", "gpt-4")
+        monkeypatch.setenv("LLM_ENDPOINT", "https://api.openai.com/v1")
+        monkeypatch.setenv("LLM_API_KEY", "sk-test")
+        with patch("httpx.post", return_value=_ok_response()) as mock_post:
+            _llm_call(("PREFIX-", "VARIABLE"), temperature=0.2, max_tokens=16)
+        body = mock_post.call_args.kwargs["json"]
+        assert body["messages"][0]["content"] == "PREFIX-VARIABLE"

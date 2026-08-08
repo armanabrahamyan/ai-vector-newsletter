@@ -125,6 +125,81 @@ class TestPricingLookup:
         assert snap["total"]["cost_usd"] is None
 
 
+class TestCacheTokenAccounting:
+    """Prompt-caching fields (2026-08-08, rank cache split). The Anthropic
+    usage object splits billed input into `input_tokens` (after the last
+    cache breakpoint), `cache_creation_input_tokens` (5-min writes, 1.25x
+    base input) and `cache_read_input_tokens` (hits, 0.10x base input).
+    Without recording all three, metrics_log.jsonl silently misreports the
+    cost of every cached rank call."""
+
+    def test_cache_fields_absent_default_to_zero(self):
+        """Old call sites (bedrock/openai paths, summarise et al.) omit the
+        cache kwargs -- schema stays backward-compatible, absent = 0."""
+        llm_usage.set_stage("rank")
+        llm_usage.record("claude-sonnet-4-6", 1000, 200)
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cache_creation_input_tokens"] == 0
+        assert snap["stages"]["rank"]["cache_read_input_tokens"] == 0
+
+    def test_cache_tokens_accumulate(self):
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "claude-sonnet-4-6", 100, 10,
+            cache_creation_input_tokens=3084, cache_read_input_tokens=0,
+        )
+        llm_usage.record(
+            "claude-sonnet-4-6", 100, 10,
+            cache_creation_input_tokens=0, cache_read_input_tokens=3084,
+        )
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cache_creation_input_tokens"] == 3084
+        assert snap["stages"]["rank"]["cache_read_input_tokens"] == 3084
+        assert snap["total"]["cache_creation_input_tokens"] == 3084
+        assert snap["total"]["cache_read_input_tokens"] == 3084
+
+    def test_cache_write_priced_at_1_25x_base_input(self):
+        """1M cache-write tokens on sonnet-4-6 = $3.75 (1.25 x $3.00).
+        Fetched 2026-08-08 from the Anthropic pricing table."""
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "claude-sonnet-4-6", 0, 0, cache_creation_input_tokens=1_000_000,
+        )
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(3.75)
+
+    def test_cache_read_priced_at_0_10x_base_input(self):
+        """1M cache-read tokens on sonnet-4-6 = $0.30 (0.10 x $3.00)."""
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "claude-sonnet-4-6", 0, 0, cache_read_input_tokens=1_000_000,
+        )
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(0.30)
+
+    def test_all_four_components_summed(self):
+        """A realistic cached rank call: 500 fresh input, 100 output,
+        3084 read from cache. Cost = 500*3 + 100*15 + 3084*0.30 (per MTok)."""
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "claude-sonnet-4-6", 500, 100, cache_read_input_tokens=3084,
+        )
+        expected = (500 * 3.00 + 100 * 15.00 + 3084 * 0.30) / 1_000_000
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(
+            round(expected, 4)
+        )
+
+    def test_unknown_model_with_cache_tokens_still_reports_none_cost(self):
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "some-unpriced-model", 100, 10, cache_read_input_tokens=1000,
+        )
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] is None
+        assert snap["stages"]["rank"]["cache_read_input_tokens"] == 1000
+
+
 class TestReset:
     def test_reset_clears_accumulated_usage(self):
         llm_usage.set_stage("rank")

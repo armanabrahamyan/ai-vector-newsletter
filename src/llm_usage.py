@@ -32,14 +32,20 @@ from typing import Any
 # `_price_for_model`). Longest matching prefix wins, so entry order below
 # doesn't matter for correctness.
 #
+# Cache rates fetched 2026-08-08 from the Anthropic pricing docs: 5-minute
+# cache writes are 1.25x the base input rate, cache hits/refreshes are
+# 0.10x the base input rate (multipliers confirmed against the per-model
+# table -- e.g. sonnet-4-6: $3 input -> $3.75 write / $0.30 hit).
+#
 # PRICES DRIFT -- verify against current Anthropic pricing before trusting
 # a cost figure for a budget decision.
 # ---------------------------------------------------------------------------
-_PRICING: dict[str, tuple[float, float]] = {
-    # (usd_per_mtok_input, usd_per_mtok_output)
-    "claude-sonnet-4-6": (3.00, 15.00),   # verify against current Anthropic pricing
-    "claude-opus-4": (15.00, 75.00),      # verify against current Anthropic pricing
-    "claude-haiku-4-5": (1.00, 5.00),     # verify against current Anthropic pricing
+_PRICING: dict[str, tuple[float, float, float, float]] = {
+    # (usd_per_mtok_input, usd_per_mtok_output,
+    #  usd_per_mtok_cache_write_5m, usd_per_mtok_cache_read)
+    "claude-sonnet-4-6": (3.00, 15.00, 3.75, 0.30),   # fetched 2026-08-08
+    "claude-opus-4": (15.00, 75.00, 18.75, 1.50),     # fetched 2026-08-08
+    "claude-haiku-4-5": (1.00, 5.00, 1.25, 0.10),     # fetched 2026-08-08
 }
 
 _UNKNOWN_STAGE = "unknown"
@@ -67,26 +73,53 @@ def set_stage(stage: str) -> None:
     _current_stage = stage or _UNKNOWN_STAGE
 
 
-def record(model: str, input_tokens: int, output_tokens: int) -> None:
+def record(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    *,
+    cache_creation_input_tokens: int = 0,
+    cache_read_input_tokens: int = 0,
+) -> None:
     """Accumulate one LLM call's token usage under the currently active
     stage. Safe to call even if `set_stage()` was never invoked -- e.g. an
     ad-hoc debug entrypoint (`python -m src.rank`) that calls into rank()
     directly without going through run.py's dispatcher -- in which case
     usage is tagged "unknown" rather than raising.
+
+    Prompt caching (2026-08-08): with a cache breakpoint in play,
+    Anthropic's `input_tokens` covers only tokens after the breakpoint;
+    the cached prefix is billed via `cache_creation_input_tokens`
+    (5-minute writes, 1.25x base input) and `cache_read_input_tokens`
+    (hits/refreshes, 0.10x base input). Callers without caching omit the
+    keyword args -- absent fields count as 0, keeping old records and old
+    call sites schema-compatible.
     """
     stage = _current_stage or _UNKNOWN_STAGE
     model_key = model or _UNKNOWN_STAGE
     by_model = _usage.setdefault(stage, {})
-    entry = by_model.setdefault(model_key, {"input_tokens": 0, "output_tokens": 0})
+    entry = by_model.setdefault(
+        model_key,
+        {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        },
+    )
     entry["input_tokens"] += max(0, int(input_tokens or 0))
     entry["output_tokens"] += max(0, int(output_tokens or 0))
+    entry["cache_creation_input_tokens"] += max(
+        0, int(cache_creation_input_tokens or 0)
+    )
+    entry["cache_read_input_tokens"] += max(0, int(cache_read_input_tokens or 0))
 
 
-def _price_for_model(model: str) -> tuple[float, float] | None:
+def _price_for_model(model: str) -> tuple[float, float, float, float] | None:
     """Prefix-match `model` against `_PRICING`. Returns the rates for the
     LONGEST matching prefix (so a more specific entry wins over a shorter
     accidental substring match), or None if no prefix matches."""
-    best: tuple[float, float] | None = None
+    best: tuple[float, float, float, float] | None = None
     best_len = -1
     for prefix, rates in _PRICING.items():
         if model.startswith(prefix) and len(prefix) > best_len:
@@ -96,8 +129,16 @@ def _price_for_model(model: str) -> tuple[float, float] | None:
 
 
 def _stage_snapshot(by_model: dict[str, dict[str, int]]) -> dict[str, Any]:
+    # `.get(..., 0)` on the cache fields: entries recorded by older code
+    # paths (or deserialised old records) may not carry them -- absent = 0.
     input_tokens = sum(m["input_tokens"] for m in by_model.values())
     output_tokens = sum(m["output_tokens"] for m in by_model.values())
+    cache_creation = sum(
+        m.get("cache_creation_input_tokens", 0) for m in by_model.values()
+    )
+    cache_read = sum(
+        m.get("cache_read_input_tokens", 0) for m in by_model.values()
+    )
     cost_usd = 0.0
     cost_known = True
     for model, tok in by_model.items():
@@ -105,12 +146,20 @@ def _stage_snapshot(by_model: dict[str, dict[str, int]]) -> dict[str, Any]:
         if rates is None:
             cost_known = False
             continue
-        in_rate, out_rate = rates
+        in_rate, out_rate, cache_write_rate, cache_read_rate = rates
         cost_usd += (tok["input_tokens"] / 1_000_000) * in_rate
         cost_usd += (tok["output_tokens"] / 1_000_000) * out_rate
+        cost_usd += (
+            tok.get("cache_creation_input_tokens", 0) / 1_000_000
+        ) * cache_write_rate
+        cost_usd += (
+            tok.get("cache_read_input_tokens", 0) / 1_000_000
+        ) * cache_read_rate
     return {
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
+        "cache_creation_input_tokens": cache_creation,
+        "cache_read_input_tokens": cache_read,
         "cost_usd": round(cost_usd, 4) if cost_known else None,
     }
 
@@ -118,13 +167,18 @@ def _stage_snapshot(by_model: dict[str, dict[str, int]]) -> dict[str, Any]:
 def snapshot() -> dict[str, Any]:
     """Return accumulated usage: `{"stages": {stage: {...}}, "total": {...}}`.
 
-    Each stage/total dict has `input_tokens`, `output_tokens`, `cost_usd`.
+    Each stage/total dict has `input_tokens`, `output_tokens`,
+    `cache_creation_input_tokens`, `cache_read_input_tokens`, `cost_usd`.
+    The cache fields are additive (2026-08-08, rank prompt caching); old
+    metrics_log.jsonl records simply lack them -- readers treat absent as 0.
     `cost_usd` is None whenever any contributing model isn't in the pricing
     table -- we report tokens either way, but never guess at a cost.
     """
     stages: dict[str, Any] = {}
     total_input = 0
     total_output = 0
+    total_cache_creation = 0
+    total_cache_read = 0
     total_cost = 0.0
     total_cost_known = True
     for stage, by_model in _usage.items():
@@ -132,6 +186,8 @@ def snapshot() -> dict[str, Any]:
         stages[stage] = stage_snap
         total_input += stage_snap["input_tokens"]
         total_output += stage_snap["output_tokens"]
+        total_cache_creation += stage_snap["cache_creation_input_tokens"]
+        total_cache_read += stage_snap["cache_read_input_tokens"]
         if stage_snap["cost_usd"] is None:
             total_cost_known = False
         else:
@@ -141,6 +197,8 @@ def snapshot() -> dict[str, Any]:
         "total": {
             "input_tokens": total_input,
             "output_tokens": total_output,
+            "cache_creation_input_tokens": total_cache_creation,
+            "cache_read_input_tokens": total_cache_read,
             "cost_usd": round(total_cost, 4) if total_cost_known else None,
         },
     }
