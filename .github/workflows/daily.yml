@@ -126,7 +126,7 @@ jobs:
             released-embeddings-
 
       - name: Install dependencies
-        run: pip install -e .
+        run: pip install -e . -c constraints.txt
 
       # Preflight refuses to run without the models already on disk (its
       # guard against surprise mid-pipeline downloads). On a cache hit this

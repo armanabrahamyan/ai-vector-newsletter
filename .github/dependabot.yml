@@ -1,0 +1,20 @@
+# Dependabot: proposes version bumps as PRs; nothing updates silently.
+# CI installs are pinned by constraints.txt, so a bump only reaches the
+# nightly runner when a Dependabot PR (or a manual regeneration) is merged.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies

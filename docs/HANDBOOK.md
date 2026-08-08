@@ -974,3 +974,24 @@ agent roster. In short:
 - Cross-module changes, data contracts → **Architect**
 
 CLAUDE.md has the full table with when-to-invoke guidance.
+
+---
+
+## 19. Dependencies are pinned — bumping them deliberately
+
+CI installs with `pip install -e . -c constraints.txt`: exact versions,
+frozen from a venv that ran the full suite green. Nothing on the nightly
+runner updates by itself — the runner holds the LLM API key, so an
+unpinned install meant any compromised release could reach it overnight.
+
+**To bump:** merge the weekly Dependabot PR (it edits `constraints.txt`;
+CI proves the suite still passes), or upgrade locally and regenerate:
+
+```bash
+pip install -U <package>
+pip freeze --exclude-editable > constraints.txt   # re-add the header
+python -m pytest tests/ -q                        # full suite before commit
+```
+
+`pyproject.toml` keeps its floors-only philosophy — it states intent;
+`constraints.txt` states what actually runs tonight.
