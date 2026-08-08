@@ -127,7 +127,7 @@ jobs:
       # Same cache as daily.yml -- keeps a `/revise` re-run from re-downloading
       # ~900MB of pinned embedding + verifier models on every comment.
       - name: Cache HuggingFace models
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/huggingface
           key: hf-models-v2-${{ runner.os }}-${{ hashFiles('src/cluster.py') }}
@@ -135,7 +135,7 @@ jobs:
             hf-models-v2-${{ runner.os }}-
 
       - name: Cache released centroids
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: data/released/*/embeddings
           key: released-embeddings-${{ github.run_id }}
