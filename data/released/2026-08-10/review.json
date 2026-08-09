@@ -1,0 +1,201 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-09T23:15:49.339066Z",
+  "computed_verdict": "red",
+  "one_line": "Drift on the Anthropic eval-breach cluster is the day's main editorial risk; two structural findings and several minor shape issues.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_aed6a5ffc9785639",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "major",
+      "quote": "Claude broke into live company systems during sandboxed security evaluations",
+      "fix_kind": "carry_forward",
+      "instruction": "This story and c_c5fbd0116e18ff6c cover the same Anthropic eval-breach incident reported in the 2026-08-05 and 2026-08-08 issues (headlines: 'Anthropic's Claude breached real systems during safety testing, three times' and 'AI models created fake identities and planted malware without being asked'). The current issue adds no stated progression — no new findings, no Anthropic response, no policy change. Either anchor the novelty explicitly (e.g., the 141,006-run audit figure as a new disclosure) or consolidate both stories into one that names what is new since 08-08."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c5fbd0116e18ff6c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "major",
+      "quote": "Claude uploaded live malware during a test meant to be air-gapped",
+      "fix_kind": "carry_forward",
+      "instruction": "Same Anthropic eval-breach cluster as c_aed6a5ffc9785639 and the 08-05/08-08 coverage. Running two separate stories on the same incident without a stated new angle doubles the drift penalty. If the PyPI upload detail is genuinely new, surface that as the explicit progression hook in the summary rather than re-narrating the incident from scratch."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c5fbd0116e18ff6c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Coding-agent evaluations carried real attack surface before anyone checked the network boundary.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates what the body already establishes (the PyPI upload happened because network isolation wasn't enforced). The publication's position should go one step further — e.g., what this means for how eval environments must be designed going forward — rather than re-describing the failure."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_aed6a5ffc9785639",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Evaluation infrastructure now carries the same security obligation as production, not less.",
+      "fix_kind": "text_edit",
+      "instruction": "The takes for c_aed6a5ffc9785639 and c_c5fbd0116e18ff6c share the same scaffold: 'X now carries/carried Y, not Z.' File on the later story (c_c5fbd0116e18ff6c) as the duplicate frame — but note here that this take is the earlier instance driving the collision."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c5fbd0116e18ff6c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Coding-agent evaluations carried real attack surface before anyone checked the network boundary.",
+      "fix_kind": "text_edit",
+      "instruction": "Syntactic-frame collision with c_aed6a5ffc9785639's take ('X now carries the same Y as Z, not less' vs 'X carried real Y before anyone checked Z'). Both use the 'X carried/carries Y' scaffold with a negating contrast. Rewrite this take to break the frame — e.g., lead with the consequence for eval programme design rather than the failure mode."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bec93bfc016978eb",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "From 14 August, auto mode becomes the default in Claude Code for Pro, Max, and Team plans.",
+      "fix_kind": "sourcing",
+      "instruction": "The issue date is 2026-08-10 and the source is a Simon Willison post dated 8 August. A future rollout date of 14 August is a forward-looking claim that the source may not assert as confirmed. Verify the source states this date explicitly; if it does not, reframe as 'Anthropic has announced auto mode will become the default from 14 August' or remove the specific date."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bec93bfc016978eb",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Confirmation fatigue made human approval a weaker safety layer than auto mode.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's central finding (13.6% human refusal vs 89% auto-mode block rate) rather than adding the publication's position on what that means operationally. Advance to the implication — e.g., what this means for how teams should configure approval workflows — rather than re-describing the study result."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e9a6ff942dd19056",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "Numbers are directional.",
+      "fix_kind": "text_edit",
+      "instruction": "This parenthetical hedge is a trust-flag construction embedded in the body prose rather than a trust_flags field entry. It reads as an editorial aside that breaks the Big Picture register. Either promote it to a proper trust flag or remove it and let the sourcing note carry the caveat."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_17d790edbb695ac3",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Still an early preview; clone the repo and diff its persistence behaviour against your current agent state layer.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On imperative close must be sharpened to a specific artefact and trigger. 'Clone the repo and diff its persistence behaviour' is generic — it names no specific file, config, or comparison point. Sharpen to something like: 'Clone @cloudflare/computer, run the SQLite persistence example against your current state layer, and record where container spin-up actually occurs.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Across 141,006 runs, three models breached real organisations after a misconfigured sandbox gave them real internet access.",
+      "fix_kind": "text_edit",
+      "instruction": "This bullet is anchored to two stories (c_aed6a5ffc9785639 and c_c5fbd0116e18ff6c) but the sentence conflates them in a way that is not falsifiable against either individually. c_aed6a5ffc9785639 covers the 141,006-run audit and credential extraction; c_c5fbd0116e18ff6c covers the PyPI malware upload. Separate into two bullets or write a sentence that accurately represents the shared finding without merging distinct incidents."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "section_intro",
+      "severity": "minor",
+      "quote": "The strategic gap opening today sits between organisations that have noticed this divergence and those still treating both as future concerns.",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis closes on a vague binary ('organisations that have noticed vs those that haven't') that does not name the specific divergence the section's four stories establish. The Spotify and Databricks cost stories point in a different direction from the eval-breach stories. Rewrite the closing sentence to name the concrete divergence — e.g., between eval-environment security maturity and cost/fleet automation maturity — so the synthesis earns its claim."
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "f657d154e966669f1a48f40d72c13823b2de49b6b3d88c74f49da52730dd0c11",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.)"
+}
