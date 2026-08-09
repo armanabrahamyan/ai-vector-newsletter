@@ -36,7 +36,30 @@ schema_version: 1
 # dimension: the 25% aggregate voice gate was ratified against a
 # five-dimension denominator, and a sixth would silently loosen it.
 # Bumping rubric_version invalidates the judge cache by design.
-rubric_version: "v0.3-2026-08-08"
+#
+# v0.4 (2026-08-09, RATIFIED 2026-08-09): the layout-redesign
+# wave-two re-scope, against the editor's final voice contracts (take v2
+# cold-open, digest, synthesis, tag verbs) and the concurrent schema wave
+# (Issue v8 digest, IssueSection v4 synthesis -- DESIGN.md "Layout
+# redesign (2026-08-09)"). Four changes:
+#   (1) take v2: COLD-OPEN SELF-SUFFICIENCY becomes the governing anchor
+#       under `direction`; anchor A demoted to necessary-not-sufficient;
+#       new `self_sufficient` sub-test under take_quality; anchor B
+#       unchanged, with a recorded falsifiable prediction.
+#   (2) digest_quality: NEW per-issue criterion (NOT a sixth voice
+#       dimension -- the same denominator argument as v0.3: the 25%
+#       aggregate gate was ratified against five dimensions).
+#   (3) section_intro_quality re-scoped to the synthesis paragraph.
+#       Sub-test KEY NAMES kept frozen (lead_phrase / body_pattern);
+#       check text replaced -- the consequence_led precedent.
+#   (4) labels schema v2 note extended to the new surfaces (see
+#       take_quality description).
+# CALIBRATION FLIPS ratification must confirm: (a) "Reasoning on
+# stderr..." moves from unqualified anchor-B green to
+# borderline-on-cold-open; (b) the v0.2 lead_phrase pass exemplar
+# "Trust gaps are widening." is RETIRED and reclassified as the
+# aphoristic-lead defect under the synthesis contract.
+rubric_version: "v0.4-2026-08-09"
 corpus_basis:
   ratified_issues: ["2026-05-23 .. 2026-07-03 (23 released issues)"]
   rulings_basis: >
@@ -163,33 +186,60 @@ voice_dimensions:
       "[do X] before [milestone]"; every Currents close "if it
       replicates / if it doesn't") is a defect (R-1/R-2): the reader's
       eye predicts the scaffold and skips the most actionable line.
-      [TAKE, v0.22] Each story now carries a one-line declarative take
-      (italic, after the body), scored INSIDE this dimension through
-      three anchors. (A) consequence-not-instruction: the take must
-      parse as "It is now the case that [take]" -- an imperative, a
-      question, or a hedged forecast in the take is a turn-type leak.
-      Green: "Model-risk sign-off now covers agent plans, not just
-      model outputs." Red: "Map your agent surface before the next
-      audit cycle." (instruction is the Hands-On BODY close's job).
-      (B) non-transferability: paste the take under the nearest sibling
-      story's headline -- still plausible = fail; plausible under most
-      stories = fail hard (a horoscope, not a position). Green:
-      "Reasoning on stderr is the small decision that makes agent
-      output pipeable." Red: "Agentic AI just crossed a line the
-      industry can't uncross." -- parses under A, pastes onto every
-      agent story this month; the voice-OK-signal-weak case this anchor
-      exists to catch. (C) frame novelty: Eval 10's deterministic
-      counters (opener families in-issue, 4-grams across the last 10
-      released issues) run BEFORE the judge and arrive as evidence; the
-      judge covers only the residue code cannot see -- paraphrased
+      [TAKE, v2 2026-08-09 -- the cold-open contract] The redesigned
+      layout renders the take FIRST in each story unit (the
+      takeaway-first slot): the reader meets the take cold, before the
+      body exists for them. The GOVERNING anchor is therefore COLD-OPEN
+      SELF-SUFFICIENCY: read alone, with nothing beneath it yet, the
+      take must name the NEW state AND the state it DISPLACED, pinned
+      to this story's specifics. A take that names only the new state
+      is borderline; a take that needs the body to mean anything fails.
+      The other anchors serve this one.
+      (A) consequence-not-instruction -- DEMOTED to
+      necessary-not-sufficient (v2). The "It is now the case that
+      [take]" parse test still rejects imperatives, questions, and
+      hedged forecasts. But passing it proves nothing alone. TEACHING
+      CASE (the operator's recap example, 2026-08-09): a recap line --
+      "It is now the case that [vendor shipped the thing]" -- parses
+      cleanly under A and is still not a take; it recounts the event
+      instead of positioning it. Cold-open is what separates position
+      from recap. JUDGE INSTRUCTION: a gerund-subject opener
+      ("Reasoning on stderr is...", "Shipping evals weekly is...") is
+      a noun-phrase subject, NOT a leading imperative -- never fail it
+      under A. PARSE-DEPTH is judge residue: summarise's code proxies
+      (v0.23) police the surface; the judge catches only takes that
+      pass the proxies yet demand a second parse (clause nested in
+      clause) -- the slot is read at skim speed, so a two-pass take
+      fails cold-open however correct its grammar.
+      (B) non-transferability -- UNCHANGED from v0.3: paste the take
+      under the nearest sibling story's headline -- still plausible =
+      fail; plausible under most stories = fail hard (a horoscope, not
+      a position). Red: "Agentic AI just crossed a line the industry
+      can't uncross." -- parses under A, pastes onto every agent story
+      this month. RE-ANCHORED EXEMPLAR: "Reasoning on stderr is the
+      small decision that makes agent output pipeable." stays anchor-B
+      green (the mechanism is this story's alone) and is now
+      BORDERLINE ON COLD-OPEN -- it names the new state but not the
+      displaced one. It teaches the difference between the two tests.
+      PREDICTION (recorded 2026-08-09, falsifiable): the cold-open
+      requirement should RAISE anchor-B pass rates -- a take forced to
+      name new + displaced state is pinned to its story and resists
+      pasting. If the first two v2 issues do NOT show anchor-B pass
+      rates above the v0.22 issues' rates, the spec didn't land;
+      escalate to the Editor before re-anchoring anything.
+      (C) frame novelty -- unchanged: Eval 10's deterministic counters
+      (opener families in-issue, 4-grams across the last 10 released
+      issues) run BEFORE the judge and arrive as evidence; the judge
+      covers only the residue code cannot see -- paraphrased
       recurrence and structural templates ("X is the new Y") that
-      survive synonym substitution. CLOSE RELOCATION (v0.22): the Pulse
-      plain take, the Currents two-sided stake, and Big Picture's
-      consequence sentence now live in the take field; Hands-On keeps
-      its imperative body close and the take carries the stake. Judge
-      the turn-type contract across BODY + TAKE as a unit -- a body
-      that still ends on the relocated close AND repeats it in the take
-      is the "said once" violation, not compliance.
+      survive synonym substitution. CLOSE RELOCATION (v0.22,
+      unchanged): the Pulse plain take, the Currents two-sided stake,
+      and Big Picture's consequence sentence live in the take field;
+      Hands-On keeps its imperative body close and the take carries
+      the stake. Judge the turn-type contract across BODY + TAKE as a
+      unit -- a body that still ends on the relocated close AND
+      repeats it in the take is the "said once" violation, not
+      compliance.
     anchors:
       "0": >
         Bodies end on a summary of what shipped, with no judgement.
@@ -221,11 +271,12 @@ voice_dimensions:
         "thin sourcing, one Reddit thread" under a big claim is the ONE
         licensed magnitude-mismatch flag -- said once, flag or stake,
         never both.)
-        [TAKE] Every take parses as "It is now the case that..." and is
-        pinned to its own story's specifics (names the mechanism, actor,
-        or constraint that only this story supplies). No opener family
-        repeats beyond the Eval 10 limits; no frame echoes the recent
-        lookback, paraphrase included.
+        [TAKE] Every take parses as "It is now the case that..." AND
+        stands cold: read before the body, it names the new state and
+        the displaced one, pinned to its own story's specifics (the
+        mechanism, actor, or constraint that only this story supplies).
+        No opener family repeats beyond the Eval 10 limits; no frame
+        echoes the recent lookback, paraphrase included.
       "100": >
         Every story closes on its section's turn-type, in varied surface
         grammar, tied to the specific decision the story informs, never
@@ -584,73 +635,181 @@ per_story_criteria:
     description: >
       Per non-pulse section (big_picture, hands_on, currents). The
       Pulse carries no intro by design -- the Pulse IS the framing.
-      QUIET-DAY ALLOWANCE (v0.21): an empty Currents section still
-      carries an intro acknowledging the quiet day in the Currents
-      register ("A quiet day in the undercurrents..."); score it on
-      register fit, not on pattern-reading of stories it doesn't have.
+      RE-SCOPED v0.4 (2026-08-09, PROPOSAL): the judged unit is now the
+      single italic `synthesis` paragraph (IssueSection v4) -- the
+      merge of the former intro_lead + intro_body pair. Sub-test KEY
+      NAMES stay FROZEN for label agreement (the consequence_led
+      precedent: keep keys, replace check text). Archived issues
+      carrying the legacy pair are judged on the pair joined as one
+      unit ("{intro_lead} {intro_body}") under these same semantics.
+      QUIET-DAY ALLOWANCE (v0.21, unchanged): an empty Currents section
+      still carries a synthesis acknowledging the quiet day in the
+      Currents register; score it on register fit, not on
+      pattern-reading of stories it doesn't have.
     sub_tests:
       lead_phrase:
         check: >
-          2-5 words, full-stop at end. Posture-setting phrase, not a
-          headline restatement. Watch the R-observed drift: the nominal
-          "X is the Y" frame repeated issue over issue is a tic; vary
-          the grammar.
-        pass_exemplar: >
-          (2026-05-23, Big Picture) "Trust gaps are widening." -- 4
-          words, posture-setting, names the day's pattern in the bold
-          phrase.
-        pass_exemplar_2: >
-          (2026-05-24, Big Picture) "Regulators set the pace." -- 4
-          words, frames the section without restating the FCA headline.
+          HISTORICAL KEY NAME; the governing test is NO APHORISTIC
+          LEAD. The synthesis must not open on a detached
+          posture-slogan or register-aphorism -- an opening sentence
+          that could sit atop any section on any day. The opening
+          clause names the day's concrete pattern with at least one
+          specific drawn from the section's stories (an actor, a
+          mechanism, a count, a constraint). The old 2-5-word bold-lead
+          test is DEAD: the bold lead no longer exists as a unit
+          (IssueSection v4 merged the pair; the layout dropped the
+          bold-lead treatment).
+        pass_exemplar_class: >
+          An opener that reads the section, e.g. "Three of today's
+          four stories put agent oversight inside the runtime rather
+          than in front of it." -- pattern named, specifics carried.
+        fail_exemplar: >
+          "Trust gaps are widening." as the opening sentence --
+          RETIRED v0.2 pass exemplar, reclassified: as a bold lead it
+          was posture-setting; as a synthesis opener it is the
+          aphoristic lead this test exists to catch (aphorism first,
+          evidence later). "Capability outruns control." same class.
         fail_exemplar_class: >
-          "Today's top stories." -- 3 words, but vapid posture.
+          "Today's top stories." -- vapid posture, no pattern, no
+          specifics. Any opener interchangeable across sections or
+          across days.
       body_pattern:
         check: >
-          20-35 words, frames the day's PATTERN across the section's
-          stories without restating any headline verbatim. Names what
-          the editor wants the reader to NOTICE. On a quiet day (empty
-          Currents), acknowledges the quiet in-register instead.
+          ONE italic paragraph that frames the day's PATTERN across the
+          section's stories without restating any headline verbatim.
+          Names what the editor wants the reader to NOTICE, in the
+          section's register (Currents keeps its mandatory
+          aggregate-motion reading). Word budget is the editor's
+          synthesis contract, enforced as a code band in Eval 11 and
+          arriving as evidence -- the judge scores pattern-reading and
+          register, not word counts. On a quiet day (empty Currents),
+          acknowledges the quiet in-register instead.
         pass_exemplar: >
-          (2026-05-23, Hands-On) "Today's gains, faster inference,
-          cheaper routing, sharper tool-calling, look compelling on
-          paper. Most rest on single-source benchmarks, so treat them
-          as directions to test, not decisions to make." -- 30 words,
-          reads the pattern (single-source benchmarks), gives posture
-          (test, don't decide).
+          (2026-05-23, Hands-On, legacy pair joined) "Today's gains,
+          faster inference, cheaper routing, sharper tool-calling, look
+          compelling on paper. Most rest on single-source benchmarks,
+          so treat them as directions to test, not decisions to make."
+          -- reads the pattern (single-source benchmarks), gives
+          posture (test, don't decide).
         borderline_exemplar: >
-          (2026-05-23, On the Radar) "Both items rest on single Reddit
-          threads with no independent verification. The pattern here is
-          community-driven, practical signal that deserves a watch, not
-          yet a decision." -- 30 words, but "the pattern here is" is a
-          tic; "deserves a watch" lifts language from the section name.
-          Borderline -- could land sharper.
+          (2026-05-23, On the Radar, legacy pair joined) "Both items
+          rest on single Reddit threads with no independent
+          verification. The pattern here is community-driven, practical
+          signal that deserves a watch, not yet a decision." -- "the
+          pattern here is" is a tic; "deserves a watch" lifts language
+          from the section name. Borderline -- could land sharper.
+
+  - name: digest_quality
+    description: >
+      PER ISSUE (one verdict per issue, NOT a sixth voice dimension --
+      the same denominator argument as the v0.3 take decision: the 25%
+      aggregate voice gate was ratified against five dimensions and a
+      sixth would silently loosen it). Applies to issues carrying
+      Issue.digest ("The 30-second read", Issue v8): 3-5 bullets of
+      {bold lead, one sentence, story_ids provenance} rendered ABOVE
+      The Pulse. Label not_applicable for pre-digest issues AND for
+      degraded days (digest=None is the ratified degradation path,
+      never a defect by itself). The digest is the issue's skim
+      surface: a reader who reads ONLY the digest leaves with the day's
+      shape. Eval 11's deterministic counters (budget, bold band,
+      sentence band, surface-overlap ratios vs takes/syntheses, banned
+      phrases, pulse provenance, verify-verdict bar) run BEFORE the
+      judge and arrive as evidence; the judge covers the editorial
+      residue only.
+    sub_tests:
+      bold_is_naming:
+        check: >
+          Each bold lead NAMES the takeaway -- a claim about the world
+          ("Agents run locally now"), not a topic label ("Agent news"),
+          not a section name, not a headline restatement. A lead you
+          could not disagree with is a label, not a naming.
+      synthesizes_across:
+        check: >
+          The digest reads as the editor's synthesis of the day, not a
+          table of contents. Bullets with multi-story provenance
+          genuinely merge their stories' signal; the bullet set covers
+          the day's shape rather than walking the first N stories in
+          display order. Five single-story summaries in section order
+          = fail.
+      bullet_one_is_pulse:
+        check: >
+          Bullet 1 carries the Pulse story's takeaway -- the day's
+          direction leads the skim. Code verifies the provenance
+          (digest[0].story_ids resolving to the Pulse story) and it
+          arrives as evidence; the judge scores whether the bullet
+          actually CARRIES the direction, not merely cites the story.
+      no_surface_collision:
+        check: >
+          Digest text does not duplicate the take or synthesis
+          surfaces -- the same fact is allowed, the same sentence is
+          not. Code overlap ratios arrive as evidence; the judge covers
+          the paraphrase residue (a bullet that is a story's take with
+          two synonyms swapped collides, whatever the ratio says).
+      budget:
+        check: >
+          Compression must not cost meaning. The word budget (code:
+          ~100 words total, leads 3-6 words, one sentence per bullet)
+          arrives as evidence; the judge fails a digest that buys the
+          counts with telegraphese, dropped articles, or wire
+          headlinese -- the R-9 article policy applies to digest prose
+          exactly as to headlines.
 
   - name: take_quality
     description: >
-      Per story, for stories that carry a take (v0.22+). Label
-      not_applicable for pre-take issues and for stories whose take was
-      legitimately cut (take=None). The take is the publication's
-      position line: one declarative sentence, 8-16 words (hard 18),
-      italic, after the body. Scored per the three [TAKE] anchors under
-      the direction dimension. Labels: schema_version 2 begins with the
-      first take-era labels file; decision_tied_close is re-scoped per
-      section under v2 (Hands-On body close unchanged; Pulse /
-      Big Picture / Currents assessed over body + take, body must not
-      duplicate the relocated close) and NEVER compared across schema
-      versions -- the two-issue v1 series is closed as history.
+      Per story, for stories that carry a take (v0.22+; v2 cold-open
+      contract from summarise v0.23). Label not_applicable for pre-take
+      issues and for stories whose take was legitimately cut
+      (take=None). The take is the publication's position line: one
+      declarative sentence, 8-16 words (hard 18), rendered FIRST in the
+      story unit under the 2026-08-09 layout (the takeaway-first slot)
+      -- the reader meets it cold. Scored per the [TAKE, v2] anchors
+      under the direction dimension; self_sufficient governs.
+      Labels: schema_version 2 begins with the first take-era labels
+      file; decision_tied_close is re-scoped per section under v2
+      (Hands-On body close unchanged; Pulse / Big Picture / Currents
+      assessed over body + take, body must not duplicate the relocated
+      close) and NEVER compared across schema versions -- the two-issue
+      v1 series is closed as history. V2 NOTE EXTENSION (2026-08-09,
+      PROPOSAL): the redesign surfaces stay INSIDE labels schema v2 --
+      no v3. Concretely: (a) sections are labelled on the single
+      `synthesis` unit under the SAME frozen section_intro_quality keys
+      (lead_phrase / body_pattern -- historical names, re-scoped check
+      text); (b) a per-issue `digest_quality` block joins the labels
+      file (sub-tests below); (c) take labels are scored against the
+      v2 cold-open contract, including the new self_sufficient key.
+      Additive keys under an unchanged denominator do not break v2
+      agreement; renaming or removing a key would, and is what the
+      frozen-key rule forbids.
     sub_tests:
+      self_sufficient:
+        check: >
+          GOVERNING (v2). Cold-open test: read the take alone, before
+          the body. It must name the new state AND the state it
+          displaced, grounded in this story's specifics. Names the new
+          state only = borderline. Needs the body to mean anything =
+          fail. Borderline exemplar: "Reasoning on stderr is the small
+          decision that makes agent output pipeable." -- new state
+          named, displaced state absent.
       consequence_not_instruction:
         check: >
-          Anchor A parse test: prepend "It is now the case that" -- the
-          take must still parse as a claim about the world. Imperatives,
-          questions, hedged forecasts fail. (Code already rejects '?'
-          and hedge words; judge this for the imperative-with-no-hedge
-          residue.)
+          Anchor A parse test, DEMOTED to necessary-not-sufficient
+          (v2): prepend "It is now the case that" -- the take must
+          still parse as a claim about the world. Imperatives,
+          questions, hedged forecasts fail. Passing proves nothing
+          alone: the operator's recap example ("It is now the case
+          that [vendor shipped the thing]") passes this parse and
+          fails self_sufficient -- that is the teaching case. A
+          gerund-subject opener ("Reasoning on stderr is...") is NOT a
+          leading imperative; never fail it here. Parse-depth is judge
+          residue: code proxies live in summarise (v0.23); judge only
+          the two-pass parses that slip through them.
       non_transferable:
         check: >
-          Anchor B paste test: under the nearest sibling story's
-          headline, still plausible = fail; plausible under most
-          stories = fail hard.
+          Anchor B paste test, UNCHANGED: under the nearest sibling
+          story's headline, still plausible = fail; plausible under
+          most stories = fail hard. (Prediction on record: v2
+          cold-open should raise pass rates here -- see the direction
+          dimension.)
       frame_novelty:
         check: >
           Anchor C, judged with Eval 10 counter output as evidence:
@@ -674,7 +833,9 @@ judge_instructions:
   output_shape: >
     Per issue, the judge returns: {voice_dimensions: {<name>: {label,
     rationale}}}, {stories: [{story_id, headline_quality, summary_quality,
-    signal_appropriateness}]}, {sections: [{name, intro_quality}]}.
+    signal_appropriateness, take_quality}]}, {sections: [{name,
+    intro_quality}]}, {digest_quality: {label, rationale}} (issues
+    carrying a digest only).
   borderline_handling: >
     Borderline is a real verdict, not a synonym for "I'm not sure".
     Borderline means: meets some sub-tests, fails others; OR meets all

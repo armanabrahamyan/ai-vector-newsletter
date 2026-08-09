@@ -102,6 +102,7 @@ from typing import Any, Optional
 
 from src import llm_usage, paths
 from src.models import (
+    DigestBullet,
     IssueSection,
     ReviewFinding,
     ReviewReport,
@@ -123,11 +124,20 @@ from src.review import (
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVISE_PROMPT_VERSION = "v0.1"
+REVISE_PROMPT_VERSION = "v0.2"
 r"""Versioned prompt string recorded on every ``RevisionCycle`` so a bad
 edit can be attributed to the prompt that produced it.
 
-Bump on any prompt-content change. Audit tag: ``revise-v0.1-2026-08-02``.
+Bump on any prompt-content change. Audit tag: ``revise-v0.2-2026-08-09``.
+
+v0.2 (2026-08-09, wave three): ``_FIELD_GUIDANCE`` gains the redesign
+surfaces -- ``synthesis``, ``digest_lead``, ``digest_sentence`` -- so a
+digest/synthesis finding's rewrite prompt states the budgets and the
+story-anchored vs section-anchored register before the code-side spec
+re-validation enforces them. STRICTLY ADDITIVE: the prompt for every
+pre-existing field (headline / summary / take / intro pair) is
+byte-identical to v0.1 -- the new guidance strings are reachable only
+from targets that could not exist before ReviewTarget v3.
 
 v0.1 (2026-08-02): first cut. Field-scoped rewrite prompt -- current text
 plus the findings about it, replacement text out, nothing else. The
@@ -257,7 +267,14 @@ def _bounds_from_model(model: Any, field_name: str) -> tuple[int, int] | None:
 
 
 def _field_bounds() -> dict[str, tuple[int, int]]:
-    """``{field: (min_length, max_length)}`` for every revisable field.
+    """``{field token: (min_length, max_length)}`` for every revisable
+    field.
+
+    Keyed by the ``ReviewTargetField`` TOKEN, which is not always the model
+    field name: ``digest_lead``/``digest_sentence`` are the prefixed review
+    tokens for ``DigestBullet.lead``/``.sentence`` (DESIGN.md "The digest",
+    R2 -- the token != model-field-name mapping is deliberate, so a digest
+    finding can never be mistaken for a section one).
 
     Falls back to the values documented in DESIGN.md when introspection
     finds nothing, and logs -- a stage that silently dropped its length
@@ -270,16 +287,22 @@ def _field_bounds() -> dict[str, tuple[int, int]]:
         "take": (1, 200),
         "intro_lead": (1, 80),
         "intro_body": (1, 400),
+        "synthesis": (1, 500),
+        "digest_lead": (1, 80),
+        "digest_sentence": (1, 300),
     }
     out: dict[str, tuple[int, int]] = {}
-    for name, model in (
-        ("headline", SummaryBlock),
-        ("summary", SummaryBlock),
-        ("take", SummaryBlock),
-        ("intro_lead", IssueSection),
-        ("intro_body", IssueSection),
+    for name, model, model_field in (
+        ("headline", SummaryBlock, "headline"),
+        ("summary", SummaryBlock, "summary"),
+        ("take", SummaryBlock, "take"),
+        ("intro_lead", IssueSection, "intro_lead"),
+        ("intro_body", IssueSection, "intro_body"),
+        ("synthesis", IssueSection, "synthesis"),
+        ("digest_lead", DigestBullet, "lead"),
+        ("digest_sentence", DigestBullet, "sentence"),
     ):
-        bounds = _bounds_from_model(model, name)
+        bounds = _bounds_from_model(model, model_field)
         if bounds is None:
             _LOG.warning(
                 "revise: could not read length bounds for %s from the model; "
@@ -287,9 +310,9 @@ def _field_bounds() -> dict[str, tuple[int, int]]:
             )
             out[name] = fallback[name]
         else:
-            # Intro fields are Optional in the model, so their declared
-            # minimum is 0; a replacement that empties one is a deletion,
-            # not a revision, so we hold every field to at least 1.
+            # Optional fields declare minimum 0; a replacement that empties
+            # one is a deletion, not a revision, so we hold every field to
+            # at least 1.
             out[name] = (max(1, bounds[0]), bounds[1])
     return out
 
@@ -530,7 +553,9 @@ def revise_day(
 
     changes: list[RevisionChange] = []
     for group in groups:
-        changes.append(_revise_one_field(group, shadow=shadow))
+        changes.append(
+            _revise_one_field(group, shadow=shadow, issue_payload=issue_payload)
+        )
 
     sha_after: str | None = None
     render_note = ""
@@ -873,7 +898,8 @@ def _build_groups(
 
 
 def _parse_target_selector(selector: str) -> ReviewTarget | None:
-    """Parse ``story:<cluster_id>:<field>`` / ``section:<name>:<field>``.
+    """Parse ``story:<cluster_id>:<field>`` / ``section:<name>:<field>`` /
+    ``digest:<index>:<field>``.
 
     Returns ``None`` for an empty or unparseable selector -- the caller
     treats that as "no explicit target", never as an error, because a
@@ -885,8 +911,8 @@ def _parse_target_selector(selector: str) -> ReviewTarget | None:
     parts = raw.split(":")
     if len(parts) != 3:
         _LOG.warning(
-            "revise: --target %r is not 'story:<id>:<field>' or "
-            "'section:<name>:<field>'", selector,
+            "revise: --target %r is not 'story:<id>:<field>', "
+            "'section:<name>:<field>', or 'digest:<index>:<field>'", selector,
         )
         return None
     kind, locator, field_name = (p.strip() for p in parts)
@@ -898,6 +924,17 @@ def _parse_target_selector(selector: str) -> ReviewTarget | None:
         if kind == "section":
             return ReviewTarget(
                 kind="section", section=locator, field=field_name,  # type: ignore[arg-type]
+            )
+        if kind == "digest":
+            if not locator.isdigit():
+                _LOG.warning(
+                    "revise: --target %r digest index must be a 0-based "
+                    "integer", selector,
+                )
+                return None
+            return ReviewTarget(
+                kind="digest", digest_index=int(locator),
+                field=field_name,  # type: ignore[arg-type]
             )
     except Exception as exc:  # noqa: BLE001 -- a bad selector is user input
         _LOG.warning("revise: --target %r is not a valid target: %s",
@@ -911,16 +948,44 @@ def _parse_target_selector(selector: str) -> ReviewTarget | None:
 # The per-field revision.
 # ---------------------------------------------------------------------------
 
-def _revise_one_field(group: _FieldGroup, *, shadow: bool) -> RevisionChange:
+def _revise_one_field(
+    group: _FieldGroup,
+    *,
+    shadow: bool,
+    issue_payload: dict[str, Any] | None = None,
+) -> RevisionChange:
     """Produce (and validate) one field's replacement text.
 
     One LLM call, one field. On a length failure we retry once quoting the
     exact constraint -- that is the one failure a model can fix when told
     the number. Every other rejection is final for this cycle.
+
+    ``issue_payload`` (wave three) feeds the spec re-validation for the
+    context-dependent fields: a revised digest lead/sentence re-runs
+    ``summarise._digest_violations`` (delta against the unrevised digest)
+    and a revised synthesis re-runs ``summarise._synthesis_violations``,
+    because the generic gate cannot see the word budgets and deconfliction
+    rules those surfaces were generated under.
     """
     recommendation = " | ".join(group.instructions)[:2000]
     field_name = group.target.field
-    minimum, maximum = FIELD_BOUNDS[field_name]
+    bounds = FIELD_BOUNDS.get(field_name)
+    if bounds is None:
+        # The KeyError class the take integration taught us: the review
+        # vocabulary can gain a field before this stage learns it (or a
+        # future skew can reintroduce the gap). A field this stage cannot
+        # bound is a field it must refuse, not crash on -- revise_day has
+        # no try around this call, so a raise here would break the
+        # failure-soft contract of the whole stage.
+        _LOG.error(
+            "revise: no FIELD_BOUNDS entry for field %r (target %s) -- "
+            "refusing the edit; FIELD_BOUNDS must learn the field first",
+            field_name, group.key,
+        )
+        return _rejected_change(
+            group, "", recommendation, "unknown_field_bounds",
+        )
+    minimum, maximum = bounds
 
     candidate = ""
     failure = ""
@@ -959,6 +1024,14 @@ def _revise_one_field(group: _FieldGroup, *, shadow: bool) -> RevisionChange:
             "revise: rejecting replacement for %s -- %s", group.key, reason,
         )
         return _rejected_change(group, candidate, recommendation, reason)
+
+    spec_reason = _spec_violation_reason(group, candidate, issue_payload)
+    if spec_reason:
+        _LOG.warning(
+            "revise: rejecting replacement for %s -- %s",
+            group.key, spec_reason,
+        )
+        return _rejected_change(group, candidate, recommendation, spec_reason)
 
     if candidate == group.text:
         return _rejected_change(group, candidate, recommendation, "no_change")
@@ -1089,6 +1162,198 @@ def validate_replacement(group: _FieldGroup, candidate: str) -> str:
     return ""
 
 
+def _spec_violation_reason(
+    group: _FieldGroup,
+    candidate: str,
+    issue_payload: dict[str, Any] | None,
+) -> str:
+    """Context-dependent spec re-validation for the redesign surfaces (R2).
+
+    The generic gate checks containment; it cannot check the ratified
+    digest budgets (lead 3-6 words, one sentence of 14-22, the 100-word
+    total, take/synthesis deconfliction) or the synthesis word/sentence
+    budgets, because those are properties of the WHOLE issue, not the one
+    field. So a revised ``digest_lead``/``digest_sentence`` re-runs
+    ``summarise._digest_violations`` and rejects on any violation the
+    unrevised digest did not already carry (delta, so a pre-existing
+    violation elsewhere cannot make a bullet permanently unrevisable), and
+    a revised ``synthesis`` re-runs ``summarise._synthesis_violations``
+    outright (its checks are text-local).
+
+    Returns ``""`` when acceptable, or a stable reject token. Failure-soft:
+    an exception inside the check is logged and returns ``""`` -- a broken
+    advisory spec check must not take the revision engine down with it.
+    """
+    field_name = group.target.field
+    if field_name not in ("synthesis", "digest_lead", "digest_sentence"):
+        return ""
+    if not isinstance(issue_payload, dict):
+        # No issue context (should not happen on the revise_day path) --
+        # the generic gate has already run; do not invent a rejection.
+        _LOG.warning(
+            "revise: no issue payload for the %s spec check -- skipped",
+            field_name,
+        )
+        return ""
+    try:
+        if field_name == "synthesis":
+            return _synthesis_spec_reason(group, candidate, issue_payload)
+        return _digest_spec_reason(group, candidate, issue_payload)
+    except Exception:  # noqa: BLE001 -- advisory check, never a crash
+        _LOG.exception(
+            "revise: spec re-validation for %s raised -- check skipped",
+            group.key,
+        )
+        return ""
+
+
+def _synthesis_spec_reason(
+    group: _FieldGroup, candidate: str, issue_payload: dict[str, Any]
+) -> str:
+    """Re-run summarise's synthesis checks on the replacement text."""
+    from src.summarise import _synthesis_violations  # lazy: heavy module
+
+    section_name = group.target.section or ""
+    quiet_day = False
+    for section in issue_payload.get("sections") or []:
+        if isinstance(section, dict) and section.get("name") == section_name:
+            # The quiet-day Currents framing runs under a relaxed floor
+            # (summarise's quiet_day parameter); mirror that here or a
+            # legitimate quiet-day rewrite could never pass.
+            quiet_day = (
+                section_name == "currents" and not (section.get("stories") or [])
+            )
+            break
+    violations = _synthesis_violations(candidate, quiet_day=quiet_day)
+    if violations:
+        _LOG.warning(
+            "revise: revised %s synthesis violates the synthesis spec: %s",
+            section_name, "; ".join(violations),
+        )
+        return "synthesis_spec_violation"
+    return ""
+
+
+def _digest_spec_reason(
+    group: _FieldGroup, candidate: str, issue_payload: dict[str, Any]
+) -> str:
+    """Re-run summarise's digest checks on the digest with the replacement
+    applied, rejecting only NEW violations (delta vs. the stored digest)."""
+    import copy as _copy
+
+    from src.summarise import _digest_violations  # lazy: heavy module
+
+    digest = issue_payload.get("digest")
+    idx = group.target.digest_index
+    if (
+        not isinstance(digest, list)
+        or idx is None
+        or not 0 <= idx < len(digest)
+        or not isinstance(digest[idx], dict)
+    ):
+        return "digest_target_missing"
+
+    context = _digest_check_context(issue_payload)
+
+    def _violations(bullets_source: list[Any]) -> list[str]:
+        bullets = []
+        for bullet in bullets_source:
+            if not isinstance(bullet, dict):
+                continue
+            story_ids = [
+                str(s) for s in (bullet.get("story_ids") or [])
+                if isinstance(s, str)
+            ]
+            bullets.append({
+                # The stored DigestBullet has no section field (it was an
+                # LLM-payload key); derive it from the primary story so
+                # the structural checks still run.
+                "section": context["section_of"].get(
+                    story_ids[0] if story_ids else "", ""
+                ),
+                "lead": str(bullet.get("lead") or ""),
+                "sentence": str(bullet.get("sentence") or ""),
+                "story_ids": story_ids,
+            })
+        eligible = []
+        for entry in bullets[1:]:
+            if not eligible or eligible[-1] != entry["section"]:
+                eligible.append(entry["section"])
+        return _digest_violations(
+            bullets,
+            pulse_id=context["pulse_id"],
+            eligible_names=eligible,
+            allowed_ids=context["allowed_ids"],
+            takes=context["takes"],
+            syntheses=context["syntheses"],
+        )
+
+    before = _violations(digest)
+    revised = _copy.deepcopy(digest)
+    model_field = "lead" if group.target.field == "digest_lead" else "sentence"
+    revised[idx][model_field] = candidate
+    after = _violations(revised)
+
+    new = [v for v in after if v not in before]
+    if new:
+        _LOG.warning(
+            "revise: revised digest bullet %d violates the digest spec: %s",
+            idx + 1, "; ".join(new),
+        )
+        return "digest_spec_violation"
+    return ""
+
+
+def _digest_check_context(issue_payload: dict[str, Any]) -> dict[str, Any]:
+    """Derive the ``_digest_violations`` context from a raw issue payload:
+    the pulse story id, each story's section, per-section allowed ids, the
+    takes, and the syntheses. Mirrors what summarise assembled at
+    generation time, reconstructed from what the issue persists."""
+    section_of: dict[str, str] = {}
+    allowed_ids: dict[str, list[str]] = {}
+    takes: list[str] = []
+    syntheses: dict[str, str | None] = {}
+
+    def _walk(name: str, container: dict[str, Any]) -> list[str]:
+        ids: list[str] = []
+        for story in container.get("stories") or []:
+            if not isinstance(story, dict):
+                continue
+            sid = story.get("story_id")
+            if isinstance(sid, str) and sid:
+                ids.append(sid)
+                section_of[sid] = name
+            take = story.get("take")
+            if isinstance(take, str) and take.strip():
+                takes.append(take.strip())
+        return ids
+
+    pulse = issue_payload.get("pulse") or {}
+    pulse_ids = _walk("pulse", pulse) if isinstance(pulse, dict) else []
+    allowed_ids["pulse"] = pulse_ids
+
+    for section in issue_payload.get("sections") or []:
+        if not isinstance(section, dict):
+            continue
+        name = str(section.get("name") or "")
+        if not name:
+            continue
+        allowed_ids[name] = _walk(name, section)
+        synthesis = section.get("synthesis")
+        syntheses[name] = (
+            synthesis.strip()
+            if isinstance(synthesis, str) and synthesis.strip() else None
+        )
+
+    return {
+        "pulse_id": pulse_ids[0] if pulse_ids else "",
+        "section_of": section_of,
+        "allowed_ids": allowed_ids,
+        "takes": takes,
+        "syntheses": syntheses,
+    }
+
+
 def _numerals_named_in_directives(group: _FieldGroup) -> set[str]:
     """Numerals a finding or operator directive explicitly mentions.
 
@@ -1181,6 +1446,26 @@ _FIELD_GUIDANCE = {
     "intro_body": (
         "This is a section INTRO BODY -- one or two sentences framing the "
         "day's pattern in this section."
+    ),
+    "synthesis": (
+        "This is a section SYNTHESIS -- one italic paragraph of two or "
+        "three sentences framing the pattern across the section's stories. "
+        "Section-anchored: it names what the stories add up to; the "
+        "stories carry the specifics. The first sentence must be about "
+        "today's stories, never a detachable aphorism."
+    ),
+    "digest_lead": (
+        "This is a digest bullet's bold LEAD in \"The 30-second read\" -- "
+        "3-6 words ending in a full stop, NAMING what the bullet is about. "
+        "Never an imperative, never a question, no artifact names a senior "
+        "practitioner would not recognise."
+    ),
+    "digest_sentence": (
+        "This is a digest bullet's SENTENCE in \"The 30-second read\" -- "
+        "exactly ONE sentence of 14-22 words (up to 26 only as a "
+        "semicolon-list of at most 3 clauses), story-anchored and "
+        "concrete: the number, the actor, the mechanism. It compresses "
+        "the story afresh; it must not paraphrase the story's take."
     ),
 }
 
@@ -1319,7 +1604,7 @@ def _apply_changes(
     Mutates the payload we already parsed (no second read), clears
     ``verification`` on every story whose text changed, and rewrites the
     file atomically -- the same ``.tmp`` + fsync + rename pattern
-    ``verify._rewrite_issue_with_verification`` uses, so a reader never sees
+    ``verify._write_issue_payload`` uses, so a reader never sees
     a half-written issue.
 
     Clearing ``verification`` is code's call, not the model's: the
@@ -1340,11 +1625,51 @@ def _apply_changes(
             block[target.field] = change.after
             block["verification"] = None
             touched_stories.add(target.story_id or "")
+        elif target.kind == "digest":
+            # Route via digest_index (R2): the review token maps onto the
+            # model field (digest_lead -> lead, digest_sentence -> sentence).
+            digest = issue_payload.get("digest")
+            idx = target.digest_index
+            if (
+                not isinstance(digest, list)
+                or idx is None
+                or not 0 <= idx < len(digest)
+                or not isinstance(digest[idx], dict)
+            ):
+                _LOG.warning(
+                    "revise: digest bullet %s not found while applying -- "
+                    "change skipped", idx,
+                )
+                continue
+            model_field = (
+                "lead" if target.field == "digest_lead" else "sentence"
+            )
+            digest[idx][model_field] = change.after
+            # The bullet's verify verdicts live on its PRIMARY story's
+            # verification (digest contract V3); they were about text that
+            # no longer exists, so the same clearing rule applies.
+            primary_ids = digest[idx].get("story_ids") or []
+            primary = primary_ids[0] if primary_ids else ""
+            block = stories.get(str(primary))
+            if block is not None:
+                block["verification"] = None
+                touched_stories.add(str(primary))
         else:
             section = sections.get(target.section or "")
             if section is None:
                 continue
             section[target.field] = change.after
+            if target.field == "synthesis":
+                # Synthesis verdicts attach to the section's FIRST story
+                # (verify v0.7); an edited synthesis stales them exactly
+                # as an edited body stales its own.
+                for story in section.get("stories") or []:
+                    if isinstance(story, dict):
+                        sid = story.get("story_id")
+                        story["verification"] = None
+                        if isinstance(sid, str) and sid:
+                            touched_stories.add(sid)
+                        break
 
     _LOG.info(
         "revise: applied %d change(s); cleared verification on %d story(ies)",

@@ -1,529 +1,256 @@
+{#- Advisory verify badges. Operator UI: rendered only under show_verify_flags,
+    i.e. in docs/staging/. Released HTML never carries them. -#}
+{%- macro verify_flag(block) -%}
+{%- if block.verification -%}
+{%- if block.verification.headline_flagged -%}
+<span class="op-flag hard" title="Headline claim flagged by the advisory verifier">&#9888; headline claim flagged</span>
+{%- elif block.verification.has_contradiction -%}
+<span class="op-flag hard" title="Contradicted claim detected by the advisory verifier">&#9888; contradicted</span>
+{%- elif block.verification.has_unsupported -%}
+<span class="op-flag" title="Unsupported claim detected by the advisory verifier">&#9888; unsupported claim</span>
+{%- endif -%}
+{%- endif -%}
+{%- endmacro -%}
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ brand.name }} {% if issue.display_number %}&middot; Issue No. {{ issue.display_number }} {% else %}(preview) {% endif %}&middot; {{ issue.date.strftime('%d %B %Y') }}</title>
-  <meta name="description" content="{{ brand.tagline }} {{ brand.description }}">
-  <meta name="theme-color" content="#0c0c0c">
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="mask-icon" href="../favicon.svg" color="#e6452f">
-  <link rel="stylesheet" href="../fonts/fonts.css">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #fbfaf6;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility;
-    }
-    body {
-      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      color: #1a1a17;
-    }
-
-    /* ── shell ─────────────────────────────────────────────── */
-    .av-shell {
-      font-family: "Inter Tight", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-size: 17px;
-      line-height: 1.7;
-      color: #1a1a17;
-      background: #ffffff;
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 72px 88px 80px;
-      letter-spacing: -0.003em;
-      font-feature-settings: "kern", "liga", "calt";
-      box-shadow: 0 1px 3px rgba(12,12,12,0.04), 0 12px 60px rgba(12,12,12,0.06);
-    }
-
-    /* ── duplicate-risk gate (staging preview only) ─────────── */
-    .av-dup-gate {
-      border: 2px solid #b00020;
-      border-left-width: 8px;
-      background: #fff5f5;
-      border-radius: 6px;
-      padding: 18px 22px;
-      margin-bottom: 32px;
-      color: #5c0010;
-      font-family: "Inter Tight", system-ui, sans-serif;
-    }
-    .av-dup-gate-head {
-      font-weight: 800;
-      font-size: 16px;
-      letter-spacing: 0.01em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      color: #b00020;
-    }
-    .av-dup-gate-body, .av-dup-gate-remedy {
-      font-size: 14px;
-      line-height: 1.5;
-      margin: 0 0 8px;
-    }
-    .av-dup-gate-cmds {
-      margin: 0;
-      padding: 12px 14px;
-      background: #2b0008;
-      color: #ffd9dd;
-      border-radius: 4px;
-      font-family: "SFMono-Regular", ui-monospace, Menlo, monospace;
-      font-size: 13px;
-      line-height: 1.6;
-      overflow-x: auto;
-    }
-
-    /* ── masthead ──────────────────────────────────────────── */
-    .av-masthead {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 32px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #0c0c0c;
-      margin-bottom: 36px;
-    }
-    .av-brand {
-      font-family: "Big Shoulders Display", "Inter Tight", sans-serif;
-      font-size: 60px;
-      font-weight: 800;
-      letter-spacing: -0.005em;
-      line-height: 0.85;
-      color: #0c0c0c;
-      text-transform: uppercase;
-    }
-    .av-brand-slash { color: #e6452f; margin: 0 2px; }
-    .av-mast-meta {
-      font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #5a5a55;
-      text-align: right;
-      line-height: 1.7;
-    }
-    .av-mast-archive {
-      display: inline-block;
-      margin-top: 4px;
-      color: #e6452f;
-      font-weight: 600;
-      text-decoration: none;
-      border-bottom: 1px solid rgba(230,69,47,0.35);
-    }
-    .av-mast-archive:hover { border-bottom-color: #e6452f; }
-
-    /* ── tagline ───────────────────────────────────────────── */
-    .av-tagline {
-      font-family: "DM Serif Display", "Source Serif 4", Georgia, serif;
-      font-style: italic;
-      font-size: 22px;
-      color: #1a1a17;
-      margin: 0 0 32px;
-      letter-spacing: -0.01em;
-      line-height: 1.3;
-    }
-    .av-tagline-mark { color: #e6452f; margin-right: 12px; }
-
-    /* ── pulse ─────────────────────────────────────────────── */
-    .av-pulse {
-      margin: 0 0 56px;
-      padding: 32px 32px 28px;
-      background: #fdf4f1;
-      border-left: 3px solid #e6452f;
-    }
-    .av-pulse-label {
-      font-family: "Inter Tight", sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #e6452f;
-      margin: 0 0 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .av-pulse-bar { width: 32px; height: 2px; background: #e6452f; }
-    .av-pulse-title {
-      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 34px;
-      font-weight: 700;
-      letter-spacing: -0.028em;
-      line-height: 1.15;
-      margin: 0 0 22px;
-      color: #0c0c0c;
-      text-wrap: balance;
-      max-width: 26ch;
-    }
-    .av-pulse-body {
-      font-size: 18px;
-      line-height: 1.65;
-      color: #2a2a26;
-      margin: 0 0 18px;
-      max-width: 38em;
-      text-wrap: pretty;
-    }
-    /* The take: the writer's one-line read on the story. Body family,
-       italic, same size as the body it follows. Never the serif italic
-       (reserved for the tagline) and never the accent colour. */
-    .av-pulse-take {
-      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: 18px;
-      line-height: 1.65;
-      color: #1a1a17;
-      margin: 0 0 18px;
-      max-width: 30em;
-      text-align: left;
-      text-wrap: pretty;
-    }
-    /* Applied only when a take follows: tightens the gap so the take reads
-       as part of the story, not as a second paragraph. */
-    .av-pulse-body--with-take { margin-bottom: 14px; }
-    .av-pulse-meta {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 13px;
-      color: #6a6a64;
-      flex-wrap: wrap;
-    }
-    .av-pulse-link {
-      color: #e6452f;
-      text-decoration: underline;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 3px;
-      font-weight: 600;
-    }
-
-    /* ── section ───────────────────────────────────────────── */
-    .av-section-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 20px;
-      padding-top: 32px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #0c0c0c;
-      margin: 0 0 28px;
-    }
-    .av-section-title-wrap {
-      display: flex;
-      align-items: baseline;
-      gap: 16px;
-    }
-    .av-section-title {
-      font-family: "Inter Tight", sans-serif;
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: -0.025em;
-      line-height: 1.1;
-      margin: 0;
-      color: #0c0c0c;
-    }
-    .av-section-count {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-      color: #6a6a64;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    /* ── stories ───────────────────────────────────────────── */
-    .av-story { margin: 0 0 36px; }
-    .av-story-title {
-      font-family: "Inter Tight", sans-serif;
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.025em;
-      line-height: 1.2;
-      margin: 0 0 10px;
-      color: #0c0c0c;
-      text-wrap: balance;
-      max-width: 28em;
-    }
-    .av-story-body {
-      font-size: 17px;
-      line-height: 1.7;
-      color: #2a2a26;
-      margin: 0 0 14px;
-      max-width: 38em;
-      text-wrap: pretty;
-    }
-    /* The take: see .av-pulse-take. Same left edge as the body (the scan
-       column is non-negotiable), no prefix, no label, no marker. */
-    .av-story-take {
-      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: 17px;
-      line-height: 1.7;
-      color: #1a1a17;
-      margin: 0 0 14px;
-      max-width: 30em;
-      text-align: left;
-      text-wrap: pretty;
-    }
-    /* Applied only when a take follows, so stories without one keep the
-       14px body margin they have always had. */
-    .av-story-body--with-take { margin-bottom: 10px; }
-    .av-story-foot {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 13px;
-      color: #6a6a64;
-      flex-wrap: wrap;
-    }
-    .av-story-src {
-      color: #e6452f;
-      text-decoration: underline;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 3px;
-      font-weight: 500;
-    }
-
-    /* ── pills ─────────────────────────────────────────────── */
-    .av-pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-family: "Inter Tight", sans-serif;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      line-height: 1.3;
-    }
-    .av-pill-act     { color: #8a5448; background: #f5ecea; }
-    .av-pill-try     { color: #4f7a5d; background: #ecf2ed; }
-    .av-pill-read    { color: #5a7090; background: #eef1f6; }
-    .av-pill-watch   { color: #6a6a64; background: #f0efec; }
-    .av-pill-discuss { color: #8a7548; background: #f4eee2; }
-
-    /* ── section intro paragraph ───────────────────────────── */
-    .av-section-intro {
-      font-size: 17px;
-      line-height: 1.6;
-      color: #3a3a36;
-      margin: 0 0 36px;
-      max-width: 40em;
-      text-wrap: pretty;
-    }
-    .av-section-intro-strong {
-      color: #0c0c0c;
-      font-weight: 700;
-    }
-
-    /* ── Currents (terse) ─────────────────────────────────── */
-    .av-section.currents .av-story { margin: 0 0 22px; }
-    .av-section.currents .av-story-body { font-size: 16px; }
-    .av-section.currents .av-story-take { font-size: 16px; }
-    /* legacy alias for archived issues still carrying on_the_radar class */
-    .av-section.on_the_radar .av-story { margin: 0 0 22px; }
-    .av-section.on_the_radar .av-story-body { font-size: 16px; }
-    .av-section.on_the_radar .av-story-take { font-size: 16px; }
-
-    /* ── verify flags (staging preview only) ──────────────── */
-    .av-verify-flag {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: "Inter Tight", system-ui, sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #7a3800;
-      background: #fff3e0;
-      border: 1px solid #f0a050;
-      white-space: nowrap;
-    }
-    .av-verify-flag--headline {
-      color: #6a0000;
-      background: #fff0f0;
-      border-color: #e07070;
-    }
-
-    /* ── footer ────────────────────────────────────────────── */
-    .av-footer {
-      margin-top: 56px;
-      padding-top: 24px;
-      border-top: 1px solid #0c0c0c;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-      font-family: "JetBrains Mono", monospace;
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #6a6a64;
-    }
-    .av-footer-build {
-      color: #a5a5a0;
-      letter-spacing: 0.1em;
-      white-space: nowrap;
-    }
-    .av-about {
-      margin-top: 12px;
-      font-size: 13px;
-      color: #8a8a85;
-      line-height: 1.6;
-      max-width: 60em;
-    }
-    .av-archive-link {
-      color: #6a6a64;
-      text-decoration: underline;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 3px;
-    }
-
-    /* ── responsive ────────────────────────────────────────── */
-    @media (max-width: 720px) {
-      .av-shell { padding: 36px 24px 48px; }
-      .av-brand { font-size: 42px; }
-      .av-mast-meta { font-size: 10px; letter-spacing: 0.1em; }
-      .av-tagline { font-size: 19px; }
-      .av-pulse { padding: 24px 22px 22px; }
-      .av-pulse-title { font-size: 26px; }
-      .av-pulse-body { font-size: 17px; }
-      .av-pulse-take { font-size: 17px; }
-      .av-section-title { font-size: 22px; }
-      .av-story-title { font-size: 20px; }
-      .av-masthead { flex-direction: column; align-items: flex-start; gap: 16px; }
-      .av-mast-meta { text-align: left; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ brand.name }} &mdash; {% if issue.display_number %}Issue No. {{ issue.display_number }}{% else %}Preview{% endif %} &middot; {{ issue.date.strftime('%d %B %Y') }}</title>
+<meta name="description" content="{{ pulse_story.headline }}. {% if issue.display_number %}Issue No. {{ issue.display_number }} of {{ brand.name }}.{% else %}A staging preview of {{ brand.name }}.{% endif %}">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+{%- if show_verify_flags %}
+<style>
+/* ── Operator UI: STAGING PREVIEW ONLY ─────────────────────────────────────
+   Everything in this block is emitted only when show_verify_flags is true,
+   i.e. render(mode="preview") -> docs/staging/. A released page never carries
+   a single byte of it, so docs/released/ CSS is exactly the design CSS above.
+   Guarded jointly with the Experience Designer. */
+.op-dup-gate{max-width:var(--measure);margin:0 auto;width:100%;border:2px solid oklch(0.50 0.18 25);border-left-width:8px;background:oklch(0.97 0.02 25);padding:16px 20px;color:oklch(0.35 0.14 25);font-family:var(--mono);font-size:12.5px;line-height:1.55}
+.op-dup-gate-head{font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.op-dup-gate p{margin:0 0 8px}
+.op-dup-gate pre{margin:0;padding:10px 12px;background:oklch(0.25 0.06 25);color:oklch(0.93 0.03 25);font-family:var(--mono);font-size:12px;line-height:1.6;overflow-x:auto}
+.op-flag{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.45 0.12 60);border:1px solid oklch(0.72 0.11 70);background:oklch(0.96 0.04 80);padding:1px 6px;white-space:nowrap}
+.op-flag.hard{color:oklch(0.42 0.16 25);border-color:oklch(0.66 0.15 25);background:oklch(0.96 0.04 25)}
+</style>
+{%- endif %}
 </head>
 <body>
-  <article class="av-shell">
-    {% if dup_risk_dates %}
-    <aside class="av-dup-gate" role="alert">
-      <div class="av-dup-gate-head">&#9888; Duplicate risk &mdash; do not publish as-is</div>
-      <p class="av-dup-gate-body">
-        {{ dup_risk_dates|length }} earlier issue{{ '' if dup_risk_dates|length == 1 else 's' }}
-        ({{ dup_risk_dates|join(', ') }}) {{ 'is' if dup_risk_dates|length == 1 else 'are' }}
-        staged but <strong>not yet released</strong>. Cross-time dedup reads the released
-        archive only, so it could not see {{ 'it' if dup_risk_dates|length == 1 else 'them' }} &mdash;
-        this issue may repeat stories already covered there.
-      </p>
-      <p class="av-dup-gate-remedy">
-        <strong>Remedy:</strong> release the earlier issue{{ '' if dup_risk_dates|length == 1 else 's' }}
-        oldest-first, then re-run this date so dedup can see {{ 'it' if dup_risk_dates|length == 1 else 'them' }}:
-      </p>
-      <pre class="av-dup-gate-cmds">{% for d in dup_risk_dates %}aiv release --date {{ d }}
+<main class="page">
+<div class="issue">
+{% if dup_risk_dates %}
+<aside class="op-dup-gate" role="alert">
+  <div class="op-dup-gate-head">&#9888; Duplicate risk &mdash; do not publish as-is</div>
+  <p>
+    {{ dup_risk_dates|length }} earlier issue{{ '' if dup_risk_dates|length == 1 else 's' }}
+    ({{ dup_risk_dates|join(', ') }}) {{ 'is' if dup_risk_dates|length == 1 else 'are' }}
+    staged but <strong>not yet released</strong>. Cross-time dedup reads the released
+    archive only, so it could not see {{ 'it' if dup_risk_dates|length == 1 else 'them' }} &mdash;
+    this issue may repeat stories already covered there.
+  </p>
+  <p>
+    <strong>Remedy:</strong> release the earlier issue{{ '' if dup_risk_dates|length == 1 else 's' }}
+    oldest-first, then re-run this date so dedup can see {{ 'it' if dup_risk_dates|length == 1 else 'them' }}:
+  </p>
+  <pre>{% for d in dup_risk_dates %}aiv release --date {{ d }}
 {% endfor %}aiv run --date {{ issue.date.isoformat() }}</pre>
-    </aside>
-    {% endif %}
-    <header class="av-masthead">
-      <h1 class="av-brand">{{ brand.wordmark.lead }}<span class="av-brand-slash">/</span>{{ brand.wordmark.tail }}</h1>
-      <div class="av-mast-meta">
-        <div>{{ issue.date.strftime('%A, %d %B %Y') }}</div>
-        <div>
-          {%- if issue.display_number -%}
-            Issue No. {{ issue.display_number }}
-          {%- else -%}
-            Preview &middot; staging
-          {%- endif -%}
-          {%- if read_minutes %} &middot; ~{{ read_minutes }} min read{% endif -%}
-        </div>
-        <div><a class="av-mast-archive" href="../index.html">All Issues &rarr;</a></div>
-      </div>
-    </header>
-
-    <p class="av-tagline">
-      <span class="av-tagline-mark">&mdash;</span>
-      {{ brand.tagline }}
-    </p>
-
-    {# ── Pulse ───────────────────────────────────────────── #}
-    {% set p = issue.pulse.stories[0] %}
-    <section class="av-pulse">
-      <div class="av-pulse-label">
-        <span class="av-pulse-bar"></span>
-        <span>The Pulse &middot; Story of the day</span>
-      </div>
-      <h2 class="av-pulse-title">{{ p.headline }}</h2>
-      <p class="av-pulse-body{% if p.take %} av-pulse-body--with-take{% endif %}">{{ p.summary }}</p>
-      {%- if p.take %}
-      <p class="av-pulse-take">{{ p.take }}</p>
-      {%- endif %}
-      <div class="av-pulse-meta">
-        {% for url in p.source_urls %}
-          <a class="av-pulse-link" href="{{ url }}">{{ url | source_label }}&nbsp;&rarr;</a>
-        {% endfor %}
-        {% if show_verify_flags and p.verification %}
-          {% if p.verification.headline_flagged %}
-            <span class="av-verify-flag av-verify-flag--headline" title="Headline claim flagged by advisory verifier">&#9888; headline claim flagged</span>
-          {% elif p.verification.has_contradiction %}
-            <span class="av-verify-flag av-verify-flag--headline" title="Contradicted claim detected by advisory verifier">&#9888; contradicted</span>
-          {% elif p.verification.has_unsupported %}
-            <span class="av-verify-flag" title="Unsupported claim detected by advisory verifier">&#9888; unsupported claim</span>
-          {% endif %}
-        {% endif %}
-      </div>
-    </section>
-
-    {# ── Remaining sections ─────────────────────────────── #}
-    {% for section in issue.sections %}
-      {% if section.stories %}
-        <div class="av-section {{ section.name }}">
-          <div class="av-section-head">
-            <div class="av-section-title-wrap">
-              <h2 class="av-section-title">{{ section_title(section.name) }}</h2>
-            </div>
-            <span class="av-section-count">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}{{ 'item' if section.stories|length == 1 else 'items' }}{% else %}{{ 'story' if section.stories|length == 1 else 'stories' }}{% endif %}</span>
-          </div>
-          {% if section.intro_lead or section.intro_body %}
-            <p class="av-section-intro">
-              {%- if section.intro_lead %}<span class="av-section-intro-strong">{{ section.intro_lead }}</span> {% endif -%}
-              {{ section.intro_body or '' }}
-            </p>
-          {% endif %}
-          {% for story in section.stories %}
-            <article class="av-story">
-              <h3 class="av-story-title">{{ story.headline }}</h3>
-              <p class="av-story-body{% if story.take %} av-story-body--with-take{% endif %}">{{ story.summary }}</p>
-              {%- if story.take %}
-              <p class="av-story-take">{{ story.take }}</p>
-              {%- endif %}
-              <div class="av-story-foot">
-                {% if story.signal %}
-                  <span class="av-pill av-pill-{{ story.signal }}">{{ story.signal }}</span>
-                {% endif %}
-                {% for url in story.source_urls %}
-                  <a class="av-story-src" href="{{ url }}">{{ url | source_label }}&nbsp;&rarr;</a>
-                {% endfor %}
-                {% if show_verify_flags and story.verification %}
-                  {% if story.verification.headline_flagged %}
-                    <span class="av-verify-flag av-verify-flag--headline" title="Headline claim flagged by advisory verifier">&#9888; headline claim flagged</span>
-                  {% elif story.verification.has_contradiction %}
-                    <span class="av-verify-flag av-verify-flag--headline" title="Contradicted claim detected by advisory verifier">&#9888; contradicted</span>
-                  {% elif story.verification.has_unsupported %}
-                    <span class="av-verify-flag" title="Unsupported claim detected by advisory verifier">&#9888; unsupported claim</span>
-                  {% endif %}
-                {% endif %}
-              </div>
-            </article>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endfor %}
-
-    <footer class="av-footer">
-      <span>{{ brand.name }} &middot; {{ issue.author if issue.author is defined else brand.author }} &middot; {{ issue.date.strftime('%d %B %Y') }} &middot; <a class="av-archive-link" href="../index.html">all issues &rarr;</a></span>
-      <span class="av-footer-build">Compiled {{ issue.generated_at | aest }}</span>
-    </footer>
-    <p class="av-about">
-      A daily AI newsletter with a financial-services lens. Curated, not aggregated. AI-drafted, human-ratified.
-    </p>
+</aside>
+{% endif %}
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true">{% include "_mark.svg.j2" %}</span>{{ brand.wordmark.lead }}<span class="slash">/</span>{{ brand.wordmark.tail }}</a></div>
+    <span class="mast-meta">{% if issue.display_number %}No. {{ issue.display_number }}{% else %}Preview{% endif %} &middot; {{ issue.date.strftime('%d %b') }} &middot; {{ read_minutes }} min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+{% if digest %}
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+{%- for d in digest %}
+    <p>{% if d.lead %}<strong>{{ d.lead | code_spans }}</strong>{% endif %}{% if d.lead and d.sentence %} {% endif %}{% if d.sentence %}<span>{{ d.sentence | code_spans }}</span>{% endif %}</p>
+{%- endfor %}
+  </div>
+</section>
+{% endif %}
+<section class="measure gap14">
+{#- "The full read" only earns its place as the counterpart to "The
+    30-second read". With no digest above it, the label names a contrast
+    that is not on the page and reads as an orphan. -#}
+{%- if digest %}
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+{%- endif %}
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>{{ pulse_story.headline }}</h1>
+{%- if pulse_story.take %}
+  <p class="takeaway">{{ pulse_story.take | code_spans }}</p>
+{%- endif %}
+  <p class="dek">{{ pulse_story.summary | code_spans }}</p>
+  <div class="story-meta">
+{%- if show_verify_flags %}{{ verify_flag(pulse_story) }}{% endif %}
+{%- for url in pulse_story.source_urls %}
+    <a class="src" href="{{ url }}" target="_blank" rel="noreferrer">{{ url | source_label }} <span class="arw">&rarr;</span></a>
+{%- endfor %}
+  </div>
+</section>
+{% for section in issue.sections %}{% if section.stories %}
+<section class="section {{ section.name }}">
+  <div class="section-head measure">
+    <div class="row"><h2>{{ section_title(section.name) }}</h2><span class="kicker">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}{{ 'item' if section.stories|length == 1 else 'items' }}{% else %}{{ 'story' if section.stories|length == 1 else 'stories' }}{% endif %}</span></div>
+{#- A synthesis over a single story is just that story restated, so it is
+    suppressed regardless of what generation produced. Belt-and-braces: the
+    generation side is being fixed too. -#}
+{%- set synthesis = section_synthesis(section) %}
+{%- if synthesis and section.stories|length > 1 %}
+    <p class="synthesis">{{ synthesis | code_spans }}</p>
+{%- endif %}
+  </div>
+{%- for story in section.stories %}
+  <article class="measure stack">
+    <h3>{{ story.headline }}</h3>
+{%- if story.take %}
+    <p class="takeaway">{{ story.take | code_spans }}</p>
+{%- endif %}
+    <p class="dek">{{ story.summary | code_spans }}</p>
+    <div class="story-meta">
+{%- set tag = story_tag(story, section.name) %}
+{%- if tag %}<span class="tag">{{ tag }}</span>{% endif %}
+{%- if show_verify_flags %}{{ verify_flag(story) }}{% endif %}
+{%- for url in story.source_urls %}
+      <a class="src" href="{{ url }}" target="_blank" rel="noreferrer">{{ url | source_label }} <span class="arw">&rarr;</span></a>
+{%- endfor %}
+    </div>
   </article>
+{%- endfor %}
+</section>
+{% endif %}{% endfor %}
+<footer class="colophon measure">
+  <span class="brand-sm">{{ brand.wordmark.lead }}<span class="slash" style="color:var(--accent)">/</span>{{ brand.wordmark.tail }}</span>
+{#- The by-line links to the author when brand.author_url is set, and degrades
+    to plain text when it is not, so a fork that clears it is never left with
+    an anchor pointing nowhere. -#}
+  <span class="by">{% if brand.author_url %}<a class="navlink" href="{{ brand.author_url }}">{{ brand.author }}</a>{% else %}{{ brand.author }}{% endif %}</span>
+  <span class="ethos">{{ brand.ethos }}</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
 </body>
 </html>

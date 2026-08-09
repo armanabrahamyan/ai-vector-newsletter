@@ -902,6 +902,50 @@ def _compute_agreement_rate(judge_results: list[dict], editor_labels: Optional[d
                             agreed += 1
                     break
 
+        # take_quality (labels v2 extension, 2026-08-09 PROPOSAL) — same
+        # frozen-sub-key derivation as headline/summary. Additive: v2
+        # labels without the block simply contribute nothing here.
+        tq = story_label.get("take_quality", {})
+        if isinstance(tq, dict):
+            tq_sub = [
+                v for k, v in tq.items()
+                if k in (
+                    "self_sufficient", "consequence_not_instruction",
+                    "non_transferable", "frame_novelty",
+                )
+            ]
+            if "fail" in tq_sub:
+                tq_overall = "fail"
+            elif "borderline" in tq_sub:
+                tq_overall = "borderline"
+            elif tq_sub and all(v == "pass" for v in tq_sub if v):
+                tq_overall = "pass"
+            else:
+                tq_overall = None
+            for jr in judge_results:
+                if jr.get("story_id") == story_id and jr.get("dimension") == "take_quality":
+                    judge_tq = jr.get("score")
+                    if tq_overall and judge_tq and judge_tq not in ("error", "not_applicable"):
+                        compared += 1
+                        if judge_tq == tq_overall:
+                            agreed += 1
+                    break
+
+    # digest_quality (labels v2 extension, 2026-08-09 PROPOSAL) — one
+    # issue-level verdict, compared directly.
+    dq = editor_labels.get("digest_quality", {})
+    if isinstance(dq, dict):
+        editor_dq = dq.get("label")
+        if editor_dq not in (None, "not_applicable"):
+            for jr in judge_results:
+                if jr.get("dimension") == "digest_quality":
+                    judge_dq = jr.get("score")
+                    if judge_dq and judge_dq not in ("error", "not_applicable"):
+                        compared += 1
+                        if judge_dq == editor_dq:
+                            agreed += 1
+                    break
+
     return (agreed / compared) if compared > 0 else None
 
 
@@ -994,6 +1038,10 @@ def eval_voice_adherence(
             "headline": s.get("headline", ""),
             "summary": s.get("summary", "")[:300],  # enough for voice assessment
             "signal": s.get("signal"),
+            # take included 2026-08-09: the direction dimension judges
+            # body + take as a unit (rubric v0.3+); a voice judge that
+            # never sees the take is scoring half the contract.
+            "take": s.get("take"),
         }
 
     compact_sections = []
@@ -1007,6 +1055,9 @@ def eval_voice_adherence(
             "name": sec.get("name"),
             "intro_lead": sec.get("intro_lead"),
             "intro_body": sec.get("intro_body"),
+            # synthesis (IssueSection v4, 2026-08-09): the single-paragraph
+            # replacement for the intro pair; None on archived issues.
+            "synthesis": sec.get("synthesis"),
             "stories": [_compact_story(s) for s in sec.get("stories", [])],
         })
     issue_artifact = {
@@ -1092,13 +1143,17 @@ def eval_voice_adherence(
         signal_result["artifact_type"] = "signal"
         all_judge_results.append(signal_result)
 
-    # (3) Per-section intros (non-pulse sections only)
+    # (3) Per-section intros (non-pulse sections only). 2026-08-09: the
+    # judged unit is the synthesis paragraph when present (IssueSection
+    # v4); the legacy pair rides along for archived issues and the judge
+    # scores whichever exists (rubric v0.4 section_intro_quality).
     for section in issue.get("sections", []):
         section_name = section.get("name", "unknown")
         intro_artifact = {
             "section": section_name,
             "intro_lead": section.get("intro_lead"),
             "intro_body": section.get("intro_body"),
+            "synthesis": section.get("synthesis"),
         }
         intro_result = judge_artifact(
             "section_intro_quality",
@@ -1109,6 +1164,96 @@ def eval_voice_adherence(
         intro_result["section"] = section_name
         intro_result["artifact_type"] = "intro"
         all_judge_results.append(intro_result)
+
+    # (4) Per-story takes (take-bearing stories only; PROPOSAL 2026-08-09).
+    # Eval 10's deterministic counters run first and ride along as
+    # evidence (rubric v0.4 anchor C contract: code counters BEFORE the
+    # judge; the judge covers the residue).
+    _any_takes = any(
+        isinstance(s.get("take"), str) and s.get("take", "").strip()
+        for _sec, s in all_stories
+    )
+    if _any_takes:
+        try:
+            _take_evidence = check_take_drift(issue, dataset_name)
+        except Exception as exc:  # noqa: BLE001
+            _take_evidence = {"error": f"{type(exc).__name__}: {exc}"}
+        # Sibling context for the anchor-B paste test: headline + take of
+        # the other stories in the same section.
+        _by_section: dict[str, list[dict]] = {}
+        for _sec_name, _story in all_stories:
+            _by_section.setdefault(_sec_name, []).append(_story)
+        for section_name, story in all_stories:
+            take = story.get("take")
+            if not (isinstance(take, str) and take.strip()):
+                continue
+            story_id = story.get("story_id", "unknown")
+            siblings = [
+                {"headline": sib.get("headline", ""), "take": sib.get("take")}
+                for sib in _by_section.get(section_name, [])
+                if sib.get("story_id") != story_id
+            ]
+            take_artifact = {
+                "story_id": story_id,
+                "section": section_name,
+                "take": take,
+                "headline": story.get("headline", ""),
+                "summary": story.get("summary", "")[:300],
+                "sibling_takes_context": siblings,
+                "eval10_evidence": {
+                    "opener_violations": _take_evidence.get("opener_violations", []),
+                    "ngram_violations": _take_evidence.get("ngram_violations", []),
+                },
+            }
+            take_result = judge_artifact(
+                "take_quality",
+                "story take (cold-open contract)",
+                take_artifact,
+                rubric=rubric,
+            )
+            take_result["story_id"] = story_id
+            take_result["section"] = section_name
+            take_result["artifact_type"] = "take"
+            all_judge_results.append(take_result)
+
+    # (5) Issue digest (PROPOSAL 2026-08-09; Issue v8). One judge call
+    # per issue; Eval 11's deterministic counters arrive as evidence.
+    # digest=None is a legitimate state (pre-digest schema or degraded
+    # day) — no judge call, no penalty.
+    _digest = issue.get("digest")
+    if isinstance(_digest, list) and _digest:
+        try:
+            _digest_evidence = check_digest_synthesis(issue)
+        except Exception as exc:  # noqa: BLE001
+            _digest_evidence = {"error": f"{type(exc).__name__}: {exc}"}
+        _pulse_stories = (issue.get("pulse", {}) or {}).get("stories", []) or []
+        digest_artifact = {
+            "digest": _digest,
+            "pulse_story": _compact_story(_pulse_stories[0]) if _pulse_stories else None,
+            "takes": [
+                {"story_id": s.get("story_id"), "take": s.get("take")}
+                for _sec, s in all_stories
+                if isinstance(s.get("take"), str) and s.get("take", "").strip()
+            ],
+            "syntheses": [
+                {"section": sec.get("name"), "synthesis": sec.get("synthesis")}
+                for sec in issue.get("sections", []) or []
+                if sec.get("synthesis")
+            ],
+            "eval11_evidence": {
+                k: _digest_evidence.get(k)
+                for k in ("digest_counters", "violations", "seams")
+                if k in _digest_evidence
+            },
+        }
+        digest_result = judge_artifact(
+            "digest_quality",
+            "issue digest (The 30-second read)",
+            digest_artifact,
+            rubric=rubric,
+        )
+        digest_result["artifact_type"] = "digest"
+        all_judge_results.append(digest_result)
 
     cache_after = cache_entry_count()
     new_cache_entries = cache_after - cache_before
@@ -1839,6 +1984,64 @@ _AUDIENCE_TAGS = ("hands_on", "big_picture", "finance", "general")
 DRIFT_BASELINES_DIR = EVALS_DIR / "drift" / "baselines"
 
 
+# Mirror of render.py's SECTION_DEFAULT_TAG (DESIGN.md "Tag derivation"
+# ruling, 2026-08-09), deliberately NOT imported: the harness reads
+# artifacts independently of the modules that produce them (same
+# discipline as _read_reviewer_verdict). Legacy section name included so
+# archived issues compute. If render.py's table changes, this mirror is
+# updated on the same ratification.
+_SECTION_DEFAULT_TAG = {
+    "pulse": "read",
+    "big_picture": "read",
+    "hands_on": "try",
+    "currents": "watch",
+    "on_the_radar": "watch",  # legacy name for currents (pre-v3 archive)
+}
+
+
+def _issue_tag_override_rate(issue_data: dict) -> Optional[float]:
+    """Fraction of stories whose stored ``signal`` differs from their
+    section's default verb (redesign PROPOSAL, 2026-08-09).
+
+    The rendered story tag is derived, never stored:
+    ``tag = signal or SECTION_DEFAULT_TAG[section]``. An "override" here
+    is a stored signal that BEATS the default — the visible trace of
+    per-story editorial judgment in the verb column.
+
+    DEFINITION OPEN QUESTION (2026-08-09, escalated for ratification):
+    the editor's redesign sample reports 4/47 overrides (~8.5%), but this
+    function MEASURES a mean of ~0.58 (min 0.33, never 0.0) across the
+    34-issue released archive — a 7x gap, so the two cannot be the same
+    quantity. Most likely the editor's count is overrides OF THE DERIVED
+    TAG during review (editorial corrections), not signal-vs-default
+    divergence, OR the v0.23 tag-verb contract expects signals far closer
+    to section defaults than the archive's. Until the editor confirms the
+    definition, this feature tracks signal-vs-default divergence under
+    its own name; the 4/47 number is recorded as the editor's reference,
+    not as this metric's expected level. The floor rule (zero for weeks =
+    judgment collapsed) is robust under either definition.
+    Returns None on an issue with no stories.
+    """
+    overrides = 0
+    denom = 0
+    pulse_block = issue_data.get("pulse", {}) or {}
+    section_iter = [("pulse", pulse_block.get("stories", []) or [])] + [
+        (sec.get("name", "unknown"), sec.get("stories", []) or [])
+        for sec in issue_data.get("sections", []) or []
+        if isinstance(sec, dict)
+    ]
+    for section_name, section_stories in section_iter:
+        default_tag = _SECTION_DEFAULT_TAG.get(section_name)
+        for story in section_stories:
+            if not isinstance(story, dict):
+                continue
+            denom += 1
+            sig = story.get("signal")
+            if sig is not None and default_tag is not None and sig != default_tag:
+                overrides += 1
+    return (overrides / denom) if denom else None
+
+
 def _extract_feature_vector(
     issue_data: dict,
     ranked_by_id: dict[str, dict],
@@ -1990,6 +2193,7 @@ def _extract_feature_vector(
         "reviewer_verdict_ordinal": reviewer_verdict_ordinal,  # green=0, amber=1, red=2; None otherwise
         "take_presence_rate": take_presence_rate,  # None until takes ship
         "take_frame_diversity": take_frame_diversity,  # None until takes ship
+        "tag_override_rate": _issue_tag_override_rate(issue_data),  # redesign PROPOSAL 2026-08-09
     }
 
 
@@ -2093,6 +2297,7 @@ def _write_drift_snapshot(
     flags: list[str],
     reviewer_red_floor: Optional[dict[str, Any]] = None,
     take_floors: Optional[dict[str, Any]] = None,
+    tag_floor: Optional[dict[str, Any]] = None,
 ) -> None:
     """Write a drift snapshot to evals/drift/baselines/<date>.json atomically."""
     DRIFT_BASELINES_DIR.mkdir(parents=True, exist_ok=True)
@@ -2105,6 +2310,7 @@ def _write_drift_snapshot(
         "flags": flags,
         "reviewer_red_floor": reviewer_red_floor or {},
         "take_floors": take_floors or {},
+        "tag_floor": tag_floor or {},
     }
     target = DRIFT_BASELINES_DIR / f"{candidate_date}.json"
     tmp = target.with_suffix(".tmp")
@@ -2294,10 +2500,11 @@ def check_drift(
         z_scores["reviewer_verdict_ordinal"] = round(z, 4)
 
     # take_presence_rate / take_frame_diversity (take-drift PROPOSAL,
-    # 2026-08-08): tracked with the same "at least half the baseline must
-    # have non-None data" gate as verifier_flag_rate — silent until the
-    # SummaryBlock.take rollout accumulates enough released history.
-    for _take_metric in ("take_presence_rate", "take_frame_diversity"):
+    # 2026-08-08) and tag_override_rate (redesign PROPOSAL, 2026-08-09;
+    # definition open question — see _issue_tag_override_rate): tracked
+    # with the same "at least half the baseline must have non-None data"
+    # gate as verifier_flag_rate.
+    for _take_metric in ("take_presence_rate", "take_frame_diversity", "tag_override_rate"):
         _tk_baseline = [
             fv.get(_take_metric)
             for fv in baseline_fvs
@@ -2476,6 +2683,49 @@ def check_drift(
         )
 
     # ------------------------------------------------------------------
+    # 6c. Tag override floor (redesign PROPOSAL, 2026-08-09) — the same
+    # constant-series-blindness pattern as 6a/6b, applied to the derived
+    # story tag. The rendered verb is ``signal or SECTION_DEFAULT_TAG``;
+    # healthy is NONZERO divergence (measured archive mean ~0.58; the
+    # editor's 4/47 reference is a different quantity pending definition
+    # confirmation — see _issue_tag_override_rate). A window where the
+    # override rate is 0.0 every single day is its own baseline (mean 0,
+    # zero variance, z ~ 0 forever), yet it means the signal column has
+    # collapsed into pure section defaults — per-story verb judgment
+    # silently stopped happening. Absolute floor, not a z-score, for
+    # exactly the reviewer red-floor reason.
+    # ------------------------------------------------------------------
+    _window_override: list[float] = []
+    for d in _take_window_dates:
+        _w_issue = _load_json(released_root / d.isoformat() / "issue.json")
+        if _w_issue is None:
+            continue
+        _rate = _issue_tag_override_rate(_w_issue)
+        if _rate is not None:
+            _window_override.append(_rate)
+
+    tag_floor: dict[str, Any] = {
+        "window_days": _TAKE_FLOOR_WINDOW_DAYS,
+        "min_samples": _TAKE_FLOOR_MIN_SAMPLES,
+        "editor_sample_baseline": round(4 / 47, 4),
+        "window_override_samples": len(_window_override),
+        "override_collapsed": False,
+    }
+    if (
+        len(_window_override) >= _TAKE_FLOOR_MIN_SAMPLES
+        and max(_window_override) == 0.0
+        and (candidate_fv.get("tag_override_rate") in (None, 0.0))
+    ):
+        tag_floor["override_collapsed"] = True
+        flags.append(
+            f"floor:tag_override_collapsed ({len(_window_override)} window "
+            "days, override rate 0.0 on every one) -- the signal column has "
+            "collapsed into pure section defaults; per-story verb judgment "
+            "stopped registering. Editor's sample baseline is 4/47 (~8.5%). "
+            "A constant zero series is invisible to the z-score by design."
+        )
+
+    # ------------------------------------------------------------------
     # 7. Write snapshot.
     # ------------------------------------------------------------------
     try:
@@ -2488,6 +2738,7 @@ def check_drift(
             flags=flags,
             reviewer_red_floor=reviewer_red_floor,
             take_floors=take_floors,
+            tag_floor=tag_floor,
         )
     except OSError:
         # Snapshot write failure is non-fatal — log in details.
@@ -2507,6 +2758,7 @@ def check_drift(
             "js_divergences": js_divergences,
             "reviewer_red_floor": reviewer_red_floor,
             "take_floors": take_floors,
+            "tag_floor": tag_floor,
             "flags": flags,
             "flag_count": len(flags),
             "thresholds": {
@@ -3409,9 +3661,16 @@ def _find_absence_forms(text: str) -> list[str]:
 def _iter_issue_texts(issue: dict) -> list[tuple[str, str, str]]:
     """Yield ``(location_id, kind, text)`` for every linted text unit.
 
-    kind ∈ {"headline", "summary", "intro"}. Locations are story_ids for
-    stories and ``section:<name>`` for intros, so a failure names the
-    exact unit to fix.
+    kind ∈ {"headline", "summary", "intro", "digest"}. Locations are
+    story_ids for stories, ``section:<name>`` for intros/syntheses, and
+    ``digest:<i>`` for digest bullets, so a failure names the exact unit
+    to fix.
+
+    2026-08-09 (PROPOSAL pending ratification): learned the redesign
+    surfaces per the Issue v8 / IssueSection v4 schema wave (DESIGN.md
+    changelog row flagging exactly this iteration): ``synthesis`` joins
+    the legacy intro pair under kind="intro"; digest bullets (lead +
+    sentence, reader-facing assertive prose) lint under kind="digest".
     """
     units: list[tuple[str, str, str]] = []
     pulse = issue.get("pulse", {}) or {}
@@ -3424,10 +3683,19 @@ def _iter_issue_texts(issue: dict) -> list[tuple[str, str, str]]:
             sid = story.get("story_id", "unknown")
             units.append((sid, "headline", story.get("headline") or ""))
             units.append((sid, "summary", story.get("summary") or ""))
-        for field_name in ("intro_lead", "intro_body"):
+        for field_name in ("intro_lead", "intro_body", "synthesis"):
             val = section.get(field_name)
             if val:
                 units.append((f"section:{name}", "intro", val))
+    for i, bullet in enumerate(issue.get("digest") or []):
+        if not isinstance(bullet, dict):
+            continue
+        text = " ".join(
+            part for part in (bullet.get("lead"), bullet.get("sentence"))
+            if isinstance(part, str) and part.strip()
+        )
+        if text:
+            units.append((f"digest:{i}", "digest", text))
     return units
 
 
@@ -3475,7 +3743,10 @@ def eval_reading_experience_lint(dataset_dir: Optional[Path]) -> EvalResult:
     a_an_headlines: list[str] = []
 
     for location, kind, text in _iter_issue_texts(issue):
-        if kind in ("summary", "intro"):
+        # "digest" included 2026-08-09 (PROPOSAL): digest bullets are
+        # reader-facing assertive prose; R-8 absence-forms are defects
+        # there exactly as in summaries and intros.
+        if kind in ("summary", "intro", "digest"):
             for snippet in _find_absence_forms(text):
                 absence_hits.append({
                     "location": location,
@@ -3867,6 +4138,485 @@ def eval_take_drift(
 
 
 # ---------------------------------------------------------------------------
+# Eval 11 — digest & synthesis lint (deterministic; PROPOSAL, 2026-08-09,
+# pending ratification).
+#
+# The 2026-08-09 layout redesign ships two new reader-facing text
+# surfaces — Issue.digest ("The 30-second read", Issue v8) and
+# IssueSection.synthesis (v4) — plus the take v2 cold-open contract
+# (summarise v0.23). Their surface-detectable failure modes are CODE per
+# the No Token Wasted principle, in the Eval 8/10 family: run on every
+# dataset, report loudly, never fail until ratified as a gate
+# (DIGEST_LINT_ENFORCED, same seam as TAKE_LINT_ENFORCED).
+#
+# Checks:
+#   (a) digest shape: 3-5 bullets (belt-and-braces re pydantic — the
+#       harness reads raw JSON and must catch corruption upstream of
+#       the models).
+#   (b) budget: total digest words (leads + sentences) <= 100.
+#   (c) bold band: each lead 3-6 words.
+#   (d) sentence band: each bullet is ONE sentence, 8-30 words.
+#       (8/30 are PROPOSAL defaults pending the editor's confirmed band
+#       at ratification; the 100-word budget and 3-6 bold band are the
+#       editor's numbers.)
+#   (e) banned phrases: the SPECIFIC-phrase entries of EDITORIAL.md's
+#       anti-pattern catalogue over digest leads + sentences and
+#       syntheses. Abstract shapes ("X outruns Y") stay judge territory.
+#   (f) bullet-one-is-pulse provenance: digest[0].story_ids resolves to
+#       the Pulse story (the editorial half is the judge's).
+#   (g) surface collision: exact normalised duplication between digest
+#       text and any take/synthesis. RATIO overlap consumes the LLM
+#       Engineer's shared helper when it lands (seam below) — we do not
+#       duplicate it here.
+#   (h) verify-verdict bar: no digest bullet may carry claim text judged
+#       contradicted or unverifiable. Digest-drawn claims attach to the
+#       primary story's StoryVerification with note prefix "digest: "
+#       (DESIGN.md V3), so this reads issue.json alone. SEAM: if a
+#       digest exists, stories carry verification, and NO digest-
+#       prefixed claims exist anywhere, the digest was never verified
+#       (V1 contract violation or pipeline-order gap) — flagged, not
+#       failed, until the LLM Engineer's pipeline-order choice lands.
+#   (i) take route diversity: no route > 40% of an issue's takes. Route
+#       labels are expected as feed-forward metadata on the story dict
+#       ("take_route"); NOT exposed by summarise v0.22 — the gap is
+#       flagged (routes_not_exposed) until v0.23 lands it.
+#   (j) synthesis/legacy coexistence: a section carrying synthesis AND
+#       the legacy intro pair (mirrors models._synthesis_excludes_legacy_
+#       intros for raw JSON — the silent-corruption class).
+#   (k) synthesis word band: 20-60 words (PROPOSAL default pending the
+#       editor's confirmed band; the rubric's body_pattern check defers
+#       word counts to this band).
+#
+# GOVERNANCE: thresholds and gate-flips move only on Arman's
+# ratification (eval-governance rule, 2026-07-04).
+# ---------------------------------------------------------------------------
+
+DIGEST_LINT_ENFORCED = False
+"""PROPOSAL seam: becomes a hard gate only on Arman's ratification."""
+
+_DIGEST_BULLETS_MIN = 3
+_DIGEST_BULLETS_MAX = 5
+_DIGEST_TOTAL_WORD_BUDGET = 100   # editor's number (2026-08-09 contract)
+_DIGEST_LEAD_WORDS_MIN = 3        # editor's number
+_DIGEST_LEAD_WORDS_MAX = 6        # editor's number
+_DIGEST_SENTENCE_WORDS_MIN = 8    # PROPOSAL default, pending editor confirmation
+_DIGEST_SENTENCE_WORDS_MAX = 30   # PROPOSAL default, pending editor confirmation
+_SYNTHESIS_WORDS_MIN = 20         # PROPOSAL default, pending editor confirmation
+_SYNTHESIS_WORDS_MAX = 60         # PROPOSAL default, pending editor confirmation
+_TAKE_ROUTE_MAX_SHARE = 0.40      # editor's number: no route > 40% of an issue
+
+# Sentence-terminal punctuation followed by whitespace/end. Decimals
+# ("28.9%") and version strings ("v0.22") never match — the '.' there is
+# followed by a digit, not whitespace.
+_SENTENCE_TERMINAL = re.compile(r"[.!?](?:\s|$)")
+
+# Curated from EDITORIAL.md "Anti-patterns the editor will flag"
+# (specific-phrase entries only; the catalogue's abstract shapes are the
+# judge's). Do not widen without the Editor — each entry cites a
+# catalogue line. Applied to digest leads + sentences and syntheses.
+_BANNED_PHRASE_PATTERNS: list[tuple[str, re.Pattern]] = [
+    ("trust-but-verify", re.compile(r"\btrust,?\s+but\s+verify\b", re.IGNORECASE)),
+    ("starting-position-not-settled-audit",
+     re.compile(r"\bstarting position, not a settled audit\b", re.IGNORECASE)),
+    ("it-remains-to-be-seen", re.compile(r"\bit remains to be seen\b", re.IGNORECASE)),
+    ("time-will-tell", re.compile(r"\b(?:only\s+)?time will tell\b", re.IGNORECASE)),
+    ("interesting-notable-development",
+     re.compile(r"\ban? (?:interesting|notable) development\b", re.IGNORECASE)),
+    ("space-evolving-rapidly",
+     re.compile(r"\bthis space is evolving rapidly\b", re.IGNORECASE)),
+    ("worth-subscribing-to", re.compile(r"\bworth subscribing to\b", re.IGNORECASE)),
+    ("verify-before-you", re.compile(r"\bverify before you \w+", re.IGNORECASE)),
+    ("capability-races-ahead-of-control",
+     re.compile(r"\bcapability races ahead of control\b", re.IGNORECASE)),
+    ("speed-is-outrunning-safety",
+     re.compile(r"\bspeed is outrunning safety\b", re.IGNORECASE)),
+]
+
+
+def _word_count(text: str) -> int:
+    """Word count on the same tokeniser as the take counters."""
+    return len(_take_tokens(text))
+
+
+def _sentence_count(text: str) -> int:
+    """Count of sentence-terminal boundaries; minimum 1 for non-empty text."""
+    if not (text or "").strip():
+        return 0
+    return max(1, len(_SENTENCE_TERMINAL.findall(text)))
+
+
+def _normalise_surface(text: str) -> str:
+    """Casefolded, punctuation-stripped form for exact-duplication checks."""
+    return " ".join(_take_tokens(text))
+
+
+def _find_banned_phrases(text: str) -> list[str]:
+    """Return the labels of banned-phrase patterns present in ``text``."""
+    return [label for label, pattern in _BANNED_PHRASE_PATTERNS if pattern.search(text or "")]
+
+
+def _load_overlap_helper() -> Optional[Callable[[str, str], float]]:
+    """Seam for the LLM Engineer's shared surface-overlap helper.
+
+    Consume, don't duplicate: summarise v0.23 ships
+    ``src.summarise._content_overlap_fraction(a, b) -> float`` in [0, 1]
+    (the take-restates-body / digest-deconfliction helper, generation-side
+    threshold ``_CONTENT_OVERLAP_LIMIT`` = 0.6). The lint imports it and
+    reports ratios as EVIDENCE only — no eval-side threshold until
+    ratification. Returns None (seam open) if the import fails (e.g. the
+    harness environment lacks the generation module's deps). Only the
+    EXACT-duplication check below is native here.
+    """
+    try:
+        from src.summarise import _content_overlap_fraction
+    except Exception:  # noqa: BLE001 — absent module/dep = seam open
+        return None
+    return _content_overlap_fraction if callable(_content_overlap_fraction) else None
+
+
+def _iter_all_stories(issue: dict) -> list[tuple[str, dict]]:
+    """``(section_name, story_dict)`` across pulse + sections."""
+    out: list[tuple[str, dict]] = []
+    pulse = issue.get("pulse", {}) or {}
+    if isinstance(pulse, dict):
+        for story in pulse.get("stories", []) or []:
+            out.append(("pulse", story))
+    for section in issue.get("sections", []) or []:
+        if isinstance(section, dict):
+            for story in section.get("stories", []) or []:
+                out.append((section.get("name", "unknown"), story))
+    return out
+
+
+def check_digest_synthesis(issue: dict) -> dict:
+    """Core deterministic digest/synthesis counters. Importable + testable.
+
+    Returns a dict with keys: digest_present, synthesis_sections,
+    digest_counters, violations, seams, failures.
+    """
+    failures: list[str] = []
+    violations: list[dict] = []
+    seams: dict[str, Any] = {}
+
+    all_stories = _iter_all_stories(issue)
+    digest = issue.get("digest")
+    digest_present = isinstance(digest, list) and len(digest) > 0
+    bullets: list[dict] = [b for b in (digest or []) if isinstance(b, dict)]
+
+    sections = list(issue.get("sections", []) or [])
+    syntheses: list[tuple[str, str]] = [
+        (sec.get("name", "unknown"), sec["synthesis"])
+        for sec in sections
+        if isinstance(sec, dict) and isinstance(sec.get("synthesis"), str)
+        and sec["synthesis"].strip()
+    ]
+
+    def _violate(kind: str, message: str, **extra: Any) -> None:
+        violations.append({"kind": kind, "message": message, **extra})
+        failures.append(f"{kind}: {message}")
+
+    # -- digest checks --------------------------------------------------
+    digest_counters: dict[str, Any] = {}
+    if digest_present:
+        # (a) shape
+        if not (_DIGEST_BULLETS_MIN <= len(bullets) <= _DIGEST_BULLETS_MAX):
+            _violate(
+                "digest_shape",
+                f"{len(bullets)} bullets — contract is "
+                f"{_DIGEST_BULLETS_MIN}-{_DIGEST_BULLETS_MAX}",
+            )
+
+        # (b) budget + (c)/(d) bands
+        total_words = 0
+        lead_word_counts: list[int] = []
+        sentence_word_counts: list[int] = []
+        for i, bullet in enumerate(bullets):
+            lead = bullet.get("lead") or ""
+            sentence = bullet.get("sentence") or ""
+            lw, sw = _word_count(lead), _word_count(sentence)
+            lead_word_counts.append(lw)
+            sentence_word_counts.append(sw)
+            total_words += lw + sw
+            if not (_DIGEST_LEAD_WORDS_MIN <= lw <= _DIGEST_LEAD_WORDS_MAX):
+                _violate(
+                    "digest_lead_band",
+                    f"digest:{i} lead is {lw} words (\"{lead}\") — band is "
+                    f"{_DIGEST_LEAD_WORDS_MIN}-{_DIGEST_LEAD_WORDS_MAX}",
+                )
+            n_sentences = _sentence_count(sentence)
+            if n_sentences > 1:
+                _violate(
+                    "digest_multi_sentence",
+                    f"digest:{i} carries {n_sentences} sentences — the "
+                    "contract is ONE",
+                )
+            if sw and not (_DIGEST_SENTENCE_WORDS_MIN <= sw <= _DIGEST_SENTENCE_WORDS_MAX):
+                _violate(
+                    "digest_sentence_band",
+                    f"digest:{i} sentence is {sw} words — proposal band is "
+                    f"{_DIGEST_SENTENCE_WORDS_MIN}-{_DIGEST_SENTENCE_WORDS_MAX}",
+                )
+            # (e) banned phrases
+            for label in _find_banned_phrases(f"{lead} {sentence}"):
+                _violate(
+                    "digest_banned_phrase",
+                    f"digest:{i} carries banned phrase [{label}] "
+                    "(EDITORIAL.md anti-pattern catalogue)",
+                )
+        digest_counters = {
+            "bullet_count": len(bullets),
+            "total_words": total_words,
+            "lead_word_counts": lead_word_counts,
+            "sentence_word_counts": sentence_word_counts,
+        }
+        if total_words > _DIGEST_TOTAL_WORD_BUDGET:
+            _violate(
+                "digest_budget",
+                f"digest totals {total_words} words — budget is "
+                f"{_DIGEST_TOTAL_WORD_BUDGET}",
+            )
+
+        # (f) bullet-one-is-pulse provenance
+        pulse_ids = {
+            s.get("story_id") for name, s in all_stories if name == "pulse"
+        }
+        first_ids = list(bullets[0].get("story_ids") or []) if bullets else []
+        if bullets and pulse_ids and not (set(first_ids) & pulse_ids):
+            _violate(
+                "digest_bullet_one_not_pulse",
+                f"digest:0 provenance {first_ids} does not include the "
+                f"Pulse story {sorted(str(p) for p in pulse_ids)}",
+            )
+
+        # (g) surface collision — exact duplication natively; ratio via
+        # the shared helper when wired.
+        surfaces: list[tuple[str, str]] = [
+            (f"take:{s.get('story_id', 'unknown')}", s["take"])
+            for _sec, s in all_stories
+            if isinstance(s.get("take"), str) and s["take"].strip()
+        ] + [(f"synthesis:{name}", text) for name, text in syntheses]
+        overlap_fn = _load_overlap_helper()
+        seams["overlap_helper"] = "wired" if overlap_fn else "not_wired"
+        overlap_ratios: list[dict] = []
+        for i, bullet in enumerate(bullets):
+            for unit_kind, unit_text in (
+                ("lead", bullet.get("lead") or ""),
+                ("sentence", bullet.get("sentence") or ""),
+            ):
+                norm = _normalise_surface(unit_text)
+                if not norm:
+                    continue
+                for loc, surface_text in surfaces:
+                    if norm == _normalise_surface(surface_text):
+                        _violate(
+                            "digest_surface_collision",
+                            f"digest:{i} {unit_kind} duplicates {loc} verbatim "
+                            "(same sentence on two surfaces)",
+                        )
+                    elif overlap_fn is not None:
+                        try:
+                            ratio = float(overlap_fn(unit_text, surface_text))
+                        except Exception:  # noqa: BLE001
+                            continue
+                        overlap_ratios.append({
+                            "digest_index": i,
+                            "unit": unit_kind,
+                            "against": loc,
+                            "ratio": round(ratio, 4),
+                        })
+        if overlap_ratios:
+            # Threshold deliberately unset until ratification: ratios are
+            # reported as evidence for the judge and the Editor.
+            digest_counters["overlap_ratios"] = sorted(
+                overlap_ratios, key=lambda r: -r["ratio"]
+            )[:10]
+
+        # (h) verify-verdict bar
+        digest_claims: list[dict] = []
+        any_verification = False
+        for _sec, story in all_stories:
+            verification = story.get("verification")
+            if not isinstance(verification, dict):
+                continue
+            any_verification = True
+            for claim in verification.get("claims", []) or []:
+                if not isinstance(claim, dict):
+                    continue
+                note = claim.get("note") or ""
+                if note.startswith("digest: "):
+                    digest_claims.append({
+                        "story_id": story.get("story_id", "unknown"),
+                        "verdict": claim.get("verdict"),
+                        "claim_text": claim.get("claim_text", ""),
+                    })
+        digest_counters["digest_claims_verified"] = len(digest_claims)
+        for claim in digest_claims:
+            if claim["verdict"] in ("contradicted", "unverifiable"):
+                _violate(
+                    "digest_verify_bar",
+                    f"digest claim on {claim['story_id']} judged "
+                    f"{claim['verdict']}: \"{claim['claim_text'][:80]}\" — "
+                    "no contradicted/unverifiable claim text ships in the "
+                    "digest",
+                )
+        if any_verification and not digest_claims:
+            seams["digest_claims"] = "absent_from_verification"
+            failures.append(
+                "SEAM digest_claims_absent: digest present and stories carry "
+                "verification, but no claim carries the \"digest: \" note "
+                "prefix — the digest was never claim-extracted (V1 contract) "
+                "or verify ran before the digest was written (pipeline "
+                "order). Coordinate with the LLM Engineer; not a lint fail."
+            )
+        elif not any_verification:
+            seams["digest_claims"] = "no_verification_on_issue"
+
+    # (i) take route diversity — feed-forward metadata seam.
+    takes_with_routes = [
+        (s.get("story_id", "unknown"), s.get("take_route"))
+        for _sec, s in all_stories
+        if isinstance(s.get("take"), str) and s["take"].strip()
+    ]
+    route_values = [r for _sid, r in takes_with_routes if isinstance(r, str) and r]
+    if takes_with_routes and not route_values:
+        seams["take_routes"] = "not_exposed"
+    elif route_values:
+        seams["take_routes"] = "exposed"
+        route_counts: dict[str, int] = {}
+        for r in route_values:
+            route_counts[r] = route_counts.get(r, 0) + 1
+        n_takes = len(takes_with_routes)
+        for route, count in sorted(route_counts.items()):
+            share = count / n_takes
+            if count >= 2 and share > _TAKE_ROUTE_MAX_SHARE:
+                _violate(
+                    "take_route_share",
+                    f"route \"{route}\" carries {count}/{n_takes} takes "
+                    f"({share:.0%}) — cap is {_TAKE_ROUTE_MAX_SHARE:.0%} "
+                    "per issue",
+                )
+
+    # -- synthesis checks -----------------------------------------------
+    for sec in sections:
+        if not isinstance(sec, dict):
+            continue
+        name = sec.get("name", "unknown")
+        synthesis = sec.get("synthesis")
+        has_synthesis = isinstance(synthesis, str) and synthesis.strip()
+        # (j) coexistence — raw-JSON mirror of the model validator.
+        if has_synthesis and (sec.get("intro_lead") or sec.get("intro_body")):
+            _violate(
+                "synthesis_legacy_coexistence",
+                f"section:{name} carries synthesis AND a legacy intro field "
+                "— two competing sources of truth (models validator would "
+                "reject; the harness catches raw-JSON corruption too)",
+            )
+        # (k) word band + (e) banned phrases
+        if has_synthesis:
+            wc = _word_count(synthesis)
+            if not (_SYNTHESIS_WORDS_MIN <= wc <= _SYNTHESIS_WORDS_MAX):
+                _violate(
+                    "synthesis_word_band",
+                    f"section:{name} synthesis is {wc} words — proposal band "
+                    f"is {_SYNTHESIS_WORDS_MIN}-{_SYNTHESIS_WORDS_MAX}",
+                )
+            for label in _find_banned_phrases(synthesis):
+                _violate(
+                    "synthesis_banned_phrase",
+                    f"section:{name} synthesis carries banned phrase "
+                    f"[{label}] (EDITORIAL.md anti-pattern catalogue)",
+                )
+
+    return {
+        "digest_present": digest_present,
+        "synthesis_sections": [name for name, _ in syntheses],
+        "digest_counters": digest_counters,
+        "violations": violations,
+        "seams": seams,
+        "failures": failures,
+    }
+
+
+def eval_digest_synthesis(dataset_dir: Optional[Path]) -> EvalResult:
+    """Eval 11 — deterministic digest/synthesis lint over issue.json.
+
+    Status contract (mirrors Eval 10):
+      "skipped"               — no dataset dir / no issue.json.
+      "no_redesign_surfaces"  — no digest and no synthesis anywhere
+                                (pre-v0.23 output). Passes.
+      "informational"         — surfaces present, DIGEST_LINT_ENFORCED=False
+                                (today). Violations loud in details.failures.
+      "pass"/"fail"           — post-ratification behaviour.
+    """
+    if dataset_dir is None or not dataset_dir.exists():
+        return EvalResult(
+            name="digest_synthesis_lint",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"Dataset directory not found: {dataset_dir}"},
+        )
+    issue = _load_json(dataset_dir / "issue.json")
+    if issue is None:
+        return EvalResult(
+            name="digest_synthesis_lint",
+            passed=True,
+            metric=None,
+            status="skipped",
+            details={"message": f"issue.json not found in {dataset_dir}"},
+        )
+
+    result = check_digest_synthesis(issue)
+
+    if not result["digest_present"] and not result["synthesis_sections"]:
+        return EvalResult(
+            name="digest_synthesis_lint",
+            passed=True,
+            metric=None,
+            status="no_redesign_surfaces",
+            details={
+                "dataset": dataset_dir.name,
+                "message": (
+                    "no digest and no synthesis on this issue — pre-redesign "
+                    "schema or surfaces not generated; nothing to lint"
+                ),
+                # Route seam still reported: takes may exist pre-digest.
+                "seams": result["seams"],
+            },
+        )
+
+    violation_count = len(result["violations"])
+    if DIGEST_LINT_ENFORCED:
+        passed = violation_count == 0
+        status = "pass" if passed else "fail"
+    else:
+        passed = True
+        status = "informational"
+
+    return EvalResult(
+        name="digest_synthesis_lint",
+        passed=passed,
+        metric=float(violation_count),
+        status=status,
+        details={
+            "dataset": dataset_dir.name,
+            "enforced": DIGEST_LINT_ENFORCED,
+            "thresholds": {
+                "bullets": [_DIGEST_BULLETS_MIN, _DIGEST_BULLETS_MAX],
+                "total_word_budget": _DIGEST_TOTAL_WORD_BUDGET,
+                "lead_words": [_DIGEST_LEAD_WORDS_MIN, _DIGEST_LEAD_WORDS_MAX],
+                "sentence_words": [
+                    _DIGEST_SENTENCE_WORDS_MIN, _DIGEST_SENTENCE_WORDS_MAX,
+                ],
+                "synthesis_words": [_SYNTHESIS_WORDS_MIN, _SYNTHESIS_WORDS_MAX],
+                "take_route_max_share": _TAKE_ROUTE_MAX_SHARE,
+            },
+            **result,
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
 # Eval 9 — reviewer-gate calibration (Phase 2 auto-publish gate).
 #
 # STATUS: PROPOSAL, pending ratification (2026-08-02). Built against the
@@ -4050,10 +4800,50 @@ def _threshold_consistency_check(cases: list[dict]) -> Optional[dict]:
     }
 
 
+def _fresh_reviewer_verdicts(
+    reviewer: Callable, issue_payload: dict, n: int
+) -> tuple[list[str], list[dict], list[str]]:
+    """Issue exactly *n* LIVE reviewer calls and return
+    ``(verdicts, primary_findings, errors)``.
+
+    STRUCTURAL CACHE BYPASS (PROPOSAL 2026-08-09, pending ratification):
+    this function is the ONLY place Eval 9 obtains stability samples, and
+    it has no access to evals.review_cache -- it takes only (reviewer,
+    payload, n) and always pays for n fresh calls. gate_stability measures
+    fresh-call variance; serving a cached verdict as a stability sample
+    would report fake perfect stability (the FM-06 canary this metric
+    exists to catch). Do not add cache reads here -- the mutation guard
+    evals/test_review_cache.py::test_stability_never_reads_primary_cache
+    turns red if stability samples stop being live calls.
+
+    Per-call exception handling mirrors the pre-cache Eval 9 loop: any
+    ``Exception`` becomes a fail-closed "unavailable" verdict plus an
+    error string; ``KeyboardInterrupt``/``SystemExit`` propagate so a
+    killed run dies mid-fixture (and resumes from the run journal).
+    """
+    verdicts: list[str] = []
+    primary_findings: list[dict] = []
+    errors: list[str] = []
+    for i in range(max(1, n)):
+        try:
+            result = reviewer(issue_payload)
+            verdict = (result or {}).get("verdict", "unparseable")
+            if i == 0:
+                primary_findings = list((result or {}).get("findings") or [])
+        except Exception as exc:  # noqa: BLE001 -- fail closed, keep the run alive
+            verdict = "unavailable"
+            errors.append(f"reviewer raised {type(exc).__name__}: {exc}")
+        verdicts.append(verdict)
+    return verdicts, primary_findings, errors
+
+
 def eval_reviewer_gate(
     reviewer: Optional[Callable] = None,
     *,
     rerun_n: int = _REVIEWER_GATE_DEFAULT_RERUNS,
+    use_cache: bool = True,
+    stability_resume: bool = True,
+    cache_context: Optional[dict] = None,
 ) -> EvalResult:
     """Eval 9 (PROPOSAL, pending ratification). Reviewer-gate calibration.
 
@@ -4094,7 +4884,27 @@ def eval_reviewer_gate(
         rerun_n: Number of reruns per fixture for gate_stability. Defaults
             to _REVIEWER_GATE_DEFAULT_RERUNS (3); pass a larger value (e.g.
             10) for a deliberate stability audit. See the cost note on
-            _REVIEWER_GATE_DEFAULT_RERUNS.
+            _REVIEWER_GATE_DEFAULT_RERUNS. At rerun_n=1 gate_stability is
+            None (PROPOSAL 2026-08-09): a single sample cannot measure
+            fresh-call variance, and the trivially "stable" 1.0 the old
+            code reported there was exactly the fake stability the cache
+            carve-out forbids.
+        use_cache: Consult the config-keyed result cache
+            (evals/review_cache) for the PRIMARY verdict. Only effective
+            at rerun_n == 1 -- stability-bearing runs (rerun_n > 1) never
+            read that cache, structurally (see _fresh_reviewer_verdicts).
+            Fresh results seed the cache on every path regardless.
+        stability_resume: At rerun_n > 1, resume a same-day, same-config,
+            same-rerun_n run from its per-fixture journal
+            (evals/review_cache/runs/) -- completed fixtures replay their
+            own already-paid-for fresh verdicts; incomplete ones run
+            fresh. This is the fix for the 2026-08-09 incident (run died
+            at 118/126 calls; the rerun re-paid all 118). Pass False for
+            a deliberately fresh stability audit.
+        cache_context: Explicit key components {prompt_version,
+            thresholds_version, model, temperature}. Default None resolves
+            them from src.review; if resolution fails, caching is disabled
+            (fail closed -- no key, no cache) and every call is fresh.
 
     Returns:
         EvalResult with name="reviewer_gate", metric=recall_hold_worthy
@@ -4141,7 +4951,47 @@ def eval_reviewer_gate(
         )
 
     # ------------------------------------------------------------------
-    # Run the reviewer against every fixture, rerun_n times each.
+    # Result-cache context (PROPOSAL 2026-08-09, pending ratification).
+    # Key = (fixture content hash, review prompt version, threshold-table
+    # version, model id, temperature); any component change invalidates
+    # naturally. Unresolvable context disables caching -- never mis-keys it.
+    # ------------------------------------------------------------------
+    _rc = None
+    cache_ctx: Optional[dict] = None
+    if use_cache or stability_resume:
+        try:
+            from evals import review_cache as _rc  # noqa: PLC0415 -- soft dep
+        except ImportError:
+            _rc = None
+        if _rc is not None:
+            cache_ctx = cache_context or _rc.resolve_context()
+    cache_enabled = _rc is not None and cache_ctx is not None
+    stability_run = rerun_n > 1
+    rk = _rc.run_key(cache_ctx, rerun_n) if (cache_enabled and stability_run) else None
+
+    cache_stats: dict[str, Any] = {
+        "enabled": cache_enabled,
+        "reason_disabled": (
+            None if cache_enabled
+            else "disabled by caller" if not (use_cache or stability_resume)
+            else "evals.review_cache unavailable" if _rc is None
+            else "cache context unresolved (src.review import/config/model) -- fail closed, all calls fresh"
+        ),
+        "mode": "stability_fresh" if stability_run else "calibration_cached",
+        "read_policy": (
+            "config-keyed cache read ONLY at rerun_n==1; stability runs "
+            "(rerun_n>1) are fresh by construction and may only resume their "
+            "own same-day run journal"
+        ),
+        "primary_cache_hits": 0,
+        "seeded": 0,
+        "stability_run_key": rk,
+        "stability_resumed_case_ids": [],
+        "fresh_llm_calls": 0,
+    }
+
+    # ------------------------------------------------------------------
+    # Run the reviewer against every fixture.
     # ------------------------------------------------------------------
     tp = fn = fp = tn = 0
     per_class: dict[str, dict[str, int]] = {}
@@ -4155,15 +5005,71 @@ def eval_reviewer_gate(
         issue_payload = case["issue"]
         truth = case.get("ground_truth_gate")
 
+        fixture_key = _rc.cache_key(issue_payload, cache_ctx) if cache_enabled else None
         verdicts: list[str] = []
-        for _ in range(max(1, rerun_n)):
-            try:
-                result = reviewer(issue_payload)
-                verdict = (result or {}).get("verdict", "unparseable")
-            except Exception as exc:  # noqa: BLE001
-                verdict = "unavailable"
-                failures.append(f"Case {case_id}: reviewer raised {type(exc).__name__}: {exc}")
-            verdicts.append(verdict)
+        primary_findings: list[dict] = []
+        primary_cache_hit = False
+        resumed = False
+
+        if stability_run:
+            # STABILITY PATH. Never reads the config-keyed cache -- the
+            # carve-out is structural: samples come only from
+            # _fresh_reviewer_verdicts, which has no cache access. The
+            # run journal below replays only THIS logical run's own fresh
+            # samples (same config + rerun_n + UTC day).
+            if cache_enabled and stability_resume:
+                journal = _rc.run_entry_read(rk, case_id, expected_fixture_key=fixture_key)
+                if journal is not None:
+                    verdicts = list(journal["verdicts"])
+                    primary_findings = list(journal.get("primary_findings") or [])
+                    resumed = True
+                    cache_stats["stability_resumed_case_ids"].append(case_id)
+            if not resumed:
+                verdicts, primary_findings, call_errors = _fresh_reviewer_verdicts(
+                    reviewer, issue_payload, rerun_n
+                )
+                cache_stats["fresh_llm_calls"] += len(verdicts)
+                failures.extend(f"Case {case_id}: {err}" for err in call_errors)
+                if cache_enabled:
+                    # Per-fixture persistence the moment the rerun set
+                    # completes -- a crash later in the run cannot lose it
+                    # (journal refuses sets containing failure verdicts).
+                    _rc.run_entry_write(
+                        rk, case_id,
+                        fixture_key=fixture_key,
+                        verdicts=verdicts,
+                        primary_findings=primary_findings,
+                    )
+                    # Seed the config-keyed cache with the fresh primary
+                    # so a later rerun_n=1 calibration run is free.
+                    if _rc.write(fixture_key, {
+                        "verdict": verdicts[0],
+                        "findings": primary_findings,
+                        "context": cache_ctx,
+                    }):
+                        cache_stats["seeded"] += 1
+        else:
+            # CALIBRATION-ONLY PATH (rerun_n == 1): cache-eligible. No
+            # stability is measured here, so a cached verdict cannot fake
+            # stability -- it only spares an identical frozen-fixture call.
+            cached = _rc.read(fixture_key) if (cache_enabled and use_cache) else None
+            if cached is not None:
+                verdicts = [cached["verdict"]]
+                primary_findings = list(cached.get("findings") or [])
+                primary_cache_hit = True
+                cache_stats["primary_cache_hits"] += 1
+            else:
+                verdicts, primary_findings, call_errors = _fresh_reviewer_verdicts(
+                    reviewer, issue_payload, 1
+                )
+                cache_stats["fresh_llm_calls"] += len(verdicts)
+                failures.extend(f"Case {case_id}: {err}" for err in call_errors)
+                if cache_enabled and _rc.write(fixture_key, {
+                    "verdict": verdicts[0],
+                    "findings": primary_findings,
+                    "context": cache_ctx,
+                }):
+                    cache_stats["seeded"] += 1
 
         primary_verdict = verdicts[0]
         predicted = "hold" if primary_verdict in _REVIEWER_GATE_HOLD_VERDICTS else "publish"
@@ -4185,15 +5091,17 @@ def eval_reviewer_gate(
             else:
                 bucket["fn"] += 1
 
-        binarized = [
-            "hold" if v in _REVIEWER_GATE_HOLD_VERDICTS else "publish"
-            for v in verdicts
-        ]
-        stable = len(set(binarized)) == 1
-        if stable:
-            stable_count += 1
-        else:
-            unstable_cases.append(case_id)
+        stable: Optional[bool] = None
+        if stability_run:
+            binarized = [
+                "hold" if v in _REVIEWER_GATE_HOLD_VERDICTS else "publish"
+                for v in verdicts
+            ]
+            stable = len(set(binarized)) == 1
+            if stable:
+                stable_count += 1
+            else:
+                unstable_cases.append(case_id)
 
         case_results.append({
             "id": case_id,
@@ -4205,6 +5113,8 @@ def eval_reviewer_gate(
             "verdicts_across_reruns": verdicts,
             "stable": stable,
             "correct": predicted == truth,
+            "primary_cache_hit": primary_cache_hit,
+            "resumed_from_run_journal": resumed,
         })
 
     # ------------------------------------------------------------------
@@ -4212,7 +5122,10 @@ def eval_reviewer_gate(
     # ------------------------------------------------------------------
     recall_hold_worthy = (tp / (tp + fn)) if (tp + fn) > 0 else None
     precision_publish_safe = (tn / (tn + fn)) if (tn + fn) > 0 else None
-    gate_stability = (stable_count / len(cases)) if cases else None
+    # gate_stability is measured ONLY on stability-bearing runs (rerun_n>1),
+    # from fresh samples (or this same run's journaled fresh samples). At
+    # rerun_n=1 it is None -- one sample cannot measure variance.
+    gate_stability = (stable_count / len(cases)) if (cases and stability_run) else None
 
     per_class_recall = {
         cls: {
@@ -4252,6 +5165,13 @@ def eval_reviewer_gate(
             "precision_publish_safe": round(precision_publish_safe, 4) if precision_publish_safe is not None else None,
             "precision_publish_safe_below_advisory_floor": precision_below_advisory,
             "gate_stability": round(gate_stability, 4) if gate_stability is not None else None,
+            "gate_stability_note": (
+                None if stability_run else
+                "not measured at rerun_n=1 -- a single sample cannot measure "
+                "fresh-call variance (reporting a trivial 1.0 here would be "
+                "fake stability of exactly the kind the cache carve-out forbids)"
+            ),
+            "result_cache": cache_stats,
             "unstable_case_ids": unstable_cases,
             "per_class_recall": per_class_recall,
             "raw_counts": {"tp": tp, "fn": fn, "fp": fp, "tn": tn},
@@ -4455,6 +5375,7 @@ def _print_pretty(report: dict) -> None:
             "reviewer_not_wired": "[SEAM]",    # Eval 9: fixture-ready, reviewer pending
             "insufficient_data": "[DEGRADED]", # Eval 9 phase C: no gate.json to join yet
             "no_takes": "[INFO]",              # Eval 10: pre-take issue, nothing to lint
+            "no_redesign_surfaces": "[INFO]",  # Eval 11: pre-digest/synthesis issue, nothing to lint
         }.get(r["status"], "[?]")
         metric_str = f" metric={r['metric']:.3f}" if r["metric"] is not None else ""
         print(f"  {icon} {r['name']}{metric_str}")
@@ -4601,6 +5522,7 @@ _REFERENCE_EVALS = {
     "factual_accuracy",   # Eval 7: verifier calibration (seam: green until verifier wired)
     "reading_experience_lint",  # Eval 8: deterministic R-8/R-9 lint (no LLM)
     "take_drift_lint",    # Eval 10 (PROPOSAL): deterministic take-drift counters (no LLM)
+    "digest_synthesis_lint",  # Eval 11 (PROPOSAL): deterministic digest/synthesis lint (no LLM)
     "reviewer_gate",      # Eval 9 (PROPOSAL): reviewer-gate calibration (seam: green until reviewer wired)
     "gate_agreement",     # Eval 9 phase C (PROPOSAL): gate.json vs. publish-commit join
 }
@@ -4705,6 +5627,12 @@ def run_evals(
             # flipped on ratification. Reports status="no_takes" green on the
             # pre-take archive.
             "take_drift_lint": lambda: eval_take_drift(dataset_dir),
+            # Eval 11 (PROPOSAL, pending ratification): deterministic
+            # digest/synthesis lint (budget, bands, banned phrases,
+            # provenance, verify bar, route diversity). Informational
+            # until DIGEST_LINT_ENFORCED flips on ratification; reports
+            # status="no_redesign_surfaces" green on the pre-v0.23 archive.
+            "digest_synthesis_lint": lambda: eval_digest_synthesis(dataset_dir),
             # Eval 9 (PROPOSAL, pending ratification): reviewer-gate calibration.
             # The reviewer=None seam means this runs green (status=reviewer_not_wired)
             # until the LLM Engineer's reviewer restructure lands and the LLM Engineer

@@ -83,12 +83,27 @@ from src.models import (
 from src.rank import JSON_RETRY_BUDGET, _extract_json_object, _llm_call
 
 
-VERIFY_PROMPT_VERSION = "v0.6"
+VERIFY_PROMPT_VERSION = "v0.7"
 r"""Pydantic-friendly version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``verify-v0.6-2026-08-08``. Bump on prompt-content changes so the
+Audit tag: ``verify-v0.7-2026-08-09``. Bump on prompt-content changes so the
 eval harness can correlate the recall / precision / unverifiable numbers
 against prompt revisions.
+
+v0.7 (2026-08-09, "digest + synthesis"): the two new reader-facing
+surfaces of the layout redesign are adjudicated (DESIGN.md "The digest",
+contracts V1-V4). Implemented as a NEW, SEPARATE auxiliary prompt
+(``_build_aux_verify_prompt``) -- one call per digest bullet (scoped to
+the union of that bullet's ``story_ids`` excerpts, V2) and one per
+section synthesis (scoped to that section's stories' excerpts). The
+per-story prompt (``_build_verify_prompt``) is BYTE-IDENTICAL to v0.6,
+so the Eval 7 fixture path (headline+body, no takes, no digest) is
+calibration-neutral by construction -- the bump records the new aux
+surface, not a change to the calibrated judge. Aux verdicts attach to
+the bullet's PRIMARY story (``story_ids[0]``) / the section's first
+story with ``location="body"`` and a ``"digest: "`` / ``"synthesis: "``
+note prefix (V3); a pure-synthesis bullet or pattern-naming synthesis
+yields exactly one ``unverifiable`` claim, never a silent skip (V4).
 
 v0.6 (2026-08-08, "the take"): take-text claims are adjudicated. When a
 story carries a ``take`` (SummaryBlock.take, schema v4), the verifier
@@ -740,6 +755,190 @@ def verify_rich(
     return []
 
 
+# ---------------------------------------------------------------------------
+# Auxiliary surfaces -- digest bullets + section syntheses (v0.7).
+#
+# DELIBERATELY a separate prompt, not a widening of the per-story prompt:
+# the per-story prompt is Eval-7-calibrated and stays byte-identical, and a
+# digest bullet's excerpt scope (the union of ITS story_ids' excerpts, V2)
+# is not any single story's scope, so the bullet cannot ride along on a
+# story call without being judged against the wrong source text.
+# ---------------------------------------------------------------------------
+
+_AUX_KIND_DESCRIPTIONS = {
+    "digest": (
+        "one bullet of the issue's skim digest (\"The 30-second read\"): a "
+        "bold lead phrase plus one sentence, compressing one or more "
+        "stories. Compressed assertive prose -- numbers, named actors, "
+        "capabilities -- exactly the claim classes you check."
+    ),
+    "synthesis": (
+        "one section's synthesis paragraph: two or three sentences framing "
+        "the pattern across that section's stories. Often editorial "
+        "pattern-naming, but it can embed checkable factual assertions "
+        "(a capability, a number, a named actor)."
+    ),
+}
+"""Prompt-facing description per auxiliary surface kind. Keys are the
+``kind`` values ``verify_aux_rich`` accepts."""
+
+
+def _build_aux_verify_prompt(
+    kind: str, text: str, source_excerpt: str, hints: list[str]
+) -> str:
+    """Assemble the auxiliary verifier prompt (digest bullet / synthesis).
+
+    Self-contained for offline audit, mirroring ``_build_verify_prompt``.
+    The location vocabulary is fixed to "body": aux claims persist against
+    the primary story's StoryVerification as body claims (contract V3), so
+    asking the judge for finer locations would invent granularity the
+    persistence boundary discards."""
+    text = (text or "").strip()
+    source_excerpt = (source_excerpt or "").strip()
+
+    if source_excerpt:
+        source_block = source_excerpt
+    else:
+        source_block = (
+            "(EMPTY -- the source excerpt is missing or the fetch failed. "
+            "With no source to check against, EVERY claim is \"unverifiable\".)"
+        )
+
+    if hints:
+        hints_block = "\n".join(f"  - {h}" for h in hints)
+        hints_intro = (
+            "DETERMINISTIC HINTS (advisory only -- a flag here means 'look "
+            "closely', NOT 'this is wrong'; a hinted token may be a legitimate "
+            "rounding/paraphrase, an out-of-excerpt detail, or a genuine "
+            "error -- you decide):"
+        )
+    else:
+        hints_block = "  (none)"
+        hints_intro = "DETERMINISTIC HINTS:"
+
+    description = _AUX_KIND_DESCRIPTIONS.get(
+        kind, "a short reader-facing text unit from the issue"
+    )
+
+    return f"""\
+You are the factual-accuracy verifier for AI Vector, a daily AI newsletter.
+The TEXT below is {description}
+Decompose it into atomic factual claims and judge each claim against the
+SOURCE EXCERPT -- the union of the source material for exactly the stories
+this text is grounded on.
+
+You are checking for factual divergence ONLY. AI Vector's house style
+compresses aggressively -- rounding, generalisation, paraphrase, and
+jargon->plain English are CORRECT and must be marked "supported". Reserve
+flags for genuine factual divergence.
+
+SCOPE -- extract atomic, CHECKABLE factual assertions only: numbers, named
+entities, capabilities, mechanisms, licences, who-did-what. Each claim is a
+canonical self-contained sentence ([SUBJECT] + [VERB] + [the one fact]),
+one fact per claim, near-verbatim wording, typically under ~12 words.
+Editorial judgment is out of scope: do not extract pattern-naming,
+direction notes, or calls to action as claims.
+
+Produce AT LEAST ONE claim. If the text is PURELY editorial synthesis or
+pattern-naming with no checkable factual content, emit exactly one claim --
+the full text -- with verdict "unverifiable" and a note saying it is an
+editorial framing with nothing factual to check. Never return zero claims,
+and never mark a pure framing "unsupported" just because the source does
+not editorialise.
+
+{_VERDICT_RUBRIC}
+
+{hints_intro}
+{hints_block}
+
+TEXT:
+{text or "(empty)"}
+
+SOURCE EXCERPT:
+{source_block}
+
+Return ONLY a single JSON object (no markdown fences, no commentary):
+
+{{
+  "claims": [
+    {{
+      "claim": "<near-verbatim span of the text>",
+      "location": "body",
+      "verdict": "<supported | unsupported | contradicted | unverifiable>",
+      "summary_span": "<the exact text span carrying this claim>",
+      "source_span": "<exact supporting OR contradicting source quote; empty if none>",
+      "note": "<one short sentence: why this verdict>"
+    }}
+  ]
+}}
+"""
+
+
+def verify_aux_rich(
+    kind: str,
+    text: str,
+    source_excerpt: str,
+    *,
+    temperature: float | None = None,
+) -> list[ClaimVerdict]:
+    """Verify one auxiliary text unit (a digest bullet or a section
+    synthesis) against its scoped excerpt union. Returns rich ClaimVerdicts
+    with ``location="body"`` (coerced -- the persistence contract V3).
+
+    Same plumbing discipline as ``verify_rich``: deterministic hints, one
+    corrective retry on parse failure, contradiction discipline enforced in
+    code, ``[]`` on total failure (the CALLER converts an empty result into
+    a single code-authored ``unverifiable`` claim -- the no-silent-skip
+    rule V4 -- because "the verifier could not run" must still leave a
+    visible mark on the audit trail).
+    """
+    if temperature is None:
+        temperature = float(
+            os.getenv("LLM_TEMPERATURE_VERIFY", str(_VERIFY_TEMPERATURE_DEFAULT))
+        )
+
+    hints = compute_hints("", text, source_excerpt)
+    prompt = _build_aux_verify_prompt(kind, text, source_excerpt, hints)
+
+    attempts = JSON_RETRY_BUDGET + 1
+    current_prompt = prompt
+    for attempt in range(1, attempts + 1):
+        try:
+            raw = _metered_llm_call(
+                current_prompt,
+                temperature=temperature,
+                max_tokens=_VERIFY_MAX_TOKENS,
+            )
+        except Exception:  # noqa: BLE001 -- advisory stage; never crash
+            _LOG.exception(
+                "verify: aux (%s) LLM call failed (attempt %d/%d)",
+                kind, attempt, attempts,
+            )
+            return []
+
+        verdicts = _parse_verify_json(raw)
+        if verdicts is not None:
+            for v in verdicts:
+                # V3: aux claims persist as body claims regardless of what
+                # the judge wrote; the note prefix (added by the caller)
+                # carries the surface attribution.
+                v.location = "body"
+            return _enforce_contradiction_discipline(verdicts)
+
+        _LOG.warning(
+            "verify: aux (%s) JSON parse failed (attempt %d/%d)",
+            kind, attempt, attempts,
+        )
+        if attempt < attempts:
+            current_prompt = (
+                "Your previous response was not valid JSON matching the schema "
+                "below. Return JSON ONLY (no markdown fences, no prose) with a "
+                "top-level \"claims\" array. Original request follows.\n\n"
+                + prompt
+            )
+    return []
+
+
 def _phrasing_variants(v: ClaimVerdict) -> list[str]:
     """Return the distinct phrasings of a claim to expose at the eval seam.
 
@@ -950,6 +1149,21 @@ def verify_day(run_date: _dt.date) -> VerificationReport:
             sv = _empty_story_verification(story_id)
         stories.append(sv)
 
+    # --- Auxiliary surfaces: digest bullets + section syntheses (v0.7) ---
+    # Contracts V1-V4 (DESIGN.md "The digest"): every bullet's full text is
+    # claim-extraction input, judged against the union of ITS story_ids'
+    # excerpts, persisted onto the PRIMARY story's StoryVerification. Same
+    # convention for each section synthesis, scoped to that section's
+    # stories' excerpts, attached to the section's first story. Failure-soft
+    # as a group: a raise here costs the aux verdicts, never the story ones.
+    try:
+        _verify_aux_surfaces(issue_payload, blocks, url_to_excerpt, stories)
+    except Exception:  # noqa: BLE001 -- aux must not lose the story verdicts
+        _LOG.exception(
+            "verify: digest/synthesis verification failed -- report carries "
+            "story verdicts only",
+        )
+
     # --- Assemble the report ---------------------------------------------
     verdict_counts = _tally_verdicts(stories)
     flagged = any(
@@ -957,16 +1171,41 @@ def verify_day(run_date: _dt.date) -> VerificationReport:
     )
     verdict = "flagged" if flagged else "clean"
 
+    # --- Denormalise onto the in-memory payload, then check the digest bar.
+    # The bar (ratified with the digest contract) is a POST-VERIFY code
+    # check: a claim the verifier marked unverifiable or contradicted may
+    # not appear in the digest. Advisory here -- violations are surfaced in
+    # the report note (the gate consumes them separately); verify never
+    # mutates the digest.
+    denorm_ok = True
+    try:
+        _apply_verification_to_payload(issue_payload, stories)
+    except Exception:  # noqa: BLE001
+        denorm_ok = False
+        _LOG.exception(
+            "verify: failed to denormalise verification onto the issue "
+            "payload for %s -- issue.json left untouched",
+            run_date.isoformat(),
+        )
+    digest_bar = _digest_bar_violations(issue_payload) if denorm_ok else []
+
+    note = (
+        f"verified {len(stories)} stories"
+        + (" -- factual flags present" if flagged else "")
+    )
+    if digest_bar:
+        _LOG.warning(
+            "verify: digest bar violation(s): %s", "; ".join(digest_bar),
+        )
+        note += " | digest-bar: " + "; ".join(digest_bar)
+
     report = VerificationReport(
         generated_at=_dt.datetime.now(_dt.timezone.utc),
         prompt_version=VERIFY_PROMPT_VERSION,
         verdict=verdict,  # type: ignore[arg-type]
         verdict_counts=verdict_counts,  # type: ignore[arg-type]
         stories=stories,
-        note=(
-            f"verified {len(stories)} stories"
-            + (" -- factual flags present" if flagged else "")
-        ),
+        note=note[:2000],
     )
 
     # --- Write verify.json (atomic) --------------------------------------
@@ -985,13 +1224,14 @@ def verify_day(run_date: _dt.date) -> VerificationReport:
     # Best-effort: if this fails the report is still the authoritative copy;
     # the per-story denormalisation is a convenience. We log and return the
     # report rather than flipping to unavailable (the verify ran fine).
-    try:
-        _rewrite_issue_with_verification(issue_path, issue_payload, stories)
-    except Exception:  # noqa: BLE001
-        _LOG.exception(
-            "verify: wrote verify.json but failed to denormalise "
-            "verification onto issue.json for %s", run_date.isoformat(),
-        )
+    if denorm_ok:
+        try:
+            _write_issue_payload(issue_path, issue_payload)
+        except Exception:  # noqa: BLE001
+            _LOG.exception(
+                "verify: wrote verify.json but failed to denormalise "
+                "verification onto issue.json for %s", run_date.isoformat(),
+            )
 
     _LOG.info(
         "verify: %s verdict=%s stories=%d counts=%s -> %s",
@@ -1085,6 +1325,208 @@ def _union_excerpts(
             continue
         parts.append(excerpt)
     return "\n\n".join(parts)
+
+
+def _verify_aux_surfaces(
+    issue_payload: dict[str, Any],
+    blocks: list[dict[str, Any]],
+    url_to_excerpt: dict[str, str],
+    stories: list[StoryVerification],
+) -> None:
+    """Verify the digest bullets and section syntheses, merging their claim
+    verdicts into ``stories`` in place (contracts V1-V4 + the synthesis
+    convention -- see the ``verify_day`` call site).
+
+    Per-surface isolation: one bullet whose verification raises costs only
+    that bullet's judge verdicts -- and even then the no-silent-skip rule
+    holds, because ``_aux_claims`` converts a failed call into one
+    code-authored ``unverifiable`` claim.
+    """
+    index_by_id = {s.story_id: i for i, s in enumerate(stories)}
+    block_by_id: dict[str, dict[str, Any]] = {}
+    for block in blocks:
+        sid = block.get("story_id")
+        if isinstance(sid, str) and sid:
+            block_by_id.setdefault(sid, block)
+
+    def _attach(target_id: str, claims: list[ClaimVerdictModel], label: str) -> None:
+        idx = index_by_id.get(target_id)
+        if idx is None:
+            # V3 requires an attachment point; a bullet citing a story the
+            # issue does not carry is hallucinated provenance the Issue
+            # validator should have rejected upstream. Loud, not silent.
+            _LOG.warning(
+                "verify: %s attaches to story %s which has no "
+                "StoryVerification -- verdicts dropped (upstream provenance "
+                "defect)", label, target_id,
+            )
+            return
+        stories[idx] = _merge_story_claims(stories[idx], claims)
+
+    # --- Digest bullets (V1: every bullet's full text; V2: scoped union;
+    # V3: attach to the primary story; V4: never a silent skip). ----------
+    for i, bullet in enumerate(issue_payload.get("digest") or []):
+        if not isinstance(bullet, dict):
+            continue
+        lead = str(bullet.get("lead") or "").strip()
+        sentence = str(bullet.get("sentence") or "").strip()
+        text = " ".join(part for part in (lead, sentence) if part)
+        story_ids = [
+            str(s) for s in (bullet.get("story_ids") or [])
+            if isinstance(s, str) and s
+        ]
+        if not text or not story_ids:
+            _LOG.warning(
+                "verify: digest bullet %d is malformed (missing text or "
+                "story_ids) -- skipping (Issue validation should have "
+                "rejected this)", i + 1,
+            )
+            continue
+        excerpt = _union_excerpts_for_stories(
+            story_ids, block_by_id, url_to_excerpt,
+        )
+        claims = _aux_claims("digest", text, excerpt)
+        _attach(story_ids[0], claims, f"digest bullet {i + 1}")
+
+    # --- Section syntheses (same conventions; note prefix "synthesis: ";
+    # attached to the section's FIRST story -- a section has no designated
+    # primary, and first-in-reading-order is the deterministic choice). ---
+    for section in issue_payload.get("sections") or []:
+        if not isinstance(section, dict):
+            continue
+        synthesis = str(section.get("synthesis") or "").strip()
+        if not synthesis:
+            continue
+        ids = [
+            str(story.get("story_id"))
+            for story in (section.get("stories") or [])
+            if isinstance(story, dict)
+            and isinstance(story.get("story_id"), str) and story.get("story_id")
+        ]
+        name = str(section.get("name") or "?")
+        if not ids:
+            # A story-less section carrying a synthesis has no attachment
+            # point AND no excerpt scope (the quiet-day Currents framing is
+            # the legitimate instance). Nothing to judge it against; the
+            # reviewer owns its editorial shape.
+            _LOG.info(
+                "verify: %s synthesis has no stories to scope against -- "
+                "not adjudicated", name,
+            )
+            continue
+        excerpt = _union_excerpts_for_stories(ids, block_by_id, url_to_excerpt)
+        claims = _aux_claims("synthesis", synthesis, excerpt)
+        _attach(ids[0], claims, f"{name} synthesis")
+
+
+def _aux_claims(
+    kind: str, text: str, source_excerpt: str
+) -> list[ClaimVerdictModel]:
+    """Run the auxiliary verifier on one text unit and shape the result for
+    persistence: ``location="body"``, note prefixed ``"<kind>: "``,
+    ``summary_span`` falling back to the full text so the audit trail
+    always quotes the surface (V3).
+
+    A failed or empty verifier run yields ONE code-authored
+    ``unverifiable`` claim covering the text -- the no-silent-skip rule
+    (V4) applied to the failure path as well as the pure-synthesis path
+    (which the prompt itself handles).
+    """
+    prefix = f"{kind}: "
+    rich = verify_aux_rich(kind, text, source_excerpt)
+    if not rich:
+        return [ClaimVerdictModel(
+            claim=text[:1000],
+            verdict="unverifiable",
+            location="body",
+            summary_span=text[:1000],
+            source_span="",
+            note=(
+                prefix + "verifier unavailable for this text -- recorded "
+                "as unverifiable, never silently skipped"
+            )[:1000],
+        )]
+    out: list[ClaimVerdictModel] = []
+    for v in rich:
+        out.append(ClaimVerdictModel(
+            claim=v.claim[:1000],
+            verdict=v.verdict,  # type: ignore[arg-type]
+            location="body",
+            summary_span=(v.summary_span or text)[:1000],
+            source_span=v.source_span[:2000],
+            # Prefix + the judge's note; the prefix survives even when the
+            # judge wrote none (the audit trail keys on "digest: " /
+            # "synthesis: " to attribute the surface -- V3).
+            note=(prefix + v.note.strip())[:1000],
+        ))
+    return out
+
+
+def _merge_story_claims(
+    sv: StoryVerification, extra: list[ClaimVerdictModel]
+) -> StoryVerification:
+    """Return a new StoryVerification with ``extra`` claims appended and the
+    rollups recomputed. A rebuild, not a mutation: the model's
+    ``_rollups_match_claims`` validator would (rightly) reject stale
+    rollups, so the honest move is to recompute them in the same breath."""
+    if not extra:
+        return sv
+    claims = list(sv.claims) + list(extra)
+    flagged = _FLAGGED_VERDICTS
+    return StoryVerification(
+        story_id=sv.story_id,
+        prompt_version=sv.prompt_version,
+        claims=claims,
+        has_contradiction=any(c.verdict == "contradicted" for c in claims),
+        has_unsupported=any(c.verdict == "unsupported" for c in claims),
+        headline_flagged=any(
+            c.location == "headline" and c.verdict in flagged for c in claims
+        ),
+    )
+
+
+def _union_excerpts_for_stories(
+    story_ids: list[str],
+    block_by_id: dict[str, dict[str, Any]],
+    url_to_excerpt: dict[str, str],
+) -> str:
+    """Excerpt union for an auxiliary surface: the ``source_urls`` of every
+    cited story, in citation order, de-duped, joined through the same
+    ``_union_excerpts`` the per-story path uses (V2 -- the bullet is judged
+    against ITS stories' sources, never anyone else's)."""
+    urls: list[Any] = []
+    for sid in dict.fromkeys(story_ids):
+        block = block_by_id.get(sid)
+        if block is None:
+            _LOG.warning(
+                "verify: aux surface cites story %s not present in the "
+                "issue -- excerpt scope narrowed", sid,
+            )
+            continue
+        urls.extend(block.get("source_urls") or [])
+    return _union_excerpts(urls, url_to_excerpt)
+
+
+def _digest_bar_violations(issue_payload: dict[str, Any]) -> list[str]:
+    """Apply the post-verify digest bar (``summarise.digest_verify_violations``)
+    to the denormalised payload. Advisory: violations are surfaced in the
+    verify report note; the gate consumes them separately. Never raises.
+
+    Requires a full pydantic ``Issue`` parse (the helper walks typed
+    models); on schema skew or any parse failure the bar is reported as
+    NOT COMPUTED rather than silently passed -- an unchecked bar and a
+    clean bar must not read the same."""
+    if not issue_payload.get("digest"):
+        return []
+    try:
+        from src.models import Issue  # local: keep module deps flat
+        from src.summarise import digest_verify_violations  # lazy: heavy module
+
+        issue = Issue.model_validate(issue_payload)
+        return digest_verify_violations(issue)
+    except Exception as exc:  # noqa: BLE001 -- advisory; never crash the stage
+        _LOG.exception("verify: digest bar could not be computed")
+        return [f"NOT COMPUTED ({type(exc).__name__}: {exc})"]
 
 
 def _empty_story_verification(story_id: str) -> StoryVerification:
@@ -1219,24 +1661,20 @@ def _write_unavailable_report(path: Path, reason: str) -> VerificationReport:
     return report
 
 
-def _rewrite_issue_with_verification(
-    issue_path: Path,
+def _apply_verification_to_payload(
     issue_payload: dict[str, Any],
     stories: list[StoryVerification],
 ) -> None:
-    """Rewrite the staged issue.json in place, setting each SummaryBlock's
-    ``verification`` by joining on ``story_id``.
-
-    Operates on the raw payload we already parsed (no second read), mutates
-    the block dicts in place, then atomically rewrites the file (.tmp + fsync
-    + rename). Stories the verifier produced an empty StoryVerification for
+    """Set each SummaryBlock's ``verification`` on the in-memory payload by
+    joining on ``story_id``. Mutates the block dicts in place (no second
+    read). Stories the verifier produced an empty StoryVerification for
     are still joined (with their empty claim list) so render/editor sees a
-    ``clean`` denormalised verdict rather than a ``None`` it can't distinguish
-    from "verify never ran".
+    ``clean`` denormalised verdict rather than a ``None`` it can't
+    distinguish from "verify never ran".
 
-    A legitimate issue.json writer: the verify stage is contractually allowed
-    to rewrite the staged issue (DESIGN.md "verify.json").
-    """
+    Split from the file write (v0.7) so the digest bar can be computed on
+    the denormalised payload BEFORE the report is written -- the bar's
+    violations belong in the report note."""
     by_id = {s.story_id: s for s in stories}
 
     def _apply(block: dict[str, Any]) -> None:
@@ -1257,6 +1695,14 @@ def _rewrite_issue_with_verification(
             if isinstance(story, dict):
                 _apply(story)
 
+
+def _write_issue_payload(
+    issue_path: Path, issue_payload: dict[str, Any]
+) -> None:
+    """Atomically rewrite the staged issue.json from the (already mutated)
+    payload (.tmp + fsync + rename). A legitimate issue.json writer: the
+    verify stage is contractually allowed to rewrite the staged issue
+    (DESIGN.md "verify.json")."""
     issue_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = issue_path.with_suffix(issue_path.suffix + ".tmp")
     with tmp.open("w", encoding="utf-8") as fh:

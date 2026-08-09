@@ -28,6 +28,7 @@ consistently produce what it was designed for?
 | **Reading-experience lint (Eval 8)** | Deterministic R-8/R-9 checks over `issue.json`: banned absence-form trust flags, "A new + generic noun" headline openers, "A/An"-led headline density (cap 2). No LLM. Gates datasets dated ≥ 2026-07-04; earlier days report counts as `informational`. | Ready — unit checks in `evals/test_reading_experience_lint.py` |
 | **Reviewer-gate calibration (Eval 9)** | Phase 2 auto-publish gate: does the editorial reviewer (`src/review.py`) hold issues that should not ship unattended and publish the ones that should? 42 labelled fixtures in `evals/fixtures/reviewer-gate/`. Hard gate `recall_hold_worthy >= 0.95`; advisory `precision_publish_safe >= 0.75`; `gate_stability` (rerun agreement) reported. | **PROPOSAL, pending ratification** — fixtures + harness built; execution against the real end-to-end reviewer pending LLM credentials in a runnable environment. See `evals/fixtures/reviewer-gate/README.md`. |
 | **Take-drift lint (Eval 10)** | Deterministic counters over `SummaryBlock.take` (ratified 2026-08-08): (a) per-issue opener families (first 3 non-article words) — violation when one family covers > 2 stories or > 30% of an issue's takes; (b) cross-issue word-level 4-grams — violation when a 4-gram appears in ≥ 3 of the last 10 released issues' takes. No LLM; the judgment-side transferability check is anchor B of the proposed `direction` amendment (`evals/voice/rubric.take-anchors.PROPOSAL.yaml`). Runs on staging like Eval 8. Statuses: `no_takes` (pre-take issue, green), `informational` (violations reported loudly, never fails) until `TAKE_LINT_ENFORCED` is flipped on ratification. Drift tracking adds `take_presence_rate` + `take_frame_diversity` features plus two constant-series floor rules (`takes_vanished`, `frame_diversity_floor` — 30-day window, min 10 samples). | **PROPOSAL, pending ratification** — counters + labelled cases (`evals/fixtures/take-drift/cases.yaml`) + unit checks (`evals/test_take_drift_lint.py`) built and green. |
+| **Digest & synthesis lint (Eval 11)** | Deterministic checks over the 2026-08-09 layout-redesign surfaces (`Issue.digest`, `IssueSection.synthesis`): digest budget (≤ 100 words), bold-lead band (3–6 words), one sentence per bullet (8–30 words, proposal band), synthesis band (20–60 words, proposal band), EDITORIAL.md banned-phrase list over digest + syntheses, bullet-one pulse provenance, verify-verdict bar (no contradicted/unverifiable digest claim text; reads the `"digest: "` note prefix per DESIGN.md V3), take route-diversity cap (no route > 40%/issue — seam open: routes are generation-internal in summarise v0.23, not persisted), synthesis/legacy-intro coexistence. Overlap ratios CONSUME `src.summarise._content_overlap_fraction` (shared helper) as evidence, no eval-side threshold until ratified. Statuses mirror Eval 10: `no_redesign_surfaces` (green), `informational` until `DIGEST_LINT_ENFORCED` flips on ratification. Drift tracking adds `tag_override_rate` (signal vs. section-default verb; definition open question vs. the editor's 4/47 reference — see `_issue_tag_override_rate`) plus an `override_collapsed` constant-series floor rule. | **PROPOSAL, pending ratification** — checks + labelled cases (`evals/fixtures/digest-lint/cases.yaml`) + unit checks (`evals/test_digest_synthesis_lint.py`) built and green. |
 
 "Stub" means: function signature and structure are real; implementation is
 TODO with graceful not-yet-implemented output. The harness is runnable and
@@ -105,6 +106,9 @@ evals/
   voice/                     # labelled voice examples (Editor co-curates)
     rubric.yaml              # voice eval rubric (co-developed with Editor)
     YYYY-MM-DD.labels.yaml   # per-day voice labels from Editor
+  review_cache/              # Eval 9 result cache (PROPOSAL 2026-08-09, pending ratification)
+    cache/                   # config-keyed primary verdicts (gitignored entries)
+    runs/                    # per-run stability journals for crash resume (gitignored entries)
   drift/                     # snapshots and drift detection artifacts
     YYYY-MM-DD.snapshot.json # per-day rolling baseline snapshot
   reports/                   # dated reports, one per CI run + one per ratified issue
@@ -146,6 +150,36 @@ python -m evals.run_evals --against fixtures --report pretty
 
 Exit code `0` = all evals passed (or not-yet-implemented stubs skipped).
 Exit code `1` = at least one regression detected.
+
+---
+
+## The Eval 9 result cache (PROPOSAL 2026-08-09, pending ratification)
+
+Reviewer verdicts over frozen fixtures are cached in `evals/review_cache/`
+so an unchanged configuration never re-buys identical LLM calls. Key =
+(fixture content hash, review prompt version, threshold-table version,
+model id, temperature); any component change invalidates naturally.
+Failure states (`unavailable`, `unparseable`) are never persisted.
+
+Reading a report that used the cache (`details.result_cache`):
+
+- `mode: calibration_cached` (rerun_n=1) — primary verdicts may be cache
+  hits; `primary_cache_hits` + `fresh_llm_calls` account for every fixture.
+  `gate_stability` is `null` here by design: one sample cannot measure
+  fresh-call variance.
+- `mode: stability_fresh` (rerun_n>1) — the config-keyed cache is **never
+  read** on this path; the carve-out is structural (the sample collector
+  `_fresh_reviewer_verdicts` has no cache access), because a cached verdict
+  served as a stability sample would report fake perfect stability.
+  `stability_resumed_case_ids` lists fixtures replayed from this same
+  run's own crash journal (`runs/<run_key>/`, scoped to config + rerun_n +
+  UTC day) — those samples were fresh calls this run already paid for.
+  For a deliberately fresh audit, pass `stability_resume=False`.
+
+Cache entries are gitignored via directory-local `.gitignore` files
+(the root `.gitignore` handles the judge cache; it is outside the Eval
+Engineer's write scope, so this cache carries its own). Prune manually
+with `evals.review_cache.cleanup_stale(keep_days=30)` — never from runs.
 
 ---
 

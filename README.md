@@ -28,7 +28,7 @@ Four sections per issue:
 | **Hands-On** | Practitioners — what to build or try |
 | **Currents** | Worth watching: the field is moving here, no action yet |
 
-Each story carries a **signal pill** and a short editorial intro — both written fresh each day, ratified by a human before publish.
+Each story carries a **signal pill** and a short editorial intro — both written fresh each day. A human is accountable for every issue that publishes.
 
 ---
 

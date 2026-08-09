@@ -952,6 +952,318 @@ class TestTakeFieldRevision:
 # The operator instruction.
 # ---------------------------------------------------------------------------
 
+class TestRedesignFieldSurfaces:
+    """Wave three (2026-08-09): FIELD_BOUNDS / guidance / routing learn the
+    redesign fields (R2), plus the KeyError-class regression the take
+    integration taught -- a review-vocabulary field this stage cannot
+    bound must be refused, never crash the failure-soft engine."""
+
+    def test_field_bounds_cover_the_entire_review_vocabulary(self) -> None:
+        """The drift guard that would have caught the take gap: every
+        ReviewTargetField token has bounds, so the vocabulary can never
+        again outrun the reviser."""
+        from typing import get_args
+
+        from src.models import ReviewTargetField
+
+        for token in get_args(ReviewTargetField):
+            assert token in revise_mod.FIELD_BOUNDS, (
+                f"ReviewTargetField {token!r} has no FIELD_BOUNDS entry"
+            )
+
+    def test_redesign_bounds_match_the_models(self) -> None:
+        """The token != model-field mapping (digest_lead -> DigestBullet.lead)
+        must introspect the right field's caps."""
+        assert revise_mod.FIELD_BOUNDS["synthesis"] == (1, 500)
+        assert revise_mod.FIELD_BOUNDS["digest_lead"] == (1, 80)
+        assert revise_mod.FIELD_BOUNDS["digest_sentence"] == (1, 300)
+
+    def test_redesign_fields_have_prompt_guidance(self) -> None:
+        for token in ("synthesis", "digest_lead", "digest_sentence"):
+            assert token in revise_mod._FIELD_GUIDANCE
+
+    def test_unknown_field_bounds_rejects_instead_of_raising(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The KeyError regression: with a bounds entry missing, the field
+        is refused BEFORE any LLM call -- revise_day has no try around
+        _revise_one_field, so a raise here would break failure-soft.
+        (Mutation evidence: reverting the .get() guard to
+        FIELD_BOUNDS[field_name] turns this test into a KeyError.)"""
+        monkeypatch.delitem(revise_mod.FIELD_BOUNDS, "digest_lead")
+
+        def _no_call(prompt):  # pragma: no cover -- the assertion IS the test
+            raise AssertionError("LLM called for an unboundable field")
+
+        monkeypatch.setattr(revise_mod, "_call_revise_llm", _no_call)
+        group = _FieldGroup(
+            target=ReviewTarget(
+                kind="digest", digest_index=0, field="digest_lead",
+            ),
+            text="Fleet latency drops today.",
+        )
+        change = revise_mod._revise_one_field(group, shadow=True)
+        assert change.status == "rejected"
+        assert change.reject_reason == "unknown_field_bounds"
+
+    def test_selector_parses_digest_targets(self) -> None:
+        target = revise_mod._parse_target_selector("digest:2:digest_sentence")
+        assert target is not None
+        assert target.kind == "digest"
+        assert target.digest_index == 2
+        assert target.field == "digest_sentence"
+
+    def test_selector_rejects_non_integer_digest_index(self) -> None:
+        assert revise_mod._parse_target_selector(
+            "digest:first:digest_lead"
+        ) is None
+
+
+# ---------------------------------------------------------------------------
+# Digest + synthesis revision -- routing and spec re-validation (R2).
+# ---------------------------------------------------------------------------
+
+_STORY_C = "c_" + "c" * 12
+
+_D_LEAD_1 = "Pulse story leads today."
+_D_LEAD_2 = "Replication lands elsewhere too."
+_D_LEAD_3 = "Benchmark harness ships broadly."
+_D_SENT_1 = (
+    "The fleet release cuts latency by thirty percent and the team says "
+    "the gain holds."
+)
+_D_SENT_2 = (
+    "A second lab replicated the throughput result on commodity hardware "
+    "without any vendor tooling involved."
+)
+_D_SENT_3 = (
+    "The new toolkit ships with a benchmark harness that runs the full "
+    "suite in minutes."
+)
+
+
+def _issue_payload_with_digest() -> dict[str, Any]:
+    """The two-story payload plus a hands_on story and a spec-clean
+    3-bullet digest (bullet 1 = pulse, then big_picture, hands_on)."""
+    payload = _issue_payload()
+    payload["sections"].append({
+        "schema_version": 3,
+        "name": "hands_on",
+        "stories": [{
+            "story_id": _STORY_C,
+            "headline": "A benchmark harness for agent stacks",
+            "summary": "The toolkit runs the full suite in minutes.",
+            "source_urls": ["https://example.com/c"],
+            "prior_coverage_ref": None,
+            "signal": "try",
+            "verification": None,
+        }],
+        "intro_lead": None,
+        "intro_body": None,
+    })
+    payload["digest"] = [
+        {"lead": _D_LEAD_1, "sentence": _D_SENT_1, "story_ids": [STORY_A]},
+        {"lead": _D_LEAD_2, "sentence": _D_SENT_2, "story_ids": [STORY_B]},
+        {"lead": _D_LEAD_3, "sentence": _D_SENT_3, "story_ids": [_STORY_C]},
+    ]
+    return payload
+
+
+def _digest_finding(
+    finding_id: str = "f001", *, index: int = 0,
+    field: str = "digest_lead", quote: str = _D_LEAD_1,
+) -> ReviewFinding:
+    return ReviewFinding(
+        finding_id=finding_id,
+        target=ReviewTarget(
+            kind="digest", digest_index=index, field=field,  # type: ignore[arg-type]
+        ),
+        criterion="digest_shape",
+        severity="major",
+        quote=quote,
+        fix_kind="text_edit",
+        instruction="Recast the lead as a naming.",
+    )
+
+
+class TestDigestRevision:
+    def test_live_cycle_routes_digest_edit_by_index(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """R2 routing: digest_lead resolves to Issue.digest[i].lead, the
+        edit lands on exactly that bullet, and the primary story's
+        verification is cleared (the bullet's verdicts live there, V3)."""
+        payload = _issue_payload_with_digest()
+        issue_path = _stage(tmp_data_root, [_digest_finding()], issue=payload)
+        replacement = "Fleet latency falls fast."
+        with patch.object(
+            revise_mod, "_call_revise_llm", return_value=replacement,
+        ):
+            report = revise_day(DATE, shadow=False)
+
+        assert report.applied == 1
+        on_disk = json.loads(issue_path.read_text(encoding="utf-8"))
+        assert on_disk["digest"][0]["lead"] == replacement
+        assert on_disk["digest"][0]["sentence"] == _D_SENT_1  # untouched
+        assert on_disk["digest"][1]["lead"] == _D_LEAD_2      # untouched
+        # The primary story's verification is stale -> cleared.
+        assert on_disk["pulse"]["stories"][0]["verification"] is None
+
+    def test_shadow_cycle_leaves_the_digest_untouched(
+        self, tmp_data_root: Path,
+    ) -> None:
+        payload = _issue_payload_with_digest()
+        issue_path = _stage(tmp_data_root, [_digest_finding()], issue=payload)
+        with patch.object(
+            revise_mod, "_call_revise_llm",
+            return_value="Fleet latency falls fast.",
+        ):
+            report = revise_day(DATE, shadow=True)
+        assert report.proposed == 1
+        on_disk = json.loads(issue_path.read_text(encoding="utf-8"))
+        assert on_disk["digest"][0]["lead"] == _D_LEAD_1
+
+    def test_spec_violating_digest_replacement_is_rejected(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The R2 re-validation: a replacement the generic gate would
+        accept but the digest spec forbids (a question, over the lead
+        word budget) is refused via summarise._digest_violations."""
+        payload = _issue_payload_with_digest()
+        _stage(tmp_data_root, [_digest_finding()], issue=payload)
+        with patch.object(
+            revise_mod, "_call_revise_llm",
+            return_value="Do agents win everywhere all at once today?",
+        ):
+            report = revise_day(DATE, shadow=False)
+        assert report.applied == 0 and report.rejected == 1
+        assert report.cycle is not None
+        assert report.cycle.changes[0].reject_reason == (
+            "digest_spec_violation"
+        )
+
+    def test_preexisting_violation_elsewhere_does_not_block_the_edit(
+        self,
+    ) -> None:
+        """Delta discipline: the spec check rejects NEW violations only,
+        so a digest already off-spec in another bullet stays revisable."""
+        payload = _issue_payload_with_digest()
+        # Bullet 3's sentence blows the word cap -- a pre-existing defect.
+        payload["digest"][2]["sentence"] = " ".join(["word"] * 30)
+        group = _FieldGroup(
+            target=ReviewTarget(
+                kind="digest", digest_index=0, field="digest_lead",
+            ),
+            text=_D_LEAD_1,
+        )
+        reason = revise_mod._digest_spec_reason(
+            group, "Fleet latency falls fast.", payload,
+        )
+        assert reason == ""
+
+    def test_missing_bullet_index_yields_digest_target_missing(self) -> None:
+        payload = _issue_payload_with_digest()
+        group = _FieldGroup(
+            target=ReviewTarget(
+                kind="digest", digest_index=9, field="digest_lead",
+            ),
+            text=_D_LEAD_1,
+        )
+        reason = revise_mod._digest_spec_reason(
+            group, "Fleet latency falls fast.", payload,
+        )
+        assert reason == "digest_target_missing"
+
+
+class TestSynthesisRevision:
+    _GOOD_SYNTHESIS = (
+        "Production deployments crossed a real threshold this week across "
+        "two separate firms. The pattern is consistent enough that risk "
+        "teams should treat agent rollouts as standard change management "
+        "rather than as experiments."
+    )
+
+    def _payload_with_synthesis(self) -> dict[str, Any]:
+        payload = _issue_payload()
+        payload["sections"][0]["synthesis"] = self._GOOD_SYNTHESIS
+        payload["sections"][0]["intro_lead"] = None
+        payload["sections"][0]["intro_body"] = None
+        return payload
+
+    def _synthesis_group(self, text: str) -> _FieldGroup:
+        return _FieldGroup(
+            target=ReviewTarget(
+                kind="section", section="big_picture", field="synthesis",
+            ),
+            text=text,
+        )
+
+    def test_valid_synthesis_replacement_passes_the_spec_check(self) -> None:
+        reason = revise_mod._synthesis_spec_reason(
+            self._synthesis_group(self._GOOD_SYNTHESIS),
+            self._GOOD_SYNTHESIS.replace("real threshold", "hard threshold"),
+            self._payload_with_synthesis(),
+        )
+        assert reason == ""
+
+    def test_aphoristic_or_underweight_synthesis_is_rejected(self) -> None:
+        reason = revise_mod._synthesis_spec_reason(
+            self._synthesis_group(self._GOOD_SYNTHESIS),
+            "Costs precede clarity.",  # aphorism, under every floor
+            self._payload_with_synthesis(),
+        )
+        assert reason == "synthesis_spec_violation"
+
+    def test_quiet_day_currents_relaxes_the_floor(self) -> None:
+        payload = self._payload_with_synthesis()
+        payload["sections"].append({
+            "schema_version": 3, "name": "currents", "stories": [],
+            "intro_lead": None, "intro_body": None,
+            "synthesis": "A quiet day on the currents front today.",
+        })
+        group = _FieldGroup(
+            target=ReviewTarget(
+                kind="section", section="currents", field="synthesis",
+            ),
+            text="A quiet day on the currents front today.",
+        )
+        # 9 words -- fails the standard 28-word floor, passes quiet-day.
+        reason = revise_mod._synthesis_spec_reason(
+            group, "A quieter day still on the currents front.", payload,
+        )
+        assert reason == ""
+
+    def test_live_synthesis_edit_writes_the_section_field(
+        self, tmp_data_root: Path,
+    ) -> None:
+        payload = self._payload_with_synthesis()
+        finding = ReviewFinding(
+            finding_id="f001",
+            target=ReviewTarget(
+                kind="section", section="big_picture", field="synthesis",
+            ),
+            criterion="synthesis_shape",
+            severity="minor",
+            quote="Production deployments crossed a real threshold",
+            fix_kind="text_edit",
+            instruction="Name the two firms' sectors instead of counting.",
+        )
+        issue_path = _stage(tmp_data_root, [finding], issue=payload)
+        replacement = self._GOOD_SYNTHESIS.replace(
+            "two separate firms", "two regulated firms",
+        )
+        with patch.object(
+            revise_mod, "_call_revise_llm", return_value=replacement,
+        ):
+            report = revise_day(DATE, shadow=False)
+        assert report.applied == 1
+        on_disk = json.loads(issue_path.read_text(encoding="utf-8"))
+        assert on_disk["sections"][0]["synthesis"] == replacement
+        # Synthesis verdicts attach to the section's first story -> its
+        # verification is now stale and must be cleared.
+        assert on_disk["sections"][0]["stories"][0]["verification"] is None
+
+
 class TestOperatorInstruction:
     """The ``/revise`` PR command. One extra directive under exactly the
     same containment as a finding -- including the validation gate."""

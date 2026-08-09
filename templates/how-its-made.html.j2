@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it's made &mdash; {{ brand.name }}</title>
+<meta name="description" content="How {{ brand.name }} is made: where the stories come from, how one is chosen, and what the machine does versus what a person does.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="mask-icon" href="favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. */
+  --accent:oklch(0.49 0.135 30);
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+/* Quiet navigation links -- the same register the issue pages use. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.doc{display:flex;flex-direction:column;gap:42px}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+/* Section headings sit in the issue's section-head register: the 2px ink rule
+   above, the same size and weight. A reader who knows the issue knows this. */
+h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em;border-top:2px solid var(--ink);padding-top:20px}
+.lede{margin:0;font-size:18.5px;line-height:1.65;color:var(--ink)}
+p.body{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+p.body a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--line-2)}
+p.body a:hover{border-bottom-color:var(--accent)}
+.block{display:flex;flex-direction:column;gap:16px}
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px;margin-left:auto}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}h2{font-size:24px}
+.navlink::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}
+.navlink{position:relative}}
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="doc">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="index.html"><span class="mark" aria-hidden="true">{% include "_mark.svg.j2" %}</span>{{ brand.wordmark.lead }}<span class="slash">/</span>{{ brand.wordmark.tail }}</a></div>
+    <span class="mast-meta"><a class="navlink" href="index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+{#- The copy below is operator-ratified and VERBATIM. Do not reword, retitle,
+    or re-punctuate it. Layout is the release engineer's; the words are not. -#}
+<section class="measure block">
+  <div class="kicker">How it's made</div>
+  <h1>How it's made</h1>
+  <p class="lede">{{ brand.name }} publishes every weekday morning. Each issue starts with The 30-second read, a summary of everything in it, then The Pulse, the day's most important story. Three sections follow: The Big Picture for leaders, Hands-On for practitioners, Currents for early signals. Every story has a headline, a one-line take saying what it means, a summary, and a link to its source.</p>
+</section>
+
+<section class="measure block">
+  <h2>Open source</h2>
+  <p class="body">{{ brand.name }} is open source. The code that builds each issue, the source list, the scoring rubric, and the full history of every issue are in one public repository: <a href="https://github.com/armanabrahamyan/ai-vector-newsletter">github.com/armanabrahamyan/ai-vector-newsletter</a></p>
+  <p class="body">The code is MIT-licensed. The issue text is copyright.</p>
+</section>
+
+<section class="measure block">
+  <h2>Where the stories come from</h2>
+  <p class="body">{{ brand.name }} reads about ninety feeds each morning: AI labs, research groups, regulators, practitioner blogs, and community forums. Nothing is scraped from websites.</p>
+  <p class="body">Many feeds report the same news, so articles about the same story are grouped and the story appears once. The comparison covers the previous two weeks: an article already used is never used again, and a story covered before is marked as a follow-up.</p>
+</section>
+
+<section class="measure block">
+  <h2>How a story is chosen</h2>
+  <p class="body">Each group is scored against a written rubric: significance, hands-on usefulness, big-picture relevance, financial-services impact, freshness. A normal morning produces four to five hundred groups; about a dozen are published, written by a language model following written rules for headlines, takes, and summaries.</p>
+  <p class="body">Two checks then run. The first compares every claim in a headline or summary with the source article and flags anything the source does not support or contradicts. The second reads the whole issue: whether the right story leads, whether stories repeat from earlier days, whether the financial-services angle is real.</p>
+</section>
+
+<section class="measure block">
+  <h2>What the machine does and what a person does</h2>
+  <p class="body">Every issue is either read and approved by a person before it goes out, or published under rules that person wrote, checks afterwards, and can switch off. An issue is held if a story makes a claim its source contradicts, or if a check did not run.</p>
+  <p class="body">The financial-services angle appears when a story has one: some days that is half the issue, some days none.</p>
+</section>
+
+<section class="measure block">
+  <h2>Corrections</h2>
+  <p class="body">When an issue is wrong, it is corrected and published again with a revision number. No. 34 becomes No. 34.1. The correction goes into the issue itself, not into a separate notice. Factual errors are corrected on the day they are confirmed. A story that should not have run is removed.</p>
+</section>
+
+<section class="measure block">
+  <h2>Contact</h2>
+  <p class="body">Corrections, disagreements, and sources worth adding go to {{ brand.author }}, who approves every issue before it publishes: <a href="https://armanabrahamyan.com">armanabrahamyan.com</a></p>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">{{ brand.wordmark.lead }}<span class="slash" style="color:var(--accent)">/</span>{{ brand.wordmark.tail }}</span>
+  <span class="ethos">{{ brand.ethos }}</span>
+  <a class="navlink" href="index.html">all issues &rarr;</a>
+</footer>
+
+</div>
+</main>
+</body>
+</html>

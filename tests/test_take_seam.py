@@ -139,7 +139,9 @@ class TestTakeFlowsThroughTheRealPipeline:
         # --- 3. render(): re-parses issue.json from disk; the take must
         # reach the rendered HTML through the real template.
         html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
-        assert f'<p class="av-pulse-take">{TAKE_TEXT}</p>' in html
+        # The 2026-08-09 layout redesign renders the take in the design's
+        # bold takeaway-first slot (`.takeaway`), above the body (`.dek`).
+        assert f'<p class="takeaway">{TAKE_TEXT}</p>' in html
 
         # --- 4. review.index_issue_fields: the SAME take text, reloaded
         # from disk as review.py actually reads it (raw JSON, not pydantic).

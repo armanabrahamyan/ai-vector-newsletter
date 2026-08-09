@@ -79,6 +79,7 @@ from src.cluster import _extract_canonical_id_from_url
 from src import paths
 from src.models import (
     Cluster,
+    DigestBullet,
     Issue,
     IssueSection,
     Item,
@@ -91,10 +92,106 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.22"
+SUMMARISE_PROMPT_VERSION = "v0.23"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.22-2026-08-08``. v0.22 ("the take" -- ratified
-2026-08-08): every story now returns a ``take`` field alongside headline
+``summarise-v0.23-2026-08-09``. v0.23 (the 2026-08-09 layout redesign,
+wave two -- take v2 + section synthesis + the digest; editor's voice
+contracts and Architect's v8 data contracts ratified in wave one):
+  - TAKE v2 -- THE COLD OPEN. The take is no longer the italic last line;
+    it renders FIRST in the story unit, above the body. ``_TAKE_BLOCK``
+    and all four tier take-shape blocks rewritten from relocation
+    instructions ("the close MOVES") to authoring instructions for the
+    before-the-body slot: reader-world grammatical subject (no deixis
+    openers -- This/That/It/These/Those; headline info may be assumed,
+    body info may NOT), finite verb by word six, band 12-18 words (aim
+    near 12), HARD CAPS 18 words AND 118 characters universal (the
+    Currents 22 exception is retired; the caps follow the experience
+    designer's adjudication -- two rendered lines at the real metrics
+    is the ceiling). Headline-repetition rule added: headline and take
+    are co-read; a take derivable from the headline fails (prompt
+    teaching + code overlap proxy). The generative mechanism is
+    taught by name: THE OLD STATE IS THE CONTEXT, with three routes --
+    R1 displacement ("X can now do A instead of B"), R2 named-owner
+    consequence, R3 priced tradeoff (new number vs old number in reader
+    units). The model returns a ``take_route`` label; the take
+    feed-forward now carries route labels, and the write-site reminder
+    names the previous same-section route as do-not-repeat (route
+    diversity: no route > ~40% of an issue's takes, never two
+    consecutive same-route in a section -- issue-level counting is
+    review/eval territory per No Token Wasted). "It is now the case
+    that" is demoted to necessary-not-sufficient; the COLD-OPEN TEST
+    governs (cover the body: can the reader name what changed and
+    from-what/to-what?). Thin-sourcing rule (assert at the level the
+    sourcing supports; incident-class exemplar) and
+    calibration-as-woven-modifier (never a parenthetical) added. NEW
+    named anti-pattern: the stacked-modifier garden path (at most one
+    reduced relative, never on a coordinated subject, no coordination
+    of two post-modified noun phrases, one-pass parse). The six
+    ratified exemplars (FCA regulator-text, incident-log nineteen
+    entries, incident-class thin-sourcing, stdout/scriptable,
+    $2.68-vs-$6.17, one-preprint-scores-the-turn) inlined.
+    ``_take_violations`` gains code checks: word cap 18, character
+    ceiling 118, deixis-opener, headline restatement (shared overlap
+    helper), comma <= 1, semicolon <= 1, no coordinating "and" before
+    word 8 (finite-verb-position proxies -- POS tagging is out of
+    scope; the judge carries the residue). Cache discipline unchanged:
+    tier-independent teaching in the STATIC prefix, tier shapes in the
+    variable part, retry-append preserved; golden byte-equality test
+    updated to v0.23.
+  - SECTION SYNTHESIS (IssueSection v4). ``_populate_section_synthesis``
+    replaces the intro pass: one italic paragraph (28-45 words, 2-3
+    sentences) written to ``IssueSection.synthesis``; the legacy
+    ``intro_lead``/``intro_body`` pair stays None on new issues (the
+    model's XOR validator enforces the migration direction; the
+    renderer already handles both). Register: quieter than the old
+    intro -- the editor's aside, not a headline; NO standalone
+    aphoristic opening sentence (the synthesis opens ON the pattern
+    with subject + verb, which kills the "X outruns Y" family
+    structurally); the pattern across stories, never one story; no two
+    sections sharing a thesis (prior syntheses fed forward). Designer
+    adjudication: a section with exactly ONE story gets NO synthesis (it
+    would duplicate that story's dek). The quiet-day allowance survives
+    at n=0 (``_ensure_quiet_day_currents_synthesis`` is the
+    deterministic guard). A synthesis may not open with the same word as
+    the digest bullet covering its section -- enforced at digest
+    validation time (the digest is generated after the syntheses).
+  - THE DIGEST (Issue v8, ``DigestBullet``). New issue-level LLM call
+    AFTER all stories + takes + syntheses exist (sequential position
+    matters: deconfliction is defined against the takes). Structure:
+    bullet 1 is ALWAYS The Pulse; bullets 2..n cover sections in layout
+    order; a section with < 2 stories gets NO bullet; floor 3 bullets
+    else ``digest=None`` entirely (never pad); ceiling 5 (one section
+    may split into two bullets only when it genuinely splits into two
+    threads). Lead: 3-6 words + full stop, a NAMING (never imperative,
+    never a question, no unrecognised artifact names; EDITORIAL.md
+    anti-pattern catalogue injected). Sentence: one sentence, 14-22
+    words (26 for a semicolon-list of <= 3 clauses). Total budget 100
+    words HARD (code check). Deconfliction in code via the shared
+    ``_content_overlap_fraction`` helper (0.6 threshold shared with the
+    take-restates-body check): no digest sentence vs any take >= 0.6,
+    no digest lead vs any synthesis >= 0.6, bullet 1 must not
+    paraphrase the Pulse take, no lead opening on its section
+    synthesis's first word. Designer adjudication: bullets are
+    STORY-ANCHORED (one story's specifics, falsifiable against exactly
+    one story) while syntheses are SECTION-ANCHORED -- enforced in
+    prompt plus a deterministic trigram check between each lead and its
+    section synthesis's first sentence (the observed collision: "Ship
+    the plumbing first." verbatim on both surfaces). ``story_ids``
+    populated from the generation
+    context (the prompt carries the exact id lists; code validates the
+    subset). Version under ``prompt_versions["digest"]``
+    (DIGEST_PROMPT_VERSION). VERIFY BAR: the pipeline order is
+    summarise -> verify (run.py auto-fires verify after summarise), so
+    per-story verification does not exist yet when the digest is
+    generated; the bar ("a claim the verifier marked unverifiable or
+    contradicted may not appear in the digest") is therefore a
+    POST-VERIFY code check -- ``digest_verify_violations`` is the
+    deterministic helper, applied defensively at generation time (no-op
+    while verification is absent) and to be wired into verify.py after
+    denormalisation in the wave-three verify/review/revise integration
+    task (explicitly deferred).
+v0.22 ("the take" -- ratified
+2026-08-08): every story returned a ``take`` field alongside headline
 / summary / signal -- one declarative sentence stating the publication's
 position, rendered as an italic final line (schema: ``SummaryBlock.take``,
 Architect's contract). Changes:
@@ -426,6 +523,13 @@ fresh-over-prior-coverage bias and the >=2 signal-dimensions Pulse-class
 bar still run inside the eligible pool. This is a behavioural change in
 ``_pick_pulse``, not a prompt change. v0.9 (#82) biased against prior
 coverage."""
+
+DIGEST_PROMPT_VERSION = "v1.0"
+"""Audit tag: ``digest-v1.0-2026-08-09``. First version of the issue-level
+digest prompt ("The 30-second read" -- Issue v8 ``digest`` field, 2026-08-09
+layout redesign). Recorded under ``Issue.prompt_versions["digest"]`` only
+when a digest was actually produced; absent when the digest degraded to
+``None`` (floor not met, LLM failure, or validation failure after retry)."""
 
 PULSE_ELIGIBILITY_TRUST_FLOOR = 3
 """Minimum trust_weight (from ``config/sources.yaml``) such that a single
@@ -1403,84 +1507,93 @@ _CLOSING_SHAPE_PER_SECTION: dict[str, str] = {
         "same closing mould; vary the grammar story to story."
     ),
     "currents": (
-        "CLOSING SHAPE -- CALIBRATED STAKE, NOW IN THE TAKE (v0.22)\n"
-        "The two-sided calibrated stake that used to end the body has\n"
-        "MOVED to the \"take\" field -- see the TAKE SHAPE below. Do NOT\n"
+        "CLOSING SHAPE -- CALIBRATED STAKE LIVES IN THE TAKE (v0.23)\n"
+        "The stake-carrying judgement belongs to the \"take\" field (the\n"
+        "cold open ABOVE the body -- see the TAKE SHAPE below). Do NOT\n"
         "also write it into the body. The body's final sentence instead\n"
         "lands on the maturity signal: what EXISTS and what it is worth\n"
         "today (presence-form, per the Currents WHY rule above) -- e.g.\n"
         "\"a single-vendor benchmark, but the harness is public\". The\n"
-        "body close stays hedged-arrival in register; the stake-carrying\n"
-        "judgement is the take's job now.\n"
+        "body close stays hedged-arrival in register; the position was\n"
+        "already stated up top, so the body never re-announces it.\n"
         "Within an issue, consecutive Currents items must NOT share the\n"
         "same closing mould; vary the grammar item to item."
     ),
 }
 
 
-# v0.22 (2026-08-08): per-tier TAKE SHAPE -- the tier-specific half of the
-# take contract. The tier-independent rules (speech act, budget, banned
-# forms, anti-patterns) live in _TAKE_BLOCK inside the STATIC prefix;
-# these blocks are variable-part material because they differ per tier.
+# v0.23 (2026-08-09): per-tier TAKE SHAPE -- the tier-specific half of the
+# take contract, rewritten for the COLD-OPEN slot (the take renders FIRST
+# in the story unit, above the body). The tier-independent rules (slot
+# grammar, routes, banned forms, anti-patterns) live in _TAKE_BLOCK inside
+# the STATIC prefix; these blocks are variable-part material because they
+# differ per tier.
 _TAKE_SHAPE_PER_SECTION: dict[str, str] = {
     "big_picture": (
-        "TAKE SHAPE (BIG PICTURE) -- THE CONSEQUENCE SENTENCE MOVES\n"
-        "The first-order consequence sentence you would previously have\n"
-        "written second-to-last in the body IS the take now. Write it in\n"
-        "the \"take\" field: one declarative sentence naming what this\n"
-        "story makes true for the named actors. Do NOT duplicate it in\n"
-        "the body. The body still ENDS on the STRATEGIC QUESTION -- the\n"
-        "question stays the body's last sentence, exactly as before.\n"
+        "TAKE SHAPE (BIG PICTURE) -- THE CONSEQUENCE, COLD\n"
+        "The take opens the story unit with the first-order consequence\n"
+        "for named actors: whose obligation, scope, or calculus shifted,\n"
+        "and from what to what. Route R2 (named-owner consequence) is the\n"
+        "natural fit; R1 or R3 when the story genuinely is a displacement\n"
+        "or a price move. The BODY follows the take: it builds the\n"
+        "context and still ENDS on the STRATEGIC QUESTION (the closing\n"
+        "shape above). The take asserts; the close hands the reader the\n"
+        "open decision. SAID ONCE: the consequence lives in the take and\n"
+        "ONLY in the take -- the body must not carry a residual\n"
+        "consequence or so-what sentence where the take now holds it.\n"
         "Example take: \"Model-risk sign-off now covers agent plans, not\n"
         "just model outputs.\""
     ),
     "hands_on": (
-        "TAKE SHAPE (HANDS-ON) -- THE STAKE THE IMPERATIVE LACKS\n"
-        "New for this section: the take supplies the STAKE that the\n"
-        "imperative close does not carry -- why the move matters, stated\n"
-        "as a position, not an instruction. The imperative close STAYS in\n"
-        "the body, exactly as before; the take asserts what makes it\n"
-        "worth doing. Example take: \"Reasoning on stderr is the small\n"
-        "decision that makes agent output pipeable.\" The take never\n"
-        "opens with a verb telling the reader to do something -- that is\n"
-        "the body close's job."
+        "TAKE SHAPE (HANDS-ON) -- THE STAKE, COLD\n"
+        "The take opens the story unit with the stake: what became\n"
+        "possible, cheaper, or safer for the practitioner, with the old\n"
+        "state in view (R1 displacement and R3 priced tradeoff are the\n"
+        "natural routes). The subject is the workflow or artefact class\n"
+        "the reader owns -- name the repo itself only when recognised.\n"
+        "Never an instruction and never a verb telling the reader to do\n"
+        "something: the IMPERATIVE CLOSE stays the body's last sentence,\n"
+        "exactly as the closing shape above says. SAID ONCE: the stake\n"
+        "lives in the take; the imperative close prescribes the action\n"
+        "and must NOT restate why it matters.\n"
+        "Example take: \"Agent reasoning now lands on stderr, leaving\n"
+        "stdout clean enough to pipe into the next tool.\""
     ),
     "currents": (
-        "TAKE SHAPE (CURRENTS) -- THE CALIBRATED STAKE, COMPRESSED\n"
-        "The two-sided calibrated stake IS the take now: both branches,\n"
-        "each stated as a CONSEQUENCE (what becomes true), not as advice.\n"
-        "One-sided stakes FAIL; false binaries FAIL; placebo branches\n"
-        "(\"if not, we'll know more next quarter\") FAIL.\n"
-        "Compress toward 18 words or fewer. Currents is the ONE section\n"
-        "where the take may run to 22 words when genuine two-sidedness\n"
-        "needs the room -- never butcher both branches to hit 18, and\n"
-        "never pad to 22.\n"
-        "Example takes (calibration, not templates):\n"
-        "  - \"A replication makes attention-free forecasting a real\n"
-        "    architecture line; a failure indicts the benchmark suite.\"\n"
-        "  - \"Held up, this is a compliance gap in every unguarded\n"
-        "    deployment; unconfirmed, the audit itself is the gap.\"\n"
-        "Do NOT reuse the \"Replicated, X; unreplicated, Y\" frame -- it\n"
-        "is a named anti-pattern (see THE TAKE rules above)."
+        "TAKE SHAPE (CURRENTS) -- THE CALIBRATED POSITION, COLD\n"
+        "The take opens the story unit by pricing the signal at exactly\n"
+        "the level the sourcing supports: what is now documented, first\n"
+        "public, or converging -- and from what prior state. The THIN\n"
+        "SOURCING rule bites hardest here: assert the class, never\n"
+        "harden the anecdote. Calibration rides inside the sentence as a\n"
+        "woven modifier (\"on one preprint's benchmark\", \"with the\n"
+        "weights promised\"), never a parenthetical. Where the position\n"
+        "genuinely is two-sided, state both branches as consequences\n"
+        "within the same caps -- and never with the \"Replicated, X;\n"
+        "unreplicated, Y\" frame (named anti-pattern). SAID ONCE: the\n"
+        "stake lives in the take; the body still closes on the maturity\n"
+        "signal per the closing shape above, never a residual stake.\n"
+        "Example take: \"A single documented wipe moves destructive agent\n"
+        "commands from hypothetical risk to recorded precedent.\""
     ),
 }
 
 
-# v0.22: take shape under the Pulse override. The Pulse is EXEMPT from
-# writing a new sentence: the plain-take close that used to end the Pulse
-# body LIFTS OUT into the take field. Paired with the amended
-# _PULSE_CLOSING_SHAPE below.
+# v0.23: take shape under the Pulse override -- the cold open of the whole
+# issue. Paired with the amended _PULSE_CLOSING_SHAPE below.
 _PULSE_TAKE_SHAPE = (
-    "TAKE SHAPE (PULSE) -- THE PLAIN TAKE LIFTS OUT OF THE BODY\n"
-    "The Pulse writes NO new sentence for the take. The short editorial\n"
-    "judgement that used to be the body's closing plain take now goes in\n"
-    "the \"take\" field instead: ONE declarative sentence (8-16 words,\n"
-    "hard cap 18 -- tighter than the old 1-2 sentence close), naming\n"
-    "what is TRUE NOW given the day's shift. The BODY must still satisfy\n"
-    "the PULSE VOICE rules above on its own: the day's direction in\n"
-    "plain editorial prose, direction-note in the body, no\n"
-    "section-trope opening -- and it must land cleanly WITHOUT the take\n"
-    "sentence, ending on the direction rather than restating the take."
+    "TAKE SHAPE (PULSE) -- THE DAY'S POSITION, COLD\n"
+    "The Pulse take is the first editorial sentence of the whole issue:\n"
+    "the day's position, stated against the state it displaces. Any of\n"
+    "the three routes may carry it -- pick the one the story actually\n"
+    "runs on and return its label. The BODY follows the take and must\n"
+    "land cleanly WITHOUT it: the day's direction in plain editorial\n"
+    "prose, satisfying the PULSE VOICE rules above on its own, ending on\n"
+    "the direction -- never restating the take, never re-announcing the\n"
+    "position the unit already opened with. SAID ONCE: the day's so-what\n"
+    "lives in the take; the body ends on direction, not on judgement.\n"
+    "Example take: \"Compliance teams can now cite the regulator's own\n"
+    "text instead of somebody's scrape of it.\""
 )
 
 # v0.12 (2026-05-31): Pulse-specific voice block, used by the Pulse
@@ -1516,20 +1629,21 @@ _PULSE_VOICE_BLOCK = (
 # the PRIMARY closing shape inside the Pulse re-summarise prompt
 # (``section_override="pulse"`` in ``_build_summary_prompt``).
 _PULSE_CLOSING_SHAPE = (
-    "PULSE CLOSING SHAPE -- PLAIN TAKE, IN THE TAKE FIELD (v0.22)\n"
+    "PULSE CLOSING SHAPE -- PLAIN TAKE, COLD OPEN (v0.23)\n"
     "If this story is elevated to The Pulse, the publication's plain-take\n"
-    "judgement goes in the \"take\" FIELD, not at the end of the body --\n"
-    "one declarative sentence naming what is TRUE NOW given this story.\n"
-    "NEVER a question (\"Who owns...?\"); NEVER a prescription (\"Test\n"
-    "this against X\"); the last character is a FULL STOP. The BODY then\n"
-    "ends on the day's direction in the Pulse voice, WITHOUT restating\n"
-    "the take. This overrides BOTH the generic body-close rule and the\n"
-    "Big-Picture STRATEGIC QUESTION shape above.\n"
+    "judgement is the \"take\" FIELD, rendered ABOVE the body as the cold\n"
+    "open of the whole issue -- one declarative sentence naming what is\n"
+    "TRUE NOW against the old state. NEVER a question (\"Who owns...?\");\n"
+    "NEVER a prescription (\"Test this against X\"); the last character\n"
+    "is a FULL STOP. The BODY then ends on the day's direction in the\n"
+    "Pulse voice, WITHOUT restating the take. This overrides BOTH the\n"
+    "generic body-close rule and the Big-Picture STRATEGIC QUESTION\n"
+    "shape above.\n"
     "Example takes (use as calibration, not templates):\n"
-    "  - \"Domain-grounded filtering is where the credible safety story\n"
-    "    starts now.\"\n"
-    "  - \"Whether the lab is honest is the strategic question, not\n"
-    "    whether to swap.\""
+    "  - \"Domain-grounded filtering now anchors the credible safety\n"
+    "    story, where open-web filters anchored it before.\"\n"
+    "  - \"Lab honesty is now the strategic variable; model swaps are\n"
+    "    just procurement.\""
 )
 
 
@@ -1555,30 +1669,84 @@ carry a finance angle. That is correct.
 """
 
 
-# v0.22 (2026-08-08): THE TAKE -- tier-independent teaching. This block is
-# identical across every tier and the Pulse override, so it is STATIC
-# PREFIX material (cache discipline). The per-tier take SHAPE lives in the
-# tier block (variable part) -- see _TAKE_SHAPE_PER_SECTION below.
+# v0.23 (2026-08-09): THE TAKE -- tier-independent teaching, rewritten for
+# the COLD-OPEN slot. This block is identical across every tier and the
+# Pulse override, so it is STATIC PREFIX material (cache discipline). The
+# per-tier take SHAPE lives in the tier block (variable part) -- see
+# _TAKE_SHAPE_PER_SECTION below.
 _TAKE_BLOCK = """\
-THE TAKE -- the publication's position, in its own field
+THE TAKE -- the publication's position, read FIRST
 
 Alongside headline / summary / signal you return "take": ONE declarative
-sentence stating AI Vector's position on this story. It renders as an
-italic final line under the body. It is a SEPARATE field with its OWN
-budget -- the body keeps its 30-60 word cap unchanged; do not spend body
-words on the take or take words on the body.
+sentence stating AI Vector's position on this story. It renders as the
+COLD OPEN of the story unit -- bold, ABOVE the body, the first prose the
+reader meets after the headline. It is a SEPARATE field with its OWN
+budget; the body keeps its 30-60 word cap unchanged.
 
-SPEECH ACT. Assertive / declarative, present or present-perfect tense.
-The take is NOT the close: the close (question / imperative / stake)
-stays in the body per the section's closing shape and hands the turn to
-the reader; the take states what the publication holds true. Operational
-test before returning: "It is now the case that [take]" must parse as a
-sensible sentence. If it doesn't, you wrote a close, not a take.
+WRITE FOR THE COLD-OPEN SLOT. The reader has seen the headline and
+NOTHING else. The take may assume headline information; it may NOT lean
+on the body: no "This" / "That" / "It" / "These" / "Those" opener, and
+no pronoun whose referent lives in prose the reader has not reached
+yet. The grammatical subject is a READER-WORLD subject -- a role, a
+workflow, a cost line, an artefact class the reader owns -- not "the
+paper", "the release", or "the researchers".
 
-LENGTH. 8-16 words; aim for 10-13. HARD CAP 18 words -- a longer take is
-rejected and you will be asked to rewrite. The take must stand alone: a
-reader who reads ONLY the headline and the take should still get the
-position.
+GRAMMAR OF THE SLOT (checked in code):
+  - 12-18 words; aim NEAR 12. HARD CAPS: 18 words AND 118 characters --
+    every tier, no exceptions (the rendered slot holds two lines; a
+    longer take is rejected and you will be asked to rewrite).
+  - Finite verb by word six. A subject that runs longer buries the
+    verb and stalls the parse.
+  - At most ONE comma and at most ONE semicolon. No coordinating "and"
+    inside the first seven words (a coordinated subject stalls the
+    verb).
+  - One-pass parse: read it once aloud; if the reader must back up,
+    rewrite.
+
+HEADLINE AND TAKE ARE CO-READ -- one unit, twelve pixels apart. The
+HEADLINE states what happened; the TAKE states what we hold. The take
+must carry information the headline withheld: if the take is derivable
+from the headline alone, it fails the slot (checked in code as content-
+word overlap). Assume the headline; never echo it.
+
+THE OLD STATE IS THE CONTEXT -- the generative mechanism. A position
+lands only against what it displaces. Every take carries the old state,
+named or implied strongly enough to reconstruct. Three routes; pick the
+one the story actually runs on and return its label in "take_route":
+
+  R1 -- DISPLACEMENT: X can now do A instead of B. The old practice is
+    named and displaced. "Compliance teams can now cite the regulator's
+    own text instead of somebody's scrape of it."
+  R2 -- NAMED-OWNER CONSEQUENCE: a reader-world owner's obligation,
+    scope, or baseline shifts. "Model-risk sign-off now covers agent
+    plans, not just model outputs."
+  R3 -- PRICED TRADEOFF: the new number against the old number, in
+    units the reader budgets in. "The same agent workload now clears
+    at $2.68 a day against $6.17 on the old pricing."
+
+ROUTE DIVERSITY. The TAKES ALREADY WRITTEN block (when present) carries
+route labels. Never use the same route as the previous take in the same
+section, and across an issue no single route should carry more than
+about four takes in ten.
+
+THE COLD-OPEN TEST governs. "It is now the case that [take]" must still
+parse -- that is necessary, NOT sufficient (a news recap passes it).
+The real test: cover the body. From the headline and the take alone,
+can the reader name WHAT CHANGED and FROM WHAT to WHAT? A take that
+names a topic, restates the headline, or waits for the body to supply
+the old state fails the slot.
+
+THIN SOURCING. The take asserts at the level the sourcing supports --
+never harden an unverifiable claim into a field fact. One forum thread
+reporting an agent wiping a repository does not license "Agents now
+delete production repos"; it licenses the CLASS claim: "A single
+documented wipe moves destructive agent commands from hypothetical
+risk to recorded precedent."
+
+CALIBRATION IS WOVEN, NEVER PARENTHESISED. Sourcing calibration rides
+inside the sentence as a modifier ("on one preprint's benchmark",
+"with the weights promised"), never as a bracketed aside. A
+parenthetical in a cold open is a hedge wearing punctuation.
 
 BANNED FORMS (checked in code and by the editor; a take that trips one
 gets flagged or rejected):
@@ -1586,15 +1754,25 @@ gets flagged or rejected):
   - No hedges: may / could / potentially / appears / arguably.
   - No leading imperative verb -- the take asserts, it never instructs.
   - No labels: "So what:", "Bottom line:", "This matters because".
+  - No deixis opener: This / That / It / These / Those as first word.
   - No second person UNLESS anchored to a concrete noun the reader owns
     ("your retrieval stack" is fine; "you should care" is not).
   - No universalisms ("changes everything", "nothing will be the same").
   - No body restatement: the take must not repeat a body sentence or
-    share most of its content words with one. It ADDS the position the
-    body stopped short of stating.
+    share most of its content words with one. The body is written to
+    FOLLOW the take -- it deepens the position; it never re-announces
+    it.
 
-ANTI-PATTERN CATALOGUE -- moulds the editor has already flagged; do not
-reach for these frames:
+THE STACKED-MODIFIER GARDEN PATH -- named anti-pattern. Post-modified
+noun phrases stack into a sentence the reader must re-parse: "A
+benchmark released Tuesday scored by judges trained on synthetic data
+now anchors procurement" strands the reader three modifiers deep before
+the verb. Rules: at most ONE reduced relative ("released Tuesday",
+"scored by judges") per take; never a reduced relative on a coordinated
+subject; never coordinate two post-modified noun phrases. If the
+modifiers matter, spend them in the body.
+
+ANTI-PATTERN FRAMES the editor has already flagged; do not reach for:
   - "...is the [X] that was missing"
   - "That moves X from [abstract] to [concrete]"
   - "The [metric] masks the [failure]"
@@ -1604,9 +1782,22 @@ reach for these frames:
     prior story already used it)
   - consultant filler: "table stakes", "the new X", "the moat"
   - self-referential: "and that is the story"
-A good take is a specific proposition about the field, priced in plain
-words: "Reasoning on stderr is the small decision that makes agent
-output pipeable."
+
+CALIBRATION EXEMPLARS (the ratified set -- study the shape, do not copy
+the sentences):
+  [R1] "Compliance teams can now cite the regulator's own text instead
+       of somebody's scrape of it."
+  [R2] "Agent incident reviews now start from a public log of nineteen
+       entries rather than from anecdote."
+  [R2] "A single documented wipe moves destructive agent commands from
+       hypothetical risk to recorded precedent." (thin sourcing: the
+       class claim, never the hardened incident claim)
+  [R1] "Agent reasoning now lands on stderr, leaving stdout clean
+       enough to pipe into the next tool."
+  [R3] "The same agent workload now clears at $2.68 a day against
+       $6.17 on the old pricing."
+  [R1] "Turn-level scoring now beats whole-conversation grading on one
+       preprint's benchmark, harness public to rerun."
 """
 
 
@@ -1764,6 +1955,8 @@ def summarise(date: _dt.date | None = None) -> Issue:
     blocks: list[tuple[RankedStory, SummaryBlock]] = []
     closes_by_tier: dict[str, list[str]] = {}
     takes_so_far: list[str] = []
+    take_routes: dict[str, str] = {}
+    last_route_by_tier: dict[str, str] = {}
     for story in top:
         cluster = clusters_by_id.get(story.cluster_id)
         if cluster is None:
@@ -1786,6 +1979,8 @@ def summarise(date: _dt.date | None = None) -> Issue:
                 voice_diversity_block=voice_diversity_block,
                 prior_section_closes=prior_section_closes,
                 prior_takes=list(takes_so_far),
+                last_route_same_tier=last_route_by_tier.get(story.tier),
+                route_sink=take_routes,
             )
         except Exception:  # noqa: BLE001 -- never crash the issue on one bad story
             _LOG.exception(
@@ -1802,9 +1997,17 @@ def summarise(date: _dt.date | None = None) -> Issue:
         # v0.22: takes feed forward across ALL tiers (issue-wide frame
         # diversity). Read from the draft via the block when the model
         # carries the field; a None take (soft-fail path) feeds nothing.
+        # v0.23: entries carry the R1/R2/R3 route label when the model
+        # returned one, and the last route per tier is tracked so the
+        # NEXT same-tier story's reminder can name it as do-not-repeat.
         accepted_take = getattr(block, "take", None)
         if accepted_take:
-            takes_so_far.append(accepted_take)
+            route = take_routes.get(story.cluster_id)
+            takes_so_far.append(
+                f"[{route}] {accepted_take}" if route else accepted_take
+            )
+            if route:
+                last_route_by_tier[story.tier] = route
         blocks.append((story, block))
 
     if not blocks:
@@ -1839,23 +2042,50 @@ def summarise(date: _dt.date | None = None) -> Issue:
             editorial_config=editorial_config,
             callbacks_by_root=callbacks_by_root,
             voice_diversity_block=voice_diversity_block,
+            take_routes=take_routes,
         )
 
-    # --- Section intros (Phase B) ---------------------------------------
+    # --- Section syntheses (v0.23; supersedes the Phase-B intro pair) ---
     # One LLM call per non-pulse section, fed the section's stories so the
-    # intro reads the day's pattern. Pulse never carries an intro -- its
-    # whole job is to BE the framing. Failures degrade gracefully for Big
-    # Picture / Hands-On: the template hides missing intros, the issue
-    # still ships. For Currents (Phase 2): the aggregate-direction lead
-    # is editorially mandatory per EDITORIAL.md -- ``_populate_section_intro``
-    # retries once on failure and logs a WARNING when both attempts miss.
-    _populate_section_intro(big_picture_section, voice_diversity_block)
-    _populate_section_intro(hands_on_section, voice_diversity_block)
-    _populate_section_intro(currents_section, voice_diversity_block)
-    # v0.21: template-contract guard -- an empty Currents section must
-    # never ship with null intros (three shipped defects). Deterministic
-    # code fallback; no-op when the LLM quiet-day intro landed.
-    _ensure_quiet_day_currents_intro(currents_section)
+    # synthesis reads the day's pattern. Pulse never carries one -- its
+    # whole job is to BE the framing. Sections with exactly ONE story get
+    # no synthesis either (designer adjudication: a synthesis of one
+    # story duplicates its dek). Failures degrade gracefully for Big
+    # Picture / Hands-On: the template hides a missing synthesis. For
+    # Currents the framing is editorially mandatory (>= 2 stories or the
+    # quiet day) -- one retry, then a WARNING. Already-written syntheses
+    # feed forward so no two sections share a thesis.
+    prior_syntheses: list[str] = []
+    for _sec in (big_picture_section, hands_on_section, currents_section):
+        _populate_section_synthesis(
+            _sec, voice_diversity_block, prior_syntheses=list(prior_syntheses),
+        )
+        if _sec.synthesis:
+            prior_syntheses.append(_sec.synthesis)
+    # v0.21 (carried into v0.23): template-contract guard -- an empty
+    # Currents section must never ship without its quiet-day framing.
+    # Deterministic code fallback; no-op when the LLM quiet-day synthesis
+    # landed.
+    _ensure_quiet_day_currents_synthesis(currents_section)
+
+    # --- The digest ("The 30-second read", v0.23 / Issue v8) ------------
+    # One issue-level LLM call AFTER all stories + takes + syntheses
+    # exist -- sequential position matters: the deconfliction checks are
+    # defined against the takes and syntheses. Failure-soft: any error
+    # degrades to digest=None (no skim section), never a partial digest.
+    digest: list[DigestBullet] | None = None
+    try:
+        digest = _generate_digest(
+            pulse_section,
+            [big_picture_section, hands_on_section, currents_section],
+            anti_patterns=anti_patterns,
+        )
+    except Exception:  # noqa: BLE001 -- the digest never blocks the issue
+        _LOG.exception(
+            "summarise: digest generation raised -- shipping without a "
+            "digest (the skim section is omitted)"
+        )
+        digest = None
 
     # --- Shape post-condition (schema v3, 2026-05-30) -------------------
     # With tier as authority in section routing, an under-fed section is
@@ -1873,23 +2103,58 @@ def summarise(date: _dt.date | None = None) -> Issue:
             "summarise: issue shape %s -- %s", shape, shape_reason,
         )
 
+    # --- Persist take routes (SummaryBlock v5, wave three) ---------------
+    _persist_take_routes(
+        [pulse_section, big_picture_section, hands_on_section,
+         currents_section],
+        take_routes,
+    )
+
     # --- Construct + validate -------------------------------------------
     # issue_number is intentionally None in staging output. Numbering is a
     # release-time operation; see DESIGN.md "Issue Number Registry" +
     # "Archive: staging vs canonical".
+    prompt_versions = {
+        "rank": _read_rank_version(),
+        "summarise": SUMMARISE_PROMPT_VERSION,
+        "pulse": PULSE_PROMPT_VERSION,
+    }
+    if digest is not None:
+        # Recorded only when a digest was actually produced -- absence of
+        # the key in the archive means the digest degraded that day.
+        prompt_versions["digest"] = DIGEST_PROMPT_VERSION
     issue = Issue(
         issue_number=None,
         date=run_date,
         pulse=pulse_section,
         sections=[big_picture_section, hands_on_section, currents_section],
+        digest=digest,
         generated_at=_dt.datetime.now(_dt.timezone.utc),
-        prompt_versions={
-            "rank": _read_rank_version(),
-            "summarise": SUMMARISE_PROMPT_VERSION,
-            "pulse": PULSE_PROMPT_VERSION,
-        },
+        prompt_versions=prompt_versions,
         notes=f"shape: {shape} -- {shape_reason}",
     )
+
+    # Defensive application of the post-verify digest bar. run.py's order
+    # is summarise -> verify, so ``verification`` is None on every block
+    # here and this is a no-op today; it exists so the seam is concrete
+    # and exercised. The real enforcement point is verify.py after it
+    # denormalises verdicts (wave-three integration -- see
+    # ``digest_verify_violations``).
+    if issue.digest is not None:
+        bar = digest_verify_violations(issue)
+        if bar:
+            _LOG.warning(
+                "summarise: digest verify bar fired at generation time "
+                "(%s) -- nulling the digest",
+                "; ".join(bar),
+            )
+            issue = issue.model_copy(update={
+                "digest": None,
+                "prompt_versions": {
+                    k: v for k, v in issue.prompt_versions.items()
+                    if k != "digest"
+                },
+            })
 
     _write_issue_json(issue_out, issue)
 
@@ -2237,6 +2502,19 @@ def _load_recent_intros_and_closings(
             lead = section.get("intro_lead")
             if isinstance(lead, str) and lead.strip():
                 intro_leads[section_key] = lead.strip()
+            else:
+                # v0.23: synthesis-era issues carry no intro_lead; the
+                # synthesis (truncated) joins the do-not-repeat set in
+                # its place so cross-day framing diversity keeps working.
+                syn = section.get("synthesis")
+                if isinstance(syn, str) and syn.strip():
+                    syn_s = syn.strip()
+                    if len(syn_s) > _VOICE_DIVERSITY_CLOSING_TRUNC:
+                        syn_s = (
+                            syn_s[:_VOICE_DIVERSITY_CLOSING_TRUNC].rstrip()
+                            + "..."
+                        )
+                    intro_leads[section_key] = syn_s
             stories = section.get("stories") or []
             if isinstance(stories, list) and stories:
                 first = stories[0]
@@ -2427,11 +2705,15 @@ class _SummaryDraft:
     finance_angle no longer separate fields -- both live in summary prose.
     v0.9 (Phase B): adds ``signal`` (editorial verdict pill). v0.22: adds
     ``take`` (the publication's one-sentence position; None when the LLM
-    failed to produce one -- shipped as-is and flagged by review)."""
+    failed to produce one -- shipped as-is and flagged by review). v0.23:
+    adds ``take_route`` (the R1/R2/R3 old-state route label; generation-
+    time only -- it feeds the route-diversity feed-forward and is NOT
+    persisted on SummaryBlock)."""
     headline: str
     summary: str
     signal: str | None = None
     take: str | None = None
+    take_route: str | None = None
 
 
 _CLOSE_FEEDFORWARD_TIERS = ("hands_on", "currents")
@@ -2494,20 +2776,26 @@ def _render_prior_closes_block(prior_closes: list[str]) -> str:
 
 
 def _render_prior_takes_block(prior_takes: list[str]) -> str:
-    """Render the TAKES ALREADY WRITTEN prompt block (v0.22).
+    """Render the TAKES ALREADY WRITTEN prompt block (v0.22; route labels
+    v0.23).
 
     Takes feed forward directly as a field -- no sentence extraction
     needed (they ARE single sentences by contract). Issue-wide, across
     all tiers including big_picture, because take frame diversity is an
     issue-wide property: the reviewer flags two takes sharing a
-    syntactic frame at minor, three at major. Empty input renders ""
+    syntactic frame at minor, three at major. v0.23: entries carry the
+    R1/R2/R3 route label when the model returned one ("[R2] Model-risk
+    sign-off now covers..."), so the route-diversity rule (no route >
+    ~40% of an issue's takes, never two consecutive same-route in a
+    section) has concrete labels to vary against. Empty input renders ""
     (the first story of the run sees no block).
     """
     if not prior_takes:
         return ""
     lines = [
-        "TAKES ALREADY WRITTEN IN THIS ISSUE (do not reuse their "
-        "syntactic frame -- two takes sharing a frame get flagged):"
+        "TAKES ALREADY WRITTEN IN THIS ISSUE (with route labels; do not "
+        "reuse their syntactic frame, and keep the routes varied -- no "
+        "route should carry more than about four takes in ten):"
     ]
     for i, take in enumerate(prior_takes, start=1):
         lines.append(f'  {i}. "{take}"')
@@ -2522,6 +2810,8 @@ def _summarise_one(
     voice_diversity_block: str = "",
     prior_section_closes: list[str] | None = None,
     prior_takes: list[str] | None = None,
+    last_route_same_tier: str | None = None,
+    route_sink: dict[str, str] | None = None,
 ) -> SummaryBlock | None:
     """One LLM call. Returns a validated ``SummaryBlock`` or ``None`` if
     the call / parse / validation failed after the retry budget.
@@ -2533,7 +2823,18 @@ def _summarise_one(
 
     ``prior_takes`` (v0.22): takes already accepted in this run, across
     ALL tiers -- take frame diversity is issue-wide. Fed forward as-is
-    (a take IS one sentence; no extraction)."""
+    (a take IS one sentence; no extraction). v0.23: entries may carry a
+    leading route label ("[R2] ...") -- the block passes them through.
+
+    ``last_route_same_tier`` (v0.23): the R1/R2/R3 route of the previous
+    accepted take in THIS tier, injected into the write-site take
+    reminder as do-not-repeat (never two consecutive same-route takes in
+    a section).
+
+    ``route_sink`` (v0.23): when provided, the accepted draft's
+    ``take_route`` is recorded under ``cluster.cluster_id`` so the caller
+    can label the feed-forward entry. An out-param rather than a changed
+    return type so every existing call site keeps working unchanged."""
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
 
     # v0.4: fetch the article body for up to the top-3 items so the LLM
@@ -2550,17 +2851,14 @@ def _summarise_one(
         voice_diversity_block=voice_diversity_block,
         prior_section_closes=prior_section_closes,
         prior_takes=prior_takes,
+        last_route_same_tier=last_route_same_tier,
     )
 
-    take_word_cap = (
-        _TAKE_MAX_WORDS_CURRENTS if story.tier == "currents"
-        else _TAKE_MAX_WORDS
-    )
-    draft = _call_and_parse_summary(
-        prompt, temperature, cluster.cluster_id, take_word_cap=take_word_cap,
-    )
+    draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
     if draft is None:
         return None
+    if route_sink is not None and draft.take and draft.take_route:
+        route_sink[cluster.cluster_id] = draft.take_route
 
     source_urls = _pick_source_urls(items, k=3)
     if not source_urls:
@@ -2632,9 +2930,12 @@ def _resummarise_as_pulse(
     original_block: SummaryBlock,
     voice_diversity_block: str = "",
     prior_takes: list[str] | None = None,
+    route_sink: dict[str, str] | None = None,
 ) -> SummaryBlock | None:
     """Re-run the per-story summarise prompt under the Pulse-specific
-    voice + closing shape (v0.12, 2026-05-31).
+    voice + closing shape (v0.12, 2026-05-31). ``route_sink`` (v0.23):
+    records the rewrite's ``take_route`` under the cluster id, same
+    out-param seam as ``_summarise_one``.
 
     Why this exists. ``_summarise_one`` runs once per top-N story, BEFORE
     ``_pick_pulse`` chooses the Pulse. The head-tier prompt has to carry
@@ -2676,6 +2977,8 @@ def _resummarise_as_pulse(
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
     if draft is None:
         return None
+    if route_sink is not None and draft.take and draft.take_route:
+        route_sink[cluster.cluster_id] = draft.take_route
 
     # Reuse the source_urls + prior_coverage_ref from the original block.
     # These are deterministic (URL-trust ordering + cluster metadata); the
@@ -2784,6 +3087,7 @@ def _build_summary_prompt(
     voice_diversity_block: str = "",
     prior_section_closes: list[str] | None = None,
     prior_takes: list[str] | None = None,
+    last_route_same_tier: str | None = None,
 ) -> tuple[str, str]:
     """Assemble the per-story summarisation prompt with voice + skills
     inlined and callback context attached when present.
@@ -2835,6 +3139,14 @@ def _build_summary_prompt(
     field -- no sentence extraction needed. Injected at the write site,
     same recency mechanism as prior_section_closes; also injected under
     the Pulse override (the Pulse take counts toward frame diversity).
+    v0.23: entries may carry a leading route label ("[R2] ...") so the
+    route-diversity rule has something concrete to vary against.
+
+    ``last_route_same_tier`` (v0.23): the R1/R2/R3 route of the previous
+    accepted take in the SAME tier. When set, the write-site take
+    reminder names it as do-not-repeat (never two consecutive same-route
+    takes in a section). Ignored under the Pulse override (the Pulse is
+    not "consecutive" with any section).
     """
     excerpts = excerpts or {}
     item_lines: list[str] = []
@@ -3014,25 +3326,33 @@ def _build_summary_prompt(
     else:
         close_reminder_tail = ""
 
-    # v0.22: terse per-tier take reminder at the write site (recency is
-    # the mechanism that binds, per the v0.21.1/2 findings; the full
-    # teaching lives in the static-prefix _TAKE_BLOCK). Currents carries
-    # the one sanctioned cap exception.
-    if section_override != "pulse" and story.tier == "currents":
-        take_cap_note = (
-            "hard cap 18 words; up to 22 ONLY when genuine two-sidedness "
-            "needs the room"
+    # v0.23: terse take reminder at the write site (recency is the
+    # mechanism that binds, per the v0.21.1/2 findings; the full teaching
+    # lives in the static-prefix _TAKE_BLOCK). The cap is universal; the
+    # only dynamic part is the previous same-section route (route
+    # diversity: never two consecutive same-route takes in a section).
+    if section_override != "pulse" and last_route_same_tier:
+        route_note = (
+            " The previous take in this section used route "
+            + last_route_same_tier + "; do NOT use "
+            + last_route_same_tier + " for this take."
         )
     else:
-        take_cap_note = "HARD cap 18 words"
+        route_note = ""
     take_reminder_tail = (
-        "\n- THE TAKE (FINAL REMINDER): return \"take\" -- ONE declarative "
-        "sentence, 8-16 words (" + take_cap_note + "), stating the "
-        "publication's position per the TAKE SHAPE above. It must pass "
-        "the test \"It is now the case that [take]\". No question mark, "
-        "no leading imperative verb, no hedges (may / could / potentially "
-        "/ appears / arguably), no labels, and it must NOT restate a body "
-        "sentence -- it adds the position the body stopped short of.\n"
+        "\n- THE TAKE (FINAL REMINDER): return \"take\" -- the COLD OPEN, "
+        "read before the body: ONE declarative sentence, 12-18 words (aim "
+        "near 12; HARD caps 18 words AND 118 characters), reader-world "
+        "subject, finite verb by word six, the OLD STATE in view, and it "
+        "must carry the position the headline withheld. It must pass the "
+        "cold-open test (from headline + take alone: what changed, from "
+        "what, to what?). No This/That/It opener, no question mark, no "
+        "leading imperative verb, no hedges (may / could / potentially / "
+        "appears / arguably), no labels, at most one comma and one "
+        "semicolon, no \"and\" inside the first seven words, and it must "
+        "NOT restate a body sentence or the headline. Also return "
+        "\"take_route\": R1 (displacement), R2 (named-owner consequence), "
+        "or R3 (priced tradeoff)." + route_note + "\n"
     )
 
     # v0.21.3: feed-forward close context. Closes already accepted for
@@ -3205,7 +3525,8 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
 {{
   "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
   "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
-  "take": "<ONE declarative sentence, 8-16 words, HARD 18-word cap: the publication's position>",
+  "take": "<ONE declarative cold-open sentence, 12-18 words, HARD caps 18 words / 118 chars: the publication's position>",
+  "take_route": "<one of: R1 | R2 | R3>",
   "signal": "<one of: act | try | read | watch | discuss>"
 }}
 """
@@ -3220,13 +3541,33 @@ _HEADLINE_MAX_CHARS = 90
 _BODY_MIN_WORDS = 30
 _BODY_MAX_WORDS = 60
 
-# v0.22 take caps + banned-form machinery. The take targets 8-16 words
-# (10-13 ideal) per the ratified voice spec; only the HARD cap is enforced
-# in code (the target range is prompt + reviewer territory -- a 7-word
-# take is thin, not broken). Currents may run to 22 words rather than
-# butcher a genuinely two-sided stake -- the one section exception.
+# v0.23 take caps + banned-form machinery. The take targets 12 words
+# (band 12-18) per the ratified cold-open spec as adjudicated by the
+# experience designer: at the real rendered metrics (semibold 18px at a
+# 620px measure, ~66-72 characters per line) two lines is the ceiling,
+# so the caps are 18 words AND 118 characters, both HARD, both
+# UNIVERSAL. The v0.22 Currents 22-word exception is retired. Only the
+# hard caps are enforced in code; the 12-word target is prompt +
+# reviewer territory (an 11-word take is thin, not broken).
 _TAKE_MAX_WORDS = 18
-_TAKE_MAX_WORDS_CURRENTS = 22
+_TAKE_MAX_CHARS = 118
+
+_TAKE_DEIXIS_OPENERS = frozenset({"this", "that", "it", "these", "those"})
+"""First words banned by the cold-open contract (v0.23): a deixis opener
+points at body prose the reader has not reached yet. Compared lowercased
+after stripping leading punctuation."""
+
+_TAKE_MAX_COMMAS = 1
+_TAKE_MAX_SEMICOLONS = 1
+"""Finite-verb-position proxies (v0.23): more than one comma or more than
+one semicolon in a 22-word cold open almost always means a stacked or
+coordinated structure that stalls the parse. POS tagging is out of scope;
+these are deterministic proxies and the judge carries the residue."""
+
+_TAKE_NO_AND_BEFORE_WORD = 8
+"""No coordinating "and" before this 1-indexed word position (i.e. not in
+words 1-7): a coordinated subject delays the finite verb past the
+by-word-six contract. Deterministic proxy, same caveat as above."""
 
 _TAKE_HEDGE_RE = re.compile(
     r"\b(?:may|could|potentially|appears|arguably)\b", re.IGNORECASE
@@ -3240,9 +3581,12 @@ _TAKE_BANNED_LABELS = ("so what:", "bottom line:", "this matters because")
 """Label constructions banned anywhere in a take (case-insensitive
 substring check). The take asserts a position; it never announces one."""
 
-_TAKE_BODY_OVERLAP_LIMIT = 0.6
-"""A take sharing >= this fraction of its content words with any single
-body sentence counts as a body restatement (the spec's "< 60%" rule)."""
+_CONTENT_OVERLAP_LIMIT = 0.6
+"""Shared restatement threshold (v0.23 refactor): two texts sharing >=
+this fraction of content words (relative to the smaller content-word
+set) count as restating each other. Used by BOTH the take-vs-body check
+(`_take_restates_body`) and the digest deconfliction checks
+(`_digest_violations`) -- one threshold, one meaning."""
 
 _TAKE_CONTENT_STOPWORDS = frozenset({
     "the", "a", "an", "of", "to", "and", "or", "on", "in", "is", "are",
@@ -3261,27 +3605,38 @@ def _content_words(text: str) -> set[str]:
     return {t for t in tokens if t not in _TAKE_CONTENT_STOPWORDS}
 
 
+def _content_overlap_fraction(a: str, b: str) -> float:
+    """Fraction of shared content words between two texts, relative to the
+    SMALLER content-word set (containment, not Jaccard): 1.0 means the
+    smaller text's content is fully inside the larger. Shared seam for the
+    take-restates-body check and the digest deconfliction checks (v0.23
+    refactor). Plain code, deterministic (No Token Wasted)."""
+    wa, wb = _content_words(a), _content_words(b)
+    if not wa or not wb:
+        return 0.0
+    return len(wa & wb) / min(len(wa), len(wb))
+
+
 def _take_restates_body(take: str, body: str) -> bool:
     """True when the take is a body restatement: a verbatim substring of
     the body (whitespace-collapsed, case-insensitive), OR sharing >=
-    ``_TAKE_BODY_OVERLAP_LIMIT`` of its content words with any SINGLE body
-    sentence. The take must ADD the position the body stopped short of
-    stating -- an italic line that repeats the body is dead weight."""
+    ``_CONTENT_OVERLAP_LIMIT`` of content words with any SINGLE body
+    sentence (via the shared `_content_overlap_fraction`). Under the
+    cold-open contract the body FOLLOWS the take, so a restatement is a
+    body that re-announces the position the unit opened with -- either
+    direction is dead weight."""
     take_norm = re.sub(r"\s+", " ", (take or "")).strip().lower()
     body_norm = re.sub(r"\s+", " ", (body or "")).strip().lower()
     if not take_norm or not body_norm:
         return False
     if take_norm.rstrip(".") and take_norm.rstrip(".") in body_norm:
         return True
-    take_words = _content_words(take)
-    if not take_words:
+    if not _content_words(take):
         return False
     for sentence in _SENTENCE_SPLIT_RE.split(body):
-        sentence_words = _content_words(sentence)
-        if not sentence_words:
+        if not _content_words(sentence):
             continue
-        overlap = len(take_words & sentence_words) / len(take_words)
-        if overlap >= _TAKE_BODY_OVERLAP_LIMIT:
+        if _content_overlap_fraction(take, sentence) >= _CONTENT_OVERLAP_LIMIT:
             return True
     return False
 
@@ -3289,31 +3644,74 @@ def _take_restates_body(take: str, body: str) -> bool:
 def _take_violations(
     draft: _SummaryDraft, take_word_cap: int = _TAKE_MAX_WORDS
 ) -> list[str]:
-    """Code-checkable take violations against the ratified voice spec
-    (v0.22). Returns human-readable strings; empty list = within spec.
+    """Code-checkable take violations against the ratified cold-open spec
+    (v0.23). Returns human-readable strings; empty list = within spec.
 
-    Checked here (deterministic): presence, the hard word cap, '?', the
-    hedge vocabulary, label constructions, and body restatement. NOT
+    Checked here (deterministic): presence, the universal hard word cap
+    (18) and character ceiling (118 -- two rendered lines, designer
+    adjudication), '?', the hedge vocabulary, label constructions, body
+    restatement, headline restatement, the deixis-opener ban (This /
+    That / It / These / Those as first word), and the
+    finite-verb-position proxies (comma <= 1, semicolon <= 1, no
+    coordinating "and" in the first seven words -- POS tagging is out of
+    scope; the judge carries the residue). NOT
     checked here (needs judgment -- prompt + reviewer own it): leading
-    imperative verb, second-person outside "your <concrete noun>",
-    universalisms, and the anti-pattern catalogue."""
+    imperative verb, reader-world subject, the old-state requirement,
+    second-person outside "your <concrete noun>", universalisms, the
+    stacked-modifier garden path beyond the proxies, and the
+    anti-pattern catalogue."""
     issues: list[str] = []
     take = (draft.take or "").strip()
     if not take:
         issues.append(
             'the "take" field is missing or empty -- it is REQUIRED: one '
-            "declarative sentence stating the publication's position"
+            "declarative cold-open sentence stating the publication's "
+            "position"
         )
         return issues
-    tw = len(take.split())
+    words = take.split()
+    tw = len(words)
     if tw > take_word_cap:
         issues.append(
             f"take is {tw} words (HARD cap is {take_word_cap})"
+        )
+    if len(take) > _TAKE_MAX_CHARS:
+        issues.append(
+            f"take is {len(take)} characters (HARD ceiling is "
+            f"{_TAKE_MAX_CHARS} -- two rendered lines at the real "
+            "metrics; cut words, not letters)"
+        )
+    first_word = words[0].strip("\"'([{").rstrip(".,;:!\"')]}").lower()
+    if first_word in _TAKE_DEIXIS_OPENERS:
+        issues.append(
+            f"take opens with the deixis word {words[0]!r} (banned: the "
+            "cold open cannot point at body prose the reader has not "
+            "reached yet -- use a reader-world subject)"
         )
     if "?" in take:
         issues.append(
             "take contains a question mark (a take asserts; the question "
             "belongs to the body close)"
+        )
+    if take.count(",") > _TAKE_MAX_COMMAS:
+        issues.append(
+            f"take has {take.count(',')} commas (at most "
+            f"{_TAKE_MAX_COMMAS} -- one-pass parse; the finite verb must "
+            "arrive by word six)"
+        )
+    if take.count(";") > _TAKE_MAX_SEMICOLONS:
+        issues.append(
+            f"take has {take.count(';')} semicolons (at most "
+            f"{_TAKE_MAX_SEMICOLONS})"
+        )
+    early_tokens = [
+        w.strip("\"'([{").rstrip(".,;:!\"')]}").lower()
+        for w in words[: _TAKE_NO_AND_BEFORE_WORD - 1]
+    ]
+    if "and" in early_tokens:
+        issues.append(
+            'take has a coordinating "and" inside the first seven words '
+            "(a coordinated subject stalls the finite verb past word six)"
         )
     hedge = _TAKE_HEDGE_RE.search(take)
     if hedge:
@@ -3330,8 +3728,21 @@ def _take_violations(
     if _take_restates_body(take, draft.summary):
         issues.append(
             "take restates the body (verbatim overlap or >= 60% shared "
-            "content words with a body sentence) -- it must add the "
-            "position the body stopped short of stating"
+            "content words with a body sentence) -- the body follows the "
+            "cold open and must not re-announce it"
+        )
+    # v0.23 (designer adjudication): headline and take are co-read as one
+    # unit; a take derivable from the headline carries no information.
+    # Code proxy via the shared overlap helper; the semantic half
+    # (headline = what happened, take = what we hold) lives in the prompt.
+    if (
+        _content_overlap_fraction(take, draft.headline)
+        >= _CONTENT_OVERLAP_LIMIT
+    ):
+        issues.append(
+            "take restates the headline (>= 60% shared content words) -- "
+            "headline and take are co-read; the take must carry the "
+            "position the headline withheld"
         )
     return issues
 
@@ -3371,8 +3782,9 @@ def _call_and_parse_summary(
 ) -> _SummaryDraft | None:
     """LLM call + retry on parse failure (one retry, mirrors rank.py) +
     a separate single retry on length-cap OR take-spec violation (tasks
-    #73 + #74; take checks added at v0.22 -- ``take_word_cap`` is 18, or
-    22 for Currents, the one section exception).
+    #73 + #74; take checks added at v0.22; v0.23 makes the cap universal
+    -- ``take_word_cap`` defaults to the 18-word hard cap for every tier,
+    the Currents exception is retired).
 
     ``prompt`` is either the legacy single string or the cache-split
     ``(static_prefix, variable_part)`` tuple from
@@ -3459,10 +3871,13 @@ def _call_and_parse_summary(
         f"{_HEADLINE_MAX_CHARS} characters\n"
         f"  - summary is BETWEEN {_BODY_MIN_WORDS} AND {_BODY_MAX_WORDS} "
         "words (the Pulse is held to the same cap)\n"
-        '  - "take" is PRESENT: ONE declarative sentence, 8-16 words '
-        f"(hard cap {take_word_cap}), no question mark, no hedges (may / "
-        "could / potentially / appears / arguably), no labels, not a "
-        "restatement of a body sentence\n\n"
+        '  - "take" is PRESENT: ONE declarative cold-open sentence, 12-18 '
+        f"words (hard caps {take_word_cap} words / {_TAKE_MAX_CHARS} "
+        "characters), no This/That/It opener, no question mark, no hedges "
+        "(may / could / potentially / appears / arguably), no labels, at "
+        'most one comma and one semicolon, no "and" in the first seven '
+        "words, not a restatement of a body sentence or the headline; "
+        'return "take_route" (R1 | R2 | R3) alongside it\n\n'
         "COUNT THE WORDS AND CHARACTERS before returning. Keep the same "
         "facts, tone, trust flag, and decision-tied close; just tighten "
         "the language. Cut adjectives, hedges, and spec-sheet detail "
@@ -3556,11 +3971,23 @@ def _parse_summary_json(raw: str) -> _SummaryDraft | None:
     take: str | None = None
     if isinstance(take_raw, str) and take_raw.strip():
         take = take_raw.strip()
+    # v0.23: the old-state route label (R1 displacement / R2 named-owner
+    # consequence / R3 priced tradeoff). Optional and tolerant -- a
+    # missing or garbage label degrades to None (the feed-forward then
+    # carries the take unlabelled; route diversity is prompt + reviewer
+    # territory, so absence is never a retry trigger).
+    route_raw = payload.get("take_route")
+    take_route: str | None = None
+    if isinstance(route_raw, str):
+        candidate_route = route_raw.strip().upper()
+        if candidate_route in {"R1", "R2", "R3"}:
+            take_route = candidate_route
     return _SummaryDraft(
         headline=headline.strip(),
         summary=summary.strip(),
         signal=signal,
         take=take,
+        take_route=take_route,
     )
 
 
@@ -3718,13 +4145,17 @@ def _maybe_resummarise_pulse(
     items_by_id: dict[str, Item] | None,
     callbacks_by_root: dict[str, list[_CallbackRef]] | None,
     voice_diversity_block: str = "",
+    take_routes: dict[str, str] | None = None,
 ) -> None:
     """Re-summarise the Pulse-elected cluster under the Pulse-specific
     prompt and replace its entry in ``by_id`` in place.
 
     v0.22: the re-summarise prompt is fed the takes of every OTHER
     summarised story (derived from ``by_id``) so the Pulse take also
-    honours issue-wide frame diversity.
+    honours issue-wide frame diversity. v0.23: ``take_routes`` maps
+    cluster_id -> R1/R2/R3 for takes accepted earlier in the run; when
+    present, feed-forward entries carry the label and the rewrite's own
+    route is recorded back into the same dict.
 
     Why a separate helper. Keeping the orchestration outside
     ``_assemble_sections`` proper makes the call site read as a single
@@ -3773,11 +4204,18 @@ def _maybe_resummarise_pulse(
     # v0.22: issue-wide take feed-forward for the Pulse rewrite -- every
     # other story's take, in by_id iteration order (insertion order = the
     # order they were written). The pulse story's own head-tier take is
-    # excluded: it is being rewritten, not varied against.
-    prior_takes = [
-        t for cid, (_s, b) in by_id.items()
-        if cid != pulse_id and (t := getattr(b, "take", None))
-    ]
+    # excluded: it is being rewritten, not varied against. v0.23: entries
+    # carry the route label when known.
+    routes = take_routes or {}
+    prior_takes = []
+    for cid, (_s, b) in by_id.items():
+        if cid == pulse_id:
+            continue
+        t = getattr(b, "take", None)
+        if not t:
+            continue
+        r = routes.get(cid)
+        prior_takes.append(f"[{r}] {t}" if r else t)
 
     original_section = story.tier  # "big_picture" / "hands_on" / "currents"
     try:
@@ -3789,6 +4227,7 @@ def _maybe_resummarise_pulse(
             original_block=original_block,
             voice_diversity_block=voice_diversity_block,
             prior_takes=prior_takes,
+            route_sink=take_routes,
         )
     except Exception:  # noqa: BLE001 -- never crash the issue on the re-summarise
         _LOG.exception(
@@ -3826,6 +4265,7 @@ def _assemble_sections(
     editorial_config: EditorialConfig | None = None,
     callbacks_by_root: dict[str, list[_CallbackRef]] | None = None,
     voice_diversity_block: str = "",
+    take_routes: dict[str, str] | None = None,
 ) -> tuple[IssueSection, IssueSection, IssueSection, IssueSection]:
     """Place every summarised story into exactly one section. Returns the
     four sections in display order: pulse, big_picture, hands_on, currents.
@@ -3901,6 +4341,7 @@ def _assemble_sections(
         items_by_id=items_by_id,
         callbacks_by_root=callbacks_by_root,
         voice_diversity_block=voice_diversity_block,
+        take_routes=take_routes,
     )
 
     # Pulse's category counts toward the per-issue cap. Pulse is a single
@@ -4592,83 +5033,192 @@ def _pick_currents(
 
 
 # ---------------------------------------------------------------------------
-# Section intros (Phase B).
+# Section syntheses (v0.23, 2026-08-09 layout redesign; supersedes the
+# Phase-B intro_lead/intro_body pair -- IssueSection v4).
 #
 # One LLM call per non-pulse section, fed the section's already-written
-# stories so the intro reads the day's pattern rather than restating it.
-# Failures degrade gracefully -- the section's intro_lead / intro_body
-# stay None and the template hides the block.
+# stories so the synthesis reads the day's pattern rather than restating
+# it. Writes ``IssueSection.synthesis`` ONLY; the legacy intro pair stays
+# None on new issues (the model's XOR validator enforces the migration
+# direction; the renderer prefers synthesis and joins the legacy pair for
+# archived issues). Failures degrade gracefully -- synthesis stays None
+# and the template hides the block. Sections with exactly ONE story get
+# no synthesis at all (designer adjudication: a synthesis of one story
+# duplicates that story's dek).
 # ---------------------------------------------------------------------------
 
-_SECTION_INTRO_HINTS: dict[str, str] = {
+_SECTION_SYNTHESIS_HINTS: dict[str, str] = {
     "big_picture": (
         "Senior-leader framing: strategic shifts, vendor calculus, risk, "
-        "governance, regulation. The lead phrase should orient (\"What to "
-        "watch.\" / \"Decisions to weigh.\"); the body reads the PATTERN "
-        "across these stories in one or two sentences."
+        "governance, regulation. The synthesis reads the strategic PATTERN "
+        "across these stories -- what a leader should notice moving "
+        "underneath them, not a restatement of any one story."
     ),
     "hands_on": (
         "Practitioner framing: tools, repos, benchmarks, techniques. The "
-        "lead phrase should orient (\"Bench before you budget.\" / "
-        "\"Sandbox tonight.\"); the body reads the PATTERN -- are the day's "
-        "wins single-source benchmarks? Drop-in releases? Capability "
-        "shifts? -- in one or two sentences."
+        "synthesis reads the day's practical PATTERN -- are the wins "
+        "single-source benchmarks? Drop-in releases? Capability shifts? -- "
+        "and what that pattern is worth to someone deciding what to touch "
+        "this week."
     ),
     "currents": (
-        "Early-signal framing: items thin on sourcing, early in trajectory, "
-        "or moving but not yet arrived. EDITORIAL.md makes the Currents "
-        "intro_lead MANDATORY -- the section's whole purpose is the "
-        "AGGREGATE DIRECTION, and without an intro the section degrades to "
-        "an enumeration of early signals. The lead phrase MUST name where "
-        "the field is moving today across these items (\"Regulators are "
-        "circling agentic payments.\" / \"Open-weights are catching the "
-        "frontier on reasoning.\"); the body reads WHY these sit here "
-        "rather than higher up, in one short sentence."
+        "Early-signal framing: items thin on sourcing, early in "
+        "trajectory, or moving but not yet arrived. The Currents synthesis "
+        "is editorially MANDATORY -- the section's whole purpose is the "
+        "AGGREGATE DIRECTION, and without the framing the section degrades "
+        "to an enumeration of early signals. Name where the field is "
+        "moving across these items, and why they sit here rather than "
+        "higher up."
     ),
 }
 
 
-# Phase 2 (2026-05-30): section names where ``intro_lead`` is editorially
-# mandatory. Currents is the only one today -- EDITORIAL.md puts the
-# aggregate-direction lead at the heart of what the section is for. Used
-# by ``_populate_section_intro`` to retry once on failure and to log a
-# WARNING rather than degrade silently.
-_SECTIONS_WITH_MANDATORY_INTRO: set[str] = {"currents"}
+# Section names where the synthesis is editorially mandatory. Currents is
+# the only one today -- EDITORIAL.md puts the aggregate direction at the
+# heart of what the section is for. Used by ``_populate_section_synthesis``
+# to retry once on failure and to log a WARNING rather than degrade
+# silently.
+_SECTIONS_WITH_MANDATORY_SYNTHESIS: set[str] = {"currents"}
+
+# v0.23 code-side synthesis band (the editorial word budget; the pydantic
+# cap on the field is 500 chars of structural headroom). Quiet-day
+# Currents is exempt from the floor -- the quiet-day register is shorter
+# by design.
+_SYNTHESIS_MIN_WORDS = 28
+_SYNTHESIS_MAX_WORDS = 45
+_SYNTHESIS_MIN_SENTENCES = 2
+_SYNTHESIS_MAX_SENTENCES = 3
+_SYNTHESIS_MIN_FIRST_SENTENCE_WORDS = 7
+"""Aphorism proxy: a first sentence under 7 words is almost always the
+standalone aphoristic opener the redesign bans ("Costs precede clarity.",
+"X outruns Y."). The register rule itself (open ON the pattern with
+subject + verb) is prompt + reviewer territory; this is the cheap
+structural kill for the family. Quiet-day Currents is exempt (the ratified
+quiet-day line is 6 words)."""
 
 
-def _populate_section_intro(
+_SIMPLE_MARKUP_RE = re.compile(
+    r"</?(?:p|em|i|strong|b|span)\s*>", re.IGNORECASE
+)
+"""Presentation-wrapper tags the LLM sometimes emits around a synthesis
+("<p><em>...</em></p>" -- observed on the 2026-08-09 gate run: the field
+renders in italics, so the model 'helpfully' supplied the markup).
+Stripped deterministically before validation; any OTHER residual markup
+is a violation (retry material)."""
+
+_ANY_MARKUP_RE = re.compile(r"<[a-zA-Z/!][^>]*>")
+"""Residual-markup detector for the violation check after the simple
+wrappers are stripped."""
+
+
+def _strip_simple_markup(text: str) -> str:
+    """Remove presentation-wrapper tags and collapse the whitespace they
+    leave behind. Plain code, deterministic (No Token Wasted): the field
+    is plain text by contract; italics are the renderer's job."""
+    cleaned = _SIMPLE_MARKUP_RE.sub("", text or "")
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def _synthesis_violations(text: str, *, quiet_day: bool = False) -> list[str]:
+    """Code-checkable synthesis violations against the v0.23 spec: word
+    band 28-45, 2-3 sentences, no aphoristic opener (first-sentence floor),
+    no em-dashes, no residual markup. Quiet-day Currents relaxes the
+    floors (the quiet-day register is deliberately shorter). Returns
+    human-readable strings; empty list = within spec."""
+    issues: list[str] = []
+    body = (text or "").strip()
+    if not body:
+        issues.append("synthesis is missing or empty")
+        return issues
+    words = len(body.split())
+    min_words = 8 if quiet_day else _SYNTHESIS_MIN_WORDS
+    if words < min_words:
+        issues.append(
+            f"synthesis is {words} words (minimum {min_words})"
+        )
+    if words > _SYNTHESIS_MAX_WORDS:
+        issues.append(
+            f"synthesis is {words} words (maximum {_SYNTHESIS_MAX_WORDS})"
+        )
+    sentences = [
+        s for s in _SENTENCE_SPLIT_RE.split(body) if s.strip()
+    ]
+    min_sentences = 1 if quiet_day else _SYNTHESIS_MIN_SENTENCES
+    if len(sentences) < min_sentences:
+        issues.append(
+            f"synthesis has {len(sentences)} sentence(s) (minimum "
+            f"{min_sentences})"
+        )
+    if len(sentences) > _SYNTHESIS_MAX_SENTENCES:
+        issues.append(
+            f"synthesis has {len(sentences)} sentences (maximum "
+            f"{_SYNTHESIS_MAX_SENTENCES})"
+        )
+    if not quiet_day and sentences:
+        first_words = len(sentences[0].split())
+        if first_words < _SYNTHESIS_MIN_FIRST_SENTENCE_WORDS:
+            issues.append(
+                f"synthesis opens with a {first_words}-word sentence -- "
+                "the standalone aphoristic opener is banned; the first "
+                "sentence must already state the pattern (subject + verb)"
+            )
+    if "--" in body or "—" in body:
+        issues.append("synthesis contains an em-dash (banned punctuation)")
+    if _ANY_MARKUP_RE.search(body):
+        issues.append(
+            "synthesis contains HTML markup (the field is plain text; "
+            "italics are the renderer's job)"
+        )
+    return issues
+
+
+def _populate_section_synthesis(
     section: IssueSection,
     voice_diversity_block: str = "",
+    prior_syntheses: list[str] | None = None,
 ) -> None:
-    """Generate {intro_lead, intro_body} for a section via one LLM call.
-    Mutates the section in place.
+    """Generate ``IssueSection.synthesis`` for a section via one LLM call.
+    Mutates the section in place; the legacy intro pair is never touched
+    (it stays None on new issues -- the model's XOR validator enforces the
+    migration direction).
 
-    Phase 2 (2026-05-30): for sections in ``_SECTIONS_WITH_MANDATORY_INTRO``
-    (Currents today), an LLM failure or parse miss triggers ONE retry. If
-    the second attempt also fails, the failure is logged at WARNING so the
-    editor / Arman see the smell at ratification -- the issue still ships
-    (we'd rather render Currents without an intro than abort the whole
-    issue), but the audit trail records that the aggregate-direction lead
-    was unavailable today. Other sections continue to degrade silently
-    (the template hides missing intros).
+    Skip rules (v0.23):
+      - A section with exactly ONE story gets NO synthesis (designer
+        adjudication: a synthesis of one story duplicates its dek).
+      - A zero-story Big Picture / Hands-On is never rendered, so it gets
+        none either. A zero-story CURRENTS still runs -- the quiet-day
+        contract survives from v0.21, now as a single quiet-day synthesis
+        paragraph (deterministic guard:
+        ``_ensure_quiet_day_currents_synthesis``).
 
-    v0.21 (2026-07-04): a zero-story Currents section no longer skips the
-    intro pass. Three shipped issues carried an empty Currents with null
-    intros (template-integrity failure per review); the quiet-day branch
-    below still asks the LLM for a lead + body acknowledging the quiet
-    day in the Currents register, and ``_ensure_quiet_day_currents_intro``
-    (deterministic code, called by the pipeline after this function)
-    guarantees the intros are non-null even if the LLM misses twice."""
+    For sections in ``_SECTIONS_WITH_MANDATORY_SYNTHESIS`` (Currents), a
+    failure or a code-check violation triggers ONE corrective retry; if
+    the second attempt also fails, the miss is logged at WARNING so the
+    editor / Arman see the smell at ratification. Other sections get the
+    same single corrective retry but degrade silently (the template hides
+    a missing synthesis). A second attempt that still carries violations
+    ships anyway with a WARNING (soft fail; the reviewer flags it) --
+    losing the framing entirely is worse than shipping an off-band one.
+
+    ``prior_syntheses``: syntheses already written for earlier sections
+    this run, injected so no two sections share a thesis."""
     quiet_day = not section.stories
     if quiet_day and section.name != "currents":
         # Big Picture / Hands-On never render empty; only Currents has a
         # quiet-day contract with the template.
         return
-    hint = _SECTION_INTRO_HINTS.get(section.name)
+    if len(section.stories) == 1:
+        _LOG.info(
+            "summarise: section %s has exactly one story -- no synthesis "
+            "(n=1 rule: it would duplicate the story's dek)",
+            section.name,
+        )
+        return
+    hint = _SECTION_SYNTHESIS_HINTS.get(section.name)
     if hint is None:
         return
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
-    mandatory = section.name in _SECTIONS_WITH_MANDATORY_INTRO
+    mandatory = section.name in _SECTIONS_WITH_MANDATORY_SYNTHESIS
 
     if quiet_day:
         stories_block = "(none -- zero Currents items today)"
@@ -4676,210 +5226,869 @@ def _populate_section_intro(
         story_lines: list[str] = []
         for st in section.stories:
             body = st.summary if len(st.summary) <= 280 else st.summary[:280] + "..."
-            story_lines.append(f"- HEADLINE: {st.headline}\n  BODY: {body}")
+            take_line = ""
+            st_take = getattr(st, "take", None)
+            if st_take:
+                take_line = f"\n  TAKE (do not restate): {st_take}"
+            story_lines.append(
+                f"- HEADLINE: {st.headline}\n  BODY: {body}{take_line}"
+            )
         stories_block = "\n".join(story_lines)
 
-    # Phase 2: Currents intros get an extra prose nudge so the LEAD names
-    # the AGGREGATE DIRECTION rather than a generic posture phrase. Other
-    # sections retain the existing 2-5-word bold-phrase shape.
-    # v0.21: on a quiet day (zero Currents items) the addendum swaps to the
-    # quiet-day contract -- the intro is still mandatory, it acknowledges
-    # the quiet rather than naming a direction.
-    currents_lead_addendum = ""
-    if section.name == "currents" and quiet_day:
-        currents_lead_addendum = (
+    if quiet_day:
+        register_addendum = (
             "\n- QUIET DAY (zero Currents items today): you MUST still "
-            "return both LEAD and BODY. Acknowledge the quiet day in the "
+            "return a synthesis. Acknowledge the quiet day in the "
             "Currents register: calm, watchful, lightly wry; never "
             "apologetic. Do NOT invent items or imply stories exist "
-            "below. VARY the wording day to day; two prior renders (do "
-            "not copy either verbatim): \"A quiet day in the "
-            "undercurrents.\" / \"Still waters below the fold.\" The "
-            "BODY (one short sentence is fine) says the day's signal "
-            "sits in the sections above and the watch resumes when the "
-            "early signals return."
+            "below. VARY the wording day to day; a prior render (do not "
+            "copy verbatim): \"A quiet day in the undercurrents.\" Say "
+            "the day's signal sits in the sections above and the watch "
+            "resumes when the early signals return. The quiet-day "
+            "synthesis may run shorter than the 28-word floor and may "
+            "open on the quiet-day line."
         )
     elif section.name == "currents":
-        currents_lead_addendum = (
-            "\n- CURRENTS LEAD: name the AGGREGATE DIRECTION today's items "
-            "point at, not just a posture. \"For awareness only.\" is "
-            "off-voice for Currents; \"Regulators are circling agentic "
-            "payments.\" is in voice. The lead must be a directional "
-            "claim the reader can hold in their head."
+        register_addendum = (
+            "\n- CURRENTS DIRECTION: the synthesis must name the "
+            "AGGREGATE DIRECTION today's items point at, as a claim the "
+            "reader can hold (\"Regulators are circling agentic "
+            "payments...\"), not a posture (\"For awareness only\" is "
+            "off-voice)."
+        )
+    else:
+        register_addendum = ""
+
+    prior_block = ""
+    if prior_syntheses:
+        listed = "\n".join(f'  - "{s}"' for s in prior_syntheses)
+        prior_block = (
+            "\nSYNTHESES ALREADY WRITTEN FOR TODAY'S OTHER SECTIONS -- no "
+            "two sections may share a thesis; take a genuinely different "
+            "angle:\n" + listed + "\n"
         )
 
-    # v0.13 (2026-06-03): voice-diversity injection sits right above the
-    # INSTRUCTIONS block so the LLM reads the section context, the recent
-    # constructions to avoid, then the writing rules. Empty string when
-    # the caller has nothing to inject -- the prompt collapses to the
-    # pre-v0.13 shape.
+    # v0.13 (carried forward): voice-diversity injection sits right above
+    # the INSTRUCTIONS block. Empty string when the caller has nothing to
+    # inject.
     voice_diversity_segment = (
         f"\n{voice_diversity_block}\n" if voice_diversity_block else ""
     )
 
     prompt = f"""\
-You are writing the section intro for the "{section.name}" section of
+You are writing the section SYNTHESIS for the "{section.name}" section of
 today's AI Vector issue -- a daily AI newsletter with a financial-services
-lens, McKinsey-tagline voice, plain English, no em-dashes.
+lens, plain English, Australian English, no em-dashes. The synthesis is
+ONE italic paragraph rendered under the section head, before the stories.
 
 SECTION CONTEXT
 {hint}
 
 STORIES IN THIS SECTION
 {stories_block}
-{voice_diversity_segment}
+{prior_block}{voice_diversity_segment}
 INSTRUCTIONS
-- LEAD: a tight bold phrase (2-5 words, full-stop at the end). It IS
-  the section's editorial posture for today.{currents_lead_addendum}
-- BODY: one or two sentences, 20-35 words total, that reads the DAY'S
-  PATTERN across these stories. What does the editor want the reader
-  to notice? Frame, don't restate. Don't list. Don't reference specific
-  headlines verbatim.
-- VOICE: McKinsey tagline (insight, not topic). Plain language.
-  Australian English. No em-dashes (use comma, parenthesis, semicolon,
-  full stop). No jargon a non-specialist couldn't parse.
+- REGISTER: the editor's aside, not a headline. Quieter than the old
+  bold intro -- the voice of an editor leaning over to say what they
+  noticed across today's stories. It frames; it never announces or
+  sells.
+- SHAPE: ONE paragraph, 28-45 words, 2-3 sentences.
+- OPEN ON THE PATTERN with a full grammatical subject and a verb. NO
+  standalone aphoristic opening sentence: "Costs precede clarity." /
+  "Capability outruns control." are banned shapes -- the first sentence
+  must already say what the pattern IS, not decorate it.
+- THE PATTERN ACROSS STORIES, never a summary of one story. If the
+  stories genuinely don't rhyme, say what the spread itself signals.
+- Do not restate any story's take or headline; the reader is about to
+  read them.{register_addendum}
 - HONESTY: if the section's pattern is "these are all single-source
   benchmarks", say so. Don't oversell weak signal.
 
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
-  "lead": "<2-5 words, full-stop at end>",
-  "body": "<20-35 word framing sentence(s)>"
+  "synthesis": "<one 28-45 word paragraph, 2-3 sentences>"
 }}
 """
 
-    def _attempt_once(use_prompt: str) -> tuple[str, str] | None:
-        """One LLM round-trip + parse. Returns (lead, body) on success or
-        None on any failure. Side-effect: logs warnings on failure mode."""
+    def _attempt_once(use_prompt: str) -> str | None:
+        """One LLM round-trip + parse. Returns the synthesis text on
+        success or None on any failure."""
         try:
             raw = _llm_call(use_prompt, temperature=temperature, max_tokens=400)
         except Exception:  # noqa: BLE001
             _LOG.warning(
-                "summarise: section-intro LLM call failed for %s",
+                "summarise: section-synthesis LLM call failed for %s",
                 section.name,
             )
             return None
         payload = _extract_json_object(raw)
         if not isinstance(payload, dict):
             _LOG.warning(
-                "summarise: section-intro JSON parse failed for %s",
+                "summarise: section-synthesis JSON parse failed for %s",
                 section.name,
             )
             return None
-        lead_raw = payload.get("lead")
-        body_raw = payload.get("body")
-        if not isinstance(lead_raw, str) or not isinstance(body_raw, str):
+        text_raw = payload.get("synthesis")
+        if not isinstance(text_raw, str) or not text_raw.strip():
             return None
-        lead_s = lead_raw.strip()
-        body_s = body_raw.strip()
-        if not lead_s or not body_s:
-            return None
-        return lead_s, body_s
+        # Deterministic wrapper-tag strip (observed defect: the model
+        # returns "<p><em>...</em></p>" because the field renders italic).
+        # Any residual markup is caught by _synthesis_violations -> retry.
+        cleaned = _strip_simple_markup(text_raw)
+        return cleaned or None
 
-    result = _attempt_once(prompt)
-    if result is None and mandatory:
-        # Phase 2: Currents intro is editorially required. Try once more
-        # with a corrective preface naming the aggregate-direction rule.
+    text = _attempt_once(prompt)
+    violations = (
+        _synthesis_violations(text, quiet_day=quiet_day)
+        if text is not None else ["no parseable synthesis returned"]
+    )
+    if violations:
         _LOG.info(
-            "summarise: mandatory intro for %s missed on first pass -- "
-            "retrying once (Phase 2)",
-            section.name,
+            "summarise: synthesis for %s missed on first pass (%s) -- "
+            "retrying once",
+            section.name, "; ".join(violations),
         )
-        if quiet_day:
-            corrective = (
-                "Your previous response was missing or malformed. The "
-                "Currents intro is EDITORIALLY MANDATORY even on a "
-                "zero-item day: the LEAD acknowledges the quiet day in "
-                "the Currents register, and both LEAD and BODY are "
-                "required. Return ONLY a JSON object with non-empty "
-                "string fields 'lead' and 'body'. Original request "
-                "follows.\n\n"
-                + prompt
+        corrective = (
+            "Your previous response was missing, malformed, or off-spec: "
+            + "; ".join(violations) + ". "
+            + (
+                "The Currents synthesis is EDITORIALLY MANDATORY. "
+                if mandatory else ""
             )
+            + "Return ONLY a JSON object with a non-empty string field "
+            "'synthesis': ONE paragraph, 28-45 words, 2-3 sentences, "
+            "opening on the pattern with a full subject and verb (no "
+            "aphoristic opener), no em-dashes. Original request "
+            "follows.\n\n" + prompt
+        )
+        retried = _attempt_once(corrective)
+        if retried is not None:
+            retry_violations = _synthesis_violations(
+                retried, quiet_day=quiet_day
+            )
+            if retry_violations:
+                _LOG.warning(
+                    "summarise: synthesis for %s STILL off-spec after "
+                    "retry (%s) -- shipping it anyway (soft fail; review "
+                    "flags it)",
+                    section.name, "; ".join(retry_violations),
+                )
+            text = retried
+        elif text is None:
+            # Both attempts unusable.
+            if mandatory:
+                _LOG.warning(
+                    "summarise: MANDATORY synthesis missing for %s after "
+                    "retry -- shipping the section without a synthesis. "
+                    "Editor / Arman: review the Currents section for its "
+                    "aggregate-direction framing.",
+                    section.name,
+                )
+            return
         else:
-            corrective = (
-                "Your previous response was missing or malformed. The "
-                "Currents intro is EDITORIALLY MANDATORY: the LEAD must "
-                "name the aggregate direction these items point at (a "
-                "directional claim, not a posture), and both LEAD and "
-                "BODY are required. Return ONLY a JSON object with "
-                "non-empty string fields 'lead' and 'body'. Original "
-                "request follows.\n\n"
-                + prompt
-            )
-        result = _attempt_once(corrective)
-
-    if result is None:
-        if mandatory:
+            # Retry unusable but the first attempt parsed: ship the
+            # off-spec first draft (soft fail; the reviewer flags it).
             _LOG.warning(
-                "summarise: MANDATORY intro missing for %s after retry "
-                "(Phase 2) -- shipping the section without an intro_lead. "
-                "Editor / Arman: review the Currents section for "
-                "aggregate-direction lead.",
-                section.name,
+                "summarise: synthesis retry for %s failed to parse -- "
+                "shipping the off-spec first draft (%s)",
+                section.name, "; ".join(violations),
             )
-        return
 
-    lead, body = result
+    if text is None:
+        return
     try:
-        section.intro_lead = lead
-        section.intro_body = body
-    except Exception:  # noqa: BLE001 -- length validators may fire
+        section.synthesis = text
+    except Exception:  # noqa: BLE001 -- the 500-char structural cap may fire
         _LOG.warning(
-            "summarise: section-intro validation failed for %s "
-            "(lead=%r, body=%r)",
-            section.name, lead[:80], body[:80],
+            "summarise: section-synthesis validation failed for %s "
+            "(text=%r)",
+            section.name, text[:120],
         )
 
 
-# v0.21 (2026-07-04): deterministic quiet-day intro for an empty Currents
-# section. Three shipped issues carried an empty Currents with null intros
-# and needed a manual fix (template-integrity failure per review). The LLM
-# quiet-day branch in ``_populate_section_intro`` is the voice path; THIS
-# is the contract guard -- plain code, not another LLM call, per No Token
-# Wasted. The wording intentionally reuses the ratified quiet-day register
-# ("A quiet day in the undercurrents." is the archive empty-state line).
-_QUIET_DAY_CURRENTS_INTRO_LEAD = "A quiet day in the undercurrents."
-"""Deterministic fallback ``intro_lead`` for a zero-story Currents
-section. Only used when the LLM quiet-day intro landed null/empty."""
-
-_QUIET_DAY_CURRENTS_INTRO_BODY = (
-    "Nothing below the fold cleared the bar today. The day's signal sits "
-    "in the sections above; the watch resumes when the early signals do."
+# v0.21 (2026-07-04), migrated to the synthesis field at v0.23: a
+# deterministic quiet-day framing for an empty Currents section. Three
+# shipped issues carried an empty Currents with null framing and needed a
+# manual fix (template-integrity failure per review). The LLM quiet-day
+# branch in ``_populate_section_synthesis`` is the voice path; THIS is the
+# contract guard -- plain code, not another LLM call, per No Token Wasted.
+# The wording intentionally reuses the ratified quiet-day register ("A
+# quiet day in the undercurrents." is the archive empty-state line).
+_QUIET_DAY_CURRENTS_SYNTHESIS = (
+    "A quiet day in the undercurrents. Nothing below the fold cleared the "
+    "bar today; the day's signal sits in the sections above, and the "
+    "watch resumes when the early signals return."
 )
-"""Deterministic fallback ``intro_body`` companion to the lead above."""
+"""Deterministic fallback ``synthesis`` for a zero-story Currents section.
+Only used when the LLM quiet-day synthesis landed null/empty."""
 
 
-def _ensure_quiet_day_currents_intro(section: IssueSection) -> None:
-    """Template-contract guard (v0.21): a zero-story Currents section must
-    NEVER ship with null/empty intros.
+def _ensure_quiet_day_currents_synthesis(section: IssueSection) -> None:
+    """Template-contract guard (v0.21, synthesis form since v0.23): a
+    zero-story Currents section must NEVER ship without its quiet-day
+    framing.
 
-    Called by the pipeline after ``_populate_section_intro``. When the
-    section is Currents, has zero stories, and either intro field is still
+    Called by the pipeline after ``_populate_section_synthesis``. When the
+    section is Currents, has zero stories, and ``synthesis`` is still
     null/empty (LLM failed twice, or its output failed validation), inject
     the deterministic quiet-day default. No-op in every other case -- a
-    successful LLM quiet-day intro is left untouched, and sections with
-    stories keep whatever the intro pass produced.
+    successful LLM quiet-day synthesis is left untouched, and sections
+    with stories keep whatever the synthesis pass produced.
     """
     if section.name != "currents" or section.stories:
         return
-    lead = (section.intro_lead or "").strip()
-    body = (section.intro_body or "").strip()
-    if lead and body:
+    if (section.synthesis or "").strip():
         return
-    if not lead:
-        section.intro_lead = _QUIET_DAY_CURRENTS_INTRO_LEAD
-    if not body:
-        section.intro_body = _QUIET_DAY_CURRENTS_INTRO_BODY
+    section.synthesis = _QUIET_DAY_CURRENTS_SYNTHESIS
     _LOG.warning(
-        "summarise: empty Currents landed with null/empty intro fields -- "
-        "injected the deterministic quiet-day intro (lead was %s, body "
-        "was %s). Editor / Arman: the LLM quiet-day intro did not land; "
-        "the default wording shipped instead.",
-        "missing" if not lead else "present",
-        "missing" if not body else "present",
+        "summarise: empty Currents landed with a null/empty synthesis -- "
+        "injected the deterministic quiet-day synthesis. Editor / Arman: "
+        "the LLM quiet-day framing did not land; the default wording "
+        "shipped instead."
     )
+
+
+# ---------------------------------------------------------------------------
+# The digest -- "The 30-second read" (v0.23, Issue v8, 2026-08-09).
+#
+# One issue-level LLM call, made AFTER every story, take, and synthesis
+# exists: the deconfliction contract is defined against the takes (no
+# digest sentence may paraphrase a take) and the syntheses (no digest
+# lead may echo a synthesis), so sequential position matters. Structure
+# is deterministic scaffold + LLM prose: code decides HOW MANY bullets
+# and WHICH stories each may cite; the LLM writes the words. Degradation
+# is always ``None`` (no skim section), never a padded or partial digest.
+#
+# PIPELINE SEAM (verify bar). run.py's stage order is summarise ->
+# verify -> render: verify auto-fires AFTER summarise, so per-story
+# verification does NOT exist yet when the digest is generated. The
+# ratified bar -- a claim the verifier marked unverifiable or
+# contradicted may not appear in the digest -- is therefore a POST-VERIFY
+# code check: ``digest_verify_violations`` below is the deterministic
+# helper. summarise applies it defensively at generation time (a no-op
+# while ``SummaryBlock.verification`` is None everywhere), and verify.py
+# (wave three, 2026-08-09) calls it after denormalising verdicts onto the
+# issue, surfacing violations in the verify report note -- advisory; the
+# gate consumes them separately, and verify never mutates the digest.
+# ---------------------------------------------------------------------------
+
+_DIGEST_SECTION_ORDER = ("big_picture", "hands_on", "currents")
+"""Layout order for digest bullets 2..n -- mirrors the rendered issue."""
+
+_DIGEST_MIN_BULLETS = 3
+_DIGEST_MAX_BULLETS = 5
+_DIGEST_MIN_SECTION_STORIES = 2
+"""A section earns a digest bullet only with >= 2 stories -- a one-story
+section's bullet would duplicate that story's dek (same n=1 logic as the
+synthesis rule)."""
+
+_DIGEST_LEAD_MIN_WORDS = 3
+_DIGEST_LEAD_MAX_WORDS = 6
+_DIGEST_SENTENCE_MIN_WORDS = 14
+_DIGEST_SENTENCE_MAX_WORDS = 22
+_DIGEST_SENTENCE_MAX_WORDS_SEMILIST = 26
+_DIGEST_SEMILIST_MAX_CLAUSES = 3
+_DIGEST_TOTAL_MAX_WORDS = 100
+"""The ratified digest budgets: bold lead 3-6 words (full stop), one
+sentence of 14-22 words (26 allowed only for a semicolon-list of <= 3
+clauses), and a 100-word HARD total across the whole digest, leads
+included."""
+
+
+def _first_word(text: str) -> str:
+    """Lowercased first word of a text, stripped of surrounding
+    punctuation. Empty string for empty input."""
+    words = (text or "").split()
+    if not words:
+        return ""
+    return words[0].strip("\"'([{").rstrip(".,;:!?\"')]}").lower()
+
+
+def _word_ngrams(text: str, n: int) -> set[tuple[str, ...]]:
+    """Lowercased word n-grams (stopwords KEPT -- verbatim-collision
+    detection needs the articles: "Ship the plumbing first" collides on
+    its exact wording, not its content words)."""
+    tokens = re.findall(r"[a-z0-9'$.%-]+", (text or "").lower())
+    if len(tokens) < n:
+        return set()
+    return {tuple(tokens[i:i + n]) for i in range(len(tokens) - n + 1)}
+
+
+def _shares_ngram(a: str, b: str, n: int = 3) -> bool:
+    """True when the two texts share any word n-gram (default trigram).
+    The deterministic check for verbatim-family collisions between a
+    digest lead and a synthesis first sentence (the observed defect:
+    "Ship the plumbing first." appearing on both surfaces)."""
+    return bool(_word_ngrams(a, n) & _word_ngrams(b, n))
+
+
+def _synthesis_first_sentence(synthesis: str | None) -> str:
+    """First sentence of a synthesis paragraph, or "" when absent."""
+    text = (synthesis or "").strip()
+    if not text:
+        return ""
+    parts = [p for p in _SENTENCE_SPLIT_RE.split(text) if p.strip()]
+    return parts[0].strip() if parts else text
+
+
+def _digest_sentence_count_ok(sentence: str) -> bool:
+    """ONE sentence check: the text must not contain an internal sentence
+    boundary (a ./!/? followed by whitespace). Semicolons are allowed --
+    the semicolon-list is a sanctioned form."""
+    parts = [p for p in _SENTENCE_SPLIT_RE.split(sentence.strip()) if p.strip()]
+    return len(parts) <= 1
+
+
+def _digest_bullet_words(lead: str, sentence: str) -> int:
+    """Word count of one bullet toward the 100-word total (lead included,
+    trailing punctuation irrelevant to the split)."""
+    return len(lead.split()) + len(sentence.split())
+
+
+def _digest_violations(
+    bullets: list[dict[str, Any]],
+    *,
+    pulse_id: str,
+    eligible_names: list[str],
+    allowed_ids: dict[str, list[str]],
+    takes: list[str],
+    syntheses: dict[str, str | None],
+) -> list[str]:
+    """Code-checkable digest violations against the ratified spec.
+    Deterministic, no LLM (No Token Wasted). Empty list = within spec.
+
+    ``bullets`` is the parsed LLM payload: dicts with ``section``,
+    ``lead``, ``sentence``, ``story_ids``. ``allowed_ids`` maps section
+    name (including "pulse") -> the story ids a bullet of that section
+    may cite. ``takes`` are the plain take texts (no route labels).
+    ``syntheses`` maps section name -> synthesis (None allowed)."""
+    issues: list[str] = []
+    n = len(bullets)
+    if n < _DIGEST_MIN_BULLETS or n > _DIGEST_MAX_BULLETS:
+        issues.append(
+            f"digest has {n} bullets (must be {_DIGEST_MIN_BULLETS}-"
+            f"{_DIGEST_MAX_BULLETS})"
+        )
+        return issues
+
+    # --- Structural: bullet 1 is the Pulse; 2..n follow layout order. ---
+    first = bullets[0]
+    if first.get("section") != "pulse":
+        issues.append('bullet 1 must cover The Pulse (section="pulse")')
+    first_ids = first.get("story_ids") or []
+    if not first_ids or first_ids[0] != pulse_id:
+        issues.append(
+            f"bullet 1 primary story_id must be the Pulse story "
+            f"({pulse_id!r})"
+        )
+    seq = [b.get("section") for b in bullets[1:]]
+    deduped: list[str] = []
+    for name in seq:
+        if not deduped or deduped[-1] != name:
+            deduped.append(name)
+    if deduped != eligible_names:
+        issues.append(
+            f"bullets 2..n must cover the eligible sections in layout "
+            f"order {eligible_names} (one bullet each; at most one "
+            f"section split into two ADJACENT bullets) -- got {seq}"
+        )
+    elif len(seq) - len(deduped) > 1:
+        issues.append(
+            "at most ONE section may split into two bullets -- got "
+            f"{len(seq) - len(deduped)} splits"
+        )
+
+    # --- Per-bullet text + provenance checks. ---------------------------
+    total_words = 0
+    for i, bullet in enumerate(bullets):
+        label = f"bullet {i + 1}"
+        section_name = bullet.get("section") or ""
+        lead = (bullet.get("lead") or "").strip()
+        sentence = (bullet.get("sentence") or "").strip()
+        story_ids = bullet.get("story_ids") or []
+
+        if not lead:
+            issues.append(f"{label}: lead is missing or empty")
+        else:
+            if not lead.endswith("."):
+                issues.append(f"{label}: lead must end with a full stop")
+            if "?" in lead:
+                issues.append(f"{label}: lead must not be a question")
+            lw = len(lead.rstrip(".").split())
+            if lw < _DIGEST_LEAD_MIN_WORDS or lw > _DIGEST_LEAD_MAX_WORDS:
+                issues.append(
+                    f"{label}: lead is {lw} words (must be "
+                    f"{_DIGEST_LEAD_MIN_WORDS}-{_DIGEST_LEAD_MAX_WORDS})"
+                )
+            if len(lead) > 80:
+                issues.append(f"{label}: lead exceeds 80 characters")
+        if not sentence:
+            issues.append(f"{label}: sentence is missing or empty")
+        else:
+            if not _digest_sentence_count_ok(sentence):
+                issues.append(
+                    f"{label}: sentence must be exactly ONE sentence "
+                    "(semicolons allowed; internal full stops are not)"
+                )
+            sw = len(sentence.split())
+            semilist = (
+                ";" in sentence
+                and len(sentence.split(";")) <= _DIGEST_SEMILIST_MAX_CLAUSES
+            )
+            cap = (
+                _DIGEST_SENTENCE_MAX_WORDS_SEMILIST if semilist
+                else _DIGEST_SENTENCE_MAX_WORDS
+            )
+            if sw < _DIGEST_SENTENCE_MIN_WORDS:
+                issues.append(
+                    f"{label}: sentence is {sw} words (minimum "
+                    f"{_DIGEST_SENTENCE_MIN_WORDS})"
+                )
+            if sw > cap:
+                issues.append(
+                    f"{label}: sentence is {sw} words (cap {cap}"
+                    + (
+                        "" if semilist
+                        else "; 26 only for a semicolon-list of <= 3 clauses"
+                    )
+                    + ")"
+                )
+            if len(sentence) > 300:
+                issues.append(f"{label}: sentence exceeds 300 characters")
+        if _ANY_MARKUP_RE.search(lead) or _ANY_MARKUP_RE.search(sentence):
+            issues.append(
+                f"{label}: contains HTML markup (plain text only; the "
+                "template supplies the bold/plain treatment)"
+            )
+
+        total_words += _digest_bullet_words(lead, sentence)
+
+        # Provenance: every cited id must be one the section may cite.
+        allowed = set(allowed_ids.get(section_name, []))
+        if not story_ids:
+            issues.append(f"{label}: story_ids is empty")
+        else:
+            unknown = [sid for sid in story_ids if sid not in allowed]
+            if unknown:
+                issues.append(
+                    f"{label}: story_ids {unknown} are not in the "
+                    f"{section_name!r} id list"
+                )
+
+        # Deconfliction: the digest compresses STORIES, never the takes.
+        for take in takes:
+            if take and sentence and (
+                _content_overlap_fraction(sentence, take)
+                >= _CONTENT_OVERLAP_LIMIT
+            ):
+                issues.append(
+                    f"{label}: sentence paraphrases a take (>= 60% shared "
+                    "content words) -- compress the story, not its take"
+                )
+                break
+        for syn_name, syn in syntheses.items():
+            if not syn or not lead:
+                continue
+            if (
+                _content_overlap_fraction(lead, syn)
+                >= _CONTENT_OVERLAP_LIMIT
+            ):
+                issues.append(
+                    f"{label}: lead echoes the {syn_name} synthesis "
+                    "(>= 60% shared content words)"
+                )
+                break
+        # Story-anchored vs section-anchored (designer adjudication): a
+        # lead sharing a verbatim trigram with its own section's
+        # synthesis FIRST SENTENCE is the observed collision class
+        # ("Ship the plumbing first." on both surfaces); a lead opening
+        # on the same word as its section's synthesis is the cheaper
+        # cousin. Both checked against the bullet's OWN section.
+        own_syn = syntheses.get(section_name)
+        if own_syn and lead:
+            if _shares_ngram(lead, _synthesis_first_sentence(own_syn), n=3):
+                issues.append(
+                    f"{label}: lead shares a verbatim 3-word run with the "
+                    f"{section_name} synthesis's first sentence -- the "
+                    "digest is story-anchored, the synthesis is "
+                    "section-anchored; they must not collide"
+                )
+            if (
+                _first_word(lead)
+                and _first_word(lead) == _first_word(own_syn)
+            ):
+                issues.append(
+                    f"{label}: lead opens with the same word as the "
+                    f"{section_name} synthesis"
+                )
+
+    if total_words > _DIGEST_TOTAL_MAX_WORDS:
+        issues.append(
+            f"digest totals {total_words} words across leads + sentences "
+            f"(HARD budget {_DIGEST_TOTAL_MAX_WORDS})"
+        )
+    return issues
+
+
+def _build_digest_prompt(
+    pulse_story: SummaryBlock,
+    eligible: list[IssueSection],
+    *,
+    can_split: bool,
+    takes: list[str],
+    anti_patterns: list[str],
+) -> str:
+    """Assemble the digest prompt. Single string, one call per day -- no
+    cache split needed at this volume."""
+    def _story_lines(st: SummaryBlock) -> str:
+        take = getattr(st, "take", None) or "(none)"
+        return (
+            f"  - story_id: {st.story_id}\n"
+            f"    headline: {st.headline}\n"
+            f"    body: {st.summary}\n"
+            f"    take (do NOT paraphrase): {take}"
+        )
+
+    section_blocks: list[str] = []
+    for sec in eligible:
+        ids = [st.story_id for st in sec.stories]
+        syn = (sec.synthesis or "").strip() or "(none)"
+        section_blocks.append(
+            f"SECTION {sec.name} -- allowed story_ids: {ids}\n"
+            f"  synthesis (do NOT echo): {syn}\n"
+            + "\n".join(_story_lines(st) for st in sec.stories)
+        )
+    sections_block = "\n\n".join(section_blocks)
+
+    takes_block = "\n".join(f'  - "{t}"' for t in takes if t)
+    anti_block = ""
+    if anti_patterns:
+        anti_block = (
+            "\nANTI-PATTERNS -- the editor's catalogue applies in full; do "
+            "not use these constructions:\n"
+            + "\n".join(f"  - {ap}" for ap in anti_patterns)
+            + "\n"
+        )
+    expected = 1 + len(eligible)
+    if can_split:
+        split_rule = (
+            f"- Return EXACTLY {expected} bullets -- or {expected + 1} "
+            "ONLY when one single section's stories genuinely split into "
+            "two distinct threads (the two bullets sit adjacent). The "
+            "DEFAULT is one bullet per section; never split to fill "
+            "space, and NEVER split two sections.\n"
+        )
+    else:
+        split_rule = (
+            f"- Return EXACTLY {expected} bullets -- one per section "
+            "listed below; the 5-bullet ceiling is already reached, so "
+            "no section may split.\n"
+        )
+
+    return f"""\
+You are writing "The 30-second read" for today's AI Vector issue -- the
+skim digest rendered ABOVE The Pulse. A reader who reads ONLY this block
+leaves knowing what moved today. Plain English, Australian English, no
+em-dashes, no HTML markup (the template supplies the bold treatment).
+
+STRUCTURE (fixed; code rejects violations):
+- Bullet 1 covers The Pulse story.
+- Then one bullet per section, in this order: {[s.name for s in eligible]}.
+{split_rule}- Every bullet cites story_ids from the allowed lists below, primary
+  story FIRST. A bullet is STORY-ANCHORED: it names a thing that
+  happened -- one story's specifics, falsifiable against exactly that
+  story. Naming a section-wide pattern is the SYNTHESIS's job, not the
+  digest's; a bullet that reads as a pattern fails. Cite extra ids only
+  when the sentence genuinely draws a fact from them.
+
+EACH BULLET = a bold LEAD + one SENTENCE.
+- LEAD: 3-6 words ending in a full stop. A NAMING -- what is this
+  about -- never an imperative, never a question, and no artifact names
+  a senior practitioner would not recognise (describe the artifact
+  instead). It must not echo any section synthesis below, must not
+  share a 3-word run with one, and must not open with the same word as
+  its section's synthesis.
+- SENTENCE: exactly ONE sentence, 14-22 words (up to 26 ONLY as a
+  semicolon-list of at most 3 clauses). Concrete: the number, the
+  actor, the mechanism. Falsifiable against the primary story.
+- TOTAL BUDGET: 100 words across ALL bullets, leads included. HARD.
+  Do the arithmetic before writing: with {expected} bullets that is
+  about {100 // max(expected, 1)} words per bullet INCLUDING its lead,
+  so most sentences must sit near the 14-word floor. COUNT the total
+  before returning.
+
+DECONFLICTION (checked in code):
+- The takes listed below each OPEN their story on the page; the digest
+  must NOT paraphrase any of them. Compress the STORIES -- different
+  words, different angle.
+- Bullet 1 compresses the Pulse story afresh; it must not paraphrase
+  the Pulse take.
+{anti_block}
+THE PULSE (bullet 1) -- allowed story_ids: ['{pulse_story.story_id}']
+{_story_lines(pulse_story)}
+
+{sections_block}
+
+TAKES ALREADY OPENING TODAY'S STORIES (do not paraphrase any):
+{takes_block}
+
+Return ONLY a single JSON object (no markdown fences, no commentary):
+
+{{
+  "bullets": [
+    {{"section": "pulse", "lead": "<3-6 words.>", "sentence": "<one 14-22 word sentence>", "story_ids": ["<primary first>"]}},
+    ...
+  ]
+}}
+"""
+
+
+def _parse_digest_json(raw: str) -> list[dict[str, Any]] | None:
+    """Parse the digest LLM output into a list of bullet dicts. Structural
+    shape only; the spec checks live in ``_digest_violations``."""
+    payload = _extract_json_object(raw)
+    if not isinstance(payload, dict):
+        return None
+    bullets = payload.get("bullets")
+    if not isinstance(bullets, list) or not bullets:
+        return None
+    out: list[dict[str, Any]] = []
+    for entry in bullets:
+        if not isinstance(entry, dict):
+            return None
+        story_ids = entry.get("story_ids")
+        out.append({
+            "section": str(entry.get("section") or "").strip(),
+            # Same deterministic wrapper-tag strip as the synthesis parse
+            # (the bold lead invites "<strong>" the way the italic
+            # synthesis invited "<em>").
+            "lead": _strip_simple_markup(str(entry.get("lead") or "")),
+            "sentence": _strip_simple_markup(
+                str(entry.get("sentence") or "")
+            ),
+            "story_ids": [
+                str(s) for s in story_ids if isinstance(s, str)
+            ] if isinstance(story_ids, list) else [],
+        })
+    return out
+
+
+def _generate_digest(
+    pulse_section: IssueSection,
+    sections: list[IssueSection],
+    *,
+    anti_patterns: list[str] | None = None,
+) -> list[DigestBullet] | None:
+    """Generate the issue digest ("The 30-second read"). Returns validated
+    ``DigestBullet``s or ``None`` -- the degradation path is ALWAYS no
+    digest, never a padded or partial one.
+
+    Deterministic scaffold (code): bullet 1 is the Pulse; one bullet per
+    section with >= 2 stories, in layout order; floor 3 bullets (else no
+    digest today); ceiling 5 (the LLM may split ONE section into two
+    adjacent bullets only when headroom exists). LLM judgment: the words.
+    One corrective retry on JSON failure or spec violations; a second
+    miss degrades to None with a WARNING."""
+    if not pulse_section.stories:
+        return None
+    pulse_story = pulse_section.stories[0]
+    by_name = {sec.name: sec for sec in sections}
+    eligible = [
+        by_name[name] for name in _DIGEST_SECTION_ORDER
+        if name in by_name
+        and len(by_name[name].stories) >= _DIGEST_MIN_SECTION_STORIES
+    ]
+    expected = 1 + len(eligible)
+    if expected < _DIGEST_MIN_BULLETS:
+        _LOG.info(
+            "summarise: digest floor not met (pulse + %d eligible "
+            "section(s) = %d bullet(s) < %d) -- no digest today (never "
+            "pad)",
+            len(eligible), expected, _DIGEST_MIN_BULLETS,
+        )
+        return None
+
+    takes: list[str] = []
+    pulse_take = getattr(pulse_story, "take", None)
+    if pulse_take:
+        takes.append(pulse_take)
+    for sec in sections:
+        for st in sec.stories:
+            t = getattr(st, "take", None)
+            if t:
+                takes.append(t)
+    syntheses: dict[str, str | None] = {
+        sec.name: sec.synthesis for sec in sections
+    }
+    allowed_ids: dict[str, list[str]] = {
+        "pulse": [pulse_story.story_id],
+        **{
+            sec.name: [st.story_id for st in sec.stories]
+            for sec in eligible
+        },
+    }
+    eligible_names = [sec.name for sec in eligible]
+    can_split = expected < _DIGEST_MAX_BULLETS
+
+    prompt = _build_digest_prompt(
+        pulse_story, eligible,
+        can_split=can_split,
+        takes=takes,
+        anti_patterns=list(anti_patterns or []),
+    )
+    temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
+
+    def _attempt(use_prompt: str) -> list[dict[str, Any]] | None:
+        try:
+            raw = _llm_call(use_prompt, temperature=temperature,
+                            max_tokens=1200)
+        except Exception:  # noqa: BLE001
+            _LOG.warning("summarise: digest LLM call failed")
+            return None
+        return _parse_digest_json(raw)
+
+    bullets = _attempt(prompt)
+    violations = (
+        _digest_violations(
+            bullets, pulse_id=pulse_story.story_id,
+            eligible_names=eligible_names, allowed_ids=allowed_ids,
+            takes=takes, syntheses=syntheses,
+        )
+        if bullets is not None else ["no parseable digest returned"]
+    )
+    if violations:
+        _LOG.info(
+            "summarise: digest missed on first pass (%s) -- retrying once",
+            "; ".join(violations),
+        )
+        corrective = (
+            prompt
+            + "\n\nCORRECTION -- Your previous response violated the "
+            "digest spec:\n"
+            + "\n".join(f"  - {v}" for v in violations)
+            + "\n\nRewrite the JSON fixing every violation. Keep the "
+            "structure (bullet 1 = Pulse, then the sections in order), "
+            "count the words, and return ONLY JSON."
+        )
+        bullets = _attempt(corrective)
+        violations = (
+            _digest_violations(
+                bullets, pulse_id=pulse_story.story_id,
+                eligible_names=eligible_names, allowed_ids=allowed_ids,
+                takes=takes, syntheses=syntheses,
+            )
+            if bullets is not None else ["no parseable digest returned"]
+        )
+        if violations:
+            _LOG.warning(
+                "summarise: digest STILL off-spec after retry (%s) -- "
+                "shipping WITHOUT a digest (the degradation path is no "
+                "skim section, never a degenerate one)",
+                "; ".join(violations),
+            )
+            return None
+
+    assert bullets is not None  # violations empty implies parse succeeded
+    try:
+        out = [
+            DigestBullet(
+                lead=b["lead"], sentence=b["sentence"],
+                story_ids=b["story_ids"],
+            )
+            for b in bullets
+        ]
+    except Exception:  # noqa: BLE001 -- model-level structural caps
+        _LOG.exception(
+            "summarise: DigestBullet validation failed -- shipping "
+            "without a digest"
+        )
+        return None
+    _LOG.info(
+        "summarise: digest produced (%d bullets, %d words total)",
+        len(out),
+        sum(_digest_bullet_words(b.lead, b.sentence) for b in out),
+    )
+    return out
+
+
+def _persist_take_routes(
+    sections: list[IssueSection], take_routes: dict[str, str]
+) -> None:
+    """Stamp the R1/R2/R3 route label onto each block that still carries
+    its take (SummaryBlock v5, wave three).
+
+    The label has been tracked in ``take_routes`` (keyed by cluster_id,
+    updated again on the pulse rewrite path) since v0.23 but was never
+    written. It is a GENERATION judgment -- the wave-two ruling: derived
+    tags live at render, routes persist -- so it must be stored or it is
+    lost. A block whose take was cut keeps ``take_route=None`` (no orphan
+    labels), and an out-of-vocabulary label is dropped rather than fed to
+    the model field (the parse normalises to R1/R2/R3, so this is a guard
+    against a future sink writer, not a live path)."""
+    valid = {"R1", "R2", "R3"}
+    for section in sections:
+        for block in section.stories:
+            if not block.take:
+                continue
+            route = take_routes.get(block.story_id)
+            block.take_route = route if route in valid else None
+
+
+def digest_verify_violations(issue: Issue) -> list[str]:
+    """The POST-VERIFY digest bar (ratified with the digest contract): a
+    claim the verifier marked ``unverifiable`` or ``contradicted`` may not
+    appear in the digest.
+
+    Deterministic code, no LLM. For every digest bullet, every flagged
+    claim of every story the bullet cites is compared against the
+    bullet's full text (lead + sentence): a near-verbatim containment or
+    a >= 60% content-word overlap (shared helper/threshold) is a
+    violation.
+
+    SEAM NOTE: run.py's order is summarise -> verify, so at generation
+    time ``SummaryBlock.verification`` is None everywhere and this
+    returns [] (summarise still calls it defensively). The enforcement
+    point is verify.py AFTER it denormalises verdicts onto issue.json
+    (wired in wave three, 2026-08-09: ``verify._digest_bar_violations``):
+    violations surface in the verify report note -- advisory, the gate
+    consumes them separately; verify never mutates the digest."""
+    if not issue.digest:
+        return []
+    verification_by_story: dict[str, Any] = {}
+    for block in issue.pulse.stories:
+        verification_by_story[block.story_id] = block.verification
+    for section in issue.sections:
+        for block in section.stories:
+            verification_by_story[block.story_id] = block.verification
+
+    flagged_verdicts = {"unverifiable", "contradicted"}
+    issues: list[str] = []
+    for i, bullet in enumerate(issue.digest):
+        bullet_text = f"{bullet.lead} {bullet.sentence}"
+        bullet_norm = re.sub(r"\s+", " ", bullet_text).strip().lower()
+        for sid in bullet.story_ids:
+            verification = verification_by_story.get(sid)
+            if verification is None:
+                continue
+            for claim in verification.claims:
+                if claim.verdict not in flagged_verdicts:
+                    continue
+                claim_norm = re.sub(
+                    r"\s+", " ", claim.claim or ""
+                ).strip().lower().rstrip(".")
+                contained = bool(claim_norm) and claim_norm in bullet_norm
+                overlapping = (
+                    _content_overlap_fraction(claim.claim, bullet_text)
+                    >= _CONTENT_OVERLAP_LIMIT
+                )
+                if contained or overlapping:
+                    issues.append(
+                        f"digest bullet {i + 1} carries a claim the "
+                        f"verifier marked {claim.verdict!r} (story {sid}): "
+                        f"{claim.claim!r}"
+                    )
+    return issues
 
 
 # ---------------------------------------------------------------------------

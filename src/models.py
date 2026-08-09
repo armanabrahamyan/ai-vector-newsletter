@@ -33,6 +33,10 @@ Pipeline flow (producers -> consumers; full picture in `docs/internal/TEAM.md`):
     IssueSection    -> produced by src/summarise.py (as a child of Issue)
                        consumed by render, Editor, Arman
 
+    DigestBullet    -> produced by src/summarise.py (as a child of Issue --
+                       the 30-second read, 2026-08-09 layout redesign)
+                       consumed by render (skim block), review, verify, evals
+
     Issue           -> produced by src/summarise.py
                        consumed by Arman (ratification), render, Editor, evals
 
@@ -66,15 +70,18 @@ Pipeline flow (producers -> consumers; full picture in `docs/internal/TEAM.md`):
 
 Schema versioning. Every persisted model carries a `schema_version: int`
 field per the DESIGN.md schema changelog. Most models are v1 today; `Issue`
-is v6 (v2 added `issue_number`; v3 made `issue_number` Optional to support
+is v8 (v2 added `issue_number`; v3 made `issue_number` Optional to support
 the staging vs canonical archive split; v4 dropped direction_note +
 finance_angle and renamed sections; v5 adds `revision: int = 0` for
 same-date re-releases that display as `#N.M`; v6 tracks the SummaryBlock
 v3 change -- the additive `verification` field from the advisory verify
-stage -- see "Archive: staging vs canonical", "Issue Number Registry", and
-"verify.json" in DESIGN.md). When you change a shape, bump the version on
-the affected model and append a row to the changelog in DESIGN.md in the
-same PR.
+stage; v7 tracks SummaryBlock v4 -- the additive `take`; v8 adds the
+optional `digest` (30-second read) and tracks IssueSection v4 -- the
+additive `synthesis` replacing intro_lead/intro_body going forward -- see
+"Archive: staging vs canonical", "Issue Number Registry", "The digest",
+and "verify.json" in DESIGN.md). When you change a shape, bump the version
+on the affected model and append a row to the changelog in DESIGN.md in
+the same PR.
 
 External vectors. Embeddings are not stored inline -- `Cluster.centroid_ref`
 is a plain `str` filename pointing into `data/YYYY-MM-DD/embeddings/`. See
@@ -266,24 +273,49 @@ judgement was recorded": ``unavailable`` (the review could not run),
 authorises anything treats ``green`` (and only ``green``) as permission.
 """
 
-ReviewTargetKind = Literal["story", "section"]
-"""What a `ReviewFinding` is about: one story (a `SummaryBlock`) or one
-section's editorial framing (an `IssueSection` intro)."""
+ReviewTargetKind = Literal["story", "section", "digest"]
+"""What a `ReviewFinding` is about: one story (a `SummaryBlock`), one
+section's editorial framing (an `IssueSection` synthesis / legacy intro),
+or one bullet of the issue-level digest (`Issue.digest`).
+
+``digest`` added 2026-08-09 with `Issue.digest` (the 30-second read):
+digest bullets are reader-facing assertive prose and must be reviewable
+at the same field-level precision as story text."""
 
 ReviewTargetField = Literal[
-    "headline", "summary", "take", "intro_lead", "intro_body"
+    "headline", "summary", "take",
+    "intro_lead", "intro_body", "synthesis",
+    "digest_lead", "digest_sentence",
 ]
 """The exact field a finding points at. ``headline`` / ``summary`` / ``take``
-belong to story targets; ``intro_lead`` / ``intro_body`` to section targets
+belong to story targets; ``intro_lead`` / ``intro_body`` / ``synthesis`` to
+section targets; ``digest_lead`` / ``digest_sentence`` to digest targets
 (enforced by the validator on `ReviewTarget`).
 
 ``take`` added 2026-08-08 with `SummaryBlock.take` (the publication's
 position line): reader-facing assertive prose must be reviewable at the
 same field-level precision as the headline and body.
 
+``synthesis`` added 2026-08-09 with `IssueSection.synthesis` (the 2026-08-09
+layout redesign merges the intro_lead/intro_body pair into one italic
+synthesis paragraph). ``intro_lead`` / ``intro_body`` REMAIN in the
+vocabulary so archived `review.json` records that targeted them still
+parse; the reviewer prompt emits ``synthesis`` only, going forward.
+
+``digest_lead`` / ``digest_sentence`` added 2026-08-09 with `DigestBullet`
+(bold lead + one-sentence body of a 30-second-read bullet). The tokens are
+prefixed -- the underlying model fields are `DigestBullet.lead` /
+`DigestBullet.sentence` -- so the flat token vocabulary stays unambiguous
+next to the section-intro fields.
+
 Naming a FIELD rather than "the story" is what makes a finding actionable
 without judgement: `revise.py` looks the field up, hands the model only
-that text, and writes only that text back."""
+that text, and writes only that text back. This is also why the rendered
+story TAG (the act/try/read/discuss/watch verb in the new layout) is NOT
+in this vocabulary: the tag is derived by code at render time from
+section + `SummaryBlock.signal` and has no text on disk a quote could
+resolve against -- findings about the verb target the stored ``signal``
+via ``fix_kind="metadata"`` instead."""
 
 ReviewSeverity = Literal["blocking", "major", "minor", "note"]
 """How much a finding matters. Feeds the code-computed verdict via the
@@ -855,9 +887,14 @@ class SummaryBlock(BaseModel):
     None`` field -- the publication's position line, one declarative italic
     sentence rendered last in the story unit. Additive + nullable -- every
     issue.json written before this date parses cleanly with ``take=None``.
+
+    Schema v5 (2026-08-09): added the optional nullable ``take_route:
+    Literal["R1","R2","R3"] | None = None`` field -- the take's generation
+    route label. Additive + nullable -- every earlier issue.json parses
+    cleanly with ``take_route=None``.
     """
 
-    schema_version: int = 4
+    schema_version: int = 5
     story_id: Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]
     """= Cluster.cluster_id; the canonical handle for a story."""
 
@@ -894,6 +931,24 @@ class SummaryBlock(BaseModel):
     assertive prose, so it MUST be visible to both the verify stage (claims
     drawn from it are checked like body claims) and the reviewer (findings
     may target ``field="take"`` -- see `ReviewTargetField`).
+    """
+
+    take_route: Literal["R1", "R2", "R3"] | None = None
+    """
+    The take's generation route (schema v5, 2026-08-09): which of the three
+    rhetorical routes the summarise LLM declared the take runs on --
+    ``R1`` (displacement), ``R2`` (named-owner consequence), ``R3``
+    (reframe). A GENERATION judgment, not a derivable property of the text
+    (architect ruling, wave two: derived-tag-at-render governs tags; routes
+    are generation judgments and persist). Consumed by the eval harness's
+    route-distribution counter and the take-drift lint.
+
+    Nullable: ``None`` means a pre-route archive issue, a story with no
+    take, or a take whose generation response omitted the route label
+    (soft-fail -- the take still ships; only the label is absent). Never
+    non-None when ``take`` is None in practice, but that pairing is a
+    writer convention, not a validator: a stray label on a cut take is
+    audit noise, not an archive-integrity risk.
     """
 
     source_urls: Annotated[list[HttpUrl], Field(min_length=1)]
@@ -978,9 +1033,18 @@ class IssueSection(BaseModel):
     ``on_the_radar`` renamed to ``currents``. The ``_coerce_legacy_name``
     validator below transparently maps the archived value at parse time so
     released v2 issue.json files continue to load.
+
+    Schema v4 (2026-08-09 layout redesign): added the optional nullable
+    ``synthesis`` field -- ONE italic paragraph framing the section,
+    replacing the ``intro_lead`` + ``intro_body`` pair going forward. The
+    legacy pair is RETAINED (not removed) so all released issue.json files
+    parse unchanged; the ``_synthesis_excludes_legacy_intros`` validator
+    enforces the migration direction (a draft carries the new field or the
+    old pair, never both). The renderer prefers ``synthesis`` when present
+    and falls back to joining the legacy pair for archived issues.
     """
 
-    schema_version: int = 3
+    schema_version: int = 4
     name: SectionName
     """Which section this is."""
 
@@ -988,15 +1052,50 @@ class IssueSection(BaseModel):
     """May be empty for "on_the_radar" on a slow day; pulse must have exactly 1."""
 
     intro_lead: Annotated[str, Field(max_length=80)] | None = None
-    """Bold lead phrase rendered before the intro body. Phase B; LLM-written
-    per section per day (e.g. "Bench before you budget."). None for the
-    pulse section and for any pre-Phase-B issues."""
+    """LEGACY (superseded by ``synthesis``, 2026-08-09): bold lead phrase
+    rendered before the intro body. Phase B; LLM-written per section per day
+    (e.g. "Bench before you budget."). None for the pulse section, for any
+    pre-Phase-B issue, and for every issue written from schema v4 on --
+    summarise (>= v0.23) writes ``synthesis`` instead. Kept so released
+    archive files parse unchanged."""
 
     intro_body: Annotated[str, Field(max_length=400)] | None = None
-    """One or two sentences (~30 words) framing the day's pattern in this
-    section. Phase B; LLM-written. None for pulse / pre-Phase-B issues."""
+    """LEGACY (superseded by ``synthesis``, 2026-08-09): one or two
+    sentences framing the day's pattern in this section. Same lifecycle as
+    ``intro_lead`` above."""
+
+    synthesis: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    """
+    Schema v4 (2026-08-09): one italic synthesis paragraph framing the
+    section -- the merge of the former intro_lead ("Bench before you
+    budget.") and intro_body into a single text unit, per the ratified
+    layout redesign (the section head renders name, story-count kicker,
+    then this paragraph in italics).
+
+    Pydantic enforces STRUCTURE only: stripped, non-empty if present,
+    <= 500 chars (headroom over the old pair's 80 + 400 caps; editorial
+    word budget lives with the voice spec, not here -- same split as
+    `SummaryBlock.take`). ``None`` for the pulse section (the Pulse IS the
+    framing), for every pre-redesign issue, and on a degraded day where
+    intro generation failed.
+
+    Reviewable at field-level precision: section-target findings may name
+    ``field="synthesis"`` (see `ReviewTargetField`), with the same
+    verbatim-quote check and `revise.py` routing as the legacy pair.
+    """
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("synthesis", mode="before")
+    @classmethod
+    def _strip_synthesis(cls, v: Any) -> Any:
+        """Strip before the length constraints run, so a whitespace-only
+        synthesis fails ``min_length=1`` instead of passing as padding.
+        Mirrors `SummaryBlock._strip_take`: "no synthesis" is ``None``,
+        never an empty string."""
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
     @model_validator(mode="before")
     @classmethod
@@ -1019,6 +1118,84 @@ class IssueSection(BaseModel):
                 f"got {len(self.stories)}"
             )
         return self
+
+    @model_validator(mode="after")
+    def _synthesis_excludes_legacy_intros(self) -> "IssueSection":
+        """Invariant (schema v4, 2026-08-09): ``synthesis`` and the legacy
+        ``intro_lead``/``intro_body`` pair are mutually exclusive. Archived
+        issues carry the pair (synthesis is None); new drafts carry
+        synthesis (pair is None). A record carrying both has two competing
+        framings for one render slot -- a writer bug -- and would leave the
+        renderer's "prefer synthesis" rule silently discarding text a
+        reviewer may have judged. Reject at the boundary."""
+        if self.synthesis is not None and (
+            self.intro_lead is not None or self.intro_body is not None
+        ):
+            raise ValueError(
+                f"IssueSection(name={self.name!r}) carries synthesis AND a "
+                "legacy intro_lead/intro_body; the pair is superseded -- a "
+                "v4 writer sets synthesis only."
+            )
+        return self
+
+
+# ---------------------------------------------------------------------------
+# DigestBullet -- one bullet of the 30-second read.
+# ---------------------------------------------------------------------------
+
+class DigestBullet(BaseModel):
+    """One bullet of the issue-level digest ("The 30-second read").
+
+    Produced by `src/summarise.py` (new digest prompt, 2026-08-09 layout
+    redesign). Consumed by render (the skim block above The Pulse:
+    ``<p><strong>{lead}.</strong> <span>{sentence}</span></p>``), the
+    reviewer, the verify stage, and evals.
+
+    The bullet is stored as TWO fields, not one string, because the two
+    units render into distinct HTML elements (bold lead vs. plain
+    sentence) and are separately reviewable/revisable. Splitting one
+    string on "the first period" at render time would be code parsing LLM
+    prose -- exactly the fragility the structured contract exists to
+    avoid.
+
+    ``story_ids`` is the provenance contract: every reader-facing
+    assertion must be attributable, and the verify stage judges the
+    bullet's claims against the source excerpts of exactly these stories.
+    ``story_ids[0]`` is the PRIMARY story -- the one whose
+    `StoryVerification` carries the bullet's claim verdicts (see
+    DESIGN.md "The digest").
+    """
+
+    schema_version: int = 1
+    lead: Annotated[str, Field(min_length=1, max_length=80)]
+    """The bold takeaway phrase (e.g. "Agents run locally now"). Stripped,
+    non-empty. 80-char structural cap mirrors the old intro_lead budget;
+    the editorial word budget lives with the voice spec."""
+
+    sentence: Annotated[str, Field(min_length=1, max_length=300)]
+    """The one plain-text sentence expanding the lead. Stripped, non-empty.
+    ONE sentence is an editorial rule (summarise code-side validation +
+    reviewer), not a pydantic rule -- same split as `SummaryBlock.take`."""
+
+    story_ids: Annotated[
+        list[Annotated[str, Field(pattern=_CLUSTER_ID_PATTERN)]],
+        Field(min_length=1),
+    ]
+    """The `SummaryBlock.story_id`s this bullet condenses, primary first.
+    Must resolve to stories present in the same Issue (enforced by
+    `Issue._digest_story_ids_resolve`) -- a digest bullet about a story
+    the issue does not carry is hallucinated provenance."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("lead", "sentence", mode="before")
+    @classmethod
+    def _strip_text(cls, v: Any) -> Any:
+        """Strip before length constraints run, so whitespace-only text
+        fails ``min_length=1``. Mirrors `SummaryBlock._strip_take`."""
+        if isinstance(v, str):
+            return v.strip()
+        return v
 
 
 # ---------------------------------------------------------------------------
@@ -1058,9 +1235,24 @@ class Issue(BaseModel):
     nullable ``take`` position line), same transitive-envelope rule as v6.
     Older issue.json files (schema_version <= 6) parse unchanged with
     ``take=None`` on every block.
+
+    schema_version=8 (2026-08-09 layout redesign): added the optional
+    nullable ``digest`` field (the 30-second read -- 3-5 `DigestBullet`s)
+    and, transitively, the IssueSection v3->v4 change (optional nullable
+    ``synthesis`` replacing the intro_lead/intro_body pair going forward).
+    The optional ``"digest"`` key may now appear in ``prompt_versions``.
+    Older issue.json files (schema_version <= 7) parse unchanged with
+    ``digest=None`` and ``synthesis=None`` everywhere.
+
+    schema_version=9 (2026-08-09): no field change on `Issue` itself; the
+    bump tracks the SummaryBlock v4->v5 change (added the optional
+    nullable ``take_route`` generation-route label), same
+    transitive-envelope rule as v6/v7. Older issue.json files
+    (schema_version <= 8) parse unchanged with ``take_route=None`` on
+    every block.
     """
 
-    schema_version: int = 7
+    schema_version: int = 9
     issue_number: Annotated[int, Field(ge=1)] | None = None
     """
     Sequential, 1-indexed, monotonically increasing across RELEASED
@@ -1119,16 +1311,35 @@ class Issue(BaseModel):
     Pulse lives in the dedicated `pulse` field above.
     """
 
+    digest: Annotated[list[DigestBullet], Field(min_length=3, max_length=5)] | None = None
+    """
+    The 30-second read (schema v8, 2026-08-09): 3-5 bullets rendered above
+    The Pulse, each a bold lead + one sentence. Reader-facing assertive
+    prose -- both advisory stages see it (verify: claim-extraction input
+    per bullet against its ``story_ids`` excerpts; review: findings target
+    ``digest_lead`` / ``digest_sentence``). See DESIGN.md "The digest".
+
+    Present => well-formed (3-5 bullets, every bullet's story_ids resolve
+    to stories in this issue). ``None`` means either a pre-redesign
+    archive issue (everything written before 2026-08-09) or a day where
+    the digest prompt failed / produced fewer than 3 usable bullets -- the
+    graceful-degradation path is NO digest section, never a degenerate
+    one. Absence is normal and never an error, exactly like
+    `SummaryBlock.take`.
+    """
+
     generated_at: datetime
     """UTC timestamp when summarise.py wrote this Issue."""
 
     prompt_versions: dict[str, Annotated[str, Field(pattern=_PROMPT_VERSION_PATTERN)]]
     """
     Which prompt revisions produced this issue. Required keys: "rank",
-    "summarise". Optional keys: "pulse", "callback", and "verify" (set by the
-    advisory verify stage to ``verify.VERIFY_PROMPT_VERSION`` when it runs;
-    absent when verify was skipped or unavailable). Supports audit and A/B
-    (risk register #6).
+    "summarise". Optional keys: "pulse", "callback", "digest" (set when the
+    digest prompt produced `Issue.digest`; absent when the digest was
+    skipped or degraded to None), and "verify" (set by the advisory verify
+    stage to ``verify.VERIFY_PROMPT_VERSION`` when it runs; absent when
+    verify was skipped or unavailable). Supports audit and A/B (risk
+    register #6).
     """
 
     notes: Annotated[str, Field(max_length=2000)] = ""
@@ -1192,6 +1403,30 @@ class Issue(BaseModel):
                 f"missing={sorted(missing)}"
             )
         return v
+
+    @model_validator(mode="after")
+    def _digest_story_ids_resolve(self) -> "Issue":
+        """Invariant (schema v8, 2026-08-09): every digest bullet's
+        ``story_ids`` resolve to stories carried by THIS issue (pulse +
+        sections). A bullet citing a story the issue does not contain is
+        hallucinated provenance -- the verify stage could not fetch an
+        excerpt for it and the reader could not find the story it
+        summarises. Reject at the boundary, like every other
+        cross-field-consistency rule in this module."""
+        if self.digest is None:
+            return self
+        known = {block.story_id for block in self.pulse.stories}
+        for section in self.sections:
+            known.update(block.story_id for block in section.stories)
+        for index, bullet in enumerate(self.digest):
+            unknown = [sid for sid in bullet.story_ids if sid not in known]
+            if unknown:
+                raise ValueError(
+                    f"Issue.digest[{index}] cites story_ids not present in "
+                    f"this issue: {unknown}. Digest provenance must resolve "
+                    "to the issue's own stories."
+                )
+        return self
 
 
 # ---------------------------------------------------------------------------
@@ -1773,27 +2008,45 @@ class ReviewTarget(BaseModel):
     Schema v2 (2026-08-08): story targets may now name ``field="take"``
     (the `SummaryBlock.take` position line). Value-space widening only; v1
     records parse unchanged.
+
+    Schema v3 (2026-08-09): section targets may now name
+    ``field="synthesis"`` (the merged section paragraph), and a new
+    ``kind="digest"`` targets one bullet of `Issue.digest` via the
+    ``digest_index`` locator with ``field`` in {``digest_lead``,
+    ``digest_sentence``}. Widening only; v1/v2 records parse unchanged
+    (``digest_index`` defaults to None).
     """
 
-    schema_version: int = 2
+    schema_version: int = 3
     kind: ReviewTargetKind
-    """``story`` (a SummaryBlock) or ``section`` (an IssueSection intro)."""
+    """``story`` (a SummaryBlock), ``section`` (an IssueSection
+    synthesis / legacy intro), or ``digest`` (one `DigestBullet`)."""
 
     story_id: Annotated[
         str | None, Field(default=None, pattern=_CLUSTER_ID_PATTERN)
     ] = None
     """= `SummaryBlock.story_id` = `Cluster.cluster_id`. REQUIRED when
-    ``kind == "story"``; MUST be None when ``kind == "section"`` (a section
-    intro belongs to no single story)."""
+    ``kind == "story"``; MUST be None otherwise (a section intro or digest
+    bullet belongs to no single story -- digest provenance lives on
+    `DigestBullet.story_ids`, not here)."""
 
     section: SectionName | None = None
     """Which section the target lives in. REQUIRED when
-    ``kind == "section"``. Optional-but-useful on a story target: it lets
+    ``kind == "section"``; MUST be None when ``kind == "digest"`` (the
+    digest is issue-level). Optional-but-useful on a story target: it lets
     the renderer group findings by section without re-joining `issue.json`."""
+
+    digest_index: Annotated[int, Field(ge=0)] | None = None
+    """0-based index into `Issue.digest`. REQUIRED when
+    ``kind == "digest"``; MUST be None otherwise. An index, not an id,
+    because bullets have no stable identifier and the digest is small and
+    ordered -- the same issue_sha256 freshness check that protects every
+    other finding protects the index from drifting under an edit."""
 
     field: ReviewTargetField
     """The exact field. ``headline`` / ``summary`` / ``take`` for story
-    targets; ``intro_lead`` / ``intro_body`` for section targets."""
+    targets; ``intro_lead`` / ``intro_body`` / ``synthesis`` for section
+    targets; ``digest_lead`` / ``digest_sentence`` for digest targets."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -1809,25 +2062,57 @@ class ReviewTarget(BaseModel):
                 raise ValueError(
                     "ReviewTarget(kind='story') requires story_id."
                 )
+            if self.digest_index is not None:
+                raise ValueError(
+                    "ReviewTarget(kind='story') must not carry a "
+                    f"digest_index; got {self.digest_index!r}."
+                )
             if self.field not in ("headline", "summary", "take"):
                 raise ValueError(
                     f"ReviewTarget(kind='story') field must be 'headline', "
                     f"'summary', or 'take'; got {self.field!r}."
                 )
-        else:  # section
+        elif self.kind == "section":
             if self.story_id is not None:
                 raise ValueError(
                     "ReviewTarget(kind='section') must not carry a story_id; "
                     f"got {self.story_id!r}."
                 )
+            if self.digest_index is not None:
+                raise ValueError(
+                    "ReviewTarget(kind='section') must not carry a "
+                    f"digest_index; got {self.digest_index!r}."
+                )
             if self.section is None:
                 raise ValueError(
                     "ReviewTarget(kind='section') requires section."
                 )
-            if self.field not in ("intro_lead", "intro_body"):
+            if self.field not in ("intro_lead", "intro_body", "synthesis"):
                 raise ValueError(
-                    f"ReviewTarget(kind='section') field must be 'intro_lead' "
-                    f"or 'intro_body'; got {self.field!r}."
+                    f"ReviewTarget(kind='section') field must be "
+                    f"'intro_lead', 'intro_body', or 'synthesis'; got "
+                    f"{self.field!r}."
+                )
+        else:  # digest
+            if self.story_id is not None:
+                raise ValueError(
+                    "ReviewTarget(kind='digest') must not carry a story_id; "
+                    f"got {self.story_id!r}. Digest provenance lives on "
+                    "DigestBullet.story_ids."
+                )
+            if self.section is not None:
+                raise ValueError(
+                    "ReviewTarget(kind='digest') must not carry a section; "
+                    f"got {self.section!r}. The digest is issue-level."
+                )
+            if self.digest_index is None:
+                raise ValueError(
+                    "ReviewTarget(kind='digest') requires digest_index."
+                )
+            if self.field not in ("digest_lead", "digest_sentence"):
+                raise ValueError(
+                    f"ReviewTarget(kind='digest') field must be "
+                    f"'digest_lead' or 'digest_sentence'; got {self.field!r}."
                 )
         return self
 
@@ -1897,9 +2182,13 @@ class ReviewReport(BaseModel):
     bump tracks the ReviewTarget v1->v2 change (story targets may now name
     ``field="take"``), since the review.json envelope now carries the
     widened vocabulary. v1 records parse unchanged.
+
+    Schema v3 (2026-08-09): same transitive-envelope rule for the
+    ReviewTarget v2->v3 change (``kind="digest"`` + ``digest_index``,
+    section-target ``field="synthesis"``). v1/v2 records parse unchanged.
     """
 
-    schema_version: int = 2
+    schema_version: int = 3
     generated_at: datetime
     """UTC timestamp when the review stage wrote this report."""
 
@@ -2201,6 +2490,7 @@ __all__ = [
     "RankedStory",
     "SummaryBlock",
     "IssueSection",
+    "DigestBullet",
     "Issue",
     "SourceHealth",
     "SourceHealthReport",

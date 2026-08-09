@@ -14,7 +14,7 @@ data contracts), see [DESIGN.html](DESIGN.html).
 ## How AI Vector works
 
 A daily AI newsletter with a financial-services lens, **curated, not
-aggregated**. Each morning the pipeline reads ~60 sources, deduplicates the
+aggregated**. Each morning the pipeline reads ~90 sources, deduplicates the
 inevitable cross-posts and re-reports, scores each story against an
 editorial rubric, drafts the ones that earn a slot, and renders a single
 readable HTML issue. Every story carries a *direction note* — where this
@@ -122,7 +122,7 @@ its own — that's why you can re-run subsets cheaply.
 ### `fetch` — pull from sources
 - **Reads:** `config/sources.yaml`
 - **Writes:** `data/staging/<date>/items.jsonl` + `source_health.json`
-- **What it does:** hits ~60 RSS/Atom/API feeds in parallel, normalises each entry into an `Item` record, exact-URL deduplicates.
+- **What it does:** hits ~90 RSS/Atom/API feeds in parallel, normalises each entry into an `Item` record, exact-URL deduplicates.
 - **No LLM.** Cost ≈ 0. Time ≈ 15-30 s, dominated by the slowest source.
 - **When it goes wrong:** check `source_health.json` for `missed_reason`. Usually a feed redirect, a 4xx/5xx, or a parse error.
 
@@ -159,7 +159,7 @@ its own — that's why you can re-run subsets cheaply.
 ### `render` — produce HTML
 - **Reads:** `issue.json`
 - **Writes:** `docs/staging/<date>.html`
-- **What it does:** Jinja2 template → static HTML. No LLM, no network.
+- **What it does:** Jinja2 template → static HTML. No LLM, no network. Also derives each story's tag verb from its `signal` (per-section admissibility table; Pulse never tagged) and logs one `tags:` summary line per render — e.g. `tags: 9 tagged, 1 suppressed, 1 overrides (1 inadmissible signal, 0 default-filled)`. A rising override count means the summarise prompt is drifting on verb judgments; the drift eval watches the same number.
 - **No LLM.** Cost = 0. Time < 1 s.
 - **When it goes wrong:** template syntax error or model-field mismatch after a contract change.
 

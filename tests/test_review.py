@@ -31,6 +31,7 @@ from src.review import (
     ReviewArtifact,
     ReviewThresholdError,
     _build_review_prompt,
+    _build_review_prompt_parts,
     _extract_frontmatter_summary,
     _load_recent_released_issues,
     _write_review_artifact,
@@ -698,6 +699,208 @@ class TestBuildReviewPrompt:
         prompt = _build_review_prompt(_make_issue_payload(), [])
         assert "reputational_liability" in prompt
         assert "INVESTMENT ADVICE" in prompt
+
+
+# ===========================================================================
+# Prompt caching -- the (static_prefix, variable_part) split (v1.2.1).
+#
+# The review prompt is now built as (shared_prefix, variable_part) and sent
+# through rank._llm_call to the Anthropic API as two content blocks, with
+# `cache_control: {"type": "ephemeral"}` on the prefix. The tests below pin
+# the same four invariants rank v0.6.1 and summarise pinned:
+#
+#   1. BYTE EQUALITY -- prefix + variable equals the pre-split v1.2
+#      single-string prompt exactly, checked against a verbatim golden copy
+#      of the v1.2 assembly over real released-archive issues (three days,
+#      with their real prior-issue drift-watch context) plus the
+#      empty-archive branch. Caching must never change what the model reads.
+#   2. PREFIX STABILITY -- the prefix is exactly `_REVIEW_INSTRUCTIONS +
+#      "\n\n"` for every issue and every day (it is a module literal with no
+#      interpolation -- no date, no lookback content) and stays comfortably
+#      above the 1,024-token cache minimum.
+#   3. RETRY DISCIPLINE -- the JSON-parse retry appends its corrective text
+#      AFTER the variable part. The pre-v1.2.1 code PREPENDED it to the
+#      whole prompt, changing byte 0 -> guaranteed cache miss plus a wasted
+#      cache write on every retry.
+#   4. TRANSPORT PASS-THROUGH -- _call_review_llm hands the tuple to
+#      rank._llm_call intact (the Anthropic two-block shape itself is
+#      pinned in tests/test_rank.py::TestPromptCacheSplit).
+# ===========================================================================
+
+_REVIEW_ARCHIVE_DAYS = ("2026-08-04", "2026-08-05", "2026-08-08")
+
+
+def _golden_v12_single_string_prompt(
+    issue: dict[str, Any], recent_issues: list[dict[str, Any]]
+) -> str:
+    """VERBATIM copy of the v1.2 (pre-cache-split) ``_build_review_prompt``
+    body -- the golden reference for the byte-equality gate. If a deliberate
+    prompt change lands in review.py, this copy must be updated in the same
+    PR alongside a REVIEW_PROMPT_VERSION bump; an accidental byte drift
+    shows up here as a failure."""
+    today_block = review_mod._format_issue_for_prompt(
+        issue, label="STAGED ISSUE UNDER REVIEW",
+    )
+    if recent_issues:
+        recent_blocks = "\n\n".join(
+            review_mod._format_issue_for_prompt(
+                ri, label=f"PRIOR RELEASED ISSUE ({ri.get('date', '?')})",
+                compact=True,
+            )
+            for ri in recent_issues
+        )
+        recent_section = (
+            "\n\nFor drift-watch context, here are the previous "
+            f"{len(recent_issues)} released issues (compact form -- headlines "
+            "and intros only). Do NOT quote from these; they are context, not "
+            "the issue under review:\n\n" + recent_blocks
+        )
+    else:
+        recent_section = (
+            "\n\n(No prior released issues available within the lookback "
+            "window. Skip the drift-watch comparison.)"
+        )
+    return f"""\
+{review_mod._REVIEW_INSTRUCTIONS}
+
+{today_block}{recent_section}
+"""
+
+
+def _load_review_archive_day(
+    day: str,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Load a real released day's issue.json plus its real drift-watch
+    context (the prior <= 3 released issues, exactly as run_review would
+    gather them). Fails loud if the tracked archive is missing -- the
+    byte-equality gate must not silently skip."""
+    date = _dt.date.fromisoformat(day)
+    path = paths.issue_path(date, canonical=True)
+    assert path.exists(), (
+        f"released archive day {day} missing at {path} -- the byte-equality "
+        "gate needs real archive data (data/released/ is tracked in git)"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(payload, dict)
+    recent = _load_recent_released_issues(
+        date, review_mod._REVIEW_LOOKBACK_ISSUES,
+    )
+    assert recent, f"no prior released issues found before {day}"
+    return payload, recent
+
+
+class TestPromptCacheSplit:
+    def test_concatenated_parts_equal_v12_single_string_over_real_archive(
+        self,
+    ) -> None:
+        """prefix + variable must equal the pre-split single-string prompt
+        BYTE FOR BYTE, for three real released days reviewed against their
+        real prior-issue context. This is the core caching-safety
+        invariant: the split may change message structure only, never the
+        bytes the model reads."""
+        checked = 0
+        for day in _REVIEW_ARCHIVE_DAYS:
+            payload, recent = _load_review_archive_day(day)
+            prefix, variable = _build_review_prompt_parts(payload, recent)
+            golden = _golden_v12_single_string_prompt(payload, recent)
+            assert prefix + variable == golden, f"byte drift for {day}"
+            # The kept joined form must stay in lock-step with the parts.
+            assert _build_review_prompt(payload, recent) == golden
+            checked += 1
+        assert checked == len(_REVIEW_ARCHIVE_DAYS)
+
+    def test_empty_archive_branch_is_byte_identical_too(self) -> None:
+        """The no-prior-issues branch ("Skip the drift-watch comparison")
+        is day-varying content and must land in the VARIABLE part, joined
+        byte-identically."""
+        issue = _make_issue_payload()
+        prefix, variable = _build_review_prompt_parts(issue, [])
+        golden = _golden_v12_single_string_prompt(issue, [])
+        assert prefix + variable == golden
+        assert "Skip the drift-watch comparison" in variable
+        assert "Skip the drift-watch comparison" not in prefix
+
+    def test_prefix_is_the_instructions_block_and_nothing_else(self) -> None:
+        """One module -> exactly one prefix: `_REVIEW_INSTRUCTIONS + "\\n\\n"`,
+        byte-identical across issues and days (the instructions are a module
+        literal with no interpolation -- no run date, no lookback content).
+        Any day-varying byte leaking in would produce a distinct prefix per
+        day and zero cache hits."""
+        prefixes: set[str] = set()
+        for day in _REVIEW_ARCHIVE_DAYS:
+            payload, recent = _load_review_archive_day(day)
+            prefix, _ = _build_review_prompt_parts(payload, recent)
+            prefixes.add(prefix)
+        prefix_no_recent, _ = _build_review_prompt_parts(
+            _make_issue_payload(), [],
+        )
+        prefixes.add(prefix_no_recent)
+        assert len(prefixes) == 1, (
+            f"expected one shared prefix, got {len(prefixes)} distinct"
+        )
+        the_prefix = next(iter(prefixes))
+        assert the_prefix == review_mod._REVIEW_INSTRUCTIONS + "\n\n"
+        # Measured 2026-08-09 with real paired calls (claude-sonnet-4-6):
+        # the prefix is 12,459 bytes = 3,254 billed tokens (call 1
+        # cache_creation_input_tokens=3254, call 2
+        # cache_read_input_tokens=3254) -- comfortably above the
+        # 1,024-token cache minimum. Guard a byte floor well above the
+        # minimum so an instructions trim can't silently drop the prefix
+        # below cacheability.
+        assert len(the_prefix.encode("utf-8")) > 9000
+
+    def test_variable_part_starts_with_the_staged_issue_block(self) -> None:
+        """The variable part must start with the byte right after the
+        boundary (the staged-issue label), not repeat any prefix content."""
+        payload, recent = _load_review_archive_day(_REVIEW_ARCHIVE_DAYS[0])
+        _, variable = _build_review_prompt_parts(payload, recent)
+        assert variable.startswith("=== STAGED ISSUE UNDER REVIEW ===")
+        assert review_mod._REVIEW_INSTRUCTIONS not in variable
+
+    def test_json_retry_prefix_block_byte_identical_to_first_attempt(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """THE TRAP (pre-v1.2.1): the JSON-parse retry PREPENDED corrective
+        text to the whole prompt, changing byte 0 -> guaranteed cache miss
+        plus a wasted cache write. Pin the fix: the retry's prefix block is
+        byte-identical to the first attempt's, and the corrective text is
+        appended after the variable part."""
+        date = _dt.date(2026, 5, 29)
+        target = paths.staging_dir(date)
+        target.mkdir(parents=True)
+        (target / "issue.json").write_text(
+            json.dumps(_make_issue_payload()), encoding="utf-8",
+        )
+        responses = ["not json at all", "still not json"]
+        with patch(
+            "src.review._call_review_llm", side_effect=responses,
+        ) as mock_llm:
+            artifact = run_review(date=date)
+        assert artifact.verdict == "unparseable"
+        assert mock_llm.call_count == 2
+        first = mock_llm.call_args_list[0].args[0]
+        second = mock_llm.call_args_list[1].args[0]
+        assert isinstance(first, tuple) and isinstance(second, tuple)
+        assert second[0] == first[0], (
+            "retry prefix must be byte-identical or the cache never hits"
+        )
+        assert second[1].startswith(first[1]), (
+            "corrective text must be APPENDED after the variable part"
+        )
+        assert "was not valid JSON" in second[1]
+        assert "was not valid JSON" not in first[1]
+
+    def test_call_review_llm_passes_the_tuple_through_intact(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """_call_review_llm must hand the (prefix, variable) tuple to
+        rank._llm_call unchanged -- joining it here would silently disable
+        caching while every byte still looked right downstream."""
+        monkeypatch.setenv("LLM_MODEL", "claude-test")
+        monkeypatch.delenv("REVIEW_MODEL", raising=False)
+        with patch("src.rank._llm_call", return_value="{}") as mock_llm:
+            review_mod._call_review_llm(("PREFIX", "VARIABLE"), timeout=5.0)
+        assert mock_llm.call_args.args[0] == ("PREFIX", "VARIABLE")
 
 
 # ---------------------------------------------------------------------------
@@ -1486,7 +1689,10 @@ class TestTakeInReviewSurface:
         assert "take_shape" in prompt
         assert "It is now the case that" in prompt
         assert "SKIP THIS CRITERION ENTIRELY" in prompt
-        assert '"field": "<headline | summary | take | intro_lead | intro_body>"' in prompt
+        assert (
+            '"field": "<headline | summary | take | synthesis | intro_lead'
+            ' | intro_body | digest_lead | digest_sentence>"' in prompt
+        )
 
     def test_take_shape_in_published_criteria(self) -> None:
         from src.review import REVIEW_CRITERIA
@@ -1545,9 +1751,13 @@ class TestTakeInReviewSurface:
         )
         assert not kept and len(dropped) == 1
 
-    def test_review_prompt_version_is_v1_1(self) -> None:
+    def test_review_prompt_version_is_v1_2_1(self) -> None:
+        """The take surfaces (v1.1) plus the digest/synthesis surfaces
+        (v1.2) are prompt content; the version must attribute them. v1.2.1
+        is the message-structure-only cache split -- first-attempt prompt
+        bytes identical to v1.2 (pinned by TestPromptCacheSplit)."""
         from src.review import REVIEW_PROMPT_VERSION
-        assert REVIEW_PROMPT_VERSION == "v1.1"
+        assert REVIEW_PROMPT_VERSION == "v1.2.1"
 
     def test_take_shape_on_takeless_issue_dropped_even_with_valid_quote(
         self,
@@ -1593,3 +1803,205 @@ class TestTakeInReviewSurface:
             [finding], _payload_with_takes(),
         )
         assert len(kept) == 1 and not dropped and malformed == 0
+
+
+# ---------------------------------------------------------------------------
+# v1.2 (2026-08-09): the digest + synthesis in the review surface (R1).
+#
+# Contract under test (DESIGN.md "The digest", R1): the reviewer's rendered
+# issue includes a DIGEST block with indices and per-section synthesis
+# lines; digest_lead / digest_sentence (located by digest_index) and
+# synthesis are indexed quotable fields, so findings on them survive the
+# verbatim-quote check exactly like every other field.
+# ---------------------------------------------------------------------------
+
+_DIGEST_LEAD_TEXT = "Local agents arrive."
+_DIGEST_SENTENCE_TEXT = (
+    "A consumer-GPU model and a fraud-triage agent both shipped this week."
+)
+_SYNTHESIS_TEXT = (
+    "Production agents stopped being demos today. Two deployments crossed "
+    "the line in the same week."
+)
+
+
+def _payload_with_digest_and_synthesis() -> dict[str, Any]:
+    payload = _payload_with_takes()
+    # Redesign issues carry synthesis INSTEAD of the legacy pair.
+    payload["sections"][0]["synthesis"] = _SYNTHESIS_TEXT
+    payload["sections"][0]["intro_lead"] = None
+    payload["sections"][0]["intro_body"] = None
+    payload["digest"] = [
+        {"lead": _DIGEST_LEAD_TEXT, "sentence": _DIGEST_SENTENCE_TEXT,
+         "story_ids": [_story_id(0)]},
+        {"lead": "Second bullet here.", "sentence": "Another sentence.",
+         "story_ids": [_story_id(1)]},
+    ]
+    return payload
+
+
+def _digest_finding(
+    index: int | str = 0,
+    field: str = "digest_lead",
+    quote: str = _DIGEST_LEAD_TEXT,
+    **overrides: Any,
+) -> dict[str, Any]:
+    return {
+        "target": {"kind": "digest", "digest_index": index, "field": field},
+        "criterion": "digest_shape",
+        "severity": "major",
+        "quote": quote,
+        "fix_kind": "text_edit",
+        "instruction": "Recast the lead as a naming, not an action.",
+        **overrides,
+    }
+
+
+class TestDigestAndSynthesisInReviewSurface:
+    def test_digest_and_synthesis_indexed_as_quotable_fields(self) -> None:
+        from src.review import index_issue_fields
+        idx = index_issue_fields(_payload_with_digest_and_synthesis())
+        assert idx["digest:0:digest_lead"] == _DIGEST_LEAD_TEXT
+        assert idx["digest:0:digest_sentence"] == _DIGEST_SENTENCE_TEXT
+        assert idx["digest:1:digest_lead"] == "Second bullet here."
+        assert idx["section:big_picture:synthesis"] == _SYNTHESIS_TEXT
+
+    def test_digestless_issue_indexes_no_digest_keys(self) -> None:
+        from src.review import index_issue_fields
+        idx = index_issue_fields(_make_issue_payload())
+        assert not any(key.startswith("digest:") for key in idx)
+        assert not any(key.endswith(":synthesis") for key in idx)
+
+    def test_target_key_routes_digest_by_index(self) -> None:
+        from src.models import ReviewTarget
+        from src.review import target_key
+        target = ReviewTarget(
+            kind="digest", digest_index=2, field="digest_sentence",
+        )
+        assert target_key(target) == "digest:2:digest_sentence"
+
+    def test_prompt_renders_digest_block_with_indices_and_synthesis(
+        self,
+    ) -> None:
+        from src.review import _format_issue_for_prompt
+        rendered = _format_issue_for_prompt(
+            _payload_with_digest_and_synthesis(), label="X",
+        )
+        assert 'DIGEST ("The 30-second read"' in rendered
+        assert "digest_index: 0" in rendered
+        assert f"lead: {_DIGEST_LEAD_TEXT}" in rendered
+        assert f"synthesis: {_SYNTHESIS_TEXT}" in rendered
+        # The tag-derivation recommendation: the stored signal is shown.
+        assert "signal: watch" in rendered
+        # A digest-less issue renders no DIGEST block.
+        legacy = _format_issue_for_prompt(_make_issue_payload(), label="X")
+        assert "DIGEST" not in legacy
+
+    def test_prompt_teaches_digest_and_synthesis_criteria(self) -> None:
+        from src.review import REVIEW_CRITERIA, _build_review_prompt
+        assert "digest_shape" in REVIEW_CRITERIA
+        assert "synthesis_shape" in REVIEW_CRITERIA
+        prompt = _build_review_prompt(
+            _payload_with_digest_and_synthesis(), [],
+        )
+        assert "digest_shape" in prompt
+        assert "synthesis_shape" in prompt
+        assert "PIPELINE DEFECT" in prompt          # the n=1 rule
+        assert "A lead over 6 words" in prompt      # the lead budget rule
+
+    def test_digest_finding_with_real_quote_is_kept(self) -> None:
+        from src.review import _resolve_and_filter_findings
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [_digest_finding()], _payload_with_digest_and_synthesis(),
+        )
+        assert len(kept) == 1 and not dropped and malformed == 0
+        target = kept[0].target
+        assert target.kind == "digest"
+        assert target.digest_index == 0
+        assert target.story_id is None and target.section is None
+
+    def test_digest_index_parses_from_a_string(self) -> None:
+        """Models sometimes stringify integers; a quoted index must not
+        cost the finding."""
+        from src.review import _resolve_and_filter_findings
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [_digest_finding(index="0")],
+            _payload_with_digest_and_synthesis(),
+        )
+        assert len(kept) == 1 and malformed == 0
+        assert kept[0].target.digest_index == 0
+
+    def test_digest_finding_with_wrong_index_is_dropped(self) -> None:
+        """The quote is real text, but of bullet 0 -- an index pointing at
+        bullet 1 must not resolve against it (index precision is the whole
+        point of the locator)."""
+        from src.review import _resolve_and_filter_findings
+        kept, dropped, _malformed = _resolve_and_filter_findings(
+            [_digest_finding(index=1)],  # quote belongs to bullet 0
+            _payload_with_digest_and_synthesis(),
+        )
+        assert not kept and len(dropped) == 1
+
+    def test_digest_finding_on_digestless_issue_is_dropped(self) -> None:
+        from src.review import _resolve_and_filter_findings
+        kept, dropped, _malformed = _resolve_and_filter_findings(
+            [_digest_finding()], _payload_with_takes(),
+        )
+        assert not kept and len(dropped) == 1
+
+    def test_digest_finding_without_index_is_malformed(self) -> None:
+        """ReviewTarget requires digest_index for digest targets; a
+        finding without one cannot be resolved to a bullet and is counted
+        malformed, not guessed at."""
+        from src.review import _resolve_and_filter_findings
+        finding = _digest_finding()
+        del finding["target"]["digest_index"]
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [finding], _payload_with_digest_and_synthesis(),
+        )
+        assert not kept and not dropped and malformed == 1
+
+    def test_synthesis_finding_with_real_quote_is_kept(self) -> None:
+        from src.review import _resolve_and_filter_findings
+        finding = {
+            "target": {"kind": "section", "section": "big_picture",
+                       "field": "synthesis"},
+            "criterion": "synthesis_shape",
+            "severity": "minor",
+            "quote": "Production agents stopped being demos today.",
+            "fix_kind": "text_edit",
+            "instruction": "Anchor the first sentence in today's stories.",
+        }
+        kept, dropped, malformed = _resolve_and_filter_findings(
+            [finding], _payload_with_digest_and_synthesis(),
+        )
+        assert len(kept) == 1 and not dropped and malformed == 0
+        assert kept[0].target.field == "synthesis"
+
+    def test_review_md_groups_digest_findings_first(self) -> None:
+        from src.models import ReviewFinding, ReviewReport, ReviewTarget
+        from src.review import render_review_markdown
+        import datetime as dt
+
+        finding = ReviewFinding(
+            finding_id="f001",
+            target=ReviewTarget(
+                kind="digest", digest_index=0, field="digest_lead",
+            ),
+            criterion="digest_shape",
+            severity="major",
+            quote=_DIGEST_LEAD_TEXT,
+            fix_kind="text_edit",
+            instruction="Recast as a naming.",
+        )
+        report = ReviewReport(
+            generated_at=dt.datetime(2026, 8, 9, tzinfo=dt.timezone.utc),
+            computed_verdict="amber",
+            findings=[finding],
+            prompt_version="v1.2",
+        )
+        markdown = render_review_markdown(
+            report, dt.date(2026, 8, 9), _payload_with_digest_and_synthesis(),
+        )
+        assert "## The 30-second read" in markdown
+        assert "bullet 1 -> digest_lead" in markdown

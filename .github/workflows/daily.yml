@@ -444,7 +444,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add -- "data/released/${DATE}" data/published_urls.txt \
-            data/metrics_log.jsonl docs/index.html "docs/released/${DATE}.html"
+            data/metrics_log.jsonl docs/index.html "docs/released/${DATE}.html" \
+            docs/how-its-made.html docs/about.html
           if git diff --cached --quiet; then
             echo "::error::Nothing to commit — release produced no file changes."
             exit 1

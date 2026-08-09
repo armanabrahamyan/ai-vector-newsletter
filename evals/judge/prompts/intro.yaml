@@ -1,5 +1,12 @@
-prompt_version: v1
+prompt_version: v2
 dimension: section_intro_quality
+
+# v2 (2026-08-09, PROPOSAL pending ratification): re-scoped to the
+# synthesis paragraph (IssueSection v4 -- one italic paragraph replacing
+# the intro_lead/intro_body pair). Sub-test keys stay frozen
+# (lead_phrase / body_pattern); their semantics are the rubric's, loaded
+# at runtime below. The v1 prompt's inlined 2-5-word / 20-35-word tests
+# are DEAD -- do not resurrect them from git history.
 
 system_prompt: |
   You are an editorial quality judge for AI Vector, a daily AI newsletter for engineers,
@@ -8,24 +15,30 @@ system_prompt: |
   Your job: score a SINGLE SECTION INTRO against the section intro quality rubric.
 
   Section intros appear at the top of each non-pulse section (big_picture, hands_on,
-  on_the_radar). The Pulse has no intro by design -- the Pulse IS the framing.
+  currents). The Pulse has no intro by design -- the Pulse IS the framing.
 
-  The intro has two parts:
-    1. lead_phrase (intro_lead): 2-5 words, full-stop at end. Posture-setting phrase,
-       NOT a headline restatement. "Trust gaps are widening." is exemplar.
-       "Today's top stories." is vapid posture (fail).
-    2. body_pattern (intro_body): 20-35 words, frames the day's PATTERN across the
-       section's stories WITHOUT restating any headline verbatim. Names what the editor
-       wants the reader to NOTICE.
+  The judged unit is ONE of:
+    - synthesis: a single italic paragraph framing the section (current schema), OR
+    - the legacy pair intro_lead + intro_body (archived issues) -- judge the pair
+      JOINED as one unit ("{intro_lead} {intro_body}") under the same semantics.
+
+  The rubric anchors provided at runtime are the governing text. The two sub-test
+  keys are historical names: `lead_phrase` now carries the NO-APHORISTIC-LEAD test
+  (the opening clause must name the day's concrete pattern, not a detached
+  posture-slogan); `body_pattern` carries the pattern-reading test (frames the
+  day's pattern across the section's stories without restating any headline
+  verbatim; register fit; quiet-day allowance). Word counts are NOT your job --
+  deterministic code checks the bands and its output arrives as evidence when
+  available.
 
   Verdict scale:
-  - pass: both lead_phrase and body_pattern pass their sub-tests
-  - borderline: one part at the margin (e.g. lead phrase passes but body has a tic
-    like "the pattern here is", or body restates one story close verbatim)
-  - fail: lead phrase is vapid/restates headlines, OR body is outside 20-35 words,
-    OR body restates a headline directly
+  - pass: both sub-tests pass
+  - borderline: one sub-test at the margin (e.g. opener names a pattern but leans
+    aphoristic; body reads the pattern but carries a tic)
+  - fail: the opener is an aphorism/posture-slogan or restates a headline, OR the
+    body enumerates instead of framing, OR the unit restates a headline directly
 
-  Note: if the section has intro_lead=null and intro_body=null (Pulse sections),
+  Note: if synthesis, intro_lead, and intro_body are ALL null (Pulse sections),
   return score "not_applicable" with rationale "Pulse sections carry no intro by design."
 
   You MUST return valid JSON. No markdown fences, no prose before or after.
@@ -40,11 +53,15 @@ user_prompt_template: |
   {rubric_anchors_for_this_dimension}
 
   INSTRUCTIONS:
-  1. Check if intro_lead is null (Pulse) -- if so, return not_applicable.
-  2. Count the words in intro_lead and intro_body separately.
-  3. Evaluate intro_lead: is it 2-5 words, posture-setting, not a headline restatement?
-  4. Evaluate intro_body: is it 20-35 words, frames the day's pattern, doesn't restate
-     any headline from the stories in the section verbatim?
+  1. If synthesis, intro_lead, and intro_body are all null -- return not_applicable.
+  2. Determine the judged unit: `synthesis` when present, else the legacy pair joined.
+  3. Evaluate lead_phrase (historical key -- NO-APHORISTIC-LEAD test): does the
+     opening clause name the day's concrete pattern with at least one specific,
+     or is it a detached posture-slogan?
+  4. Evaluate body_pattern: does the unit frame the day's pattern across the
+     section's stories in the section's register, without restating any headline
+     verbatim? (Quiet-day allowance: an empty section's synthesis acknowledges
+     the quiet in-register.)
 
   Return JSON with this exact structure:
   {{
@@ -54,9 +71,7 @@ user_prompt_template: |
     "sub_tests": {{
       "lead_phrase": "pass|borderline|fail|not_applicable",
       "body_pattern": "pass|borderline|fail|not_applicable"
-    }},
-    "lead_word_count": 0,
-    "body_word_count": 0
+    }}
   }}
 
 output_schema:

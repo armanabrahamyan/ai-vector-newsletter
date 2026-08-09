@@ -256,7 +256,15 @@ unit under test). Assert the SAME string/value survives every hop —
 `model_validate_json` round trip → the real template render → the
 downstream stage's field index or claim input. One test earns its keep
 here; ten would be redundant with the module-local tests that already
-exist. See `tests/test_take_seam.py` for the worked example.
+exist. See `tests/test_take_seam.py` for the worked example (the take,
+2026-08-08) and `tests/test_digest_synthesis_seam.py` for a five-stage
+seam (the digest + section synthesis, 2026-08-09): summarise's real
+`_generate_digest` / `_populate_section_synthesis` → a real `Issue` +
+issue.json round trip → verify's real aux-claim attachment (mocked
+`verify_rich`/`verify_aux_rich`) → review's real `index_issue_fields` →
+revise's real `digest_index` / section-target routing (mocked
+`_call_revise_llm`). One seam test per feature that crosses seams, not
+one per surface it touches within that feature.
 
 ---
 

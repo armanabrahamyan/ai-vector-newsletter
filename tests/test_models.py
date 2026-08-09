@@ -15,6 +15,7 @@ from src.models import (
     RUBRIC_WEIGHTS,
     Cluster,
     ClaimVerdict,
+    DigestBullet,
     Issue,
     IssueSection,
     RankedStory,
@@ -29,6 +30,7 @@ from tests.conftest import (
     FIXED_EARLIER,
     FIXED_NOW,
     VALID_CLUSTER_ID,
+    VALID_CLUSTER_ID_2,
 )
 
 
@@ -569,7 +571,7 @@ class TestSummaryBlockTake:
         block = self._block(take="Position lines are speech acts, not summaries.")
         reloaded = SummaryBlock.model_validate_json(block.model_dump_json())
         assert reloaded.take == "Position lines are speech acts, not summaries."
-        assert reloaded.schema_version == 4
+        assert reloaded.schema_version == 5
 
     def test_take_is_stripped(self) -> None:
         """The before-validator strips; downstream renderers and the
@@ -582,6 +584,14 @@ class TestSummaryBlockTake:
         spelled None. Without _strip_take, '   ' would pass min_length=1."""
         with pytest.raises(ValidationError):
             self._block(take="   ")
+
+    def test_take_route_defaults_to_none_and_round_trips(self) -> None:
+        """SummaryBlock v5 (2026-08-09): the generation-route label is
+        nullable (pre-route archives) and survives a JSON round trip."""
+        assert self._block().take_route is None
+        block = self._block(take="Edges matter now.", take_route="R2")
+        reloaded = SummaryBlock.model_validate_json(block.model_dump_json())
+        assert reloaded.take_route == "R2"
 
     def test_released_pre_take_issue_parses_with_take_none(self) -> None:
         """A real released issue.json written before the take existed
@@ -620,3 +630,196 @@ class TestReviewTargetTakeField:
         boundary, same as a section finding pointing at 'headline'."""
         with pytest.raises(ValidationError, match="intro_lead"):
             ReviewTarget(kind="section", section="hands_on", field="take")
+
+
+# ===========================================================================
+# IssueSection.synthesis -- the merged section paragraph (schema v4,
+# 2026-08-09 layout redesign). Structural rules + the migration-direction
+# exclusivity invariant we own.
+# ===========================================================================
+
+class TestIssueSectionSynthesis:
+    def test_synthesis_alone_accepted(self) -> None:
+        section = IssueSection(
+            name="hands_on", stories=[],
+            synthesis="Verify before you adopt. The pattern is trust.",
+        )
+        assert section.synthesis == "Verify before you adopt. The pattern is trust."
+        assert section.schema_version == 4
+
+    def test_legacy_intro_pair_alone_still_accepted(self) -> None:
+        """Every released issue with a Phase-B intro must keep parsing --
+        the legacy pair is retained, not removed."""
+        section = IssueSection(
+            name="hands_on", stories=[],
+            intro_lead="Bench before you budget.",
+            intro_body="Two tools, one caveat.",
+        )
+        assert section.synthesis is None
+
+    @pytest.mark.parametrize("legacy", [
+        {"intro_lead": "Lead."},
+        {"intro_body": "Body."},
+    ])
+    def test_synthesis_with_legacy_intro_rejected(self, legacy: dict) -> None:
+        """Migration-direction invariant (ours): synthesis and the legacy
+        pair are two competing framings for one render slot; a record
+        carrying both is a writer bug. Without _synthesis_excludes_legacy_intros
+        pydantic would accept it and the renderer would silently discard
+        reviewed text."""
+        with pytest.raises(ValidationError, match="superseded"):
+            IssueSection(name="hands_on", stories=[], synthesis="S.", **legacy)
+
+    def test_synthesis_is_stripped_and_blank_rejected(self) -> None:
+        """Strip-then-min_length interplay (ours): absence is spelled None,
+        never ''. Without _strip_synthesis, '   ' would pass min_length=1."""
+        assert IssueSection(
+            name="currents", stories=[], synthesis="  edges  "
+        ).synthesis == "edges"
+        with pytest.raises(ValidationError):
+            IssueSection(name="currents", stories=[], synthesis="   ")
+
+
+# ===========================================================================
+# DigestBullet + Issue.digest -- the 30-second read (Issue schema v8,
+# 2026-08-09). Structural rules + the provenance-resolution invariant.
+# ===========================================================================
+
+class TestDigestBullet:
+    def test_lead_and_sentence_are_stripped_blank_rejected(self) -> None:
+        bullet = DigestBullet(
+            lead="  Agents run locally now  ",
+            sentence="  The privacy calculus just shifted.  ",
+            story_ids=[VALID_CLUSTER_ID],
+        )
+        assert bullet.lead == "Agents run locally now"
+        assert bullet.sentence == "The privacy calculus just shifted."
+        with pytest.raises(ValidationError):
+            DigestBullet(lead="   ", sentence="s", story_ids=[VALID_CLUSTER_ID])
+
+    def test_story_ids_must_be_non_empty(self) -> None:
+        """Provenance is the contract: a bullet that cites no story cannot
+        be verified against any excerpt."""
+        with pytest.raises(ValidationError):
+            DigestBullet(lead="l", sentence="s", story_ids=[])
+
+
+class TestIssueDigest:
+    def _bullet(self, story_id: str = VALID_CLUSTER_ID) -> dict:
+        return {
+            "lead": "Agents run locally now",
+            "sentence": "The privacy calculus just shifted.",
+            "story_ids": [story_id],
+        }
+
+    def test_digest_defaults_to_none(self, issue: Issue) -> None:
+        """Nullability is the backwards-compat contract: every archived
+        issue (and any digest-degraded day) means "no digest section",
+        not a failure."""
+        assert issue.digest is None
+
+    def test_digest_with_resolvable_story_ids_accepted(self, issue: Issue) -> None:
+        payload = issue.model_dump(mode="json")
+        payload["digest"] = [self._bullet(), self._bullet(), self._bullet()]
+        loaded = Issue.model_validate(payload)
+        assert loaded.digest is not None and len(loaded.digest) == 3
+        assert loaded.schema_version == 9
+
+    def test_digest_with_unknown_story_id_rejected(self, issue: Issue) -> None:
+        """The provenance invariant we own: a bullet citing a story the
+        issue does not carry is hallucinated provenance. Without
+        _digest_story_ids_resolve, pydantic would accept any well-formed
+        cluster id."""
+        payload = issue.model_dump(mode="json")
+        payload["digest"] = [
+            self._bullet(), self._bullet(),
+            self._bullet(story_id=VALID_CLUSTER_ID_2),  # not in the issue
+        ]
+        with pytest.raises(ValidationError, match="not present in"):
+            Issue.model_validate(payload)
+
+    @pytest.mark.parametrize("count", [1, 2, 6])
+    def test_digest_out_of_band_bullet_count_rejected(
+        self, issue: Issue, count: int
+    ) -> None:
+        """Present => well-formed (3-5 bullets). The degradation path for
+        a thin day is digest=None, never a degenerate 1-bullet skim."""
+        payload = issue.model_dump(mode="json")
+        payload["digest"] = [self._bullet() for _ in range(count)]
+        with pytest.raises(ValidationError):
+            Issue.model_validate(payload)
+
+    def test_all_released_issues_parse_with_digest_and_synthesis_none(self) -> None:
+        """THE migration promise, proven by execution: every issue.json in
+        the released archive validates under the v8 model with digest=None
+        and synthesis=None on every section. Pins the archive-compat
+        contract the same way the pre-take parse test does, but across the
+        whole corpus -- a future field rename or a tightened validator that
+        breaks history fails here first."""
+        from pathlib import Path
+
+        released = sorted(Path("data/released").glob("*/issue.json"))
+        if not released:
+            pytest.skip("data/released/ not present in this environment")
+        for archive in released:
+            issue = Issue.model_validate_json(
+                archive.read_text(encoding="utf-8")
+            )
+            assert issue.digest is None, archive
+            for section in issue.sections:
+                assert section.synthesis is None, archive
+
+
+# ===========================================================================
+# ReviewTarget kind="digest" + field="synthesis" -- the reviewer must be
+# able to point findings at the new reader-facing prose (schema v3,
+# 2026-08-09), with the same locator discipline as story/section targets.
+# ===========================================================================
+
+class TestReviewTargetDigestAndSynthesis:
+    def test_section_target_accepts_synthesis(self) -> None:
+        target = ReviewTarget(
+            kind="section", section="hands_on", field="synthesis"
+        )
+        assert target.field == "synthesis"
+
+    def test_digest_target_accepts_both_digest_fields(self) -> None:
+        for field in ("digest_lead", "digest_sentence"):
+            target = ReviewTarget(kind="digest", digest_index=0, field=field)
+            assert target.digest_index == 0
+
+    def test_digest_target_requires_digest_index(self) -> None:
+        """A digest finding without an index cannot be resolved to a bullet
+        on disk -- the unresolvable-finding misfire class."""
+        with pytest.raises(ValidationError, match="digest_index"):
+            ReviewTarget(kind="digest", field="digest_lead")
+
+    def test_digest_target_rejects_story_and_section_locators(self) -> None:
+        """Digest provenance lives on DigestBullet.story_ids; the digest is
+        issue-level. Stray locators would let a reader mis-group findings."""
+        with pytest.raises(ValidationError, match="story_id"):
+            ReviewTarget(
+                kind="digest", digest_index=0, field="digest_lead",
+                story_id=VALID_CLUSTER_ID,
+            )
+        with pytest.raises(ValidationError, match="section"):
+            ReviewTarget(
+                kind="digest", digest_index=0, field="digest_lead",
+                section="hands_on",
+            )
+
+    def test_digest_target_rejects_story_field(self) -> None:
+        with pytest.raises(ValidationError, match="digest_lead"):
+            ReviewTarget(kind="digest", digest_index=0, field="headline")
+
+    def test_story_and_section_targets_reject_digest_locator_and_fields(self) -> None:
+        """The widening must not leak sideways: a story target carrying a
+        digest_index (or a section target naming digest_lead) is
+        unresolvable and rejected."""
+        with pytest.raises(ValidationError, match="digest_index"):
+            ReviewTarget(
+                kind="story", story_id=VALID_CLUSTER_ID, field="headline",
+                digest_index=0,
+            )
+        with pytest.raises(ValidationError, match="synthesis"):
+            ReviewTarget(kind="section", section="hands_on", field="digest_lead")

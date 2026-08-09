@@ -2152,13 +2152,16 @@ class TestVoiceDiversityVersionBump:
     """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
     must move with it so the audit trail picks up the shift."""
 
-    def test_summarise_prompt_version_is_v0_22(self) -> None:
-        # v0.22 (2026-08-08): "the take" -- every story returns a take
-        # field (the publication's one-sentence position); tier shapes,
-        # code-side take validation, issue-wide take feed-forward, and
-        # cross-day take lookback. Audit tag: summarise-v0.22-2026-08-08.
+    def test_summarise_prompt_version_is_v0_23(self) -> None:
+        # v0.23 (2026-08-09): take v2 (the cold open) + section synthesis
+        # + the digest -- the layout-redesign generation wave. Audit tag:
+        # summarise-v0.23-2026-08-09.
         from src.summarise import SUMMARISE_PROMPT_VERSION
-        assert SUMMARISE_PROMPT_VERSION == "v0.22"
+        assert SUMMARISE_PROMPT_VERSION == "v0.23"
+
+    def test_digest_prompt_version_is_v1_0(self) -> None:
+        from src.summarise import DIGEST_PROMPT_VERSION
+        assert DIGEST_PROMPT_VERSION == "v1.0"
 
 
 # ===========================================================================
@@ -2864,12 +2867,13 @@ class TestVoiceDiversityBlockReachesPromptBuilders:
         ))
         assert "VOICE DIVERSITY" not in prompt
 
-    def test_section_intro_prompt_includes_block(
+    def test_section_synthesis_prompt_includes_block(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """``_populate_section_intro`` builds its own prompt; it must
+        """``_populate_section_synthesis`` builds its own prompt; it must
         thread the diversity block in too. Mock the LLM call and capture
-        the prompt it was handed."""
+        the prompt it was handed. (Two stories: the v0.23 n=1 rule skips
+        one-story sections before any prompt is built.)"""
         from src import summarise as summarise_mod
         section = IssueSection(
             name="big_picture",
@@ -2880,14 +2884,26 @@ class TestVoiceDiversityBlockReachesPromptBuilders:
                     summary="A body that satisfies the validator threshold "
                             "for word count and lands cleanly somewhere.",
                     source_urls=["https://example.com/x"],  # type: ignore[list-item]
-                )
+                ),
+                SummaryBlock(
+                    story_id="c_fedcba9876543210",
+                    headline="h2",
+                    summary="A second body that satisfies the validator "
+                            "threshold for word count and lands cleanly.",
+                    source_urls=["https://example.com/y"],  # type: ignore[list-item]
+                ),
             ],
         )
         captured: dict[str, str] = {}
 
         def fake_llm_call(prompt, **_kwargs):
             captured["prompt"] = prompt
-            return '{"lead": "Fresh lead.", "body": "Body with twenty plus words for the test framing across these one stories."}'
+            return (
+                '{"synthesis": "Vendors spent the day converging on the '
+                "same agent interface, and the papers followed them. The "
+                "pattern favours teams that standardise early; the "
+                'laggards inherit somebody else\'s contract."}'
+            )
 
         monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm_call)
         block = (
@@ -2896,62 +2912,48 @@ class TestVoiceDiversityBlockReachesPromptBuilders:
             "  [big_picture]\n"
             "    - 2026-06-02 lead: 'Speed is outrunning safety.'\n"
         )
-        summarise_mod._populate_section_intro(section, block)
+        summarise_mod._populate_section_synthesis(section, block)
         assert "VOICE DIVERSITY" in captured["prompt"]
         assert "Speed is outrunning safety." in captured["prompt"]
+        assert section.synthesis is not None
+        # v0.23 migration direction: the legacy pair stays None.
+        assert section.intro_lead is None and section.intro_body is None
 
 
 # ===========================================================================
-# v0.21 (2026-07-04): empty-Currents quiet-day intro.
+# v0.21 (2026-07-04), synthesis form since v0.23: empty-Currents quiet day.
 #
-# Three shipped issues carried an empty Currents section with null intros
-# (template-integrity failure per review). Two-layer fix: the section-intro
-# LLM pass now runs on a zero-story Currents with a quiet-day instruction,
-# and ``_ensure_quiet_day_currents_intro`` is the deterministic code guard
+# Three shipped issues carried an empty Currents section with null framing
+# (template-integrity failure per review). Two-layer fix: the synthesis
+# LLM pass runs on a zero-story Currents with a quiet-day instruction, and
+# ``_ensure_quiet_day_currents_synthesis`` is the deterministic code guard
 # that makes the template contract unbreakable (No Token Wasted: the
 # fallback is code, not another LLM call).
 # ===========================================================================
 
-class TestQuietDayCurrentsIntro:
+class TestQuietDayCurrentsSynthesis:
     """The deterministic fallback + the quiet-day prompt branch."""
 
-    def test_fallback_injects_defaults_when_intros_null(self) -> None:
+    def test_fallback_injects_default_when_synthesis_null(self) -> None:
         from src import summarise as summarise_mod
         section = IssueSection(name="currents", stories=[])
-        summarise_mod._ensure_quiet_day_currents_intro(section)
-        assert section.intro_lead == (
-            summarise_mod._QUIET_DAY_CURRENTS_INTRO_LEAD
+        summarise_mod._ensure_quiet_day_currents_synthesis(section)
+        assert section.synthesis == (
+            summarise_mod._QUIET_DAY_CURRENTS_SYNTHESIS
         )
-        assert section.intro_body == (
-            summarise_mod._QUIET_DAY_CURRENTS_INTRO_BODY
-        )
+        # Migration direction: the legacy pair is never written.
+        assert section.intro_lead is None and section.intro_body is None
 
-    def test_fallback_treats_empty_strings_as_missing(self) -> None:
-        from src import summarise as summarise_mod
-        section = IssueSection(
-            name="currents", stories=[], intro_lead="  ", intro_body="",
-        )
-        summarise_mod._ensure_quiet_day_currents_intro(section)
-        assert section.intro_lead == (
-            summarise_mod._QUIET_DAY_CURRENTS_INTRO_LEAD
-        )
-        assert section.intro_body == (
-            summarise_mod._QUIET_DAY_CURRENTS_INTRO_BODY
-        )
-
-    def test_fallback_leaves_llm_quiet_day_intro_untouched(self) -> None:
+    def test_fallback_leaves_llm_quiet_day_synthesis_untouched(self) -> None:
         from src import summarise as summarise_mod
         section = IssueSection(
             name="currents",
             stories=[],
-            intro_lead="Still waters below the fold.",
-            intro_body="The head sections carry today's whole signal.",
+            synthesis="Still waters below the fold today; the head "
+                      "sections carry the whole signal.",
         )
-        summarise_mod._ensure_quiet_day_currents_intro(section)
-        assert section.intro_lead == "Still waters below the fold."
-        assert section.intro_body == (
-            "The head sections carry today's whole signal."
-        )
+        summarise_mod._ensure_quiet_day_currents_synthesis(section)
+        assert section.synthesis.startswith("Still waters")
 
     def test_fallback_ignores_currents_with_stories(self) -> None:
         from src import summarise as summarise_mod
@@ -2967,25 +2969,23 @@ class TestQuietDayCurrentsIntro:
                 )
             ],
         )
-        summarise_mod._ensure_quiet_day_currents_intro(section)
-        # A populated Currents with a missing intro is the EXISTING
-        # mandatory-intro WARNING path, not the quiet-day contract.
-        assert section.intro_lead is None
-        assert section.intro_body is None
+        summarise_mod._ensure_quiet_day_currents_synthesis(section)
+        # A populated Currents with a missing synthesis is the EXISTING
+        # mandatory-framing WARNING path, not the quiet-day contract.
+        assert section.synthesis is None
 
     def test_fallback_ignores_other_sections(self) -> None:
         from src import summarise as summarise_mod
         section = IssueSection(name="big_picture", stories=[])
-        summarise_mod._ensure_quiet_day_currents_intro(section)
-        assert section.intro_lead is None
-        assert section.intro_body is None
+        summarise_mod._ensure_quiet_day_currents_synthesis(section)
+        assert section.synthesis is None
 
-    def test_populate_intro_runs_quiet_day_prompt_for_empty_currents(
+    def test_populate_synthesis_runs_quiet_day_prompt_for_empty_currents(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """A zero-story Currents no longer skips the intro pass: the LLM
-        is called with the QUIET DAY instruction and its lead/body land
-        on the section."""
+        """A zero-story Currents does not skip the synthesis pass: the
+        LLM is called with the QUIET DAY instruction and its paragraph
+        lands on the section."""
         from src import summarise as summarise_mod
         section = IssueSection(name="currents", stories=[])
         captured: dict[str, str] = {}
@@ -2993,20 +2993,20 @@ class TestQuietDayCurrentsIntro:
         def fake_llm_call(prompt, **_kwargs):
             captured["prompt"] = prompt
             return (
-                '{"lead": "Still waters below the fold.", '
-                '"body": "The day\'s signal sits above; the watch resumes '
-                'when early signals return."}'
+                '{"synthesis": "Still waters below the fold today. The '
+                "day's signal sits in the sections above, and the watch "
+                'resumes when the early signals return."}'
             )
 
         monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm_call)
-        summarise_mod._populate_section_intro(section)
+        summarise_mod._populate_section_synthesis(section)
         assert "QUIET DAY" in captured["prompt"]
-        # The prior renders are offered as register examples, not scripts.
+        # The prior render is offered as a register example, not a script.
         assert "A quiet day in the undercurrents." in captured["prompt"]
-        assert section.intro_lead == "Still waters below the fold."
-        assert section.intro_body is not None
+        assert section.synthesis is not None
+        assert section.synthesis.startswith("Still waters")
 
-    def test_populate_intro_still_skips_empty_non_currents(
+    def test_populate_synthesis_still_skips_empty_non_currents(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         from src import summarise as summarise_mod
@@ -3018,16 +3018,112 @@ class TestQuietDayCurrentsIntro:
             )
 
         monkeypatch.setattr(summarise_mod, "_llm_call", fail_llm_call)
-        summarise_mod._populate_section_intro(section)
-        assert section.intro_lead is None
-        assert section.intro_body is None
+        summarise_mod._populate_section_synthesis(section)
+        assert section.synthesis is None
 
-    def test_fallback_defaults_fit_model_length_caps(self) -> None:
-        """The deterministic defaults must always validate: lead <= 80
-        chars, body <= 400 chars (IssueSection field caps)."""
+    def test_populate_synthesis_skips_single_story_sections(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """v0.23 n=1 rule (designer adjudication): a synthesis of one
+        story duplicates its dek -- no LLM call, synthesis stays None."""
         from src import summarise as summarise_mod
-        assert len(summarise_mod._QUIET_DAY_CURRENTS_INTRO_LEAD) <= 80
-        assert len(summarise_mod._QUIET_DAY_CURRENTS_INTRO_BODY) <= 400
+        section = IssueSection(
+            name="big_picture",
+            stories=[
+                SummaryBlock(
+                    story_id="c_0123456789abcdef",
+                    headline="h1",
+                    summary="A body that satisfies the validator threshold "
+                            "for word count and lands cleanly somewhere.",
+                    source_urls=["https://example.com/x"],  # type: ignore[list-item]
+                )
+            ],
+        )
+
+        def fail_llm_call(prompt, **_kwargs):  # pragma: no cover
+            raise AssertionError(
+                "LLM must not be called for a one-story section (n=1 rule)"
+            )
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fail_llm_call)
+        summarise_mod._populate_section_synthesis(section)
+        assert section.synthesis is None
+
+    def test_fallback_default_fits_model_cap_and_band(self) -> None:
+        """The deterministic default must always validate: <= 500 chars
+        (IssueSection structural cap) and within the quiet-day band of
+        the code-side checks."""
+        from src import summarise as summarise_mod
+        default = summarise_mod._QUIET_DAY_CURRENTS_SYNTHESIS
+        assert len(default) <= 500
+        assert summarise_mod._synthesis_violations(
+            default, quiet_day=True
+        ) == []
+
+
+class TestSynthesisViolations:
+    """Code-side half of the v0.23 synthesis spec: word band 28-45, 2-3
+    sentences, the aphorism proxy, and the em-dash ban. Each check fails
+    against the defect it guards."""
+
+    def test_good_synthesis_passes(self) -> None:
+        from src.summarise import _synthesis_violations
+        good = (
+            "Vendors spent the day converging on the same agent "
+            "interface, and the papers followed them. The pattern "
+            "favours teams that standardise early; the laggards inherit "
+            "somebody else's contract."
+        )
+        assert _synthesis_violations(good) == []
+
+    def test_word_band_enforced(self) -> None:
+        from src.summarise import _synthesis_violations
+        short = "Seven word sentence number one lands here. " * 2  # 14 words
+        assert any("minimum" in v for v in _synthesis_violations(short))
+        long = (
+            "This first sentence carries plenty of words to pass. "
+            + " ".join(["word"] * 45) + "."
+        )
+        assert any("maximum" in v for v in _synthesis_violations(long))
+
+    def test_sentence_band_enforced(self) -> None:
+        from src.summarise import _synthesis_violations
+        one_sentence = (
+            "A single sentence that runs on and on across the whole "
+            "paragraph with many words padding it out to reach the "
+            "twenty-eight word floor of the band today"
+        )
+        assert any(
+            "sentence" in v for v in _synthesis_violations(one_sentence)
+        )
+        four = (
+            "The first sentence carries the pattern with subject and "
+            "verb. Second sentence lands here with words. Third sentence "
+            "lands here with words. Fourth sentence overflows the band "
+            "with words."
+        )
+        assert any("maximum" in v and "sentence" in v
+                   for v in _synthesis_violations(four))
+
+    def test_aphoristic_opener_flagged(self) -> None:
+        from src.summarise import _synthesis_violations
+        aphorism = (
+            "Costs precede clarity. The rest of this paragraph carries "
+            "enough words to satisfy the twenty-eight word floor and the "
+            "sentence band of the ratified synthesis specification today."
+        )
+        assert any(
+            "aphoristic" in v for v in _synthesis_violations(aphorism)
+        )
+
+    def test_em_dash_flagged(self) -> None:
+        from src.summarise import _synthesis_violations
+        dashed = (
+            "The first sentence carries the pattern with a subject and a "
+            "verb -- and an em-dash. The second sentence pads this "
+            "paragraph out to the twenty-eight word floor exactly today."
+        )
+        assert any("em-dash" in v for v in _synthesis_violations(dashed))
 
 
 # ===========================================================================
@@ -3082,7 +3178,7 @@ from src.summarise import (  # noqa: E402
 _SUMMARISE_ARCHIVE_DAYS = ("2026-08-04", "2026-08-05")
 
 
-def _golden_v022_single_string_prompt(
+def _golden_v023_single_string_prompt(
     story,
     cluster,
     items,
@@ -3092,11 +3188,12 @@ def _golden_v022_single_string_prompt(
     voice_diversity_block="",
     prior_section_closes=None,
     prior_takes=None,
+    last_route_same_tier=None,
 ) -> str:
-    """VERBATIM copy of the v0.22 single-string ``_build_summary_prompt``
+    """VERBATIM copy of the v0.23 single-string ``_build_summary_prompt``
     body (prefix + variable joined) -- the golden reference for the
-    byte-equality gate. Updated from the v0.21.3 copy in the same PR as
-    the v0.22 take prompt change + SUMMARISE_PROMPT_VERSION bump (the
+    byte-equality gate. Updated from the v0.22 copy in the same PR as
+    the v0.23 take-v2 prompt change + SUMMARISE_PROMPT_VERSION bump (the
     prefix hash moved deliberately; the structural invariants -- concat
     equals the joined prompt, one stable prefix across calls -- are what
     this pins). If a deliberate prompt change lands in summarise.py, this
@@ -3237,21 +3334,28 @@ def _golden_v022_single_string_prompt(
     else:
         close_reminder_tail = ""
 
-    if section_override != "pulse" and story.tier == "currents":
-        take_cap_note = (
-            "hard cap 18 words; up to 22 ONLY when genuine two-sidedness "
-            "needs the room"
+    if section_override != "pulse" and last_route_same_tier:
+        route_note = (
+            " The previous take in this section used route "
+            + last_route_same_tier + "; do NOT use "
+            + last_route_same_tier + " for this take."
         )
     else:
-        take_cap_note = "HARD cap 18 words"
+        route_note = ""
     take_reminder_tail = (
-        "\n- THE TAKE (FINAL REMINDER): return \"take\" -- ONE declarative "
-        "sentence, 8-16 words (" + take_cap_note + "), stating the "
-        "publication's position per the TAKE SHAPE above. It must pass "
-        "the test \"It is now the case that [take]\". No question mark, "
-        "no leading imperative verb, no hedges (may / could / potentially "
-        "/ appears / arguably), no labels, and it must NOT restate a body "
-        "sentence -- it adds the position the body stopped short of.\n"
+        "\n- THE TAKE (FINAL REMINDER): return \"take\" -- the COLD OPEN, "
+        "read before the body: ONE declarative sentence, 12-18 words (aim "
+        "near 12; HARD caps 18 words AND 118 characters), reader-world "
+        "subject, finite verb by word six, the OLD STATE in view, and it "
+        "must carry the position the headline withheld. It must pass the "
+        "cold-open test (from headline + take alone: what changed, from "
+        "what, to what?). No This/That/It opener, no question mark, no "
+        "leading imperative verb, no hedges (may / could / potentially / "
+        "appears / arguably), no labels, at most one comma and one "
+        "semicolon, no \"and\" inside the first seven words, and it must "
+        "NOT restate a body sentence or the headline. Also return "
+        "\"take_route\": R1 (displacement), R2 (named-owner consequence), "
+        "or R3 (priced tradeoff)." + route_note + "\n"
     )
 
     prior_closes_segment = ""
@@ -3421,7 +3525,8 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
 {{
   "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
   "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
-  "take": "<ONE declarative sentence, 8-16 words, HARD 18-word cap: the publication's position>",
+  "take": "<ONE declarative cold-open sentence, 12-18 words, HARD caps 18 words / 118 chars: the publication's position>",
+  "take_route": "<one of: R1 | R2 | R3>",
   "signal": "<one of: act | try | read | watch | discuss>"
 }}
 """
@@ -3506,14 +3611,18 @@ class TestSummaryPromptCacheSplit:
                      "prior_section_closes": [
                          "Swap the loop this week; measure the flaw rate.",
                      ],
+                     # v0.23: feed-forward entries carry route labels, and
+                     # the previous same-tier route is named at the write
+                     # site as do-not-repeat.
                      "prior_takes": [
-                         "Close-variety is a caching property now, not a "
-                         "prompt nicety.",
-                     ]},
+                         "[R1] Close-variety is a caching property now, "
+                         "not a prompt nicety.",
+                     ],
+                     "last_route_same_tier": "R1"},
                     f"{day}/{story.cluster_id}/callback+excerpt+closes+takes",
                 )
 
-    def test_concatenated_parts_equal_v022_single_string_over_real_archive(
+    def test_concatenated_parts_equal_v023_single_string_over_real_archive(
         self,
     ) -> None:
         """prefix + variable must equal the single-string prompt BYTE FOR
@@ -3528,7 +3637,7 @@ class TestSummaryPromptCacheSplit:
         for day in _SUMMARISE_ARCHIVE_DAYS:
             for kwargs, label in self._cases_for_day(day):
                 prefix, variable = _build_summary_prompt(**kwargs)
-                golden = _golden_v022_single_string_prompt(**kwargs)
+                golden = _golden_v023_single_string_prompt(**kwargs)
                 assert prefix + variable == golden, f"byte drift for {label}"
                 checked += 1
                 if kwargs.get("section_override") == "pulse":
@@ -3568,9 +3677,9 @@ class TestSummaryPromptCacheSplit:
         assert the_prefix == _SUMMARY_PROMPT_STATIC_PREFIX
         assert the_prefix.endswith(_TAKE_BLOCK)
         assert _FINANCE_LENS_BLOCK in the_prefix
-        # Verified 2026-08-08 (v0.22): the prefix is 33,218 bytes (~8.9k
-        # billed tokens; was 30,736 at v0.21.3 -- the prefix HASH moved
-        # with the deliberate take-block addition) -- far above the
+        # Verified 2026-08-09 (v0.23): the prefix is 37,315 bytes (~10k
+        # billed tokens; was 33,218 at v0.22 -- the prefix HASH moved
+        # with the deliberate take-v2 rewrite) -- far above the
         # 1,024/4,096-token cache minimums. Guard a floor well above the
         # minimum so a block shrink can't silently drop the prefix below
         # cacheability.
@@ -3719,31 +3828,111 @@ class TestTakeViolations:
         assert _take_violations(self._draft(None)) != []
         assert _take_violations(self._draft("   ")) != []
 
-    def test_word_cap_18_default(self) -> None:
+    def test_word_cap_18_universal(self) -> None:
+        """v0.23: the 18-word cap is universal -- the Currents 22-word
+        exception is retired (and the constant with it)."""
+        from src import summarise as summarise_mod
         from src.summarise import _take_violations
         eighteen = " ".join(["word"] * 18)
         nineteen = " ".join(["word"] * 19)
         assert not any(
-            "HARD cap" in v for v in _take_violations(self._draft(eighteen))
+            "cap is" in v for v in _take_violations(self._draft(eighteen))
         )
         assert any(
-            "HARD cap" in v or "cap is 18" in v
+            "cap is 18" in v
             for v in _take_violations(self._draft(nineteen))
         )
+        assert not hasattr(summarise_mod, "_TAKE_MAX_WORDS_CURRENTS")
 
-    def test_currents_cap_allows_22_not_23(self) -> None:
-        from src.summarise import _TAKE_MAX_WORDS_CURRENTS, _take_violations
-        twenty_two = " ".join(["word"] * 22)
-        twenty_three = " ".join(["word"] * 23)
+    def test_char_ceiling_118(self) -> None:
+        """Designer adjudication: two rendered lines is the ceiling --
+        118 characters, checked independently of the word cap."""
+        from src.summarise import _take_violations
+        # 17 words but very long ones: over 118 chars, under the word cap.
+        wide = " ".join(["substantially"] * 9)  # 9*13 + 8 = 125 chars
+        assert len(wide.split()) <= 18 and len(wide) > 118
+        assert any(
+            "118" in v for v in _take_violations(self._draft(wide))
+        )
+        narrow = "Agent budgets now clear at two dollars against six on the old pricing."
         assert not any(
-            "cap" in v
-            for v in _take_violations(
-                self._draft(twenty_two), _TAKE_MAX_WORDS_CURRENTS)
+            "118" in v for v in _take_violations(self._draft(narrow))
+        )
+
+    def test_deixis_opener_flagged(self) -> None:
+        """Cold-open contract: This/That/It/These/Those as first word
+        point at body prose the reader has not read yet."""
+        from src.summarise import _take_violations
+        for opener in ("This", "That", "It", "These", "Those", "this"):
+            d = self._draft(
+                f"{opener} moves the safety baseline for regulated banks "
+                "into running code today."
+            )
+            assert any(
+                "deixis" in v for v in _take_violations(d)
+            ), f"deixis opener {opener!r} not caught"
+        # A mid-sentence "this" is fine; only the opener is checked.
+        ok = self._draft(
+            "Regulated banks now get this year's safety baseline in "
+            "running code, not policy prose."
+        )
+        assert not any("deixis" in v for v in _take_violations(ok))
+
+    def test_comma_and_semicolon_proxies(self) -> None:
+        from src.summarise import _take_violations
+        two_commas = self._draft(
+            "Agents, evals, pipelines now share one contract across the "
+            "field's vendors and their clouds."
+        )
+        assert any("commas" in v for v in _take_violations(two_commas))
+        two_semis = self._draft(
+            "Agents now share one contract; vendors follow; clouds "
+            "inherit the interface across regions."
+        )
+        assert any("semicolons" in v for v in _take_violations(two_semis))
+        one_each = self._draft(
+            "Agent contracts now converge on one interface, and clouds "
+            "inherit it; vendors follow."
+        )
+        assert not any(
+            "commas" in v or "semicolons" in v
+            for v in _take_violations(one_each)
+        )
+
+    def test_early_coordinating_and_flagged(self) -> None:
+        """No "and" inside the first seven words (coordinated subject
+        stalls the finite verb); word eight onward is fine."""
+        from src.summarise import _take_violations
+        early = self._draft(
+            "Vendors and labs now publish incident logs the field can "
+            "audit directly this quarter."
+        )
+        assert any('"and"' in v for v in _take_violations(early))
+        late = self._draft(
+            "Destructive agent incidents are now a documented class, and "
+            "one thread is one data point."
+        )
+        assert not any('"and"' in v for v in _take_violations(late))
+
+    def test_headline_restatement_flagged(self) -> None:
+        """Designer adjudication: headline and take are co-read; a take
+        derivable from the headline fails (>= 60% content overlap)."""
+        from src.summarise import _SummaryDraft, _take_violations
+        d = _SummaryDraft(
+            headline="Local inference reaches parity with hosted APIs on price",
+            summary=(
+                "The shift is real and the mechanism is public. The repo "
+                "ships benchmarks on consumer hardware. Clone it and rerun "
+                "the latency suite on your own stack this week."
+            ),
+            signal="try",
+            take=(
+                "Local inference now reaches price parity with hosted "
+                "APIs for most teams."
+            ),
         )
         assert any(
-            "cap is 22" in v
-            for v in _take_violations(
-                self._draft(twenty_three), _TAKE_MAX_WORDS_CURRENTS)
+            "headline" in v and "co-read" in v for v in _take_violations(d)
         )
 
     def test_question_mark_flagged(self) -> None:
@@ -4006,14 +4195,70 @@ class TestTakeFeedForward:
         assert "TAKES ALREADY WRITTEN IN THIS ISSUE" in prompt
         assert "TAKE SHAPE (PULSE)" in prompt
 
-    def test_currents_reminder_carries_22_word_exception(self) -> None:
+    def test_take_cap_is_universal_no_currents_exception(self) -> None:
+        """v0.23: every tier's reminder carries the same 18-word / 118-
+        char caps; the v0.22 Currents 22-word carve-out is gone."""
+        for tier in ("big_picture", "hands_on", "currents"):
+            story, cluster, item = (
+                TestPriorClosesInPrompt._make_story_cluster_item(tier)
+            )
+            prompt = "".join(
+                _build_summary_prompt(story, cluster, [item], callbacks=[])
+            )
+            assert "HARD caps 18 words AND 118 characters" in prompt, tier
+            assert "up to 22" not in prompt, tier
+
+    def test_route_note_names_previous_same_tier_route(self) -> None:
+        """v0.23 route diversity: when the previous same-tier take's
+        route is known, the write-site reminder names it as
+        do-not-repeat; absent, no note dangles."""
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        )
+        with_route = "".join(_build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            last_route_same_tier="R2",
+        ))
+        assert (
+            "The previous take in this section used route R2; do NOT "
+            "use R2" in with_route
+        )
+        without = "".join(
+            _build_summary_prompt(story, cluster, [item], callbacks=[])
+        )
+        assert "previous take in this section used route" not in without
+
+    def test_pulse_override_suppresses_route_note(self) -> None:
+        """The Pulse is not consecutive with any section -- the route
+        note must not appear under the override even when a route is
+        passed."""
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("big_picture")
+        )
+        prompt = "".join(_build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            section_override="pulse", last_route_same_tier="R3",
+        ))
+        assert "previous take in this section used route" not in prompt
+
+    def test_prior_takes_render_with_route_labels(self) -> None:
+        """Feed-forward entries carry the route label the loop attached;
+        the block header teaches the ~40% rule."""
         story, cluster, item = (
             TestPriorClosesInPrompt._make_story_cluster_item("currents")
         )
-        prompt = "".join(
-            _build_summary_prompt(story, cluster, [item], callbacks=[])
+        prompt = "".join(_build_summary_prompt(
+            story, cluster, [item], callbacks=[],
+            prior_takes=[
+                "[R1] Agent output is a pipeline contract now, not a "
+                "console log.",
+            ],
+        ))
+        assert (
+            '"[R1] Agent output is a pipeline contract now, not a '
+            'console log."' in prompt
         )
-        assert "up to 22 ONLY when genuine two-sidedness" in prompt
+        assert "four takes in ten" in prompt
 
     def test_summarise_loop_threads_takes_issue_wide(self, monkeypatch,
                                                      tmp_path) -> None:
@@ -4072,7 +4317,11 @@ class TestTakeFeedForward:
                 takes_so_far.append(block.take)
             blocks.append(block)
 
-        assert "TAKES ALREADY WRITTEN" not in seen_prompts[0]
+        # The static prefix teaches the block by name ("The TAKES ALREADY
+        # WRITTEN block (when present)...") -- assert on the injected
+        # block's HEADER, which only appears when entries exist.
+        assert "TAKES ALREADY WRITTEN IN THIS ISSUE" not in seen_prompts[0]
+        assert "TAKES ALREADY WRITTEN IN THIS ISSUE" in seen_prompts[1]
         assert (
             '"Agent plans are audit artefacts now, not scratch space."'
             in seen_prompts[1]
@@ -4151,3 +4400,665 @@ class TestTakeVoiceDiversityLookback:
         assert len(recent) == 1
         assert recent[0].first_story_takes == {}
         assert " take: " not in _render_voice_diversity_block(recent, [])
+
+
+# ===========================================================================
+# v0.23 (2026-08-09): take-route threading, section synthesis feed-forward,
+# and the digest ("The 30-second read").
+# ===========================================================================
+
+class TestTakeRouteThreading:
+    """The R1/R2/R3 route label travels: parsed from the LLM payload,
+    recorded via the route_sink out-param, and (at the loop level) turned
+    into labelled feed-forward entries + the last-route reminder."""
+
+    def test_route_parsed_and_normalised(self) -> None:
+        from src.summarise import _parse_summary_json
+        draft = _parse_summary_json(
+            '{"headline": "H", "summary": "S", '
+            '"take": "The position lands here.", "take_route": " r2 "}'
+        )
+        assert draft is not None and draft.take_route == "R2"
+        garbage = _parse_summary_json(
+            '{"headline": "H", "summary": "S", '
+            '"take": "The position lands here.", "take_route": "R9"}'
+        )
+        assert garbage is not None and garbage.take_route is None
+        absent = _parse_summary_json('{"headline": "H", "summary": "S"}')
+        assert absent is not None and absent.take_route is None
+
+    def test_summarise_one_records_route_in_sink(self, monkeypatch) -> None:
+        from src import summarise as summarise_mod
+        from src.summarise import _SummaryDraft
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        )
+
+        def fake_call_and_parse(prompt, temperature, cluster_id, **_kw):
+            return _SummaryDraft(
+                headline="A CUDA-free kernel cuts inference cost in half",
+                summary=(
+                    "The shift is real and the mechanism is public. The "
+                    "kernel drops CUDA entirely and the repo ships "
+                    "benchmarks on consumer hardware. Clone the repo and "
+                    "rerun the latency suite on your own stack this week."
+                ),
+                signal="try",
+                take=(
+                    "Consumer hardware is a serious inference budget "
+                    "line now, not a hobbyist corner."
+                ),
+                take_route="R2",
+            )
+
+        monkeypatch.setattr(
+            summarise_mod, "_call_and_parse_summary", fake_call_and_parse,
+        )
+        monkeypatch.setattr(
+            summarise_mod, "_fetch_source_excerpt", lambda url: "",
+        )
+        sink: dict[str, str] = {}
+        block = summarise_mod._summarise_one(
+            story=story, cluster=cluster, items=[item], callbacks=[],
+            route_sink=sink,
+        )
+        assert block is not None
+        assert sink == {story.cluster_id: "R2"}
+
+    def test_no_route_leaves_sink_untouched(self, monkeypatch) -> None:
+        from src import summarise as summarise_mod
+        from src.summarise import _SummaryDraft
+        story, cluster, item = (
+            TestPriorClosesInPrompt._make_story_cluster_item("hands_on")
+        )
+
+        def fake_call_and_parse(prompt, temperature, cluster_id, **_kw):
+            return _SummaryDraft(
+                headline="A CUDA-free kernel cuts inference cost in half",
+                summary=" ".join(["word"] * 40),
+                signal="try",
+                take="The position lands here without a route label.",
+                take_route=None,
+            )
+
+        monkeypatch.setattr(
+            summarise_mod, "_call_and_parse_summary", fake_call_and_parse,
+        )
+        monkeypatch.setattr(
+            summarise_mod, "_fetch_source_excerpt", lambda url: "",
+        )
+        sink: dict[str, str] = {}
+        block = summarise_mod._summarise_one(
+            story=story, cluster=cluster, items=[item], callbacks=[],
+            route_sink=sink,
+        )
+        assert block is not None
+        assert sink == {}
+
+
+class TestTakeRoutePersistence:
+    """Wave three (SummaryBlock v5): the route label in the sink is
+    STAMPED onto the blocks before the Issue is written -- a generation
+    judgment that must be stored or lost (the wave-two ruling: derived
+    tags live at render; routes persist)."""
+
+    def _section(self, *blocks: SummaryBlock) -> IssueSection:
+        return IssueSection(name="hands_on", stories=list(blocks))
+
+    def _block(self, story_id: str, take: str | None) -> SummaryBlock:
+        return SummaryBlock(
+            story_id=story_id, headline="h",
+            summary="A body long enough to satisfy the structural caps.",
+            take=take,
+            source_urls=["https://example.com/x"],  # type: ignore[list-item]
+        )
+
+    def test_routes_stamped_onto_take_bearing_blocks(self) -> None:
+        from src.summarise import _persist_take_routes
+        a = self._block("c_0123456789abcdef", "The position lands here.")
+        b = self._block("c_fedcba9876543210", "Another position lands.")
+        _persist_take_routes(
+            [self._section(a, b)],
+            {"c_0123456789abcdef": "R1", "c_fedcba9876543210": "R3"},
+        )
+        assert a.take_route == "R1"
+        assert b.take_route == "R3"
+
+    def test_no_take_means_no_orphan_label(self) -> None:
+        """A block whose take was cut (collision ladder) must not carry a
+        route label for text that is not there."""
+        from src.summarise import _persist_take_routes
+        block = self._block("c_0123456789abcdef", None)
+        _persist_take_routes(
+            [self._section(block)], {"c_0123456789abcdef": "R1"},
+        )
+        assert block.take_route is None
+
+    def test_unknown_or_missing_route_degrades_to_none(self) -> None:
+        from src.summarise import _persist_take_routes
+        labelled = self._block("c_0123456789abcdef", "Position one lands.")
+        unlabelled = self._block("c_fedcba9876543210", "Position two lands.")
+        _persist_take_routes(
+            [self._section(labelled, unlabelled)],
+            {"c_0123456789abcdef": "R9"},  # out-of-vocabulary sink value
+        )
+        assert labelled.take_route is None
+        assert unlabelled.take_route is None
+
+
+class TestSynthesisFeedForward:
+    """No two sections may share a thesis -- prior syntheses are injected
+    into subsequent synthesis prompts."""
+
+    def test_prior_syntheses_reach_the_prompt(self, monkeypatch) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(
+            name="hands_on",
+            stories=[
+                SummaryBlock(
+                    story_id="c_0123456789abcdef", headline="h1",
+                    summary="A body that satisfies the validator threshold "
+                            "for word count and lands cleanly somewhere.",
+                    source_urls=["https://example.com/x"],  # type: ignore[list-item]
+                ),
+                SummaryBlock(
+                    story_id="c_fedcba9876543210", headline="h2",
+                    summary="A second body that satisfies the validator "
+                            "threshold for word count and lands cleanly.",
+                    source_urls=["https://example.com/y"],  # type: ignore[list-item]
+                ),
+            ],
+        )
+        captured: dict[str, str] = {}
+
+        def fake_llm_call(prompt, **_kwargs):
+            captured["prompt"] = prompt
+            return (
+                '{"synthesis": "Tooling releases clustered around '
+                "evaluation harnesses rather than models this time. The "
+                "practical move is in the scaffolding this week, and the "
+                'weights can wait for the harness results."}'
+            )
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm_call)
+        summarise_mod._populate_section_synthesis(
+            section, prior_syntheses=[
+                "Governance stories spent the day moving into running code.",
+            ],
+        )
+        assert "SYNTHESES ALREADY WRITTEN" in captured["prompt"]
+        assert (
+            "Governance stories spent the day moving into running code."
+            in captured["prompt"]
+        )
+
+
+def _digest_fixture_sections():
+    """A pulse + three sections shaped for digest tests: BP and HO
+    eligible (2 stories each), Currents empty (ineligible)."""
+    def blk(sid, headline, take=None):
+        return SummaryBlock(
+            story_id=sid, headline=headline,
+            summary=" ".join(["word"] * 40),
+            source_urls=["https://example.com/" + sid],  # type: ignore[list-item]
+            take=take,
+        )
+
+    pulse = IssueSection(name="pulse", stories=[blk(
+        "c_aaaaaaaaaaaa", "Pulse headline",
+        take=("Compliance teams can now cite the regulator's own text "
+              "instead of somebody's scrape of it."),
+    )])
+    bp = IssueSection(
+        name="big_picture",
+        stories=[blk("c_bbbbbbbbbbbb", "BP one"),
+                 blk("c_cccccccccccc", "BP two")],
+        synthesis=(
+            "Governance stories spent the day moving from policy papers "
+            "into running code. The pattern rewards firms that already "
+            "treat audit as an engineering surface."
+        ),
+    )
+    ho = IssueSection(
+        name="hands_on",
+        stories=[blk("c_dddddddddddd", "HO one"),
+                 blk("c_eeeeeeeeeeee", "HO two")],
+        synthesis=(
+            "Tooling releases clustered around evaluation harnesses "
+            "rather than models. The practical move is in the "
+            "scaffolding this week, not the weights."
+        ),
+    )
+    cur = IssueSection(name="currents", stories=[])
+    return pulse, bp, ho, cur
+
+
+_GOOD_DIGEST_PAYLOAD = {
+    "bullets": [
+        {"section": "pulse",
+         "lead": "Regulator text, cited direct.",
+         "sentence": ("The UK regulator published machine-readable rules "
+                      "that map every obligation to a section of primary "
+                      "legislation."),
+         "story_ids": ["c_aaaaaaaaaaaa"]},
+        {"section": "big_picture",
+         "lead": "Runtime compliance scoring arrives.",
+         "sentence": ("Two banks shipped runtime compliance scoring into "
+                      "production, replacing the annual model audit with "
+                      "continuous checks."),
+         "story_ids": ["c_bbbbbbbbbbbb"]},
+        {"section": "hands_on",
+         "lead": "Guardrail suites, timed properly.",
+         "sentence": ("A new open harness runs guardrail suites against "
+                      "any agent stack in fourteen minutes on one "
+                      "machine."),
+         "story_ids": ["c_dddddddddddd"]},
+    ]
+}
+
+
+class TestDigestGeneration:
+    """The issue-level digest call: deterministic scaffold, LLM prose,
+    retry-then-None degradation."""
+
+    def test_happy_path_produces_validated_bullets(self, monkeypatch) -> None:
+        import json as _json
+        from src import summarise as summarise_mod
+        pulse, bp, ho, cur = _digest_fixture_sections()
+        monkeypatch.setattr(
+            summarise_mod, "_llm_call",
+            lambda *a, **k: _json.dumps(_GOOD_DIGEST_PAYLOAD),
+        )
+        digest = summarise_mod._generate_digest(pulse, [bp, ho, cur])
+        assert digest is not None and len(digest) == 3
+        assert digest[0].story_ids[0] == "c_aaaaaaaaaaaa"
+        assert digest[0].lead.endswith(".")
+
+    def test_prompt_carries_takes_syntheses_ids_and_antipatterns(
+        self, monkeypatch,
+    ) -> None:
+        import json as _json
+        from src import summarise as summarise_mod
+        pulse, bp, ho, cur = _digest_fixture_sections()
+        captured: dict[str, str] = {}
+
+        def fake_llm(prompt, **_kw):
+            captured["prompt"] = prompt
+            return _json.dumps(_GOOD_DIGEST_PAYLOAD)
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm)
+        digest = summarise_mod._generate_digest(
+            pulse, [bp, ho, cur], anti_patterns=["X outruns Y"],
+        )
+        assert digest is not None
+        prompt = captured["prompt"]
+        # The takes are named as do-not-paraphrase targets.
+        assert "Compliance teams can now cite the regulator's" in prompt
+        # The syntheses are named as do-not-echo targets.
+        assert "Governance stories spent the day" in prompt
+        # The exact id lists the model may cite.
+        assert "c_bbbbbbbbbbbb" in prompt and "c_dddddddddddd" in prompt
+        # The editor's anti-pattern catalogue applies in full.
+        assert "X outruns Y" in prompt
+        # Story-anchored teaching (designer adjudication).
+        assert "STORY-ANCHORED" in prompt
+
+    def test_floor_not_met_returns_none_without_llm_call(
+        self, monkeypatch,
+    ) -> None:
+        """Pulse + one eligible section = 2 bullets < 3 -- no digest, no
+        tokens spent (never pad)."""
+        from src import summarise as summarise_mod
+        pulse, bp, _ho, cur = _digest_fixture_sections()
+        solo_ho = IssueSection(name="hands_on", stories=[
+            SummaryBlock(
+                story_id="c_dddddddddddd", headline="solo",
+                summary=" ".join(["word"] * 40),
+                source_urls=["https://example.com/z"],  # type: ignore[list-item]
+            ),
+        ])
+
+        def fail_llm(*_a, **_k):  # pragma: no cover
+            raise AssertionError("digest floor case must not call the LLM")
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fail_llm)
+        assert summarise_mod._generate_digest(
+            pulse, [bp, solo_ho, cur],
+        ) is None
+
+    def test_persistent_violations_degrade_to_none(self, monkeypatch) -> None:
+        """Both attempts off-spec -> None (no skim section), never a
+        partial digest."""
+        import json as _json
+        from src import summarise as summarise_mod
+        pulse, bp, ho, cur = _digest_fixture_sections()
+        bad = _json.loads(_json.dumps(_GOOD_DIGEST_PAYLOAD))
+        bad["bullets"][0]["lead"] = "Why does this matter?"  # question lead
+        with _patch.object(
+            summarise_mod, "_llm_call",
+            side_effect=[_json.dumps(bad), _json.dumps(bad)],
+        ) as mock_llm:
+            digest = summarise_mod._generate_digest(pulse, [bp, ho, cur])
+        assert digest is None
+        assert mock_llm.call_count == 2
+        # The corrective second call names the violation.
+        assert "CORRECTION" in mock_llm.call_args_list[1].args[0]
+
+
+class TestDigestViolations:
+    """Each digest rule fails against the defect it guards."""
+
+    @staticmethod
+    def _ctx():
+        pulse, bp, ho, cur = _digest_fixture_sections()
+        return dict(
+            pulse_id="c_aaaaaaaaaaaa",
+            eligible_names=["big_picture", "hands_on"],
+            allowed_ids={
+                "pulse": ["c_aaaaaaaaaaaa"],
+                "big_picture": ["c_bbbbbbbbbbbb", "c_cccccccccccc"],
+                "hands_on": ["c_dddddddddddd", "c_eeeeeeeeeeee"],
+            },
+            takes=[pulse.stories[0].take],
+            syntheses={"big_picture": bp.synthesis, "hands_on": ho.synthesis,
+                       "currents": None},
+        )
+
+    @staticmethod
+    def _bullets():
+        import copy
+        return copy.deepcopy(_GOOD_DIGEST_PAYLOAD["bullets"])
+
+    def test_good_payload_passes(self) -> None:
+        from src.summarise import _digest_violations
+        assert _digest_violations(self._bullets(), **self._ctx()) == []
+
+    def test_bullet_one_must_be_pulse_with_primary_id(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[0]["story_ids"] = ["c_bbbbbbbbbbbb"]
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("primary story_id must be the Pulse" in v for v in out)
+
+    def test_section_order_enforced(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[1], bullets[2] = bullets[2], bullets[1]
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("layout order" in v for v in out)
+
+    def test_lead_band_full_stop_and_question(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[1]["lead"] = "Compliance"  # 1 word, no stop
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("full stop" in v for v in out)
+        assert any("3-6" in v for v in out)
+        bullets = self._bullets()
+        bullets[1]["lead"] = "Is audit continuous now?"
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("question" in v for v in out)
+
+    def test_sentence_band_and_semicolon_list(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[2]["sentence"] = " ".join(["word"] * 23) + "."
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("cap 22" in v for v in out)
+        # 24 words IS allowed as a semicolon-list of <= 3 clauses.
+        bullets = self._bullets()
+        bullets[2]["sentence"] = (
+            " ".join(["word"] * 8) + "; " + " ".join(["word"] * 8)
+            + "; " + " ".join(["word"] * 8) + "."
+        )
+        out = _digest_violations(bullets, **self._ctx())
+        assert not any("cap" in v for v in out)
+
+    def test_one_sentence_rule(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[1]["sentence"] = (
+            "Two banks shipped runtime scoring into production this "
+            "week. Continuous checks replaced the annual audit for both."
+        )
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("ONE sentence" in v for v in out)
+
+    def test_total_word_budget_hard(self) -> None:
+        """The 100-word budget binds at 4-5 bullets (3 bullets at the
+        per-bullet caps cannot exceed it: 3 x 28 = 84). Use a legal
+        one-split 4-bullet shape at max per-bullet size: 4 x 28 = 112."""
+        from src.summarise import _digest_violations
+        base = self._bullets()
+        split = dict(base[1])
+        split["story_ids"] = ["c_cccccccccccc"]
+        bullets = [base[0], base[1], split, base[2]]
+        for i, b in enumerate(bullets):
+            b["sentence"] = " ".join(["word"] * 21) + " end."
+            b["lead"] = f"Six words in lead number {'abcde'[i]}."
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("HARD budget 100" in v for v in out)
+
+    def test_sentence_paraphrasing_a_take_flagged(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[0]["sentence"] = (
+            "Compliance teams can now cite the regulator's own text "
+            "instead of somebody's scrape today."
+        )
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("paraphrases a take" in v for v in out)
+
+    def test_lead_echoing_synthesis_flagged(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[1]["lead"] = "Audit, an engineering surface."
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("echoes" in v or "synthesis" in v for v in out)
+
+    def test_lead_sharing_trigram_with_own_synthesis_first_sentence(
+        self,
+    ) -> None:
+        """The observed collision class: a lead verbatim-overlapping its
+        section synthesis's first sentence (story-anchored vs
+        section-anchored, designer adjudication)."""
+        from src.summarise import _digest_violations
+        ctx = self._ctx()
+        ctx["syntheses"]["big_picture"] = (
+            "Ship the plumbing first, then argue about the interface. "
+            "The rest of the section follows that order."
+        )
+        bullets = self._bullets()
+        bullets[1]["lead"] = "Ship the plumbing first."
+        out = _digest_violations(bullets, **ctx)
+        assert any("3-word run" in v for v in out)
+
+    def test_lead_opening_on_synthesis_first_word_flagged(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        # big_picture synthesis opens "Governance stories spent..."
+        bullets[1]["lead"] = "Governance scoring arrives now."
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("same word" in v for v in out)
+
+    def test_story_ids_must_come_from_section_list(self) -> None:
+        from src.summarise import _digest_violations
+        bullets = self._bullets()
+        bullets[2]["story_ids"] = ["c_badbadbadbad"]
+        out = _digest_violations(bullets, **self._ctx())
+        assert any("id list" in v for v in out)
+
+    def test_one_split_allowed_two_rejected(self) -> None:
+        from src.summarise import _digest_violations
+        base = self._bullets()
+        split = dict(base[1])
+        split["lead"] = "Model audits go continuous."
+        split["sentence"] = (
+            "A second bank published its continuous-audit playbook with "
+            "timings for every model class it runs."
+        )
+        split["story_ids"] = ["c_cccccccccccc"]
+        one_split = [base[0], base[1], split, base[2]]
+        out = _digest_violations(one_split, **self._ctx())
+        assert not any("layout order" in v or "split" in v for v in out)
+
+
+class TestDigestVerifyBar:
+    """The post-verify digest bar (deterministic helper; wiring into
+    verify.py is the wave-three task). A flagged claim appearing in a
+    cited bullet is a violation; clean or unverified issues return []."""
+
+    @staticmethod
+    def _issue(with_flagged_claim: bool):
+        from src.models import (
+            ClaimVerdict, DigestBullet, Issue, StoryVerification,
+        )
+        pulse, bp, ho, cur = _digest_fixture_sections()
+        digest = [
+            DigestBullet(
+                lead="Regulator text, cited direct.",
+                sentence=(
+                    "The UK regulator published machine-readable rules "
+                    "that map every obligation to primary legislation "
+                    "sections."
+                ),
+                story_ids=["c_aaaaaaaaaaaa"],
+            ),
+            DigestBullet(
+                lead="Runtime compliance scoring arrives.",
+                sentence=(
+                    "Two banks shipped runtime compliance scoring into "
+                    "production, replacing the annual model audit with "
+                    "continuous checks."
+                ),
+                story_ids=["c_bbbbbbbbbbbb"],
+            ),
+            DigestBullet(
+                lead="Guardrail suites, timed properly.",
+                sentence=(
+                    "A new open harness runs guardrail suites against "
+                    "any agent stack in fourteen minutes flat."
+                ),
+                story_ids=["c_dddddddddddd"],
+            ),
+        ]
+        if with_flagged_claim:
+            bp.stories[0].verification = StoryVerification(
+                story_id="c_bbbbbbbbbbbb",
+                prompt_version="v1.0",
+                claims=[ClaimVerdict(
+                    claim=(
+                        "Two banks shipped runtime compliance scoring "
+                        "into production"
+                    ),
+                    verdict="unverifiable",
+                    location="body",
+                )],
+                has_contradiction=False,
+                has_unsupported=False,
+                headline_flagged=False,
+            )
+        from tests.conftest import FIXED_DATE, FIXED_NOW
+        return Issue(
+            date=FIXED_DATE,
+            pulse=pulse,
+            sections=[bp, ho, cur],
+            digest=digest,
+            generated_at=FIXED_NOW,
+            prompt_versions={"rank": "v1", "summarise": "v1"},
+        )
+
+    def test_unverified_issue_returns_empty(self) -> None:
+        from src.summarise import digest_verify_violations
+        assert digest_verify_violations(self._issue(False)) == []
+
+    def test_flagged_claim_in_cited_bullet_fires(self) -> None:
+        from src.summarise import digest_verify_violations
+        out = digest_verify_violations(self._issue(True))
+        assert len(out) == 1
+        assert "unverifiable" in out[0] and "bullet 2" in out[0]
+
+    def test_no_digest_returns_empty(self) -> None:
+        from src.summarise import digest_verify_violations
+        issue = self._issue(True).model_copy(update={"digest": None})
+        assert digest_verify_violations(issue) == []
+
+
+class TestSynthesisMarkupHandling:
+    """Observed on the 2026-08-09 gate run: the model wrapped a synthesis
+    in "<p><em>...</em></p>" because the field renders italic. Wrapper
+    tags are stripped deterministically; anything else is a violation
+    (retry material)."""
+
+    def test_wrapper_tags_stripped_at_parse(self, monkeypatch) -> None:
+        from src import summarise as summarise_mod
+        section = IssueSection(
+            name="big_picture",
+            stories=[
+                SummaryBlock(
+                    story_id="c_0123456789abcdef", headline="h1",
+                    summary="A body that satisfies the validator threshold "
+                            "for word count and lands cleanly somewhere.",
+                    source_urls=["https://example.com/x"],  # type: ignore[list-item]
+                ),
+                SummaryBlock(
+                    story_id="c_fedcba9876543210", headline="h2",
+                    summary="A second body that satisfies the validator "
+                            "threshold for word count and lands cleanly.",
+                    source_urls=["https://example.com/y"],  # type: ignore[list-item]
+                ),
+            ],
+        )
+
+        def fake_llm_call(prompt, **_kwargs):
+            return (
+                '{"synthesis": "<p><em>Vendors spent the day converging '
+                "on the same agent interface, and the papers followed "
+                "them. The pattern favours teams that standardise early; "
+                "the laggards inherit somebody else's "
+                'contract.</em></p>"}'
+            )
+
+        monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm_call)
+        summarise_mod._populate_section_synthesis(section)
+        assert section.synthesis is not None
+        assert "<" not in section.synthesis
+        assert section.synthesis.startswith("Vendors spent the day")
+
+    def test_residual_markup_is_a_violation(self) -> None:
+        from src.summarise import _synthesis_violations
+        marked = (
+            "Vendors spent the day converging on the same <a href='x'>"
+            "agent interface</a>, and the papers followed them. The "
+            "pattern favours teams that standardise early; the laggards "
+            "inherit somebody else's contract."
+        )
+        assert any(
+            "markup" in v for v in _synthesis_violations(marked)
+        )
+
+    def test_digest_lead_wrapper_stripped_and_residual_flagged(self) -> None:
+        from src.summarise import _digest_violations, _parse_digest_json
+        import json as _json
+        raw = _json.dumps({"bullets": [
+            {"section": "pulse",
+             "lead": "<strong>Regulator text, cited direct.</strong>",
+             "sentence": "The UK regulator published machine-readable "
+                         "rules that map every obligation to a section of "
+                         "primary legislation.",
+             "story_ids": ["c_aaaaaaaaaaaa"]},
+        ]})
+        bullets = _parse_digest_json(raw)
+        assert bullets is not None
+        assert bullets[0]["lead"] == "Regulator text, cited direct."
+        # Residual (non-wrapper) markup in a bullet is a violation.
+        marked = [dict(b) for b in _GOOD_DIGEST_PAYLOAD["bullets"]]
+        marked[0] = dict(marked[0])
+        marked[0]["sentence"] = (
+            "The UK regulator published <a>machine-readable rules</a> "
+            "that map every obligation to primary legislation sections."
+        )
+        out = _digest_violations(
+            marked, **TestDigestViolations._ctx()
+        )
+        assert any("markup" in v for v in out)

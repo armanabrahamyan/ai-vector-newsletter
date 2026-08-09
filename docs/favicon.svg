@@ -1,5 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#ffffff"/>
-  <path d="M 16 6 L 32 14 L 48 6 L 32 10 Z" fill="#e6452f"/>
-  <path d="M 14 22 L 32 56 L 50 22 L 42 22 L 32 44 L 22 22 Z" fill="#1a1a1a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!--
+    Derived from docs/brand/aiv-mark.svg. Never hand-edit the geometry here;
+    change the canonical mark and copy the path across.
+
+    Two deliberate differences from the canonical file, both from the brand
+    designer's integration spec (section 4):
+      * No background rect. The ground is transparent so the browser's own tab
+        colour shows through in both the light and dark tab strips; the old
+        favicon painted an opaque #ffffff square, a cold white against the warm
+        paper the rest of the identity uses.
+      * An explicit fill instead of currentColor, plus a colour-scheme query.
+        An SVG favicon renders as its own document, so currentColor has nothing
+        to inherit from and would resolve to the initial black.
+  -->
+  <style>path{fill:#3b352d}
+    @media (prefers-color-scheme:dark){path{fill:#f4f0e7}}</style>
+  <path fill-rule="evenodd" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/>
 </svg>

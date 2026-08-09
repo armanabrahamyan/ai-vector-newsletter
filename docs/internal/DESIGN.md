@@ -396,13 +396,14 @@ SectionName = Literal[
 
 
 class SummaryBlock(BaseModel):
-    schema_version: int = 4                                                 # v2 renames cross_time_ref -> prior_coverage_ref (alias retained); v3 (2026-06-29) adds optional `verification`; v4 (2026-08-08) adds optional `take`
+    schema_version: int = 5                                                 # v2 renames cross_time_ref -> prior_coverage_ref (alias retained); v3 (2026-06-29) adds optional `verification`; v4 (2026-08-08) adds optional `take`; v5 (2026-08-09) adds optional `take_route`
     # NOTE: this doc snippet omits the drop of direction_note/finance_angle for brevity; src/models.py is authoritative.
     story_id: Annotated[str, Field(pattern=r"^c_[0-9a-f]{12,}$")]           # = Cluster.cluster_id (the canonical handle for a story)
     headline: Annotated[str, Field(min_length=1, max_length=200)]           # editorial headline (LLM-written, may differ from canonical_title)
     summary: Annotated[str, Field(min_length=1, max_length=1200)]           # the story body — link out, never reproduce full article
     take: Optional[Annotated[str, Field(min_length=1, max_length=200)]] = None
                                                                             # v4 (2026-08-08): the publication's position line — one declarative sentence, rendered last in the story unit, italic. Stripped; non-empty if present. None = pre-take archive OR cut by the body-cap collision ladder. See "The take" below.
+    take_route: Optional[Literal["R1", "R2", "R3"]] = None                  # v5 (2026-08-09): the take's generation route label (R1 displacement / R2 named-owner consequence / R3 reframe). A GENERATION judgment (wave-two ruling: tags derive at render; routes persist). None = pre-route archive, no take, or the generation response omitted the label.
     direction_note: Annotated[str, Field(max_length=400)] = ""              # "where this points" — required for pulse/where_heading; "" allowed elsewhere
     finance_angle: Optional[Annotated[str, Field(max_length=400)]] = None   # FS lens, when the story earns one (see finance-lens skill)
     source_urls: Annotated[list[HttpUrl], Field(min_length=1)]              # links to original sources; render attributes attribution
@@ -412,9 +413,13 @@ class SummaryBlock(BaseModel):
 
 
 class IssueSection(BaseModel):
-    schema_version: int = 1                                                 # bump on shape change
+    schema_version: int = 4                                                 # v3 (2026-05-30) renames on_the_radar -> currents (legacy coerced at parse); v4 (2026-08-09) adds optional `synthesis`
     name: SectionName                                                       # which section this is
     stories: list[SummaryBlock]                                             # may be empty for "on_the_radar" on a slow day; pulse must have exactly 1
+    intro_lead: Optional[Annotated[str, Field(max_length=80)]] = None       # LEGACY (superseded 2026-08-09): Phase-B bold lead phrase; retained so released archives parse
+    intro_body: Optional[Annotated[str, Field(max_length=400)]] = None      # LEGACY (superseded 2026-08-09): Phase-B intro sentences; same lifecycle as intro_lead
+    synthesis: Optional[Annotated[str, Field(min_length=1, max_length=500)]] = None
+                                                                            # v4 (2026-08-09): ONE italic synthesis paragraph per section — the merge of the former intro_lead+intro_body pair. Stripped; non-empty if present; mutually exclusive with the legacy pair (validator). None for pulse, pre-redesign issues, and degraded days. See "Layout redesign (2026-08-09)".
 ```
 
 **Notes on choices.** `SummaryBlock` separates `headline` (what reads in the
@@ -437,16 +442,25 @@ from typing import Annotated, Optional
 from pydantic import BaseModel, Field
 
 
+class DigestBullet(BaseModel):
+    schema_version: int = 1                                                 # new 2026-08-09 (layout redesign) — one bullet of "The 30-second read"
+    lead: Annotated[str, Field(min_length=1, max_length=80)]                # the bold takeaway phrase ("Agents run locally now"); stripped, non-empty
+    sentence: Annotated[str, Field(min_length=1, max_length=300)]           # ONE plain sentence expanding the lead; "one sentence" is editorial (summarise validation + reviewer), the cap is structural
+    story_ids: Annotated[list[str], Field(min_length=1)]                    # provenance: the SummaryBlock.story_ids this bullet condenses, PRIMARY FIRST (story_ids[0] carries the bullet's verify verdicts); each must resolve to a story in the same Issue (Issue validator)
+
+
 class Issue(BaseModel):
-    schema_version: int = 7                                                 # bump on shape change; v5 adds `revision: int = 0` (same-date re-release); v6/v7 are transitive envelope bumps tracking SummaryBlock v3 (verification) and v4 (take)
+    schema_version: int = 9                                                 # bump on shape change; v5 adds `revision: int = 0` (same-date re-release); v6/v7 are transitive envelope bumps tracking SummaryBlock v3 (verification) and v4 (take); v8 (2026-08-09) adds optional `digest` + tracks IssueSection v4 (synthesis); v9 (2026-08-09) tracks SummaryBlock v5 (take_route)
     issue_number: Optional[Annotated[int, Field(ge=1)]] = None              # None in staging; assigned at release time (max canonical + 1). See Archive: staging vs canonical
     revision: Annotated[int, Field(ge=0)] = 0                               # 0 on first release; bumped by `aiv release --revise` (same-date re-release). Renders as #N.M when > 0. See Issue Number Registry -> Same-date re-release (revision bump)
     date: date                                                              # the issue date (YYYY-MM-DD); matches the archive folder
     pulse: IssueSection                                                     # The Pulse — exactly 1 SummaryBlock
     sections: list[IssueSection]                                            # remaining sections in display order: big_picture, hands_on, on_the_radar
+    digest: Optional[Annotated[list[DigestBullet], Field(min_length=3, max_length=5)]] = None
+                                                                            # v8 (2026-08-09): "The 30-second read" — 3–5 bullets rendered above The Pulse. Present => well-formed (3–5, provenance resolves); None => no digest section (pre-redesign archive, or degraded day). See "The digest" below.
     generated_at: datetime                                                  # UTC timestamp when summarise.py wrote this
     prompt_versions: dict[str, Annotated[str, Field(pattern=r"^v\d+(\.\d+)*$")]]
-                                                                            # which prompt revisions produced this issue; keys: "rank", "summarise", "pulse", optionally "callback"
+                                                                            # which prompt revisions produced this issue; keys: "rank", "summarise", "pulse", optionally "callback", "digest", "verify"
     notes: Annotated[str, Field(max_length=2000)] = ""                      # optional engine-side notes (e.g. "slow day; On the Radar tail shortened"); not rendered
 
     @property
@@ -514,6 +528,162 @@ reader-facing assertive prose, so both advisory stages MUST see it:
 - **Review:** findings may target `field = "take"` on a story target
   (`ReviewTargetField` widened, `ReviewTarget` v2), with the same
   verbatim-quote check and `revise.py` routing as headline and summary.
+
+### Layout redesign (2026-08-09)
+
+Ratified 2026-08-09. The handoff design package (two plain HTML+CSS
+templates, no build step) becomes the layout for issue pages and the front
+page. The **content contract stays ours** — summarise v0.22 prose rules
+plus the take are unchanged. What the redesign changes at the contract
+level:
+
+- **Takeaway-first slot = the take.** The layout renders a bold "your
+  move" sentence *first* in each story unit; that slot is filled by
+  `SummaryBlock.take` under a revised editorial contract (editor speccing
+  in parallel). No schema change — position in the layout is a render
+  concern.
+- **Evidence chips dropped.** The handoff's per-story evidence-level pill
+  (`ev l1/l2/l3`) does not ship. No contract surface exists or is added
+  for it.
+- **"The 30-second read" ships.** A 3–5 bullet issue-level digest above
+  The Pulse — new `Issue.digest` field (see "The digest" below). Issue v8.
+- **Section intros merge.** `intro_lead` + `intro_body` become one italic
+  `synthesis` paragraph per section (see "Section synthesis" below).
+  IssueSection v4.
+- **Story tag verbs are derived, not stored** (see "Tag derivation"
+  below).
+
+#### The digest — "The 30-second read"
+
+`Issue.digest: list[DigestBullet] | None` (v8, nullable, default None —
+all 35 released issues parse unchanged). Each `DigestBullet` is
+`{lead, sentence, story_ids}`: the bold takeaway phrase, the one
+expanding sentence, and the provenance list (primary story first). Two
+fields, not one string, because the two units render into distinct HTML
+elements and are separately reviewable — splitting prose on "the first
+period" at render time would be code parsing LLM output. Present ⇒
+well-formed: 3–5 bullets, every `story_ids` entry resolves to a story in
+the same issue (pydantic validator). The degradation path for a failed or
+thin digest is `digest = None` (no skim section rendered), never a
+degenerate one-bullet digest. The digest prompt records its version under
+the optional `prompt_versions["digest"]` key.
+
+**Verify / review visibility (integrity requirement, same precedent as
+the take).** The digest is reader-facing assertive prose — compressed
+claims with numbers and named actors — so both advisory stages MUST see
+it. The exact contract for the LLM Engineer:
+
+- **V1 — claim extraction.** Every digest bullet's full text (lead +
+  sentence) is claim-extraction input to the verify stage. A digest that
+  verify never saw is a contract violation, not a tuning choice.
+- **V2 — excerpt scope.** Digest-drawn claims are judged against the
+  source excerpts of the bullet's own `story_ids` (their union), never
+  against unrelated stories' excerpts — the provenance field exists
+  precisely so a cross-story bullet is not falsely flagged `unsupported`
+  against the wrong excerpt.
+- **V3 — persistence.** Digest-drawn `ClaimVerdict`s attach to the
+  `StoryVerification` of the bullet's PRIMARY story (`story_ids[0]`) with
+  `location = "body"` (the `ClaimLocation` vocabulary stays
+  `headline | body`; same deferred-widening seam as the take —
+  internally-tracked "digest" location is coerced at the persistence
+  boundary until the enum widens). The claim's `note` begins with
+  `"digest: "` and its `summary_span` quotes the bullet, so the audit
+  trail distinguishes digest claims from body claims. Consequence, and
+  the reason for this attachment choice: `VerificationReport` stays v1,
+  and the gate's ratified contradicted-claim hard block covers the digest
+  with **zero** changes to `gate.py`.
+- **V4 — no silent skip.** A pure-synthesis bullet with no checkable
+  factual assertion yields one `unverifiable` claim covering the bullet
+  (mirror of the take's pure-position rule) — never nothing.
+- **R1 — reviewer sees it.** The rendered issue the reviewer reads
+  includes a DIGEST block (index, lead, sentence per bullet). Findings
+  target `kind = "digest"` with `digest_index` (0-based into
+  `Issue.digest`) and `field ∈ {digest_lead, digest_sentence}`
+  (`ReviewTargetKind`/`ReviewTargetField` widened, `ReviewTarget` v3,
+  `ReviewReport` v3), with the same verbatim-quote check as every other
+  field. The index is protected from drift by the existing
+  `issue_sha256` freshness contract.
+- **R2 — revise routing.** `revise.py` resolves `digest_lead` →
+  `Issue.digest[i].lead` and `digest_sentence` → `Issue.digest[i].sentence`;
+  `FIELD_BOUNDS` gains both tokens (introspected from `DigestBullet`'s
+  `lead`/`sentence` fields — note the token ≠ model-field-name mapping),
+  and `_FIELD_GUIDANCE` gains entries before the engine acts on a digest
+  finding.
+
+#### Section synthesis — the intro migration
+
+**Position: new nullable field, not a render-time join.** The ratified
+content decision is that the two intro units merge into ONE text unit;
+going forward, summarise (≥ v0.23) authors one paragraph. Keeping the
+storage split (and joining at render time) would preserve a boundary that
+no longer means anything — the lead/body split existed for a bold-lead
+display treatment the new layout dropped — and would leave the reviewer
+and reviser operating on two fields whose seam is invisible to readers,
+making every intro finding's field choice arbitrary. Contracts describe
+content, not layout; when the content unit changes, the field changes.
+
+Mechanics: `IssueSection.synthesis: str | None` (v4; stripped, non-empty
+if present, ≤ 500 chars — headroom over the old 80+400 caps; word budget
+lives with the voice spec). The legacy `intro_lead`/`intro_body` fields
+are **retained** so all released issues parse unchanged, and a validator
+enforces the migration direction: a section carries `synthesis` XOR the
+legacy pair (or neither), never both. The renderer prefers `synthesis`
+when present and falls back to joining the legacy pair
+(`"{intro_lead} {intro_body}"`) when re-rendering archived issues.
+Reviewer/reviser: section targets gain `field = "synthesis"`;
+`intro_lead`/`intro_body` stay in the `ReviewTargetField` vocabulary so
+archived `review.json` records parse, but the reviewer prompt emits
+`synthesis` only. History is never back-filled.
+
+#### Tag derivation — derive at render, do not store (ruling)
+
+The layout shows one verb per story (`act | try | read | discuss |
+watch`). Ruling: the tag is **derived by code at render time** and never
+stored. Reasoning:
+
+1. The stored `SummaryBlock.signal` already carries the editorial
+   judgment, in exactly this vocabulary (the `Signal` literal). A stored
+   `tag` would be a second persisted field with the same value-space that
+   can silently drift from the first — the classic denormalisation trap,
+   with 35 archived issues needing backfill or dual-read logic for zero
+   new information. Deriving is a total, deterministic function of stored
+   fields — No Token Wasted says that is code's job.
+2. **Review discipline decides the seam question.** A `ReviewFinding`
+   must quote text that exists on disk, and `revise.py` must be able to
+   write the field back. A derived tag has no text on disk: it cannot be
+   a quotable, editable review target, so it does not belong in
+   `ReviewTargetField`. The reviewer's leverage over the verb is the
+   stored input — a `fix_kind = "metadata"` finding about `signal`,
+   exactly as the metadata routing key already specifies.
+3. Consequence for the reviewer's view: the reviewer does not need the
+   derived tag, but it currently does not see `signal` either
+   (`review.py`'s issue rendering omits it). Recommended (non-blocking,
+   LLM Engineer): add a `signal:` line per story to the reviewer's
+   rendered issue so metadata findings about the verb are grounded in
+   what is actually stored.
+
+Derivation contract as implemented (owned by `render.py`, Release
+Engineer; taxonomy owned by the Editor — admissibility ruling
+2026-08-09, superseding the earlier default-only sketch):
+
+- **Pulse: tag suppressed entirely** — no tag element renders,
+  regardless of the block's signal. Suppression is positional (the
+  Pulse slot), not historical (a re-summarised block's original tier
+  is irrelevant).
+- Per-section **admissible sets with defaults**:
+  `big_picture: {act, discuss}` default `discuss`;
+  `hands_on: {try, read, discuss}` default `try`;
+  `currents: {watch, read, discuss}` default `watch`
+  (legacy `on_the_radar` aliases to `currents`).
+- Rule: `tag = signal if signal in admissible(section) else
+  default(section)`; a missing signal takes the default (never an
+  empty slot). Ambiguity resolves toward the section, never the story.
+- `render.tag_stats(issue)` meters the derivation (tagged / suppressed
+  / `signal_replaced` / `default_filled`); every render logs a `tags:`
+  summary line, and the override rate feeds the eval-side drift
+  feature. Archive baseline at adoption: 31/338 stories overridden,
+  all inadmissible signals (mostly `act` in Hands-On — an open
+  summarise-prompt observation for the Editor).
 
 ### Issue Number Registry
 
@@ -2099,3 +2269,9 @@ Bump a record's `schema_version` when its shape changes. Log the diff here.
 | 2026-08-08 | `SummaryBlock` | v3 | v4 | Added optional nullable `take: str \| None = None` — the publication's position line: one declarative italic sentence rendered last in the story unit (ratified 2026-08-08; see [The take](#the-take--the-publications-position-line)). Pydantic enforces structure only (stripped via a before-validator, non-empty if present, `max_length=200` — headroom over the editorial 8–16-word / hard-18 cap); form constraints (word count, declarative mood, no trailing `?`) are enforced in `summarise.py`'s code-side validation and judged by the reviewer, not in the model. `None` = pre-take archive issue OR a take cut by summarise's body-cap collision ladder; absence is normal, never an error. | Existing issue.json (SummaryBlock schema_version <= 3) parse unchanged with `take = None` — all 34 released issues validate without rewrite. Verified by `tests/test_models.py::TestSummaryBlockTake::test_released_pre_take_issue_parses_with_take_none`, which parses `data/released/2026-07-11/issue.json` (issue #29) end-to-end and asserts `take is None` on every block. Same all-readers-upgrade-together mitigation as prior `extra="forbid"` additive changes. |
 | 2026-08-08 | `Issue` | v6 | v7 | No field change on `Issue` itself; the bump tracks the transitive SummaryBlock v3->v4 change (issue.json now carries the optional `take` field), same envelope rule as the v5->v6 bump. | Older issue.json (schema_version <= 6) parse unchanged; the v7 envelope simply admits the new optional SummaryBlock field. |
 | 2026-08-08 | `ReviewTargetField` (literal), `ReviewTarget`, `ReviewReport` | v1 | v2 | `ReviewTargetField` value-space widened from `{headline, summary, intro_lead, intro_body}` to `{headline, summary, take, intro_lead, intro_body}`; the `ReviewTarget` story-kind validator accepts `take` alongside `headline`/`summary` (section targets still reject it). Integrity requirement: the take is reader-facing assertive prose and must be reviewable at field-level precision, with the same verbatim-quote check and `revise.py` routing as headline/summary. `ReviewReport` v1->v2 is the transitive envelope bump (review.json may now carry `field="take"` rows). `ClaimLocation` (verify) is deliberately UNCHANGED — take-derived claims carry `location="body"`; the contradicted-claim hard block fires on any location, so a third value would add granularity, not safety, and is deferred. | No on-disk migration. Existing review.json rows never used `take`, so v1 records parse unchanged under v2 (widening only). A v1 reader loading a v2 row with `field="take"` would reject the unknown enum value; mitigation as ever: all in-repo readers upgrade in the same wave. Downstream (same wave, owned by LLM Engineer): `review.py` prompt + `_field_index` must surface the take; `verify.py` claim extraction must include it; `revise.py` `_field_bounds` / `_FIELD_GUIDANCE` must learn the field before acting on a `take` finding. |
+| 2026-08-09 | `IssueSection` | v3 | v4 | Layout redesign (see [Layout redesign (2026-08-09)](#layout-redesign-2026-08-09)): added optional nullable `synthesis: str \| None = None` — ONE italic synthesis paragraph per section, merging the Phase-B `intro_lead` + `intro_body` pair into a single text unit (stripped via before-validator, non-empty if present, `max_length=500` — headroom over the old 80+400 caps; word budget is editorial). The legacy pair is RETAINED for archive parse; a new validator (`_synthesis_excludes_legacy_intros`) enforces the migration direction: a section carries `synthesis` XOR the legacy pair, never both. Renderer prefers `synthesis`; falls back to joining the legacy pair for archived issues. summarise ≥ v0.23 writes `synthesis` only. | All 35 released issue.json files parse unchanged with `synthesis = None` — proven by `tests/test_models.py::TestIssueDigest::test_all_released_issues_parse_with_digest_and_synthesis_none`, which validates the entire released corpus end-to-end. `extra="forbid"` means a pre-v4 reader of a v4 record would reject the unknown field; mitigation as ever: all in-repo readers upgrade in the same wave. History is never back-filled. |
+| 2026-08-09 | `DigestBullet` (new model) | — | v1 | New child of `Issue` for "The 30-second read": `{schema_version, lead (1..80, stripped), sentence (1..300, stripped), story_ids (min 1, cluster-id pattern, primary first)}`. Two text fields, not one string, because the units render into distinct HTML elements and are separately reviewable/revisable; `story_ids` is the provenance contract that makes the bullet verifiable (see [The digest](#the-digest--the-30-second-read)). | First introduction — no on-disk migration. |
+| 2026-08-09 | `Issue` | v7 | v8 | Added optional nullable `digest: list[DigestBullet] \| None = None` (`min_length=3, max_length=5` when present) — present ⇒ well-formed; the degradation path is `None` (no skim section), never a degenerate digest. New validator `_digest_story_ids_resolve`: every bullet's `story_ids` must resolve to stories carried by the issue (hallucinated provenance rejected at the boundary). Also tracks the transitive IssueSection v3->v4 change (`synthesis`), and documents the optional `"digest"` key in `prompt_versions`. Verify/review visibility contract (V1–V4, R1–R2) pinned in [The digest](#the-digest--the-30-second-read): digest claims attach to the primary story's `StoryVerification` with `location="body"`, so `VerificationReport` stays v1 and the gate's contradicted-claim hard block covers the digest with zero `gate.py` changes. | Older issue.json (schema_version ≤ 7) parse unchanged with `digest = None` — same whole-corpus test as the IssueSection row above. Downstream (same wave): summarise (digest prompt + `prompt_versions["digest"]`, LLM Engineer); verify (V1–V4, LLM Engineer); review/revise (R1–R2, LLM Engineer); render (skim block + legacy-intro join + tag derivation, Release Engineer); evals surfaces that iterate `("intro_lead", "intro_body")` (e.g. `evals/run_evals.py` reading-experience lint) must learn `synthesis` + `digest` (Eval Engineer, ratification rules apply). |
+| 2026-08-09 | `SummaryBlock` | v4 | v5 | Added optional nullable `take_route: Literal["R1","R2","R3"] \| None = None` — the take's generation route label (R1 displacement / R2 named-owner consequence / R3 reframe). The summarise take prompt already returned the label (v0.23 feed-forward used it in-process only); persisting it is the wave-three seam decision: the route is a GENERATION judgment, not derivable from the take text, so unlike the story tag (derived at render — see the tag-derivation ruling) it must be stored or it is lost. Written by `summarise.py` after section assembly, onto blocks that still carry their take; a cut take persists no orphan label. Unblocks the eval-side route-distribution counter (Eval Engineer). | Additive + nullable — all released issue.json parse unchanged with `take_route = None` (same whole-corpus test as the rows above). `extra="forbid"` caveat as ever: pre-v5 readers reject the new key; all in-repo readers upgrade in the same wave. |
+| 2026-08-09 | `Issue` | v8 | v9 | No field change on `Issue` itself; transitive envelope bump tracking SummaryBlock v4->v5 (`take_route`), same rule as v6/v7. | Older issue.json (schema_version ≤ 8) parse unchanged. |
+| 2026-08-09 | `ReviewTargetKind` / `ReviewTargetField` (literals), `ReviewTarget`, `ReviewReport` | v2 | v3 | `ReviewTargetKind` gains `digest`; `ReviewTargetField` gains `synthesis` (section targets), `digest_lead` + `digest_sentence` (digest targets — prefixed tokens; the model fields are `DigestBullet.lead`/`.sentence`). `ReviewTarget` v3 adds the `digest_index: int \| None` locator (0-based into `Issue.digest`; REQUIRED for digest targets, forbidden otherwise; index freshness protected by the existing `issue_sha256` contract) and extends the kind/locator/field validator to three branches. `intro_lead`/`intro_body` stay in the vocabulary so archived review.json parse; the reviewer prompt emits `synthesis` only, going forward. The derived story TAG is deliberately NOT a target field — no text on disk, unresolvable quote; verb concerns route as `fix_kind="metadata"` findings about the stored `signal` (see [Tag derivation](#tag-derivation--derive-at-render-do-not-store-ruling)). `ReviewReport` v2->v3 is the transitive envelope bump. | Widening only — v1/v2 review.json records parse unchanged (`digest_index` defaults to None). Downstream (same wave, owned by LLM Engineer): `review.py` prompt field vocabulary + issue rendering (DIGEST block; recommended `signal:` line) + quote resolver must learn the three new fields; `revise.py` `FIELD_BOUNDS` / `_FIELD_GUIDANCE` / field resolution must learn `synthesis`, `digest_lead`, `digest_sentence` before acting on such findings. |

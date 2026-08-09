@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI/Vector — the mark</title>
+<link rel="stylesheet" href="../../fonts/fonts.css">
+<style>
+  :root{
+    --paper:oklch(0.987 0.004 95); --paper-2:oklch(0.965 0.006 90);
+    --ink:oklch(0.255 0.012 60); --ink-2:oklch(0.46 0.012 62); --ink-3:oklch(0.55 0.010 66);
+    --line:oklch(0.905 0.006 80); --line-2:oklch(0.845 0.008 78);
+    --accent:oklch(0.49 0.135 30);
+    --serif:'Newsreader',Georgia,'Times New Roman',serif;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  body{font-family:var(--serif);color:var(--ink);font-size:17px;line-height:1.62}
+  main{max-width:880px;margin:0 auto;background:var(--paper);padding:72px 84px 110px;
+       box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06)}
+  .kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;
+          text-transform:uppercase;color:var(--ink-2)}
+  .kicker.accent{color:var(--accent)}
+  h1{font-family:var(--serif);font-weight:500;font-size:42px;line-height:1.12;letter-spacing:-.02em;margin:14px 0 16px}
+  h2{font-family:var(--serif);font-weight:500;font-size:26px;letter-spacing:-.015em;line-height:1.2;
+     margin:76px 0 6px;padding-top:20px;border-top:2px solid var(--ink)}
+  h3{font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:-.01em;margin:34px 0 8px}
+  p{margin:12px 0;max-width:66ch;text-wrap:pretty}
+  .lede{font-size:19px;color:var(--ink-2);max-width:60ch}
+  .sectionlede{color:var(--ink-2);font-size:16.5px;margin-bottom:26px;max-width:62ch}
+  .quiet{color:var(--ink-2);font-size:15.5px}
+  em{font-style:italic}
+  strong{font-weight:600}
+  code{font-family:var(--mono);font-size:.83em;background:var(--paper-2);padding:.1em .34em;border-radius:2px}
+  pre{font-family:var(--mono);font-size:12.5px;line-height:1.65;background:var(--ink);color:var(--paper);
+      padding:18px 22px;overflow-x:auto;margin:16px 0;white-space:pre;border-radius:3px}
+  pre b{color:oklch(0.80 0.10 40);font-weight:400}
+  a{color:var(--accent)}
+
+  .panel{background:var(--paper);border:1px solid var(--line);padding:30px 34px;margin:22px 0}
+  .panel.tone2{background:var(--paper-2)}
+  .panel.rev{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .panel.rev .cap,.panel.rev .quiet{color:oklch(0.78 0.010 70)}
+  .cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+       color:var(--ink-3);margin-top:10px}
+
+  /* candidate blocks */
+  .cand{display:grid;grid-template-columns:186px 1fr;gap:34px;align-items:start;
+        padding:34px 0;border-top:1px solid var(--line)}
+  .cand:first-of-type{border-top:0}
+  .cand .art{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .cand .art .big{width:118px;height:118px;color:var(--ink)}
+  .cand .sizes{display:flex;align-items:flex-end;gap:12px;height:70px}
+  .cand h3{margin:0 0 2px}
+  .verdict{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+           padding:2px 7px;border:1px solid var(--line-2);color:var(--ink-2);white-space:nowrap}
+  .verdict.pass{color:var(--accent);border-color:var(--accent)}
+  .verdict.fail{color:var(--ink-3)}
+  .head-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .facet{margin:10px 0 0}
+  .facet b{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+           color:var(--ink-3);font-weight:500;display:block;margin-bottom:1px}
+
+  /* tab strip */
+  .tabstrip{display:flex;align-items:flex-end;gap:5px;padding:9px 9px 0;background:#dfdcd6;border-radius:7px 7px 0 0}
+  .tabstrip.dark{background:#26241f}
+  .tab{display:flex;align-items:center;gap:8px;background:var(--paper);padding:8px 14px;
+       border-radius:7px 7px 0 0;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);
+       white-space:nowrap;max-width:190px;overflow:hidden}
+  .tabstrip.dark .tab{background:#3b382f;color:#c9c4b8}
+  .tab.inactive{background:#cfccc5;color:#6d6a63}
+  .tabstrip.dark .tab.inactive{background:#302e28;color:#8a867c}
+  .tab svg{display:block;flex:0 0 16px}
+  .tab .dot{flex:0 0 16px;height:16px;border-radius:3px}
+
+  /* lockups */
+  .lock{display:flex;align-items:baseline}
+  .wm{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;color:var(--ink)}
+  .wm .slash{color:var(--accent)}
+  .panel.rev .wm{color:var(--paper)}
+  .panel.rev .wm .slash{color:oklch(0.72 0.13 33)}
+  .mk{display:inline-block;vertical-align:baseline;color:var(--ink)}
+  .panel.rev .mk{color:var(--paper)}
+  .mk svg{display:block;width:100%;height:100%;fill:currentColor}
+  .rule2{height:2px;background:var(--ink);margin-top:14px}
+  .panel.rev .rule2{background:var(--paper)}
+  .mastmeta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+  .mastrow{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+
+  table{border-collapse:collapse;width:100%;margin:18px 0;font-size:15px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+     font-weight:500;color:var(--ink-2)}
+  td code{font-size:12.5px}
+  .evidence{width:100%;image-rendering:pixelated;border:1px solid var(--line);display:block;margin:14px 0 6px}
+  ul{margin:12px 0 12px 22px}li{margin:6px 0;max-width:64ch}
+  footer{margin-top:90px;padding-top:22px;border-top:2px solid var(--ink);
+         font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3)}
+  @media (max-width:760px){main{padding:44px 24px 80px}.cand{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <path id="m-open" fill-rule="evenodd" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/>
+  <path id="m-water" fill-rule="evenodd" d="M0 0L100 0L100 100L0 100ZM0 76.57L100 39.43L100 23.43L0 60.57Z"/>
+  <path id="m-over" d="M4 12L25 12L47 64L85 2L96 9L50 92Z"/>
+  <path id="m-stand" d="M33.59 97.11L83.59 13.11L66.41 2.89L16.41 86.89ZM0 86L100 86L100 98L0 98Z"/>
+  <path id="m-magn" d="M24.31 96.9L90.06 18.18L85.94 13.82L3.69 75.1Z"/>
+  <path id="m-caret" d="M31.23 71.05L55.14 32.79L95.87 60.26L100 54.13L100 37.71L48.86 3.21L13.42 59.93ZM0 76L100 76L100 89L0 89Z"/>
+</defs></svg>
+
+<main>
+
+<header>
+  <p class="kicker accent">AI Vector · identity proposal · brand-designer · 9 August 2026</p>
+  <h1>A block of ink, opened in one direction</h1>
+  <p class="lede">Six marks drawn, rasterised at true device pixels, and judged at 16&nbsp;px before anyone was allowed to admire them at 200. Four survived the size, two did not. One is recommended. Nothing here is decided — the mark is the operator's to ratify.</p>
+  <div style="display:flex;align-items:center;gap:38px;margin-top:46px;flex-wrap:wrap">
+    <span class="mk" style="width:150px;height:150px"><svg viewBox="0 0 100 100" role="img" aria-label="The recommended AI Vector mark: a solid block of ink with a leaning V cut out of it, its longer arm removing the top-right corner"><use href="#m-open"/></svg></span>
+    <div>
+      <h3 style="margin-top:0">The Open Block</h3>
+      <p class="quiet" style="max-width:34ch;margin-top:4px">The V is never drawn. It is the paper coming through — and its long arm keeps going until it takes the corner off.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============================ HOW THIS WAS JUDGED ============================ -->
+<h2>How this was judged</h2>
+<p class="sectionlede">Three things in this document are measurements rather than opinions, and they did most of the deciding.</p>
+
+<p><strong>The 16&nbsp;px exam came first.</strong> Every candidate was rendered by a real browser at a device scale factor of 1 — actual 16&nbsp;px pixels, not a shrunken vector — and then magnified with nearest-neighbour so the pixels could be inspected. Two candidates were killed by that image and two were redrawn because of it. The strip below is that raster, not a re-rendering.</p>
+
+<p><strong>The lockup ratio is measured, not chosen by eye.</strong> Newsreader 500 at the template's 32&nbsp;px masthead size has a cap height of <strong>21.81&nbsp;px</strong> (measured in-browser with <code>TextMetrics</code>, after the self-hosted webfont loaded). Marks were then set at 18, 20, 22, 24 and 26&nbsp;px against that wordmark. At cap height the block sits; above about 1.1&nbsp;&times; cap it starts to shout down the serif. The rule that comes out of this — <em>mark height = wordmark cap height</em> — is therefore a number, not a preference.</p>
+
+<p><strong>Geometry was generated, not nudged.</strong> Every control point, angle and stroke width is a hand-made decision, but the arithmetic that turns a centreline into a band of even <em>perpendicular</em> weight, mitres the joins and clips to the square is done by <code>tools/brand_marks.py</code>. That is why the two arms of the recommended V carry the same optical weight despite sitting at different angles, and it is why re-running the script reproduces the marks byte for byte.</p>
+
+<h3>The raster, at 16&nbsp;px, magnified 10&nbsp;&times;</h3>
+<img class="evidence" src="data:image/png;base64,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or3YepttCrQP7uwAAAAAAEkEWQAAAACAJIIsAAAAAEASQRYAAAAAIIkgCwAAAACQRJAFAAAAAEgiyAIAAAAAJBFkAQAAAACSCLIAAAAAAEk6rFr5fgEAAAAAoPqckAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAAAAAgiSALAAAAAJBEkAUAAAAASCLIAgAAAAAkEWQBAAAAAJIIsgAAAAAASQRZAAAAAIAkgiwAAAAAQBJBFgAA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" alt="The six candidates rendered at true 16-pixel size, on paper above and reversed on ink below, magnified ten times with nearest-neighbour so individual pixels are visible">
+<p class="cap">True 16&nbsp;px rasterisation · Chrome headless, device scale factor 1 · order: Open Block, Waterline, Overshoot, Standard, Magnitude, Caret&nbsp;&amp;&nbsp;Rule</p>
+<p class="quiet">Read the bottom row as carefully as the top. A mark that only works as dark-on-light has to be redrawn for dark tab strips, social cards and any future dark mode; a mark that is equally good reversed never needs a second drawing.</p>
+
+<!-- ============================ THE CANDIDATES ============================ -->
+<h2>The six</h2>
+<p class="sectionlede">Each one is a single idea. Where I cannot name the one detail that resolves the shape — its bite — I treat the mark as unfinished, not as subtle.</p>
+
+<!-- A -->
+<div class="cand">
+  <div class="art">
+    <span class="mk big"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+    <div class="sizes">
+      <span class="mk" style="width:64px;height:64px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+      <span class="mk" style="width:32px;height:32px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+      <span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+    </div>
+    <span class="cap">64 · 32 · 16</span>
+  </div>
+  <div>
+    <div class="head-row"><h3>The Open Block</h3><span class="verdict pass">Recommended</span></div>
+    <p class="facet"><b>The idea</b>A solid block of ink with a V cut out of it. The letter is never drawn — it is the paper showing through — and it leans, because its two arms sit at 12&deg; and 43&deg; from vertical rather than mirroring each other. The long arm does not stop at the edge of the block; it keeps going and takes the top-right corner with it. The block is the magnitude. The arm leaving is the heading.</p>
+    <p class="facet"><b>Its bite</b>The missing corner. Without it, this is a letter parked in a box and the eye stops at the frame. With it, the block has been opened in one direction and the eye follows the arm out of the mark. It is also the detail that reads first at 16&nbsp;px, which is the test of a real bite rather than a flourish.</p>
+    <p class="facet"><b>Why it survives small</b>It is a filled shape interrupted twice, and filled shapes are what survive at favicon size. Measured on a true 1&nbsp;&times; raster it is legible down to 12&nbsp;px and fully crisp from 14&nbsp;px up. It is also the only candidate with real ink presence in a browser tab, where the neighbours are solid coloured squares and a thin glyph simply disappears.</p>
+  </div>
+</div>
+
+<!-- B -->
+<div class="cand">
+  <div class="art">
+    <span class="mk big"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-water"/></svg></span>
+    <div class="sizes">
+      <span class="mk" style="width:64px;height:64px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-water"/></svg></span>
+      <span class="mk" style="width:32px;height:32px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-water"/></svg></span>
+      <span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-water"/></svg></span>
+    </div>
+    <span class="cap">64 · 32 · 16</span>
+  </div>
+  <div>
+    <div class="head-row"><h3>Waterline</h3><span class="verdict">Survives 16&nbsp;px · not recommended</span></div>
+    <p class="facet"><b>The idea</b>The publication's own 2&nbsp;px masthead rule, taken off the horizontal and cut out of a block of ink. A level rule divides a page; a rule with a bearing is going somewhere. Nothing is added to the identity — the mark is made of a line the pages already print.</p>
+    <p class="facet"><b>Its bite</b>Twenty-one degrees of rise, which is the entire mark. That is also the honest problem with it: when the bite is the only thing there, there is nothing underneath it.</p>
+    <p class="facet"><b>Why it survives small — and why I still reject it</b>It is the most robust silhouette of the six and unbreakable at 16&nbsp;px. But it carries no trace of the name, it could belong to a great many things, and at a glance a block cut by a diagonal reads closer to a negation symbol than to a heading. Distinctive enough to invest meaning into is the bar; this clears legibility and misses that.</p>
+  </div>
+</div>
+
+<!-- C -->
+<div class="cand">
+  <div class="art">
+    <span class="mk big"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-over"/></svg></span>
+    <div class="sizes">
+      <span class="mk" style="width:64px;height:64px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-over"/></svg></span>
+      <span class="mk" style="width:32px;height:32px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-over"/></svg></span>
+      <span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-over"/></svg></span>
+    </div>
+    <span class="cap">64 · 32 · 16</span>
+  </div>
+  <div>
+    <div class="head-row"><h3>The Overshoot</h3><span class="verdict">Survives 16&nbsp;px · not recommended</span></div>
+    <p class="facet"><b>The idea</b>The ancestor kept whole. A V drawn with Newsreader's stroke contrast, whose thin arm does not stop at the cap line but keeps rising — and in rising, absorbs the chevron that used to float above it in <code>docs/favicon.svg</code>. Two shapes become one shape, which is the only honest way to refine a mark made of two pieces.</p>
+    <p class="facet"><b>Its bite</b>The overshoot itself. An arm that passes the cap line is a deliberate act; that is what separates a mark from a character someone set in a box.</p>
+    <p class="facet"><b>Why it survives small — and why I still reject it</b>It survives only after the thin arm was thickened; at its first drawing the arm fell below one pixel at 16&nbsp;px and dissolved. Legibility is no longer the objection. Weight is: in the lockup it reads as a stray glyph that fell out of the wordmark rather than a mark standing beside it, and it repeats a letter the wordmark already contains in Newsreader's own hand. A mark should not compete with the type it sits next to.</p>
+  </div>
+</div>
+
+<!-- D -->
+<div class="cand">
+  <div class="art">
+    <span class="mk big"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-stand"/></svg></span>
+    <div class="sizes">
+      <span class="mk" style="width:64px;height:64px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-stand"/></svg></span>
+      <span class="mk" style="width:32px;height:32px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-stand"/></svg></span>
+      <span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-stand"/></svg></span>
+    </div>
+    <span class="cap">64 · 32 · 16</span>
+  </div>
+  <div>
+    <div class="head-row"><h3>The Standard</h3><span class="verdict fail">Fails 16&nbsp;px</span></div>
+    <p class="facet"><b>The idea</b>The slash from <em>AI/Vector</em> planted on the rule it stands above — the publication's signature diagonal given a ground to rise from, like a standard driven into a line.</p>
+    <p class="facet"><b>Its bite</b>The rule running edge to edge, which turns a floating diagonal into something printed.</p>
+    <p class="facet"><b>Why it fails</b>At 16&nbsp;px the foot of the slash and the rule merge into a single dark smear, and what survives of the shape reads as a tick sitting on a line. Thickening both elements — which I tried — made it heavier without making it clearer, because the failure is the junction, not the weight. Two elements meeting at an acute angle is a shape that favicon size does not forgive. Recorded as drawn, tested and failed, so it is not attempted again.</p>
+  </div>
+</div>
+
+<!-- E -->
+<div class="cand">
+  <div class="art">
+    <span class="mk big"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-magn"/></svg></span>
+    <div class="sizes">
+      <span class="mk" style="width:64px;height:64px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-magn"/></svg></span>
+      <span class="mk" style="width:32px;height:32px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-magn"/></svg></span>
+      <span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-magn"/></svg></span>
+    </div>
+    <span class="cap">64 · 32 · 16</span>
+  </div>
+  <div>
+    <div class="head-row"><h3>Magnitude</h3><span class="verdict">Survives 16&nbsp;px · not recommended</span></div>
+    <p class="facet"><b>The idea</b>A vector reduced to its definition: a quantity that has a heading. One stroke, all its mass at the tail, nothing at the tip. Direction stated without an arrowhead anywhere on the page.</p>
+    <p class="facet"><b>Its bite</b>The taper. It is what makes the stroke a vector rather than a line, and it sets which end is the front without drawing a head.</p>
+    <p class="facet"><b>Why it survives small — and why I still reject it</b>It is perfectly clean at 16&nbsp;px; the taper is not the problem. Beside the wordmark it reads as a tick, and a checkmark is the last thing a publication whose promise is <em>curated, not aggregated</em> wants to be saying — it implies verification the newsletter does not claim to perform. A mark that says the wrong thing clearly is worse than one that says nothing.</p>
+  </div>
+</div>
+
+<!-- F -->
+<div class="cand">
+  <div class="art">
+    <span class="mk big"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-caret"/></svg></span>
+    <div class="sizes">
+      <span class="mk" style="width:64px;height:64px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-caret"/></svg></span>
+      <span class="mk" style="width:32px;height:32px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-caret"/></svg></span>
+      <span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-caret"/></svg></span>
+    </div>
+    <span class="cap">64 · 32 · 16</span>
+  </div>
+  <div>
+    <div class="head-row"><h3>Caret &amp; Rule</h3><span class="verdict fail">Fails 16&nbsp;px</span></div>
+    <p class="facet"><b>The idea</b>The other half of the ancestor. Where <em>The Overshoot</em> keeps the V and absorbs the chevron, this keeps the chevron and retires the V: a heading set above the line, asymmetric so that it leans rather than pointing straight up.</p>
+    <p class="facet"><b>Its bite</b>The off-centre apex with unequal arms. A symmetrical caret is a user-interface arrow; an asymmetric one is a mark.</p>
+    <p class="facet"><b>Why it fails</b>At 16&nbsp;px the apex blunts to a flat top and the arms fuse with the rule below, leaving something that reads as a roof or an eject glyph. This is the evidence behind a decision the brief left open: <strong>of the ancestor's two pieces, the V is the half worth keeping and the chevron is the half to retire.</strong> The chevron cannot carry the mark alone at the size the mark has to work at.</p>
+  </div>
+</div>
+
+<!-- ============================ THE TAB ============================ -->
+<h2>In a browser tab</h2>
+<p class="sectionlede">The favicon is the only place most readers will ever see the mark, and it is never seen alone — it is seen on a shelf, at 16&nbsp;px, next to whatever else is open. Neighbours below are plain coloured squares standing in for real sites; the question is only whether AI Vector holds its ground.</p>
+
+<div class="panel tone2">
+  <div class="tabstrip">
+    <span class="tab"><span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>AI/Vector — No. 41</span>
+    <span class="tab inactive"><span class="dot" style="background:#3b6fd4"></span>Confluence</span>
+    <span class="tab inactive"><span class="dot" style="background:#1a7f4b"></span>Bloomberg Terminal</span>
+    <span class="tab inactive"><span class="dot" style="background:#c8442b"></span>Jira</span>
+  </div>
+  <p class="cap" style="margin-top:14px">Light tab strip · mark at 16&nbsp;px in <code>--ink</code></p>
+</div>
+
+<div class="panel tone2">
+  <div class="tabstrip dark">
+    <span class="tab"><span class="mk" style="width:16px;height:16px;color:#f4f0e7"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>AI/Vector — No. 41</span>
+    <span class="tab inactive"><span class="dot" style="background:#3b6fd4"></span>Confluence</span>
+    <span class="tab inactive"><span class="dot" style="background:#1a7f4b"></span>Bloomberg Terminal</span>
+    <span class="tab inactive"><span class="dot" style="background:#c8442b"></span>Jira</span>
+  </div>
+  <p class="cap" style="margin-top:14px">Dark tab strip · same path, reversed ink. No second drawing needed.</p>
+</div>
+
+<!-- ============================ THE LOCKUP ============================ -->
+<h2>The masthead, at true metrics</h2>
+<p class="sectionlede">Everything below is set at the real template values: Newsreader 500 at 32&nbsp;px with <code>letter-spacing:-.02em</code>, the accent slash in <code>oklch(0.49 0.135 30)</code>, and the 2&nbsp;px ink rule that follows the masthead in <code>templates/issue.html.j2</code>. The mark is 22&nbsp;px — the measured cap height, rounded.</p>
+
+<div class="panel">
+  <div class="mastrow">
+    <span class="lock">
+      <span class="mk" style="width:22px;height:22px;margin-right:14px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+      <span class="wm" style="font-size:32px">AI<span class="slash">/</span>Vector</span>
+    </span>
+    <span class="mastmeta">No. 41 · 09 Aug · 6 min</span>
+  </div>
+  <div class="rule2"></div>
+  <p class="cap" style="margin-top:12px">Issue masthead on <code>--paper</code> · mark 22&nbsp;px, gap 14&nbsp;px, baseline aligned</p>
+</div>
+
+<div class="panel tone2">
+  <div class="mastrow">
+    <span class="lock">
+      <span class="mk" style="width:22px;height:22px;margin-right:14px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+      <span class="wm" style="font-size:32px">AI<span class="slash">/</span>Vector</span>
+    </span>
+    <span class="mastmeta">No. 41 · 09 Aug · 6 min</span>
+  </div>
+  <div class="rule2"></div>
+  <p class="cap" style="margin-top:12px">The same lockup on <code>--paper-2</code>, the page's outer tone</p>
+</div>
+
+<div class="panel rev">
+  <div class="mastrow">
+    <span class="lock">
+      <span class="mk" style="width:22px;height:22px;margin-right:14px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+      <span class="wm" style="font-size:32px">AI<span class="slash">/</span>Vector</span>
+    </span>
+    <span class="mastmeta" style="color:oklch(0.72 0.010 70)">No. 41 · 09 Aug · 6 min</span>
+  </div>
+  <div class="rule2"></div>
+  <p class="cap" style="margin-top:12px">Reversed — inventory for social cards and any future dark mode. <code>currentColor</code> does this for free.</p>
+</div>
+
+<h3>The index hero, at 52&nbsp;px</h3>
+<div class="panel">
+  <span class="lock">
+    <span class="mk" style="width:36px;height:36px;margin-right:23px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+    <span class="wm" style="font-size:52px;line-height:.95">AI<span class="slash">/</span>Vector</span>
+  </span>
+  <div class="rule2" style="margin-top:18px"></div>
+  <p class="cap" style="margin-top:12px">Landing masthead · cap height 36.31&nbsp;px measured · mark 36&nbsp;px, gap 23&nbsp;px</p>
+</div>
+
+<h3>The footer colophon, at 19&nbsp;px — and why the mark is not in it</h3>
+<div class="panel">
+  <div class="mastrow" style="border-top:2px solid var(--ink);padding-top:16px">
+    <span class="lock">
+      <span class="mk" style="width:13px;height:13px;margin-right:8px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+      <span class="wm" style="font-size:19px">AI<span class="slash">/</span>Vector</span>
+    </span>
+    <span class="mastmeta" style="font-size:11px">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  </div>
+  <p class="cap" style="margin-top:12px">Mark at cap height would be 13&nbsp;px here — below the 14&nbsp;px floor</p>
+</div>
+<div class="panel tone2">
+  <div class="mastrow" style="border-top:2px solid var(--ink);padding-top:16px">
+    <span class="wm" style="font-size:19px">AI<span class="slash">/</span>Vector</span>
+    <span class="mastmeta" style="font-size:11px">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  </div>
+  <p class="cap" style="margin-top:12px">Recommended: wordmark alone. The mark opens the page; the wordmark closes it.</p>
+</div>
+<p class="quiet">This is a rule falling out of a measurement rather than a taste. The footer wordmark is 19&nbsp;px, its cap height is 12.75&nbsp;px, and a 13&nbsp;px mark is under the size at which this mark stays crisp. Rather than break the size relationship to squeeze it in, the footer keeps the wordmark alone. If the mark is wanted there, the honest fix is to raise <code>footer.colophon .brand-sm</code> from 19&nbsp;px to 21&nbsp;px, which puts cap height at 14.3&nbsp;px — that is a reading-experience change and belongs to the experience-designer, not to me.</p>
+
+<!-- ============================ RECOMMENDATION ============================ -->
+<h2>The recommendation, and the case against it</h2>
+<p class="sectionlede">I recommend <strong>The Open Block</strong>. Here is the argument, followed by the four strongest attacks I could make on it and what each one cost.</p>
+
+<h3>Why this one</h3>
+<ul>
+  <li><strong>It keeps the ancestor without repeating the wordmark.</strong> The V survives from <code>docs/favicon.svg</code>, but as negative space — so it never competes with Newsreader's drawn letterforms the way a second, drawn V would.</li>
+  <li><strong>It answers the name in one shape.</strong> A vector is magnitude and direction. The block is the magnitude; the arm leaving through the corner is the direction. No arrow is drawn anywhere.</li>
+  <li><strong>It has the right ink weight for these pages.</strong> The issue template already prints 2&nbsp;px solid ink rules above every section. A solid block belongs to that vocabulary; a thin glyph would look borrowed from a different publication.</li>
+  <li><strong>It passes the memory test.</strong> "A dark square with a white V, corner sliced off" is a sentence a reader can sketch after seeing it once.</li>
+  <li><strong>It is as good reversed as upright.</strong> Confirmed on the 16&nbsp;px raster. That means one drawing serves light tabs, dark tabs, social cards and a future dark mode.</li>
+</ul>
+
+<h3>The case against, tested</h3>
+<p><strong>"A V knocked out of a square is generic."</strong> Partly fair, and it was the objection I took most seriously. What makes this one specific is the lean and the sliced corner, so the test was whether both survive at 16&nbsp;px — if they vanish, the mark really is generic where it matters most. On the raster both are visible at 16&nbsp;px. The objection is answered by the pixels, not by argument.</p>
+<p><strong>"A solid block will overpower an airy serif wordmark."</strong> Tested rather than assumed, at 18, 20, 22, 24 and 26&nbsp;px against the measured 21.81&nbsp;px cap height. It does overpower — above roughly 1.1&nbsp;&times; cap. At cap height it sits. That is exactly why the size relationship is written as a rule below and not left to whoever implements it.</p>
+<p><strong>"It reads as a tick."</strong> It did, at the first drawing, where the left arm sat 8&deg; off vertical and the shape leaned hard enough to read as a checkmark. Six variants were rendered at 16–72&nbsp;px and compared; at 12&deg;/43&deg; the left arm is far enough off vertical to read as an arm of a V, and at 18&deg; the letter turns symmetrical and loses the lean entirely. The committed angles are the middle of that range.</p>
+<p><strong>"That is two ideas — a letter, and a cut corner."</strong> The charge would be fatal if true. I claim it is one: the corner is not a second gesture but the place where the letter's own arm leaves the block. Remove the V and there is no corner cut; remove the corner cut and the V has nowhere to go. Neither survives without the other, which is the test for whether two marks have become one.</p>
+
+<h3>On colour: one ink — but this one deserves an explicit ruling</h3>
+<p>I recommend the mark ships as a single ink, inheriting its colour with <code>fill="currentColor"</code>. I am less certain of this than of anything else in the document, so here is the variant rather than a summary of it.</p>
+
+<div class="panel">
+  <div class="lock" style="padding:6px 0">
+    <span class="mk" style="width:22px;height:22px;margin-right:14px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+    <span class="wm" style="font-size:32px">AI<span class="slash">/</span>Vector</span>
+  </div>
+  <div class="lock" style="padding:6px 0">
+    <span class="mk" style="width:22px;height:22px;margin-right:14px;color:var(--accent)"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>
+    <span class="wm" style="font-size:32px">AI<span class="slash">/</span>Vector</span>
+  </div>
+  <div class="tabstrip" style="margin-top:20px;width:max-content">
+    <span class="tab"><span class="mk" style="width:16px;height:16px"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>AI/Vector</span>
+    <span class="tab"><span class="mk" style="width:16px;height:16px;color:var(--accent)"><svg viewBox="0 0 100 100" aria-hidden="true"><use href="#m-open"/></svg></span>AI/Vector</span>
+  </div>
+  <p class="cap" style="margin-top:14px">Ink block above, vermilion block below · both at 22&nbsp;px, and both at 16&nbsp;px in a tab</p>
+</div>
+
+<p>The vermilion block is a real option and I will not pretend otherwise: it has obvious ancestry in the Economist's red box, and at 16&nbsp;px on a tab shelf it is the more distinctive of the two by a clear margin. What decides it against, for me, is the masthead: the accent is already spent on the slash in <em>AI/Vector</em>, and putting a vermilion block 14&nbsp;px to its left means the eye meets the accent, then finds a second accent inside the word. The slash stops being the publication's one emphatic gesture and becomes an echo of the block. Vermilion is the only saturated identity colour the palette allows, and a colour used twice in 200&nbsp;px of masthead is decoration rather than emphasis.</p>
+<p><strong>This is the one place where I would not be surprised to be overruled</strong>, and it is a clean either/or: the same path, one attribute different. There are no gradients, no glows and no third colour anywhere in this proposal either way.</p>
+
+<!-- ============================ RULES ============================ -->
+<h2>Clear space, size and the one permitted lockup</h2>
+
+<table>
+  <tr><th>Rule</th><th>Value</th><th>Why</th></tr>
+  <tr><td>Mark height</td><td>Exactly the cap height of the wordmark it stands beside</td><td>Measured: 21.81&nbsp;px at the 32&nbsp;px masthead, 36.31&nbsp;px at the 52&nbsp;px hero. Above 1.1&nbsp;&times; cap the block dominates the serif.</td></tr>
+  <tr><td>Alignment</td><td>Baseline. The block's bottom edge sits on the wordmark's baseline.</td><td>An <code>inline-block</code> SVG with <code>vertical-align:baseline</code> does this natively — no magic numbers.</td></tr>
+  <tr><td>Gap</td><td>0.64 &times; mark height (14&nbsp;px at masthead, 23&nbsp;px at hero)</td><td>Tighter and the block crowds the <em>A</em>; wider and the pair stops reading as one lockup.</td></tr>
+  <tr><td>Clear space</td><td>One quarter of the mark's height on all four sides</td><td>5.5&nbsp;px at masthead size. Nothing enters it — no rule, no meta line, no text.</td></tr>
+  <tr><td>Minimum size, solo</td><td>14&nbsp;px</td><td>Measured on a true 1&nbsp;&times; raster: crisp from 14&nbsp;px, legible but softening at 12–13&nbsp;px, muddy below 12&nbsp;px.</td></tr>
+  <tr><td>Minimum size, lockup</td><td>Wordmark at 21&nbsp;px</td><td>Below that the mark falls under its 14&nbsp;px floor; set the wordmark alone instead.</td></tr>
+  <tr><td>Arrangement</td><td>Mark left, wordmark right, on one line. That is the only permitted arrangement.</td><td>Centred and stacked variants were not drawn and are not sanctioned; the masthead is a flex row in both templates.</td></tr>
+</table>
+
+<p><strong>Never:</strong> substitute the mark for the <em>V</em> in <em>Vector</em>; fill the V counter with a colour (it is always the ground the mark stands on); place the mark on a coloured field other than the two paper tones or full ink; rotate, outline, or add a keyline to it; redraw any derived asset by hand rather than regenerating it.</p>
+
+<!-- ============================ INTEGRATION SPEC ============================ -->
+<h2>Integration spec — for the release-engineer, not applied</h2>
+<p class="sectionlede">Written to be implementable without reopening any of the decisions above. <strong>Nothing in this section has been applied.</strong> No template, no <code>config/brand.yaml</code>, and not <code>docs/favicon.svg</code> — those are the release surface and they are not mine to change. This section is the handoff, and it is contingent on ratification.</p>
+
+<h3>The canonical mark</h3>
+<pre>&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"&gt;
+  &lt;path fill-rule="evenodd" fill="currentColor"
+        d="M0 0L100 0L100 100L0 100Z<b>M18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z</b>"/&gt;
+&lt;/svg&gt;</pre>
+<p class="quiet">Source of truth: <code>docs/brand/candidates/a-open-v.svg</code>, regenerated by <code>python3 tools/brand_marks.py</code>. On ratification it moves to a single canonical path — proposed <code>docs/brand/aiv-mark.svg</code> — and every other asset derives from it. <code>fill-rule="evenodd"</code> is load-bearing: it is what makes the second subpath a hole rather than a second block of ink.</p>
+
+<h3>1 · Issue masthead — <code>templates/issue.html.j2</code></h3>
+<p>Markup, at line 150, inside <code>&lt;div class="brand"&gt;</code>, before the wordmark text:</p>
+<pre>&lt;div class="brand"&gt;&lt;span class="mark" aria-hidden="true"&gt;<b>&lt;!-- canonical svg --&gt;</b>&lt;/span&gt;{{ brand.wordmark.lead }}&lt;span class="slash"&gt;/&lt;/span&gt;{{ brand.wordmark.tail }}&lt;/div&gt;</pre>
+<p>CSS, added beside the existing <code>.brand</code> rule:</p>
+<pre>.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;
+             vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}</pre>
+<p class="quiet">No change to <code>.masthead</code> or to <code>.brand</code> itself. <code>.masthead</code> is already <code>align-items:baseline</code>, and an inline-block sitting on the text baseline keeps the meta line on the right aligned exactly as it is today.</p>
+
+<h3>2 · Index hero — <code>templates/index.html.j2</code></h3>
+<pre>.brand .mark{display:inline-block;width:36px;height:36px;margin-right:23px;
+             vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+
+/* the two existing breakpoints already restyle .brand — mirror them */
+@media (max-width:720px){ .brand .mark{width:27px;height:27px;margin-right:17px} }  /* .brand 40px, cap 27.3 */
+@media (max-width:480px){ .brand .mark{width:23px;height:23px;margin-right:15px} }  /* .brand 34px, cap 23.2 */</pre>
+<p class="quiet">The breakpoint values above are computed from Newsreader's measured cap-height ratio of 0.6816&nbsp;em, not measured individually. Worth one look in a browser before merge.</p>
+
+<h3>3 · Footer colophon</h3>
+<p>No change. The wordmark stays alone at 19&nbsp;px, for the reason given above.</p>
+
+<h3>4 · Favicon — <code>docs/favicon.svg</code></h3>
+<p>Generated from the canonical path, never hand-edited. Two things about the current file need deciding when it is replaced, and both are observations rather than instructions:</p>
+<ul>
+  <li>The present favicon paints an opaque <code>#ffffff</code> rectangle behind the mark, which is a cold white against the warm paper the rest of the identity uses. The replacement should have a transparent ground so the browser's own tab colour shows through in both light and dark strips.</li>
+  <li><code>currentColor</code> does not inherit inside a favicon — an SVG favicon renders as its own document, so <code>currentColor</code> resolves to the initial black. The generated file therefore needs an explicit fill plus a colour-scheme query, while the canonical mark keeps <code>currentColor</code> for in-page use:</li>
+</ul>
+<pre>&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"&gt;
+  &lt;style&gt;path{fill:#3b352d}
+    @media (prefers-color-scheme:dark){path{fill:#f4f0e7}}&lt;/style&gt;
+  &lt;path fill-rule="evenodd" d="…canonical path…"/&gt;
+&lt;/svg&gt;</pre>
+<p><strong>One thing found while reading the templates, unrelated to the mark:</strong> <code>templates/issue.html.j2</code> line 23 pins the Safari mask-icon colour to <code>#a83a2a</code>, and the current <code>docs/favicon.svg</code> uses the same value. The ratified accent is <code>oklch(0.49 0.135 30)</code>, which the template's own comment records as approximately <code>#9f3b2e</code>. Those are different vermilions. It has nothing to do with which mark is chosen, but it should be corrected in the same pass.</p>
+
+<h3>5 · Social card — inventory, not yet drawn</h3>
+<p>No Open Graph image exists in the repo today, so nothing is specified here beyond noting that the reversed lockup shown above is the obvious basis for one, and that it needs no new drawing.</p>
+
+<h2>What this document does not establish</h2>
+<ul>
+  <li><strong>Nothing is applied and nothing is ratified.</strong> The working tree contains only <code>docs/brand/**</code> and <code>tools/brand_marks.py</code>. No template, no config, no favicon has been touched, and no commit has been made.</li>
+  <li><strong>Rendering was verified in one engine.</strong> All rasters come from headless Chrome on macOS. Safari, Firefox and the various favicon caches were not tested, and <code>fill-rule="evenodd"</code> at 16&nbsp;px is exactly the kind of thing that can differ between rasterisers.</li>
+  <li><strong>Nothing was checked on a physical screen or in print.</strong> Every judgement here is from rasters at device scale factor 1, which is a good proxy for a standard display and a weaker one for a high-density laptop screen at a normal viewing distance.</li>
+  <li><strong>No trademark or collision search was run.</strong> "Distinctive" in this document means distinctive against the other five candidates and against a handful of placeholder tab neighbours, not against a register.</li>
+  <li><strong>The index breakpoint sizes are computed, not measured</strong> — see the note in section 2.</li>
+  <li><strong>Where the canonical SVG should live so a fork can swap it</strong> is a contract question that touches <code>config/brand.yaml</code> and the render path. That is the architect's and release-engineer's call, not mine, and it is flagged rather than answered.</li>
+</ul>
+
+<footer>
+  AI Vector · mark proposal · six candidates drawn, rasterised at true device pixels and judged at 16&nbsp;px before anything was written · presented for ratification, decided by nobody but the operator
+</footer>
+
+</main>
+</body>
+</html>

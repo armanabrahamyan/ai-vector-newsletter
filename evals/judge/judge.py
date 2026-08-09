@@ -219,6 +219,9 @@ _DIMENSION_TO_PROMPT_FILE: dict[str, str] = {
     "summary_quality": "summary",
     "signal_appropriateness": "signal",
     "section_intro_quality": "intro",
+    # 2026-08-09 (PROPOSAL pending ratification): redesign-wave dimensions.
+    "take_quality": "take",
+    "digest_quality": "digest",
 }
 
 # Max tokens per dimension. Voice judges a full issue (5 dimensions +
@@ -229,6 +232,8 @@ _DIMENSION_MAX_TOKENS: dict[str, int] = {
     "summary_quality": 512,
     "signal_appropriateness": 512,
     "section_intro_quality": 512,
+    "take_quality": 640,     # four sub-tests + paste-test reasoning
+    "digest_quality": 900,   # five sub-tests over 3-5 bullets
 }
 
 

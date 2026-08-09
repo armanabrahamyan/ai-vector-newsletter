@@ -1,0 +1,489 @@
+# evals/fixtures/digest-lint/cases.yaml -- Eval 11 labelled synthetic cases
+#
+# STATUS: PROPOSAL (2026-08-09), pending ratification alongside the Eval 11
+# thresholds in run_evals.py (digest budget 100 words; bold lead band 3-6
+# words; one sentence per bullet, 8-30 words proposal band; synthesis band
+# 20-60 words proposal; take-route cap 40%/issue; EDITORIAL.md banned-phrase
+# list; bullet-one pulse provenance; verify-verdict bar).
+#
+# The digest ("The 30-second read", Issue v8) and the section synthesis
+# (IssueSection v4) are the 2026-08-09 layout redesign's new reader-facing
+# text surfaces. These cases seed each deterministic failure mode plus the
+# clean shape that must NOT flag. Consumed by
+# evals/test_digest_synthesis_lint.py; each violation case is a mutation
+# that proves its check load-bearing (remove the check, the case goes
+# green -- the case note names the mutation).
+#
+# NOT auto-run by the dataset loop: this directory carries no issue.json
+# (same pattern as fixtures/take-drift/).
+
+schema_version: 1
+
+cases:
+
+  - id: clean_redesign_issue
+    note: >
+      The healthy shape: 3 bullets inside every band (59 total words,
+      leads 4 words, sentences 15-16 words, one sentence each), bullet 1
+      carries the Pulse story, no collisions, no banned phrases,
+      syntheses inside the 20-60 proposal band, routes spread 2/2/1
+      (40% is NOT a violation -- the rule is strictly greater). Must stay
+      clean; ANY threshold tightening flips this case red first.
+    expect_violation_kinds: []
+    expect_seams:
+      take_routes: exposed
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+            take: "Local agent runtimes just became the default assumption for pilots."
+            take_route: "displacement"
+      sections:
+        - name: big_picture
+          synthesis: >-
+            Three of today's four stories move agent oversight into the
+            runtime, with regulators, vendors, and one open toolchain
+            converging on inspection points that live inside the loop.
+          stories:
+            - story_id: "c_bbbbbbbbbbbb"
+              headline: "Model risk teams widen the audit scope"
+              summary: "Sign-off now covers plans and tool calls."
+              take: "Model-risk sign-off now covers agent plans, not just model outputs."
+              take_route: "displacement"
+            - story_id: "c_cccccccccccc"
+              headline: "Two vendors trade accuracy for latency"
+              summary: "Halved response times for one benchmark point."
+              take: "Production buyers now price latency above the leaderboard point it costs."
+              take_route: "consequence"
+        - name: hands_on
+          synthesis: >-
+            Both practical items today assume you already run an agent
+            loop in production, and both reward teams that wired their
+            own latency and incident baselines months ago.
+          stories:
+            - story_id: "c_dddddddddddd"
+              headline: "A local runtime ships with sandbox defaults"
+              summary: "Clone it and run the loop offline."
+              take: "The sandbox default, not the model, is what unlocks laptop pilots."
+              take_route: "consequence"
+            - story_id: "c_eeeeeeeeeeee"
+              headline: "An eval harness adds latency budgets"
+              summary: "Budgets fail the suite when responses slow."
+              take: "Latency budgets just became a first-class eval assertion."
+              take_route: "reframe"
+      digest:
+        - lead: "Agents run locally now"
+          sentence: >-
+            A packaged runtime moves coding agents onto laptops with no
+            cloud dependency for the common loop.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Audit scope widens quickly"
+          sentence: >-
+            Model risk sign-off now covers agent plans and tool calls,
+            not just model outputs.
+          story_ids: ["c_bbbbbbbbbbbb"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a point of benchmark accuracy for
+            halved response times in production loops.
+          story_ids: ["c_cccccccccccc", "c_eeeeeeeeeeee"]
+
+  - id: budget_and_bands_violations
+    note: >
+      Four seeded band defects on one issue: a 2-word lead (under band),
+      a 7-word lead (over band), a two-sentence bullet, and enough
+      padding to blow the 100-word budget. Mutation targets: drop the
+      lead band and both digest_lead_band rows go green; drop the
+      one-sentence rule and digest_multi_sentence goes green; raise the
+      budget above 103 and digest_budget goes green. digest_sentence_band
+      fires on the 35-word run-on sentence (proposal band 8-30).
+    expect_violation_kinds:
+      - digest_lead_band
+      - digest_lead_band
+      - digest_multi_sentence
+      - digest_sentence_band
+      - digest_budget
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+      sections: []
+      digest:
+        - lead: "Agents local"
+          sentence: >-
+            A packaged runtime moves coding agents onto laptops with no
+            cloud dependency for the common loop of everyday work across
+            the whole team and its weekly release cadence.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Audit scope widens very much more quickly"
+          sentence: >-
+            Model risk sign-off now covers agent plans and tool calls
+            rather than just model outputs. Boards are reorganising their
+            review committees around that shift this quarter.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a single point of benchmark
+            accuracy for halved response times in production loops and
+            the procurement conversation has moved with them to the new
+            budget line that latency now owns outright
+          story_ids: ["c_aaaaaaaaaaaa"]
+
+  - id: banned_phrases_on_both_surfaces
+    note: >
+      EDITORIAL.md anti-pattern catalogue entries seeded on both new
+      surfaces: "Trust, but verify" in a digest sentence and "it remains
+      to be seen" in a synthesis. Mutation target: remove either pattern
+      from _BANNED_PHRASE_PATTERNS and its row goes green.
+    expect_violation_kinds:
+      - digest_banned_phrase
+      - synthesis_banned_phrase
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+      sections:
+        - name: big_picture
+          synthesis: >-
+            Regulators and vendors both moved on runtime oversight today,
+            though it remains to be seen whether either framework
+            survives contact with a production incident this quarter.
+          stories:
+            - story_id: "c_bbbbbbbbbbbb"
+              headline: "Model risk teams widen the audit scope"
+              summary: "Sign-off now covers plans and tool calls."
+      digest:
+        - lead: "Agents run locally now"
+          sentence: >-
+            Trust, but verify: the packaged runtime moves coding agents
+            onto laptops for the common loop.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Audit scope widens quickly"
+          sentence: >-
+            Model risk sign-off now covers agent plans and tool calls,
+            not just model outputs.
+          story_ids: ["c_bbbbbbbbbbbb"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a point of benchmark accuracy for
+            halved response times in production loops.
+          story_ids: ["c_aaaaaaaaaaaa"]
+
+  - id: bullet_one_not_pulse
+    note: >
+      Bullet 1's provenance points at a section story, not the Pulse --
+      the day's direction does not lead the skim. Mutation target: drop
+      the provenance check and this goes green. (The editorial half --
+      whether bullet 1 CARRIES the direction -- is the judge's
+      bullet_one_is_pulse sub-test, not this counter's.)
+    expect_violation_kinds:
+      - digest_bullet_one_not_pulse
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+      sections:
+        - name: big_picture
+          stories:
+            - story_id: "c_bbbbbbbbbbbb"
+              headline: "Model risk teams widen the audit scope"
+              summary: "Sign-off now covers plans and tool calls."
+      digest:
+        - lead: "Audit scope widens quickly"
+          sentence: >-
+            Model risk sign-off now covers agent plans and tool calls,
+            not just model outputs.
+          story_ids: ["c_bbbbbbbbbbbb"]
+        - lead: "Agents run locally now"
+          sentence: >-
+            A packaged runtime moves coding agents onto laptops with no
+            cloud dependency for the common loop.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a point of benchmark accuracy for
+            halved response times in production loops.
+          story_ids: ["c_aaaaaaaaaaaa"]
+
+  - id: surface_collision_verbatim
+    note: >
+      A digest sentence duplicates a story's take word for word (case
+      and punctuation differ -- normalisation must still catch it). The
+      same-fact-different-sentence bullet must NOT flag. Mutation
+      target: drop the exact-duplication check and this goes green.
+      Ratio-based near-duplication is the shared helper's job (seam) and
+      is deliberately not seeded here.
+    expect_violation_kinds:
+      - digest_surface_collision
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+            take: "Model-risk sign-off now covers agent plans, not just model outputs."
+      sections: []
+      digest:
+        - lead: "Audit scope widens quickly"
+          sentence: >-
+            Model-risk sign-off now covers agent plans, not just model
+            outputs
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Agents run locally now"
+          sentence: >-
+            A packaged runtime moves coding agents onto laptops with no
+            cloud dependency for the common loop.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a point of benchmark accuracy for
+            halved response times in production loops.
+          story_ids: ["c_aaaaaaaaaaaa"]
+
+  - id: verify_bar_contradicted_digest_claim
+    note: >
+      The bullet's primary story carries a digest-prefixed claim judged
+      contradicted (DESIGN.md V3 attachment: note prefix "digest: ",
+      location body). Mutation target: drop the verify-bar check and
+      this goes green. The supported digest claim on the same story must
+      NOT flag.
+    expect_violation_kinds:
+      - digest_verify_bar
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+            verification:
+              claims:
+                - note: "digest: bullet 0"
+                  verdict: contradicted
+                  claim_text: "no cloud dependency for the common loop"
+                  summary_span: "with no cloud dependency for the common loop"
+                - note: "digest: bullet 0"
+                  verdict: supported
+                  claim_text: "moves coding agents onto laptops"
+                  summary_span: "moves coding agents onto laptops"
+      sections: []
+      digest:
+        - lead: "Agents run locally now"
+          sentence: >-
+            A packaged runtime moves coding agents onto laptops with no
+            cloud dependency for the common loop.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Audit scope widens quickly"
+          sentence: >-
+            Model risk sign-off now covers agent plans and tool calls,
+            not just model outputs.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a point of benchmark accuracy for
+            halved response times in production loops.
+          story_ids: ["c_aaaaaaaaaaaa"]
+
+  - id: verify_seam_digest_never_verified
+    note: >
+      Digest present, the issue carries verification, but NO claim
+      anywhere has the "digest: " note prefix -- the digest was never
+      claim-extracted (V1 contract) or verify ran before the digest was
+      written (pipeline order). Must surface as a SEAM flag, not a lint
+      violation. Mutation target: drop the seam detection and the
+      failures list loses its SEAM row.
+    expect_violation_kinds: []
+    expect_seams:
+      digest_claims: absent_from_verification
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+            verification:
+              claims:
+                - note: ""
+                  verdict: supported
+                  claim_text: "moves the whole loop local"
+                  summary_span: "moves the whole loop local"
+      sections: []
+      digest:
+        - lead: "Agents run locally now"
+          sentence: >-
+            A packaged runtime moves coding agents onto laptops with no
+            cloud dependency for the common loop.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Audit scope widens quickly"
+          sentence: >-
+            Model risk sign-off now covers agent plans and tool calls,
+            not just model outputs.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a point of benchmark accuracy for
+            halved response times in production loops.
+          story_ids: ["c_aaaaaaaaaaaa"]
+
+  - id: route_share_violation
+    note: >
+      Five takes, three carrying route "displacement": 3/5 = 60% > the
+      40% cap. Mutation target: raise _TAKE_ROUTE_MAX_SHARE above 0.60
+      and this goes green. Routes ride as feed-forward metadata
+      (story.take_route, expected from summarise v0.23).
+    expect_violation_kinds:
+      - take_route_share
+    expect_seams:
+      take_routes: exposed
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+            take: "Local agent runtimes just became the default assumption for pilots."
+            take_route: "displacement"
+      sections:
+        - name: big_picture
+          stories:
+            - story_id: "c_bbbbbbbbbbbb"
+              headline: "Model risk teams widen the audit scope"
+              summary: "Sign-off now covers plans and tool calls."
+              take: "Model-risk sign-off now covers agent plans, not just model outputs."
+              take_route: "displacement"
+            - story_id: "c_cccccccccccc"
+              headline: "Two vendors trade accuracy for latency"
+              summary: "Halved response times for one benchmark point."
+              take: "Production buyers now price latency above the leaderboard point it costs."
+              take_route: "displacement"
+            - story_id: "c_dddddddddddd"
+              headline: "A local runtime ships with sandbox defaults"
+              summary: "Clone it and run the loop offline."
+              take: "The sandbox default, not the model, is what unlocks laptop pilots."
+              take_route: "consequence"
+            - story_id: "c_eeeeeeeeeeee"
+              headline: "An eval harness adds latency budgets"
+              summary: "Budgets fail the suite when responses slow."
+              take: "Latency budgets just became a first-class eval assertion."
+              take_route: "reframe"
+      digest:
+        - lead: "Agents run locally now"
+          sentence: >-
+            A packaged runtime moves coding agents onto laptops with no
+            cloud dependency for the common loop.
+          story_ids: ["c_aaaaaaaaaaaa"]
+        - lead: "Audit scope widens quickly"
+          sentence: >-
+            Model risk sign-off now covers agent plans and tool calls,
+            not just model outputs.
+          story_ids: ["c_bbbbbbbbbbbb"]
+        - lead: "Latency beats accuracy today"
+          sentence: >-
+            Two vendor releases trade a point of benchmark accuracy for
+            halved response times in production loops.
+          story_ids: ["c_cccccccccccc"]
+
+  - id: routes_not_exposed_gap
+    note: >
+      Takes present, no take_route metadata anywhere -- the v0.22 state.
+      The route-diversity counter must idle and flag the gap as a seam,
+      never a violation. Mutation target: drop the seam and the gap goes
+      silent (the failure mode this seam exists to keep loud).
+    expect_violation_kinds: []
+    expect_seams:
+      take_routes: not_exposed
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+            take: "Local agent runtimes just became the default assumption for pilots."
+      sections:
+        - name: big_picture
+          synthesis: >-
+            Three of today's four stories move agent oversight into the
+            runtime, with regulators, vendors, and one open toolchain
+            converging on inspection points that live inside the loop.
+          stories:
+            - story_id: "c_bbbbbbbbbbbb"
+              headline: "Model risk teams widen the audit scope"
+              summary: "Sign-off now covers plans and tool calls."
+              take: "Model-risk sign-off now covers agent plans, not just model outputs."
+
+  - id: synthesis_legacy_coexistence
+    note: >
+      A section carrying synthesis AND intro_lead -- two competing
+      sources of truth; models._synthesis_excludes_legacy_intros would
+      reject this record, and the harness must catch it in raw JSON too
+      (the silent-corruption class). Mutation target: drop the
+      coexistence check and this goes green.
+    expect_violation_kinds:
+      - synthesis_legacy_coexistence
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+      sections:
+        - name: big_picture
+          intro_lead: "Trust gaps are widening."
+          synthesis: >-
+            Three of today's four stories move agent oversight into the
+            runtime, with regulators, vendors, and one open toolchain
+            converging on inspection points that live inside the loop.
+          stories:
+            - story_id: "c_bbbbbbbbbbbb"
+              headline: "Model risk teams widen the audit scope"
+              summary: "Sign-off now covers plans and tool calls."
+
+  - id: synthesis_word_band_violation
+    note: >
+      An 11-word synthesis, under the 20-word proposal floor -- a
+      posture-slogan wearing the synthesis field. Mutation target:
+      lower _SYNTHESIS_WORDS_MIN below 11 and this goes green.
+    expect_violation_kinds:
+      - synthesis_word_band
+    issue:
+      date: "2026-08-09"
+      pulse:
+        name: pulse
+        stories:
+          - story_id: "c_aaaaaaaaaaaa"
+            headline: "Coding agents move onto the laptop"
+            summary: "A packaged runtime moves the whole loop local."
+      sections:
+        - name: big_picture
+          synthesis: "Trust gaps are widening across the field and boards feel it."
+          stories:
+            - story_id: "c_bbbbbbbbbbbb"
+              headline: "Model risk teams widen the audit scope"
+              summary: "Sign-off now covers plans and tool calls."

@@ -42,6 +42,7 @@ import json
 import logging
 import math
 import os
+import re
 import shutil
 from pathlib import Path
 from typing import Literal
@@ -50,6 +51,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup, escape
 
 from src import paths
 from src.models import Issue
@@ -60,7 +62,17 @@ from src.models import Issue
 
 TEMPLATE_NAME = "issue.html.j2"
 INDEX_TEMPLATE_NAME = "index.html.j2"
+HOW_ITS_MADE_TEMPLATE_NAME = "how-its-made.html.j2"
+REDIRECT_TEMPLATE_NAME = "redirect.html.j2"
 TEMPLATE_DIR = Path("templates")
+
+# Standing pages -- emitted alongside the landing index rather than on their
+# own schedule. They carry the design tokens inline like every other page, so
+# leaving them to a manual step would let them drift into last month's palette
+# while the issues moved on. Filenames are relative to paths.DOCS_ROOT.
+HOW_ITS_MADE_FILENAME = "how-its-made.html"
+ABOUT_FILENAME = "about.html"
+HOW_ITS_MADE_TITLE = "How it's made"
 
 # Brand config -- the one file a fork edits to rebrand. See config/brand.yaml
 # and SYNCING.md. Reader-facing copy only; absent file -> these defaults, so
@@ -71,9 +83,12 @@ _DEFAULT_BRAND: dict = {
     "wordmark": {"lead": "AI", "tail": "Vector"},
     "tagline": "Today's AI, with a heading.",
     "description": "A daily AI newsletter with a financial-services lens.",
-    "ethos": "Curated, not aggregated. AI-drafted, human-ratified.",
+    "ethos": "Curated, not aggregated. AI-drafted, human-accountable.",
     "landing_subtitle": "The daily AI digest",
     "author": "Arman Abrahamyan",
+    # Where the by-line author links to. Falsy (absent or empty string) renders
+    # the author as plain text -- see the degrade branch in both templates.
+    "author_url": "https://armanabrahamyan.com",
 }
 
 # Peripheral files copied from staging -> canonical during release_promote
@@ -248,9 +263,60 @@ def _source_label(url) -> str:
     return host
 
 
+# ---------------------------------------------------------------------------
+# Inline code spans -- `backticks` in generated prose become <code>.
+# ---------------------------------------------------------------------------
+
+_CODE_SPAN_RE = re.compile(r"`([^`\n]+)`")
+
+
+def _code_spans(text: object) -> Markup:
+    """Render literal `backticks` in generated prose as ``<code>`` elements.
+
+    Real released summaries contain them -- six occurrences across the
+    archive, all in Hands-On, all shell fragments like ``hf jobs run`` or
+    ``-DGGML_ET=ON``. Rendered raw they read as stray punctuation, which is
+    exactly the wrong signal for the one section whose readers are meant to
+    type the thing.
+
+    Escaping order is the whole safety argument, so it is worth stating.
+    The text is HTML-escaped FIRST, then backtick pairs in the escaped
+    string are replaced. Escaping neither produces nor consumes a backtick,
+    so the pairs that survive are the author's; and the only markup this
+    function introduces is the ``<code>`` element itself. The span's
+    contents were escaped a step earlier and are never unescaped, so a
+    summary containing ``<script>`` stays inert whether or not it sits
+    inside backticks.
+
+    Returns ``Markup`` because the result is deliberately trusted HTML; the
+    templates therefore must not add ``|safe`` on top of it.
+    """
+    escaped = str(escape("" if text is None else text))
+    return Markup(_CODE_SPAN_RE.sub(lambda m: f"<code>{m.group(1)}</code>", escaped))
+
+
 def _read_minutes(issue: Issue) -> int:
     """Rough read-time estimate: total summary word count / 200 wpm,
-    rounded up. Minimum 1 minute. Used in the masthead meta line."""
+    rounded up. Minimum 1 minute. Used in the masthead meta line
+    (``No. 34 · 08 Aug · 4 min``).
+
+    Deliberately counts story *summaries* only -- not headlines, takes,
+    section syntheses or the digest. That is not an oversight: measured on
+    the four real released issues checked against the redesign handoff
+    (2026-06-02, 2026-07-11, 2026-08-05, 2026-08-08), summaries-only yields
+    4 minutes, which is the number the handoff's own masthead shows for
+    issue No. 11 (02 Jun). Counting every visible word yields 5 and would
+    have put a different figure on the page than the design specifies.
+
+    TODO(recalibrate): that 4-minute calibration predates takes, the
+    digest, and section syntheses. Once all three ship they add roughly
+    230 words to an ~800-word base -- close to 30% more reading, which the
+    masthead would keep reporting as 4 minutes. Re-measure against a real
+    issue that carries all three and decide then whether the estimate
+    should count them, raise the divisor, or stay summaries-only. Do not
+    change it piecemeal: the number is on every page and readers calibrate
+    against it.
+    """
     words = 0
     for block in issue.pulse.stories:
         words += len(block.summary.split())
@@ -258,6 +324,203 @@ def _read_minutes(issue: Issue) -> int:
         for block in section.stories:
             words += len(block.summary.split())
     return max(1, math.ceil(words / 200))
+
+
+# ---------------------------------------------------------------------------
+# The tag verb -- the one-word "your move" label in each story's meta row.
+#
+# The vocabulary (act / try / read / discuss / watch) is exactly
+# ``models.Signal``, which ``summarise.py`` writes onto every SummaryBlock.
+# The signal is the story's own editorial verdict, but not every verdict
+# makes sense in every position: "watch" under Hands-On tells a builder
+# nothing to do, and "try" under The Big Picture asks a decision-maker to
+# open a terminal.
+#
+# So the Editor's ratified ruling (2026-08-09) is an ADMISSIBILITY table,
+# not a fallback table. Each section declares the verbs that are meaningful
+# in it, plus the verb to use when the signal is absent or inadmissible.
+# The rule is one line:
+#
+#     tag = signal if signal in admissible(section) else default(section)
+#
+# Two consequences worth stating plainly:
+#
+#   * A story never renders an empty tag slot. A missing signal is not a
+#     missing tag; it takes the section default.
+#   * The Pulse suppresses the tag entirely, regardless of signal. That is
+#     suppression BY POSITION -- the story of the day is the whole issue's
+#     "your move", so a verb next to it would be noise. It is not a
+#     property of the block, so the same block promoted into Hands-On
+#     tomorrow would carry a tag.
+# ---------------------------------------------------------------------------
+
+# Sections that never render a tag, whatever the story carries.
+_TAG_SUPPRESSED_SECTIONS: frozenset[str] = frozenset({"pulse"})
+
+# Verbs that are meaningful in each section. Keys are ``SectionName``
+# values; members are ``models.Signal`` values.
+_ADMISSIBLE_TAGS: dict[str, frozenset[str]] = {
+    "big_picture": frozenset({"act", "discuss"}),
+    "hands_on": frozenset({"try", "read", "discuss"}),
+    "currents": frozenset({"watch", "read", "discuss"}),
+    # Legacy archive alias. models.IssueSection coerces "on_the_radar" to
+    # "currents" before render sees it, so this entry is belt-and-braces
+    # for any caller that passes a raw archived section name.
+    "on_the_radar": frozenset({"watch", "read", "discuss"}),
+}
+
+# The verb used when the signal is absent or inadmissible for the section.
+_DEFAULT_TAG: dict[str, str] = {
+    "big_picture": "discuss",
+    "hands_on": "try",
+    "currents": "watch",
+    "on_the_radar": "watch",
+}
+
+
+def _story_tag(story: object, section_name: str) -> str | None:
+    """Return the meta-row tag verb for one story, or ``None`` for no tag.
+
+    ``None`` happens in exactly two cases: a suppressed position (the
+    Pulse), and an unrecognised section name, which has neither an
+    admissible set nor a default and so cannot be given a meaningful verb.
+    Every story in a known, non-suppressed section gets a verb.
+    """
+    if section_name in _TAG_SUPPRESSED_SECTIONS:
+        return None
+    admissible = _ADMISSIBLE_TAGS.get(section_name, frozenset())
+    signal = getattr(story, "signal", None)
+    if signal and str(signal) in admissible:
+        return str(signal)
+    return _DEFAULT_TAG.get(section_name)
+
+
+def tag_stats(issue: Issue) -> dict[str, int]:
+    """Count how often the rendered tag differs from the story's own signal.
+
+    The Editor's admissibility rule means the rendered verb is not always
+    the model's verdict. This is the meter for that: a drift counter can
+    read ``overrides`` over time and notice a section whose signals stop
+    matching its admissible set, which usually means the summarise prompt
+    and the section definition have drifted apart.
+
+    Keys:
+      ``stories``          every story in the issue (pulse + all sections).
+      ``suppressed``       stories that render no tag at all: a suppressed
+                           position (the Pulse), or an unrecognised section
+                           name with no admissible set.
+      ``tagged``           stories that render a tag.
+      ``signal_replaced``  tagged stories whose signal was set but
+                           inadmissible, so the default was used instead.
+                           This is the real editorial disagreement.
+      ``default_filled``   tagged stories with no signal at all, which take
+                           the default. Not a disagreement -- a gap.
+      ``overrides``        ``signal_replaced + default_filled``: every
+                           tagged story where ``tag != signal``. This is
+                           the headline "override count".
+
+    Counted over tagged stories only. A suppressed Pulse story whose signal
+    is set would trivially satisfy ``tag != signal`` on every single issue,
+    which would bury the signal the counter exists to surface.
+    """
+    stats = {
+        "stories": 0,
+        "suppressed": 0,
+        "tagged": 0,
+        "signal_replaced": 0,
+        "default_filled": 0,
+        "overrides": 0,
+    }
+    pairs: list[tuple[str, object]] = [
+        (issue.pulse.name, block) for block in issue.pulse.stories
+    ]
+    for section in issue.sections:
+        pairs.extend((section.name, block) for block in section.stories)
+
+    for section_name, block in pairs:
+        stats["stories"] += 1
+        tag = _story_tag(block, section_name)
+        if tag is None:
+            stats["suppressed"] += 1
+            continue
+        stats["tagged"] += 1
+        signal = getattr(block, "signal", None)
+        if signal is None:
+            stats["default_filled"] += 1
+        elif str(signal) != tag:
+            stats["signal_replaced"] += 1
+    stats["overrides"] = stats["signal_replaced"] + stats["default_filled"]
+    return stats
+
+
+# ---------------------------------------------------------------------------
+# The 30-second read -- the digest bullets above the full read.
+# ---------------------------------------------------------------------------
+
+def _normalise_digest(raw: object) -> list[dict[str, str]]:
+    """Normalise ``Issue.digest`` into the ``{lead, sentence}`` pairs the
+    templates render as ``<strong>{lead}</strong> <span>{sentence}</span>``.
+
+    Field names verified against ``models.DigestBullet`` (``lead``,
+    ``sentence``, ``story_ids``) -- the bullet is stored as two fields
+    precisely so the renderer never has to split prose on punctuation.
+
+    Two input shapes, because there are two callers: ``DigestBullet``
+    objects (the issue page, which has a parsed ``Issue``) and plain
+    dicts (the landing page, which reads archive JSON directly to stay
+    tolerant of legacy shapes). A bullet with neither field populated is
+    dropped rather than rendered as an empty paragraph.
+
+    ``None`` -- every issue written before 2026-08-09, and any day the
+    digest prompt degraded -- yields ``[]``, and the template omits the
+    whole section. Absence is normal, never an error.
+    """
+    if not isinstance(raw, (list, tuple)):
+        return []
+    out: list[dict[str, str]] = []
+    for entry in raw:
+        if isinstance(entry, dict):
+            lead = str(entry.get("lead") or "").strip()
+            sentence = str(entry.get("sentence") or "").strip()
+        else:
+            lead = str(getattr(entry, "lead", "") or "").strip()
+            sentence = str(getattr(entry, "sentence", "") or "").strip()
+        if lead or sentence:
+            out.append({"lead": lead, "sentence": sentence})
+    return out
+
+
+# ---------------------------------------------------------------------------
+# The section synthesis -- the italic paragraph under each section head.
+# ---------------------------------------------------------------------------
+
+def _section_synthesis(section: object) -> str:
+    """The italic paragraph under a section head, or ``""`` for none.
+
+    ``IssueSection.synthesis`` (schema v4, 2026-08-09) when present;
+    otherwise the legacy ``intro_lead`` + ``intro_body`` pair joined with
+    a single space, which is how every released archive issue carries the
+    same text. The model's ``_synthesis_excludes_legacy_intros`` validator
+    guarantees a section never carries both, so the preference order can
+    never silently discard text.
+    """
+    synthesis = getattr(section, "synthesis", None)
+    if synthesis and synthesis.strip():
+        return synthesis.strip()
+    parts = [
+        str(p).strip()
+        for p in (
+            getattr(section, "intro_lead", None),
+            getattr(section, "intro_body", None),
+        )
+        if p and str(p).strip()
+    ]
+    return " ".join(parts)
+
+
+def _digest_items(issue: Issue) -> list[dict[str, str]]:
+    """The issue-page view of ``_normalise_digest``."""
+    return _normalise_digest(issue.digest)
 
 
 def _load_brand() -> dict:
@@ -288,9 +551,12 @@ def _build_env() -> Environment:
         autoescape=select_autoescape(["html", "j2"]),
     )
     env.globals["section_title"] = _section_title
+    env.globals["story_tag"] = _story_tag
+    env.globals["section_synthesis"] = _section_synthesis
     env.globals["brand"] = _load_brand()
     env.filters["aest"] = _aest
     env.filters["source_label"] = _source_label
+    env.filters["code_spans"] = _code_spans
     return env
 
 
@@ -450,6 +716,12 @@ def _collect_index_entries() -> list[dict]:
         headline = ""
         if pulse_stories and isinstance(pulse_stories[0], dict):
             headline = (pulse_stories[0].get("headline") or "").strip()
+        # The 30-second read, shown inline in the landing hero for the
+        # newest issue only. Read from the raw payload (not the pydantic
+        # model) for the same reason the rest of this function does:
+        # tolerance of legacy archive shapes. Absent on every issue
+        # written before the digest field existed.
+        digest = _normalise_digest(payload.get("digest"))
         # `revision` is absent from pre-v5 archive issues; treat as 0.
         revision = payload.get("revision", 0)
         issue_number = payload.get("issue_number")
@@ -459,6 +731,7 @@ def _collect_index_entries() -> list[dict]:
             "revision": revision,
             "display_number": _format_display_number(issue_number, revision),
             "pulse_headline": headline,
+            "digest": digest,
         })
     # Date-descending, then revision-descending within a date.
     entries.sort(key=lambda e: (e["date"], e["revision"]), reverse=True)
@@ -476,6 +749,44 @@ def _latest_kicker_label(d: datetime.date) -> str:
     return d.strftime("%a %d %b")
 
 
+def _render_standing_pages(env: Environment | None = None) -> list[Path]:
+    """Write the standing pages that are not tied to any one issue.
+
+    Two files, both regenerated on every index render:
+
+      * ``how-its-made.html`` -- the ratified explanation of how the
+        publication is produced. It is emitted rather than hand-maintained
+        because it carries the same inline design tokens as every other page;
+        a hand-kept copy would silently fall behind the next palette change.
+      * ``about.html`` -- a meta-refresh stub pointing at it. Readers hunt for
+        ``/about``; this gives them somewhere to land without minting a second
+        page anyone has to keep in sync. GitHub Pages serves static files with
+        no redirect configuration, so a meta refresh is the available
+        mechanism.
+
+    Returns the paths written, for logging.
+    """
+    env = env or _build_env()
+    written: list[Path] = []
+
+    how_out = paths.DOCS_ROOT / HOW_ITS_MADE_FILENAME
+    _atomic_write(
+        how_out, env.get_template(HOW_ITS_MADE_TEMPLATE_NAME).render()
+    )
+    written.append(how_out)
+
+    about_out = paths.DOCS_ROOT / ABOUT_FILENAME
+    _atomic_write(
+        about_out,
+        env.get_template(REDIRECT_TEMPLATE_NAME).render(
+            target=HOW_ITS_MADE_FILENAME, title=HOW_ITS_MADE_TITLE,
+        ),
+    )
+    written.append(about_out)
+
+    return written
+
+
 def _render_index_landing() -> Path:
     """Render docs/index.html as the landing page: latest issue hero
     block + monthly-grouped archive list below. Writes atomically.
@@ -485,6 +796,10 @@ def _render_index_landing() -> Path:
     Template contract:
       latest          -- newest entry dict (date, issue_number, pulse_headline), or None
       latest_kicker   -- chip label string ("Today", "Yesterday", "Wed 22 May")
+      latest_digest   -- the newest issue's 30-second read as {lead, body}
+                         pairs, shown inline in the hero. Empty when the
+                         issue carries no digest, in which case both the
+                         skim block and its kicker suffix are omitted.
       archive_data    -- JSON-ready list of past entries (entries[1:]) shaped
                          as {date, num, headline, href} for the embedded
                          search/accordion script. May be empty.
@@ -510,11 +825,18 @@ def _render_index_landing() -> Path:
     html = template.render(
         latest=latest,
         latest_kicker=latest_kicker,
+        latest_digest=latest["digest"] if latest else [],
         archive_data=archive_data,
         generated_at=datetime.datetime.now(datetime.timezone.utc),
     )
     out = paths.DOCS_INDEX
     _atomic_write(out, html)
+
+    # The standing pages ride along with the index so they can never be a
+    # palette behind the issues.
+    for page in _render_standing_pages(env):
+        log.debug("index: refreshed standing page %s", page)
+
     return out
 
 
@@ -578,6 +900,8 @@ def render(
     template = env.get_template(TEMPLATE_NAME)
     html = template.render(
         issue=issue,
+        pulse_story=issue.pulse.stories[0],
+        digest=_digest_items(issue),
         read_minutes=_read_minutes(issue),
         dup_risk_dates=dup_risk_dates,
         # show_verify_flags: True only in staging preview. The released
@@ -588,6 +912,16 @@ def render(
     issue_label = (
         f"#{issue.display_number}" if issue.display_number is not None
         else "(staging -- not yet numbered)"
+    )
+
+    # Tag-admissibility meter. Emitted on every render so a drift counter
+    # can scrape it later without re-rendering; see tag_stats().
+    tags = tag_stats(issue)
+    log.info(
+        "tags: %d tagged, %d suppressed, %d overrides "
+        "(%d inadmissible signal, %d default-filled)",
+        tags["tagged"], tags["suppressed"], tags["overrides"],
+        tags["signal_replaced"], tags["default_filled"],
     )
 
     if mode == "preview":

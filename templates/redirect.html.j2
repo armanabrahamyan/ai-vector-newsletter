@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+{#- A redirect stub, not a design surface. Readers hunt for /about; this sends
+    them to the page that actually exists without minting a second URL that
+    anyone has to maintain. Meta refresh rather than a server rule because
+    GitHub Pages serves static files and offers no redirect configuration. -#}
+<meta http-equiv="refresh" content="0; url={{ target }}">
+<link rel="canonical" href="{{ target }}">
+<meta name="robots" content="noindex">
+<title>{{ title }} &mdash; {{ brand.name }}</title>
+</head>
+<body>
+<p>Redirecting to <a href="{{ target }}">{{ title }}</a>.</p>
+</body>
+</html>

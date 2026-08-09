@@ -91,13 +91,53 @@ from src.models import (
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT_VERSION = "v1.1"
+REVIEW_PROMPT_VERSION = "v1.2.1"
 """Versioned prompt string written into ``review.json`` and the
 ``review.md`` frontmatter so the eval harness can correlate verdict
 movement against prompt revisions.
 
 Bump when the prompt content (criteria, instructions, output format)
-changes substantively. Audit tag: ``review-v1.1-2026-08-08``.
+changes substantively. Audit tag: ``review-v1.2.1-2026-08-09``.
+
+v1.2.1 (2026-08-09): MESSAGE-STRUCTURE-ONLY change -- prompt caching.
+The first-attempt prompt BYTES are identical to v1.2; the prompt is now
+sent to the Anthropic API as two content blocks (static instruction
+prefix with ``cache_control: ephemeral`` + day-specific variable part)
+instead of one string, split at the end of ``_REVIEW_INSTRUCTIONS +
+"\\n\\n"`` (see ``_build_review_prompt_parts``). The only byte-level
+difference is on the JSON-parse RETRY path: corrective text used to be
+PREPENDED to the whole prompt (changing byte 0 and forcing a full cache
+miss); it is now APPENDED after the variable part so the cached prefix
+block stays byte-identical across attempts (the rank v0.6.1 /
+summarise trap). Patch-level bump so the archive records the
+transition; Eval 9 calibration against v1.2 remains valid because the
+model reads the same bytes.
+
+v1.2 (2026-08-09, "digest + synthesis" -- contract R1, DESIGN.md "The
+digest"): the reviewer now sees the two new redesign surfaces. Changes,
+prompt-content plus the matching code surfaces:
+  (a) The rendered issue gains a DIGEST block (index, lead, sentence,
+      story_ids per bullet) above the Pulse, a ``synthesis:`` line per
+      section (replacing intro_lead/intro_body on redesign issues; the
+      legacy pair still renders on archived issues), and a ``signal:``
+      line per story (the DESIGN.md tag-derivation recommendation --
+      metadata findings about the verb need to see the stored input).
+  (b) ``index_issue_fields`` indexes ``digest:<i>:digest_lead`` /
+      ``digest:<i>:digest_sentence`` / ``section:<name>:synthesis`` so
+      findings on the new fields survive the verbatim-quote check;
+      ``target_key`` + ``_build_finding`` learn ``kind="digest"`` with
+      the ``digest_index`` locator (ReviewTarget v3).
+  (c) New criterion ``digest_shape``: a bullet whose sentence restates a
+      take or whose lead echoes a synthesis = major; a lead over 6 words
+      or opening on an imperative = major.
+  (d) New criterion ``synthesis_shape``: a synthesis whose first
+      sentence is an aphorism = minor; a synthesis on a ONE-story
+      section = major flagged as a pipeline defect (summarise's n>=2
+      rule makes it structurally impossible -- its presence means the
+      generation pipeline broke, not the prose).
+  (e) ``section_intro`` recalibrated: the section framing lives in the
+      single ``synthesis`` field on redesign issues; the legacy
+      intro-pair guidance applies only when the issue shows the pair.
 
 v1.1 (2026-08-08, "the take"): the reviewer now sees each story's
 ``take`` (SummaryBlock.take, schema v4) and reviews its shape. Changes,
@@ -179,7 +219,12 @@ downstream. Variance across same-day re-runs would move the verdict without
 moving the issue, which is exactly what the code-computed verdict exists to
 prevent."""
 
-_REVIEW_MAX_TOKENS = 4000
+# 4000 -> 8000 (2026-08-09): the redesign surfaces (digest + syntheses +
+# takes) grew finding-dense responses past 4000, truncating JSON mid-array
+# -> `unparseable` -> a spurious hold. Observed twice on live probes (cap
+# hit exactly) and on 2 of 15 Eval 9 clean fixtures. A ceiling, not a
+# spend: output bills only what is generated.
+_REVIEW_MAX_TOKENS = 8000
 """Comfortable headroom for ~20 findings with quotes and instructions.
 An earlier 2000-token budget truncated mid-output on the 2026-05-29
 staging issue."""
@@ -251,6 +296,8 @@ REVIEW_CRITERIA: frozenset[str] = frozenset({
     "take_shape",
     "section_routing",
     "section_intro",
+    "synthesis_shape",
+    "digest_shape",
     "trust_flags",
     "factual_grounding",
     "reputational_liability",
@@ -621,16 +668,16 @@ def run_review(
         )
 
     recent_issues = _load_recent_released_issues(run_date, _REVIEW_LOOKBACK_ISSUES)
-    prompt = _build_review_prompt(issue_payload, recent_issues)
+    prefix, variable = _build_review_prompt_parts(issue_payload, recent_issues)
     timeout = _resolve_timeout()
     model = _resolve_review_model()
 
     raw, parsed = "", None
     attempts = _JSON_RETRY_BUDGET + 1
-    current_prompt = prompt
+    current_variable = variable
     for attempt in range(1, attempts + 1):
         try:
-            raw = _call_review_llm(current_prompt, timeout=timeout)
+            raw = _call_review_llm((prefix, current_variable), timeout=timeout)
         except Exception as exc:  # noqa: BLE001 -- never fail the pipeline
             msg = f"LLM call failed: {type(exc).__name__}: {exc}"
             _LOG.warning("review: %s -- writing unavailable review", msg)
@@ -645,11 +692,18 @@ def run_review(
             "review: findings JSON parse failed (attempt %d/%d)",
             attempt, attempts,
         )
-        current_prompt = (
-            "Your previous response was not valid JSON matching the schema "
-            "below. Return JSON ONLY -- no markdown fences, no prose, no "
-            "commentary -- with a top-level \"findings\" array. The original "
-            "request follows.\n\n" + prompt
+        # v1.2.1 cache discipline: corrective text is APPENDED to the
+        # variable part, never prepended to the whole prompt -- prepending
+        # would change byte 0 of the cached prefix and force a full cache
+        # miss plus a wasted cache write on the retry (the rank v0.6.1 /
+        # summarise trap; pinned by
+        # tests/test_review.py::TestPromptCacheSplit).
+        current_variable = (
+            variable
+            + "\n\nCORRECTION -- Your previous response was not valid JSON "
+            "matching the schema above. Return JSON ONLY -- no markdown "
+            "fences, no prose, no commentary -- with a top-level "
+            "\"findings\" array."
         )
 
     if parsed is None:
@@ -769,12 +823,13 @@ your set of findings will add up to.
 EVERY FINDING CARRIES A VERBATIM QUOTE
 ======================================
 The `quote` field must be an EXACT span copied from the field you are
-pointing at -- the story's headline, summary, or take, or the section's
-intro_lead / intro_body, as shown below. Code checks each quote against the
-live text and SILENTLY DROPS any finding whose quote is not found. A finding
-you cannot quote is a finding you cannot make. Do not paraphrase into the
-quote field, do not quote the prompt's own labels, and do not quote text
-from a prior issue.
+pointing at -- the story's headline, summary, or take; the section's
+synthesis (or legacy intro_lead / intro_body); or a digest bullet's lead or
+sentence, as shown below. Code checks each quote against the live text and
+SILENTLY DROPS any finding whose quote is not found. A finding you cannot
+quote is a finding you cannot make. Do not paraphrase into the quote field,
+do not quote the prompt's own labels, and do not quote text from a prior
+issue.
 
 Report only what is actually there. If a section is fine, say nothing about
 it -- an empty findings list is a legitimate and common answer.
@@ -874,9 +929,40 @@ section_routing  -- a story whose voice and content belong in a different
   section than the one it is in. fix_kind is "structural" (code cannot fix
   a routing error by editing prose).
 
-section_intro  -- does the intro frame the pattern ACROSS the section's
-  stories in that section's register? The Currents intro_lead is MANDATORY
-  and must name the aggregate motion direction.
+section_intro  -- does the section's framing text (the `synthesis:` line;
+  on older issues the intro_lead/intro_body pair) frame the pattern ACROSS
+  the section's stories in that section's register? The Currents framing is
+  MANDATORY and must name the aggregate motion direction.
+
+synthesis_shape  -- the `synthesis:` line under a section head is ONE
+  italic paragraph, 2-3 sentences, section-anchored (it names the pattern;
+  the stories carry the specifics). SKIP this criterion when the issue
+  shows no synthesis lines (legacy issues carry the intro pair instead).
+  Flag, by severity:
+  * A synthesis whose FIRST SENTENCE is an aphorism -- a detachable
+    slogan-shaped fragment ("Ship the plumbing first.") rather than a
+    sentence about today's stories: minor (quote the first sentence,
+    field `synthesis`).
+  * A synthesis on a section showing exactly ONE story: major, fix_kind
+    "structural". This is a PIPELINE DEFECT, not prose to polish -- the
+    generation rule requires two or more stories before a synthesis is
+    written, so its presence means the pipeline broke; say so in the
+    instruction. Quote the synthesis.
+
+digest_shape  -- the DIGEST block ("The 30-second read") above the Pulse:
+  each bullet is a bold 3-6 word lead naming what happened plus ONE
+  concrete sentence, STORY-ANCHORED (falsifiable against its cited
+  stories). SKIP this criterion entirely when the issue has no DIGEST
+  block. Target digest findings with kind "digest", the bullet's index,
+  and field `digest_lead` or `digest_sentence`. Flag, by severity:
+  * A bullet's sentence that RESTATES a story's take, or a lead that
+    echoes a section synthesis (same proposition, same or reshuffled
+    words): major. The digest compresses the STORIES; the takes and
+    syntheses already own their propositions.
+  * A lead over 6 words, or a lead opening on an imperative verb: major
+    (quote the lead, field `digest_lead`).
+  * A lead that is a question, or names an artifact a senior practitioner
+    would not recognise: major.
 
 trust_flags  -- flags must be PRESENCE-FORM: they characterise the evidence
   that EXISTS ("a second lab replicated it", "the vendor benchmarked its
@@ -936,9 +1022,10 @@ characterise the day.
     {
       "target": {
         "kind": "story",
-        "story_id": "<the story_id shown with the story; omit for section targets>",
+        "story_id": "<the story_id shown with the story; omit for section/digest targets>",
         "section": "<pulse | big_picture | hands_on | currents>",
-        "field": "<headline | summary | take | intro_lead | intro_body>"
+        "digest_index": "<0-based bullet index; DIGEST targets only>",
+        "field": "<headline | summary | take | synthesis | intro_lead | intro_body | digest_lead | digest_sentence>"
       },
       "criterion": "<one of the criterion tokens above>",
       "severity": "<blocking | major | minor | note>",
@@ -950,21 +1037,46 @@ characterise the day.
   "summary": "<one line, 30-90 characters: the editorial read of the day>"
 }
 
-For a section target, set "kind": "section", omit "story_id", and set
-"field" to "intro_lead" or "intro_body". For a story target, set
-"kind": "story" and give the story_id exactly as shown.
+For a story target, set "kind": "story" and give the story_id exactly as
+shown. For a section target, set "kind": "section", omit "story_id", and
+set "field" to "synthesis" (or "intro_lead" / "intro_body" only when the
+issue shows that legacy pair). For a digest target, set "kind": "digest",
+omit "story_id" and "section", set "digest_index" to the bullet's index
+exactly as shown in the DIGEST block, and set "field" to "digest_lead" or
+"digest_sentence".
 """
 
 
-def _build_review_prompt(
+def _build_review_prompt_parts(
     issue: dict[str, Any], recent_issues: list[dict[str, Any]]
-) -> str:
-    """Assemble the LLM review prompt.
+) -> tuple[str, str]:
+    """Assemble the LLM review prompt as ``(shared_prefix, variable_part)``.
 
     ``issue`` and ``recent_issues`` are raw issue.json payloads (dicts) --
     we work from the parsed JSON rather than constructing the pydantic
     ``Issue`` so we don't crash on schema-version skew between staged and
     released issues; the review is a best-effort read.
+
+    Prompt caching (2026-08-09, v1.2.1): the concatenation
+    ``shared_prefix + variable_part`` is byte-identical to the historical
+    v1.2 single-string prompt -- the split changes message STRUCTURE only,
+    never bytes (pinned by tests/test_review.py::TestPromptCacheSplit).
+    The split point is the end of ``_REVIEW_INSTRUCTIONS + "\\n\\n"``:
+    everything before it (the full instruction block -- criteria, severity
+    and fix-kind vocabulary, output schema) is a module-level literal with
+    no interpolation, so it is byte-identical for every call within a run
+    and across days as long as this file is unchanged. Everything
+    day-varying -- the staged issue, the prior-issue drift-watch context
+    (which changes daily as the archive advances) -- lands in the variable
+    part. ``rank._llm_call_anthropic`` marks the prefix with
+    ``cache_control: {"type": "ephemeral"}`` (5-min TTL, refreshed free on
+    every hit); non-Anthropic providers receive the joined string,
+    byte-identical to the pre-split prompt.
+
+    Verified 2026-08-09 with real paired calls (claude-sonnet-4-6): the
+    prefix is 12,459 bytes = 3,254 billed tokens -- comfortably above the
+    1,024-token cache minimum. Call 1 ``cache_creation_input_tokens=3254``,
+    call 2 ``cache_read_input_tokens=3254``.
     """
     today_block = _format_issue_for_prompt(
         issue, label="STAGED ISSUE UNDER REVIEW",
@@ -988,11 +1100,22 @@ def _build_review_prompt(
             "\n\n(No prior released issues available within the lookback "
             "window. Skip the drift-watch comparison.)"
         )
-    return f"""\
-{_REVIEW_INSTRUCTIONS}
+    # The cacheable shared prefix. MUST stay byte-identical across calls:
+    # nothing day-specific may leak in before the split point.
+    prefix = f"{_REVIEW_INSTRUCTIONS}\n\n"
+    variable = f"{today_block}{recent_section}\n"
+    return prefix, variable
 
-{today_block}{recent_section}
-"""
+
+def _build_review_prompt(
+    issue: dict[str, Any], recent_issues: list[dict[str, Any]]
+) -> str:
+    """Joined single-string form of ``_build_review_prompt_parts`` -- kept
+    for audit tooling and tests that want the full prompt text.
+    Byte-identical to the pre-v1.2.1 single-string prompt by
+    construction."""
+    prefix, variable = _build_review_prompt_parts(issue, recent_issues)
+    return prefix + variable
 
 
 def _format_issue_for_prompt(
@@ -1032,6 +1155,13 @@ def _format_issue_for_prompt(
             take = story.get("take")
             if isinstance(take, str) and take.strip():
                 lines.append(f"    take: {take.strip()}")
+            # v1.2: the stored signal is the input the rendered story tag
+            # is derived from (DESIGN.md tag-derivation ruling) -- shown so
+            # metadata findings about the verb are grounded in what is
+            # actually stored.
+            signal = story.get("signal")
+            if isinstance(signal, str) and signal.strip():
+                lines.append(f"    signal: {signal.strip()}")
             prior = story.get("prior_coverage_ref")
             if prior:
                 lines.append(f"    prior_coverage_ref: {prior}")
@@ -1043,6 +1173,22 @@ def _format_issue_for_prompt(
             lines.append(
                 f"    sources: {len(srcs)} -- {', '.join(map(str, srcs[:3]))}"
             )
+
+    # v1.2 (R1): the DIGEST block renders first -- it is the first thing a
+    # reader sees, so it is the first thing the reviewer sees. Indices are
+    # 0-based and are what a digest finding's `digest_index` must echo.
+    digest = payload.get("digest")
+    if not compact and isinstance(digest, list) and digest:
+        lines.append("")
+        lines.append('DIGEST ("The 30-second read", rendered above the Pulse):')
+        for i, bullet in enumerate(digest):
+            if not isinstance(bullet, dict):
+                continue
+            lines.append(f"  - digest_index: {i}")
+            lines.append(f"    lead: {bullet.get('lead', '')}")
+            lines.append(f"    sentence: {bullet.get('sentence', '')}")
+            ids = bullet.get("story_ids") or []
+            lines.append(f"    story_ids: {', '.join(map(str, ids))}")
 
     pulse = payload.get("pulse") or {}
     pulse_stories = pulse.get("stories") or []
@@ -1057,10 +1203,15 @@ def _format_issue_for_prompt(
             continue
         name = section.get("name", "?")
         stories = section.get("stories") or []
+        synthesis = section.get("synthesis") or ""
         intro_lead = section.get("intro_lead") or ""
         intro_body = section.get("intro_body") or ""
         lines.append("")
         lines.append(f"SECTION {name} ({len(stories)} stories):")
+        # v1.2: redesign issues carry ONE synthesis paragraph; archived
+        # issues carry the legacy pair (mutually exclusive by contract).
+        if synthesis:
+            lines.append(f"  synthesis: {synthesis}")
         if intro_lead:
             lines.append(f"  intro_lead: {intro_lead}")
         if intro_body:
@@ -1257,12 +1408,30 @@ def _build_finding(finding_id: str, entry: dict[str, Any]) -> ReviewFinding:
     story_id = str(target_raw.get("story_id") or "").strip() or None
     field = str(target_raw.get("field") or "").strip().lower()
 
+    # v1.2: the digest locator. Tolerant parse -- an int, or a string of
+    # digits; anything else stays None and the model validator rejects the
+    # digest target properly (a digest finding without an index cannot be
+    # resolved to a bullet).
+    digest_index_raw = target_raw.get("digest_index")
+    digest_index: int | None = None
+    if isinstance(digest_index_raw, bool):
+        digest_index = None
+    elif isinstance(digest_index_raw, int):
+        digest_index = digest_index_raw
+    elif isinstance(digest_index_raw, str) and digest_index_raw.strip().isdigit():
+        digest_index = int(digest_index_raw.strip())
+
     # A section target must not carry a story_id, and the model sometimes
     # echoes one back. Clearing it here (rather than failing) keeps a
     # legitimate finding alive; the model validator still rejects the
-    # genuinely incoherent combinations.
+    # genuinely incoherent combinations. Same treatment for a digest
+    # target echoing a story_id or section (digest provenance lives on
+    # DigestBullet.story_ids; the digest is issue-level).
     if kind == "section":
         story_id = None
+    elif kind == "digest":
+        story_id = None
+        section = None
     elif section is not None and section not in _SECTION_DISPLAY:
         # On a STORY target the section is informative only (it groups the
         # rendered review); the story_id is what resolves the text. An
@@ -1279,6 +1448,7 @@ def _build_finding(finding_id: str, entry: dict[str, Any]) -> ReviewFinding:
         kind=kind,  # type: ignore[arg-type]
         story_id=story_id,
         section=section,  # type: ignore[arg-type]
+        digest_index=digest_index if kind == "digest" else None,
         field=field,  # type: ignore[arg-type]
     )
     return ReviewFinding(
@@ -1293,18 +1463,22 @@ def _build_finding(finding_id: str, entry: dict[str, Any]) -> ReviewFinding:
 
 
 def target_key(target: ReviewTarget) -> str:
-    """Stable dict key for a target: ``story:<id>:<field>`` or
-    ``section:<name>:<field>``. Used to join findings to live text and to
-    group them for the revision engine."""
+    """Stable dict key for a target: ``story:<id>:<field>``,
+    ``section:<name>:<field>``, or ``digest:<index>:<field>``. Used to
+    join findings to live text and to group them for the revision
+    engine."""
     if target.kind == "story":
         return f"story:{target.story_id}:{target.field}"
+    if target.kind == "digest":
+        return f"digest:{target.digest_index}:{target.field}"
     return f"section:{target.section}:{target.field}"
 
 
 def index_issue_fields(issue_payload: dict[str, Any]) -> dict[str, str]:
     """Build ``{target_key: current text}`` for every quotable field in the
     issue -- every story's headline, summary, and take (when present),
-    every section's intro_lead and intro_body.
+    every section's synthesis or legacy intro_lead/intro_body, and every
+    digest bullet's lead and sentence (keyed by 0-based index).
 
     Walks the raw JSON payload rather than the pydantic ``Issue`` so
     schema-version skew between a staged file and this code can never crash
@@ -1325,28 +1499,48 @@ def index_issue_fields(issue_payload: dict[str, Any]) -> dict[str, str]:
             if isinstance(value, str) and value:
                 out[f"story:{story_id}:{field}"] = value
 
+    def _add_section_fields(name: str, section: dict[str, Any]) -> None:
+        # "synthesis" joined at v1.2 (IssueSection v4); mutually exclusive
+        # with the legacy pair by contract, but the indexer stays tolerant
+        # and indexes whatever is present.
+        for field in ("synthesis", "intro_lead", "intro_body"):
+            value = section.get(field)
+            if isinstance(value, str) and value:
+                out[f"section:{name}:{field}"] = value
+
     pulse = issue_payload.get("pulse") or {}
     if isinstance(pulse, dict):
         for story in pulse.get("stories") or []:
             if isinstance(story, dict):
                 _add_story(story)
-        for field in ("intro_lead", "intro_body"):
-            value = pulse.get(field)
-            if isinstance(value, str) and value:
-                out[f"section:pulse:{field}"] = value
+        _add_section_fields("pulse", pulse)
 
     for section in issue_payload.get("sections") or []:
         if not isinstance(section, dict):
             continue
         name = section.get("name")
         if isinstance(name, str) and name:
-            for field in ("intro_lead", "intro_body"):
-                value = section.get(field)
-                if isinstance(value, str) and value:
-                    out[f"section:{name}:{field}"] = value
+            _add_section_fields(name, section)
         for story in section.get("stories") or []:
             if isinstance(story, dict):
                 _add_story(story)
+
+    # Digest bullets (v1.2, R1): keyed by 0-based index -- bullets have no
+    # id, the digest is small and ordered, and the issue_sha256 freshness
+    # contract protects the index from drifting under an edit. No digest
+    # (or a malformed one) simply emits no keys, so any digest-targeting
+    # finding on such an issue is dropped as unresolvable.
+    digest = issue_payload.get("digest")
+    if isinstance(digest, list):
+        for i, bullet in enumerate(digest):
+            if not isinstance(bullet, dict):
+                continue
+            for field, model_field in (
+                ("digest_lead", "lead"), ("digest_sentence", "sentence"),
+            ):
+                value = bullet.get(model_field)
+                if isinstance(value, str) and value:
+                    out[f"digest:{i}:{field}"] = value
     return out
 
 
@@ -1360,6 +1554,16 @@ _SECTION_DISPLAY = {
     "hands_on": "Hands-On",
     "currents": "Currents",
 }
+
+_GROUP_DISPLAY = {
+    **_SECTION_DISPLAY,
+    "digest": "The 30-second read",
+}
+"""Display names for finding GROUPS in review.md. A superset of
+``_SECTION_DISPLAY`` because the digest is a rendering group but NOT a
+section -- ``_SECTION_DISPLAY`` doubles as the story-target section-token
+whitelist in ``_build_finding``, and "digest" must not become a valid
+story section there."""
 
 _SEVERITY_MARK = {
     "blocking": "BLOCKING",
@@ -1412,11 +1616,15 @@ def render_review_markdown(
         lines.append("No findings this issue.")
     else:
         by_section = _group_findings_by_section(report.findings)
-        for section_name in ("pulse", "big_picture", "hands_on", "currents", ""):
+        # "digest" leads: the skim block renders above the Pulse, so its
+        # findings read first, the way the issue does.
+        for section_name in (
+            "digest", "pulse", "big_picture", "hands_on", "currents", "",
+        ):
             group = by_section.get(section_name)
             if not group:
                 continue
-            display = _SECTION_DISPLAY.get(section_name, "Unplaced")
+            display = _GROUP_DISPLAY.get(section_name, "Unplaced")
             lines.append(f"## {display}")
             lines.append("")
             for finding in group:
@@ -1473,6 +1681,11 @@ def _render_finding(
     if target.kind == "story":
         who = headlines.get(target.story_id or "", target.story_id or "?")
         locator = f'"{who}" -> {target.field}'
+    elif target.kind == "digest":
+        locator = (
+            f"The 30-second read, bullet {(target.digest_index or 0) + 1} "
+            f"-> {target.field}"
+        )
     else:
         locator = f"{_SECTION_DISPLAY.get(target.section or '', target.section)} intro -> {target.field}"
     return [
@@ -1489,11 +1702,16 @@ def _group_findings_by_section(
     findings: list[ReviewFinding],
 ) -> dict[str, list[ReviewFinding]]:
     """Group findings by their target's section, preserving emission order
-    within each group. Story targets that never declared a section fall into
-    the ``""`` bucket, rendered last under "Unplaced"."""
+    within each group. Digest targets (section-less by contract) group
+    under ``"digest"``; story targets that never declared a section fall
+    into the ``""`` bucket, rendered last under "Unplaced"."""
     out: dict[str, list[ReviewFinding]] = {}
     for finding in findings:
-        out.setdefault(finding.target.section or "", []).append(finding)
+        if finding.target.kind == "digest":
+            key = "digest"
+        else:
+            key = finding.target.section or ""
+        out.setdefault(key, []).append(finding)
     return out
 
 
@@ -1562,12 +1780,17 @@ def _resolve_review_model() -> str:
     return (os.getenv("LLM_MODEL") or "").strip() or "unknown"
 
 
-def _call_review_llm(prompt: str, timeout: float) -> str:
+def _call_review_llm(prompt: "str | tuple[str, str]", timeout: float) -> str:
     """Issue one LLM call and return the raw response text.
 
     Reuses ``rank._llm_call`` so provider routing (anthropic / bedrock /
     openai-compatible) and transport handling are inherited unchanged.
-    Temperature is 0.0 (see ``_REVIEW_TEMPERATURE``).
+    ``prompt`` is passed through intact: since v1.2.1 the review sends the
+    cache-split ``(static_prefix, variable_part)`` tuple, which the
+    Anthropic branch turns into two content blocks with ``cache_control``
+    on the prefix; every other provider receives the joined string,
+    byte-identical to the single-string prompt. Temperature is 0.0 (see
+    ``_REVIEW_TEMPERATURE``).
 
     ``rank._llm_call`` reads ``LLM_MODEL`` and ``LLM_TIMEOUT_SECONDS`` from
     the environment itself, so the cleanest seam for the review-specific
