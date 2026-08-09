@@ -20,6 +20,14 @@ updates:
           - "cuda-*"
           - "nvidia-*"
           - "triton"
+    # torch pins its CUDA stack exactly (cuda-toolkit==, cudnn==, nccl==,
+    # triton== ...), so these packages can only move when torch itself moves.
+    # A standalone bump makes pip resolution fail on the runner (PR #33).
+    # When a torch bump arrives, regenerate the whole freeze instead.
+    ignore:
+      - dependency-name: "cuda-*"
+      - dependency-name: "nvidia-*"
+      - dependency-name: "triton"
   - package-ecosystem: github-actions
     directory: /
     schedule:
