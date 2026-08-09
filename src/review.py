@@ -91,13 +91,40 @@ from src.models import (
 # Module constants.
 # ---------------------------------------------------------------------------
 
-REVIEW_PROMPT_VERSION = "v1.2.1"
+REVIEW_PROMPT_VERSION = "v1.3.0"
 """Versioned prompt string written into ``review.json`` and the
 ``review.md`` frontmatter so the eval harness can correlate verdict
 movement against prompt revisions.
 
 Bump when the prompt content (criteria, instructions, output format)
-changes substantively. Audit tag: ``review-v1.2.1-2026-08-09``.
+changes substantively. Audit tag: ``review-v1.3.0-2026-08-09``.
+
+v1.3.0 (2026-08-09): post-ratification re-anchoring -- the reviewer is
+recalibrated to two ratified v0.23 contracts it was flagging as defects
+(observed on the 2026-08-09 full-pipeline run, where they produced a
+spurious RED). Prompt-content only; assembly and cache split unchanged.
+  (a) Big Picture closing register: the ratified STRATEGIC QUESTION
+      anchors to a role/decision/constraint in the reader's org, and the
+      contract's own examples use direct address (summarise
+      ``_CLOSING_SHAPE_PER_SECTION["big_picture"]``; EDITORIAL.md "The
+      Big Picture" in-voice examples). The reviewer had invented a
+      "third-person strategic question" rule and filed three
+      voice_adherence majors against contract-compliant closes. The
+      closing_shape Big Picture bullet now states the anchored
+      direct-address register explicitly and forbids demanding an
+      impersonal one; voice_adherence gains the general ratified-voice
+      rule (second person anchored to a concrete noun the reader owns is
+      in voice; only unanchored second person is flaggable).
+  (b) section_intro n=1 carve-out: the Currents synthesis is mandatory
+      only at >= 2 stories or on the quiet day (zero stories); a
+      one-story section deliberately carries NO synthesis (summarise
+      ``_populate_section_synthesis`` skip rules -- a synthesis of one
+      story duplicates its dek). The criterion previously said the
+      Currents framing was unconditionally MANDATORY, producing a
+      blocking section_intro finding (and a one_line complaint) against
+      the designed absence. Absence of synthesis at n=1 is now stated as
+      never a finding. (synthesis_shape already encoded the mirror rule:
+      PRESENCE of a synthesis at n=1 is the pipeline defect.)
 
 v1.2.1 (2026-08-09): MESSAGE-STRUCTURE-ONLY change -- prompt caching.
 The first-attempt prompt BYTES are identical to v1.2; the prompt is now
@@ -878,6 +905,12 @@ voice_adherence  -- per EDITORIAL.md, per section:
   * Currents: conditional or hedged opening ("Early signal:"; "If X holds:").
   Flag hedge accumulation, deferral ("it remains to be seen", "time will
   tell"), and adjectives doing the work of an editorial position.
+  Second person anchored to a concrete noun the reader owns ("your
+  retrieval stack", "your evaluation", "does yours?") is RATIFIED VOICE
+  in every section, not a defect. Flag second person only when it is
+  unanchored ("you should care"). Never file a finding that demands a
+  third-person or impersonal register in place of anchored direct
+  address.
 
 closing_shape  -- the last sentence of each story's BODY (since the take
   field exists, two shapes moved out of the body -- do not demand them
@@ -886,7 +919,14 @@ closing_shape  -- the last sentence of each story's BODY (since the take
     the plain-take judgement lives in the take field now. Flag a body
     that ends by restating the take, or a question/prescription ending.
   * Big Picture: a STRATEGIC QUESTION (unchanged -- still the body's last
-    sentence).
+    sentence). The ratified shape ANCHORS the question to a specific
+    role, decision, or constraint in the reader's org, so direct address
+    is IN VOICE here -- "is that role staffed in your org?" and "which
+    one governs your customer-facing deployment?" are the contract's own
+    examples. Do NOT demand a third-person or impersonal register for
+    this close. What fails the shape instead: a rhetorical question with
+    an obvious answer, a prescription dressed as a question ("shouldn't
+    you test X?"), or a vague "what does this mean?".
   * Hands-On: an IMPERATIVE ACTION sharpened to a specific artefact +
     trigger (unchanged). Generic "test before you trust" fails the shape.
   * Currents: the body ends on a PRESENCE-FORM maturity signal (what
@@ -931,8 +971,14 @@ section_routing  -- a story whose voice and content belong in a different
 
 section_intro  -- does the section's framing text (the `synthesis:` line;
   on older issues the intro_lead/intro_body pair) frame the pattern ACROSS
-  the section's stories in that section's register? The Currents framing is
-  MANDATORY and must name the aggregate motion direction.
+  the section's stories in that section's register? The Currents framing
+  is MANDATORY -- and must name the aggregate motion direction -- only
+  when the section shows TWO OR MORE stories, or on a quiet day (zero
+  stories, the quiet-day line). A section showing exactly ONE story
+  correctly carries NO synthesis: the generation rule skips it because a
+  synthesis of one story duplicates that story's dek. The ABSENCE of
+  framing on a one-story section is the pipeline working as designed and
+  is NEVER a finding, under this criterion or any other.
 
 synthesis_shape  -- the `synthesis:` line under a section head is ONE
   italic paragraph, 2-3 sentences, section-anchored (it names the pattern;
@@ -1058,9 +1104,12 @@ def _build_review_prompt_parts(
     released issues; the review is a best-effort read.
 
     Prompt caching (2026-08-09, v1.2.1): the concatenation
-    ``shared_prefix + variable_part`` is byte-identical to the historical
-    v1.2 single-string prompt -- the split changes message STRUCTURE only,
-    never bytes (pinned by tests/test_review.py::TestPromptCacheSplit).
+    ``shared_prefix + variable_part`` is byte-identical to the
+    single-string assembly of the SAME prompt version -- the split changes
+    message STRUCTURE only, never bytes (pinned by
+    tests/test_review.py::TestPromptCacheSplit, whose golden reads the
+    live instructions literal; at v1.2.1 the joined form also matched the
+    historical v1.2 bytes, until the v1.3.0 content recalibration).
     The split point is the end of ``_REVIEW_INSTRUCTIONS + "\\n\\n"``:
     everything before it (the full instruction block -- criteria, severity
     and fix-kind vocabulary, output schema) is a module-level literal with
@@ -1076,7 +1125,8 @@ def _build_review_prompt_parts(
     Verified 2026-08-09 with real paired calls (claude-sonnet-4-6): the
     prefix is 12,459 bytes = 3,254 billed tokens -- comfortably above the
     1,024-token cache minimum. Call 1 ``cache_creation_input_tokens=3254``,
-    call 2 ``cache_read_input_tokens=3254``.
+    call 2 ``cache_read_input_tokens=3254``. (v1.3.0 grew the prefix to
+    13,774 bytes -- still a module literal, still far above the minimum.)
     """
     today_block = _format_issue_for_prompt(
         issue, label="STAGED ISSUE UNDER REVIEW",
@@ -1112,8 +1162,8 @@ def _build_review_prompt(
 ) -> str:
     """Joined single-string form of ``_build_review_prompt_parts`` -- kept
     for audit tooling and tests that want the full prompt text.
-    Byte-identical to the pre-v1.2.1 single-string prompt by
-    construction."""
+    Byte-identical to the single-string assembly of the current prompt
+    version by construction."""
     prefix, variable = _build_review_prompt_parts(issue, recent_issues)
     return prefix + variable
 

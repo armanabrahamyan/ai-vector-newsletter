@@ -1751,13 +1751,15 @@ class TestTakeInReviewSurface:
         )
         assert not kept and len(dropped) == 1
 
-    def test_review_prompt_version_is_v1_2_1(self) -> None:
-        """The take surfaces (v1.1) plus the digest/synthesis surfaces
-        (v1.2) are prompt content; the version must attribute them. v1.2.1
-        is the message-structure-only cache split -- first-attempt prompt
-        bytes identical to v1.2 (pinned by TestPromptCacheSplit)."""
+    def test_review_prompt_version_is_v1_3_0(self) -> None:
+        """The take surfaces (v1.1), the digest/synthesis surfaces (v1.2),
+        and the post-ratification re-anchoring (v1.3.0: Big Picture
+        direct-address close register + section_intro n=1 carve-out) are
+        prompt content; the version must attribute them. The cache-split
+        assembly introduced at v1.2.1 is unchanged (pinned by
+        TestPromptCacheSplit, which reads the live instructions block)."""
         from src.review import REVIEW_PROMPT_VERSION
-        assert REVIEW_PROMPT_VERSION == "v1.2.1"
+        assert REVIEW_PROMPT_VERSION == "v1.3.0"
 
     def test_take_shape_on_takeless_issue_dropped_even_with_valid_quote(
         self,
