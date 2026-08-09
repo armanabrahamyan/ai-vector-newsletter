@@ -103,7 +103,7 @@ jobs:
       # Two revision-pinned local models (embeddings + near-dedup verifier),
       # ~900MB combined. Keyed on src/cluster.py, which carries both pins.
       - name: Cache HuggingFace models
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/huggingface
           # v2: the v1 key was saved by a run that failed before the models
@@ -118,7 +118,7 @@ jobs:
       # reports visibility so a cache miss is never silent. Proper fix
       # (rebuild from tracked files) is tracked with the retrieval-engineer.
       - name: Cache released centroids
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: data/released/*/embeddings
           key: released-embeddings-${{ github.run_id }}
