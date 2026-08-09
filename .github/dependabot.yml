@@ -6,20 +6,19 @@ updates:
   - package-ecosystem: pip
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 1
     labels:
       - dependencies
-    # The 19 CUDA packages torch pulls on Linux move together and are never
-    # reviewed individually. Grouped, they arrive as one PR instead of
-    # swallowing the 5-PR budget and crowding out bumps that need reading.
+    # One grouped PR a month. Per-package PRs against a frozen constraints
+    # file break in lockstep pairs (boto3+botocore+s3transfer,
+    # trafilatura+courlan+htmldate) -- grouped, those move together and the
+    # PR resolves. Verification is unchanged: clean-venv install + full
+    # suite before merge.
     groups:
-      torch-cuda-stack:
+      all-pip:
         patterns:
-          - "cuda-*"
-          - "nvidia-*"
-          - "triton"
+          - "*"
     # torch pins its CUDA stack exactly (cuda-toolkit==, cudnn==, nccl==,
     # triton== ...), so these packages can only move when torch itself moves.
     # A standalone bump makes pip resolution fail on the runner (PR #33).
@@ -31,7 +30,6 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
     labels:
       - dependencies
