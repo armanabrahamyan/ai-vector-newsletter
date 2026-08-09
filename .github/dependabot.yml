@@ -11,6 +11,15 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - dependencies
+    # The 19 CUDA packages torch pulls on Linux move together and are never
+    # reviewed individually. Grouped, they arrive as one PR instead of
+    # swallowing the 5-PR budget and crowding out bumps that need reading.
+    groups:
+      torch-cuda-stack:
+        patterns:
+          - "cuda-*"
+          - "nvidia-*"
+          - "triton"
   - package-ecosystem: github-actions
     directory: /
     schedule:
