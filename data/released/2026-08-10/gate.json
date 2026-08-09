@@ -5,15 +5,14 @@
   "date": "2026-08-10",
   "decision": "hold",
   "hold_reasons": [
-    "hold:review-verdict-red",
-    "hold:contradicted-claim"
+    "hold:review-verdict-red"
   ],
   "review": {
     "schema_version": 1,
     "present": true,
     "verdict": "red",
-    "issue_sha256": "38bb6da3fe9497599f3a9a4ece646432eadfde5f75e045ecde0fe07aba03d8af",
-    "computed_issue_sha256": "38bb6da3fe9497599f3a9a4ece646432eadfde5f75e045ecde0fe07aba03d8af",
+    "issue_sha256": "f657d154e966669f1a48f40d72c13823b2de49b6b3d88c74f49da52730dd0c11",
+    "computed_issue_sha256": "f657d154e966669f1a48f40d72c13823b2de49b6b3d88c74f49da52730dd0c11",
     "fresh": true,
     "prompt_version": "v1.3.0",
     "path": "data/staging/2026-08-10/review.json"
@@ -21,11 +20,9 @@
   "verify": {
     "schema_version": 1,
     "present": true,
-    "verdict": "flagged",
+    "verdict": "clean",
     "stories_verified": 10,
-    "contradicted_story_ids": [
-      "c_aed6a5ffc9785639"
-    ],
+    "contradicted_story_ids": [],
     "unsupported_story_ids": [],
     "path": "data/staging/2026-08-10/verify.json"
   },
@@ -59,7 +56,7 @@
       "name": "review_freshness",
       "passed": true,
       "blocking": true,
-      "detail": "review matches current issue.json (38bb6da3fe94...)",
+      "detail": "review matches current issue.json (f657d154e966...)",
       "hold_reason": null
     },
     {
@@ -67,7 +64,7 @@
       "name": "verify_readable",
       "passed": true,
       "blocking": true,
-      "detail": "verify.json parsed (verdict='flagged')",
+      "detail": "verify.json parsed (verdict='clean')",
       "hold_reason": null
     },
     {
@@ -75,16 +72,16 @@
       "name": "verify_available",
       "passed": true,
       "blocking": true,
-      "detail": "verify ran (verdict='flagged')",
+      "detail": "verify ran (verdict='clean')",
       "hold_reason": null
     },
     {
       "schema_version": 1,
       "name": "no_contradicted_claims",
-      "passed": false,
+      "passed": true,
       "blocking": true,
-      "detail": "1 story/stories carry a contradicted claim: c_aed6a5ffc9785639",
-      "hold_reason": "hold:contradicted-claim"
+      "detail": "no contradicted claims across 10 verified stories",
+      "hold_reason": null
     },
     {
       "schema_version": 1,
@@ -99,10 +96,10 @@
       "name": "revision_status",
       "passed": true,
       "blocking": false,
-      "detail": "1 revision cycle(s), 0 applied / 5 rejected / 3 proposed (shadow)",
+      "detail": "3 revision cycle(s), 1 applied / 6 rejected / 3 proposed (shadow)",
       "hold_reason": null
     }
   ],
-  "decided_at": "2026-08-09T21:28:21.741448Z",
+  "decided_at": "2026-08-09T23:16:45.201182Z",
   "note": ""
 }
