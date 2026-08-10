@@ -6145,6 +6145,15 @@ def _write_issue_json(path: Path, issue: Issue) -> None:
 # join failure.
 #
 # Staging-only, ephemeral: never promoted to released (paths helper docstring).
+#
+# Re-fetch fallback (2026-08-10): because the sidecar never leaves staging, a
+# re-verify after ``aiv revise --released`` on a checkout without the staging
+# dir finds it gone. ``verify._refetch_source_excerpts`` then re-fetches the
+# issue blocks' source_urls via ``_fetch_source_excerpt``, seeds
+# ``_SOURCE_EXCERPT_CACHE``, and rewrites the sidecar via
+# ``_write_source_excerpts`` (same pinned record shape). That text is a FRESH
+# fetch -- it can differ from what the summariser originally grounded on, and
+# verify logs that caveat loudly. No behaviour change when the sidecar exists.
 # ---------------------------------------------------------------------------
 
 _SOURCE_EXCERPTS_SCHEMA_VERSION = 1

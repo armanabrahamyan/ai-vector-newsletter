@@ -975,6 +975,18 @@ Every reader tolerates missing days, missing files, and missing sidecars.
   which is the correct fail-soft outcome: verify still runs, finds nothing
   to contradict, and never blocks. A URL present in `source_urls` but absent
   from the sidecar contributes an empty excerpt for that URL.
+- **Re-fetch fallback (2026-08-10):** when the sidecar is missing *or empty*
+  (the legitimate case: re-verify after `aiv revise --released` on a checkout
+  where the staging-only sidecar is gone), `verify._refetch_source_excerpts`
+  re-fetches exactly the issue blocks' `source_urls` via
+  `summarise._fetch_source_excerpt` (plain code, no LLM), rewrites the
+  sidecar in the pinned record shape via `summarise._write_source_excerpts`,
+  and verifies against that text — logging loudly that this is a **fresh
+  fetch** that may differ from what summarise originally grounded on. A fetch
+  yielding empty text keeps the empty-excerpt policy (unverifiable, no
+  crash); any fallback failure degrades to empty excerpts. The sidecar
+  remains staging-only — the fallback does not change the promotion contract,
+  and the sidecar-present path is untouched.
 - **Why keyed by URL, not by story?** A story's `source_urls` is the join
   key both stages already share; keying by URL lets summarise write each
   excerpt once even when two stories cite the same source, and lets verify

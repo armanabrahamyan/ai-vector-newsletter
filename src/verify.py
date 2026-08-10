@@ -67,6 +67,7 @@ import json
 import logging
 import os
 import re
+import types as _types
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -1057,6 +1058,10 @@ def verify_day(run_date: _dt.date) -> VerificationReport:
     1. Read the staged ``issue.json`` (``paths.issue_path(run_date,
        canonical=False)``) and ``source_excerpts.jsonl``
        (``paths.source_excerpts_path``) into a ``{url: excerpt}`` dict.
+       If the sidecar is missing or empty (it is staging-only, so a
+       re-verify after ``aiv revise --released`` on a fresh checkout has
+       no sidecar), re-fetch the blocks' ``source_urls`` fresh and rewrite
+       the sidecar -- see ``_refetch_source_excerpts``.
     2. For each ``SummaryBlock`` (Pulse + every section), union the excerpts
        of its ``source_urls`` (in order, de-duped) into one ``source_excerpt``
        string and call ``verify_rich(headline, body=summary, source_excerpt)``.
@@ -1132,6 +1137,16 @@ def verify_day(run_date: _dt.date) -> VerificationReport:
         return _write_unavailable_report(
             verify_out, f"could not walk issue stories: {exc}"
         )
+
+    # --- Fallback: sidecar missing or empty -> re-fetch fresh excerpts ----
+    # The sidecar is staging-only by design (never promoted to released), so
+    # a re-verify after `aiv revise --released` on a fresh checkout finds it
+    # gone and would "verify" against empty excerpts -- useless evidence.
+    # Re-fetch exactly the issue's blocks' source_urls with summarise's
+    # fetcher (plain code, no LLM) and rewrite the sidecar. Failure-soft:
+    # any error degrades back to the empty-excerpt path.
+    if not url_to_excerpt:
+        url_to_excerpt = _refetch_source_excerpts(run_date, blocks, excerpts_path)
 
     stories: list[StoryVerification] = []
     for block in blocks:
@@ -1565,20 +1580,21 @@ def _tally_verdicts(
 def _load_source_excerpts(path: Path) -> dict[str, str]:
     """Load source_excerpts.jsonl into a ``{url: excerpt}`` dict.
 
-    Tolerates a MISSING file (returns an empty dict -- every story then
-    verifies against an empty source excerpt, i.e. all claims unverifiable;
-    that is the honest degraded state, not a failure). RAISES on an
-    unparseable line so the caller flips the whole stage to ``unavailable``
-    -- a corrupt sidecar means we can't trust the join, and a silent
-    partial-load would mislead the verifier.
+    Tolerates a MISSING file (returns an empty dict -- ``verify_day`` then
+    attempts the ``_refetch_source_excerpts`` fallback; if that also yields
+    nothing, every story verifies against an empty source excerpt, i.e. all
+    claims unverifiable -- the honest degraded state, not a failure). RAISES
+    on an unparseable line so the caller flips the whole stage to
+    ``unavailable`` -- a corrupt sidecar means we can't trust the join, and
+    a silent partial-load would mislead the verifier.
 
     Last writer wins on a duplicate URL (the summarise writer already
     de-dupes by URL, so duplicates should not occur in practice).
     """
     if not path.exists():
         _LOG.warning(
-            "verify: source_excerpts.jsonl missing at %s -- verifying "
-            "against empty excerpts (all claims unverifiable)", path,
+            "verify: source_excerpts.jsonl missing at %s -- attempting a "
+            "fresh re-fetch of the issue's source urls", path,
         )
         return {}
     out: dict[str, str] = {}
@@ -1599,6 +1615,99 @@ def _load_source_excerpts(path: Path) -> dict[str, str]:
             )
         out[url] = str(rec.get("excerpt", "") or "")
     return out
+
+
+def _refetch_source_excerpts(
+    run_date: _dt.date,
+    blocks: list[dict[str, Any]],
+    excerpts_path: Path,
+) -> dict[str, str]:
+    """Re-fetch source excerpts when the sidecar is missing or empty.
+
+    The sidecar is staging-only by design (DESIGN.md: never promoted to
+    released), so a legitimate flow -- ``aiv revise --released`` followed by
+    a re-verify on a checkout where staging is gone -- finds no sidecar and
+    would verify every claim against an empty excerpt. This fallback
+    re-fetches exactly the issue blocks' ``source_urls`` (in reading order,
+    de-duped) using ``summarise._fetch_source_excerpt`` (plain code, no LLM
+    call), seeds ``summarise._SOURCE_EXCERPT_CACHE``, and rewrites the
+    sidecar in the pinned record shape via ``summarise._write_source_excerpts``
+    so the run leaves an auditable join surface behind.
+
+    CAVEAT (and why the log line below shouts about it): the re-fetched text
+    is a FRESH fetch -- the source page may have changed since summarise
+    originally grounded on it, so verdicts are evidence against today's page,
+    not against the exact text the summary was written from.
+
+    Failure-soft: any exception logs and returns ``{}`` (the empty-excerpt
+    degraded state). A fetch that yields empty text keeps the existing
+    empty-excerpt policy -- the URL maps to ``""`` and its claims come back
+    unverifiable, never a crash. The sidecar stays staging-only; nothing is
+    promoted to released.
+    """
+    urls: list[str] = []
+    seen: set[str] = set()
+    for block in blocks:
+        for raw in block.get("source_urls") or []:
+            url = str(raw)
+            if url and url not in seen:
+                seen.add(url)
+                urls.append(url)
+    if not urls:
+        return {}
+    try:
+        from src import summarise  # lazy: heavy module
+
+        url_to_excerpt: dict[str, str] = {}
+        for url in urls:
+            text = summarise._fetch_source_excerpt(url)
+            # The writer below reads the cache; seed it explicitly so the
+            # sidecar records the same text we verify against even if the
+            # fetch function is stubbed (tests) or changes its caching.
+            summarise._SOURCE_EXCERPT_CACHE[url] = text
+            url_to_excerpt[url] = text
+        _LOG.warning(
+            "verify: source_excerpts.jsonl was missing or empty for %s -- "
+            "re-fetched %d source url(s) and rewrote the sidecar; "
+            "verification runs against this FRESH fetch, which may differ "
+            "from the text summarise originally grounded on",
+            run_date.isoformat(), len(urls),
+        )
+        # Duck-typed shim: _write_source_excerpts only walks pulse.stories +
+        # sections[].stories and reads .source_urls/.story_id per block. The
+        # raw-payload blocks (already flattened, reading order) go in as
+        # "pulse stories" so URL de-dup and first-block story_id attribution
+        # match the summarise-time writer exactly.
+        shim_blocks = [
+            _types.SimpleNamespace(
+                story_id=str(block.get("story_id") or ""),
+                source_urls=[
+                    str(u) for u in (block.get("source_urls") or [])
+                ],
+            )
+            for block in blocks
+        ]
+        shim_issue = _types.SimpleNamespace(
+            pulse=_types.SimpleNamespace(stories=shim_blocks), sections=[],
+        )
+        try:
+            summarise._write_source_excerpts(
+                excerpts_path,
+                shim_issue,  # type: ignore[arg-type]
+                _dt.datetime.now(_dt.timezone.utc),
+            )
+        except Exception:  # noqa: BLE001 -- sidecar write is best-effort
+            _LOG.exception(
+                "verify: re-fetched excerpts but failed to rewrite %s -- "
+                "verifying against the in-memory fetch anyway", excerpts_path,
+            )
+        return url_to_excerpt
+    except Exception:  # noqa: BLE001 -- fallback must never sink the stage
+        _LOG.exception(
+            "verify: source-excerpt re-fetch fallback failed -- verifying "
+            "against empty excerpts (all claims unverifiable)",
+        )
+        return {}
 
 
 def _iter_issue_blocks(issue_payload: dict[str, Any]) -> list[dict[str, Any]]:

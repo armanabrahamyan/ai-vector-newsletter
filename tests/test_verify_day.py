@@ -171,11 +171,18 @@ class TestVerifyDayFailureSoft:
         self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """A missing source_excerpts.jsonl is a degraded-but-runnable state:
-        the stage runs against empty excerpts (every claim unverifiable) and
-        does NOT raise. The contract phrasing in the task is satisfied either
-        way -- this test pins 'no raise' and a usable report."""
+        the re-fetch fallback fires, and when every fetch fails (empty
+        text), the stage runs against empty excerpts (every claim
+        unverifiable) and does NOT raise. This pins the empty-fetch policy:
+        unverifiable, never a crash."""
         _write_staged_issue(_make_staged_issue())
-        # Sidecar intentionally absent.
+        # Sidecar intentionally absent; the fallback re-fetch yields nothing
+        # (mocked -- no network in tests).
+        from src import summarise
+        monkeypatch.setattr(summarise, "_SOURCE_EXCERPT_CACHE", {})
+        monkeypatch.setattr(
+            summarise, "_fetch_source_excerpt", lambda url: ""
+        )
 
         def _stub_verify_rich(headline, body, source_excerpt, **kw):
             # Empty excerpt -> the real verifier marks all claims unverifiable.
@@ -226,6 +233,151 @@ class TestVerifyDayFailureSoft:
         by_id = {s.story_id: s for s in report.stories}
         assert by_id[_PULSE_ID].claims == []
         assert len(by_id[_BP_ID].claims) == 1
+
+
+# ---------------------------------------------------------------------------
+# Sidecar re-fetch fallback (2026-08-10): when source_excerpts.jsonl is
+# missing or empty (e.g. re-verify after `aiv revise --released` on a
+# checkout where the staging-only sidecar is gone), verify_day re-fetches
+# the blocks' source_urls via summarise._fetch_source_excerpt, rewrites the
+# sidecar in the pinned record shape, and verifies against the fresh text.
+# No network in these tests -- the fetch function is always mocked.
+# ---------------------------------------------------------------------------
+
+class TestSidecarRefetchFallback:
+    _FRESH = {
+        _PULSE_URL: "Fresh pulse body: the model runs on an RTX 3090.",
+        _BP_URL: "Fresh bank body: the agent handles fraud triage.",
+    }
+
+    def _mock_fetch(self, monkeypatch: pytest.MonkeyPatch) -> list[str]:
+        """Stub summarise._fetch_source_excerpt; return the call log."""
+        from src import summarise
+        calls: list[str] = []
+
+        def _fake_fetch(url: str) -> str:
+            calls.append(url)
+            return self._FRESH.get(url, "")
+
+        monkeypatch.setattr(summarise, "_SOURCE_EXCERPT_CACHE", {})
+        monkeypatch.setattr(summarise, "_fetch_source_excerpt", _fake_fetch)
+        return calls
+
+    def test_missing_sidecar_refetches_and_verifies_against_fresh_text(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _write_staged_issue(_make_staged_issue())
+        # Sidecar intentionally absent.
+        calls = self._mock_fetch(monkeypatch)
+        seen_excerpts: dict[str, str] = {}
+
+        def _stub_verify_rich(headline, body, source_excerpt, **kw):
+            seen_excerpts[headline] = source_excerpt
+            return [ClaimVerdict(
+                claim="ok", verdict="supported", location="body",
+                source_span="x",
+            )]
+
+        monkeypatch.setattr(verify, "verify_rich", _stub_verify_rich)
+        report = verify.verify_day(FIXED_DATE)
+
+        assert sorted(calls) == sorted([_PULSE_URL, _BP_URL])
+        assert report.verdict == "clean"
+        # The verifier judged against the FRESH fetch, not empty excerpts.
+        assert self._FRESH[_PULSE_URL] in "".join(seen_excerpts.values())
+        assert self._FRESH[_BP_URL] in "".join(seen_excerpts.values())
+
+    def test_missing_sidecar_fallback_rewrites_sidecar_in_pinned_shape(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _write_staged_issue(_make_staged_issue())
+        self._mock_fetch(monkeypatch)
+        monkeypatch.setattr(
+            verify, "verify_rich",
+            lambda *a, **kw: [ClaimVerdict(
+                claim="ok", verdict="supported", location="body",
+            )],
+        )
+        verify.verify_day(FIXED_DATE)
+
+        path = paths.source_excerpts_path(FIXED_DATE, canonical=False)
+        assert path.exists()
+        records = [
+            json.loads(line)
+            for line in path.read_text("utf-8").splitlines() if line.strip()
+        ]
+        by_url = {r["url"]: r for r in records}
+        assert set(by_url) == {_PULSE_URL, _BP_URL}
+        for rec in records:
+            # The architect's pinned record shape (schema_version 1).
+            assert set(rec) == {
+                "schema_version", "url", "excerpt", "fetched_at", "story_id",
+            }
+            assert rec["schema_version"] == 1
+        assert by_url[_PULSE_URL]["excerpt"] == self._FRESH[_PULSE_URL]
+        assert by_url[_PULSE_URL]["story_id"] == _PULSE_ID
+        assert by_url[_BP_URL]["story_id"] == _BP_ID
+
+    def test_empty_sidecar_file_also_triggers_the_fallback(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _write_staged_issue(_make_staged_issue())
+        _write_excerpts(FIXED_DATE, [])  # exists, zero records
+        calls = self._mock_fetch(monkeypatch)
+        monkeypatch.setattr(
+            verify, "verify_rich",
+            lambda *a, **kw: [ClaimVerdict(
+                claim="ok", verdict="supported", location="body",
+            )],
+        )
+        verify.verify_day(FIXED_DATE)
+        assert sorted(calls) == sorted([_PULSE_URL, _BP_URL])
+
+    def test_present_sidecar_never_fetches(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No behaviour change when the sidecar exists: the fetch function
+        is never called (mutation guard for the byte-identical path)."""
+        _write_staged_issue(_make_staged_issue())
+        _write_excerpts(FIXED_DATE, [
+            {"schema_version": 1, "url": _PULSE_URL, "excerpt": "a",
+             "fetched_at": FIXED_NOW.isoformat(), "story_id": _PULSE_ID},
+            {"schema_version": 1, "url": _BP_URL, "excerpt": "b",
+             "fetched_at": FIXED_NOW.isoformat(), "story_id": _BP_ID},
+        ])
+        calls = self._mock_fetch(monkeypatch)
+        monkeypatch.setattr(
+            verify, "verify_rich",
+            lambda *a, **kw: [ClaimVerdict(
+                claim="ok", verdict="supported", location="body",
+            )],
+        )
+        verify.verify_day(FIXED_DATE)
+        assert calls == []
+
+    def test_failing_fallback_degrades_to_empty_excerpts(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A raising fetch must not sink the stage: verify degrades to the
+        empty-excerpt path (failure-soft contract)."""
+        from src import summarise
+        _write_staged_issue(_make_staged_issue())
+        monkeypatch.setattr(summarise, "_SOURCE_EXCERPT_CACHE", {})
+
+        def _boom(url: str) -> str:
+            raise RuntimeError("network down")
+
+        monkeypatch.setattr(summarise, "_fetch_source_excerpt", _boom)
+
+        def _stub_verify_rich(headline, body, source_excerpt, **kw):
+            assert source_excerpt == ""
+            return [ClaimVerdict(
+                claim="c", verdict="unverifiable", location="body",
+            )]
+
+        monkeypatch.setattr(verify, "verify_rich", _stub_verify_rich)
+        report = verify.verify_day(FIXED_DATE)
+        assert report.verdict == "clean"
 
 
 # ---------------------------------------------------------------------------
