@@ -5098,17 +5098,21 @@ quiet-day line is 6 words)."""
 
 
 _SIMPLE_MARKUP_RE = re.compile(
-    r"</?(?:p|em|i|strong|b|span)\s*>", re.IGNORECASE
+    r"</?(?:p|em|i|strong|b|span)\s*>|<\*|\*>", re.IGNORECASE
 )
 """Presentation-wrapper tags the LLM sometimes emits around a synthesis
 ("<p><em>...</em></p>" -- observed on the 2026-08-09 gate run: the field
-renders in italics, so the model 'helpfully' supplied the markup).
-Stripped deterministically before validation; any OTHER residual markup
-is a violation (retry material)."""
+renders in italics, so the model 'helpfully' supplied the markup), plus
+the "<*...*>" pseudo-italic wrapper (observed on the 2026-08-10 quiet-day
+synthesis: "<" followed by "*" matched neither this stripper nor the
+residual detector below, so it shipped). Stripped deterministically
+before validation; any OTHER residual markup is a violation (retry
+material)."""
 
-_ANY_MARKUP_RE = re.compile(r"<[a-zA-Z/!][^>]*>")
+_ANY_MARKUP_RE = re.compile(r"<[a-zA-Z/!*][^>]*>")
 """Residual-markup detector for the violation check after the simple
-wrappers are stripped."""
+wrappers are stripped. Includes "*" in the opening class so unknown
+star-wrapper variants retry instead of shipping."""
 
 
 def _strip_simple_markup(text: str) -> str:

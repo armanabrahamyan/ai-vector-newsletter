@@ -217,12 +217,13 @@ footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap
   <div class="section-head measure">
     <div class="row"><h2>{{ section_title(section.name) }}</h2>{% if section.stories %}<span class="kicker">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}{{ 'item' if section.stories|length == 1 else 'items' }}{% else %}{{ 'story' if section.stories|length == 1 else 'stories' }}{% endif %}</span>{% endif %}</div>
 {#- A synthesis over a single story is just that story restated, so it is
-    suppressed regardless of what generation produced. Belt-and-braces: the
-    generation side skips it too. The guard applies ONLY to the v4 synthesis
-    field -- legacy intro_lead/intro_body text is ratified published content
-    on archive issues at any story count and must never be dropped. -#}
+    suppressed at EXACTLY one story. Zero stories is the quiet-day case:
+    that synthesis is the section's only content and must render. The
+    suppression applies ONLY to the v4 synthesis field -- legacy
+    intro_lead/intro_body text is ratified published content on archive
+    issues at any story count and must never be dropped. -#}
 {%- set synthesis = section_synthesis(section) %}
-{%- if synthesis and (section.stories|length > 1 or not section.synthesis) %}
+{%- if synthesis and (section.stories|length != 1 or not section.synthesis) %}
     <p class="synthesis">{{ synthesis | code_spans }}</p>
 {%- endif %}
   </div>

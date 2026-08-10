@@ -1657,6 +1657,30 @@ class TestSectionSynthesis:
         head = currents[:currents.index("</div>")]
         assert '<span class="kicker">' not in head
 
+    def test_empty_section_with_v4_quiet_day_synthesis_renders_it(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """The live 2026-08-10 bug: a zero-story Currents whose quiet-day
+        text is in the v4 synthesis field (not the legacy pair) rendered a
+        bare heading -- the outer guard admitted the section, the inner
+        guard suppressed its only content. Suppression is for exactly one
+        story, never zero."""
+        issue = self._issue_with_section(story_count=2)
+        issue = issue.model_copy(update={"sections": issue.sections + [
+            IssueSection(
+                name="currents",
+                stories=[],
+                synthesis="Nothing surfaced for Currents today.",
+            )
+        ]})
+        _write_staging(FIXED_DATE, issue)
+        html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+        currents = html[html.index('class="section currents"'):]
+        assert (
+            '<p class="synthesis">Nothing surfaced for Currents today.</p>'
+            in currents
+        )
+
     def test_empty_section_with_no_text_stays_absent(
         self, tmp_data_root: Path, tmp_docs: Path
     ) -> None:

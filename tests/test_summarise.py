@@ -3066,6 +3066,22 @@ class TestSynthesisViolations:
     sentences, the aphorism proxy, and the em-dash ban. Each check fails
     against the defect it guards."""
 
+    def test_star_wrapper_is_stripped(self) -> None:
+        """The "<*...*>" pseudo-italic wrapper shipped on the 2026-08-10
+        quiet-day synthesis: "<*" matched neither the tag stripper nor the
+        residual detector. Both halves must come off, the words stay."""
+        from src.summarise import _strip_simple_markup
+        assert (
+            _strip_simple_markup("<*Nothing surfaced for Currents today.*>")
+            == "Nothing surfaced for Currents today."
+        )
+
+    def test_star_variant_flags_residual_markup(self) -> None:
+        """An unknown star-wrapper variant the stripper cannot fully
+        consume must be a violation (retry), never ship."""
+        from src.summarise import _ANY_MARKUP_RE
+        assert _ANY_MARKUP_RE.search("<*em attr=1>text here")
+
     def test_good_synthesis_passes(self) -> None:
         from src.summarise import _synthesis_violations
         good = (
