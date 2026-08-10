@@ -5094,7 +5094,7 @@ standalone aphoristic opener the redesign bans ("Costs precede clarity.",
 "X outruns Y."). The register rule itself (open ON the pattern with
 subject + verb) is prompt + reviewer territory; this is the cheap
 structural kill for the family. Quiet-day Currents is exempt (the ratified
-quiet-day line is 6 words)."""
+quiet-day line is 5 words)."""
 
 
 _SIMPLE_MARKUP_RE = re.compile(
@@ -5135,7 +5135,7 @@ def _synthesis_violations(text: str, *, quiet_day: bool = False) -> list[str]:
         issues.append("synthesis is missing or empty")
         return issues
     words = len(body.split())
-    min_words = 8 if quiet_day else _SYNTHESIS_MIN_WORDS
+    min_words = 3 if quiet_day else _SYNTHESIS_MIN_WORDS
     if words < min_words:
         issues.append(
             f"synthesis is {words} words (minimum {min_words})"
@@ -5211,6 +5211,18 @@ def _populate_section_synthesis(
         # Big Picture / Hands-On never render empty; only Currents has a
         # quiet-day contract with the template.
         return
+    if quiet_day:
+        # Quiet day (2026-08-11 ruling): the line is fixed -- "Nothing
+        # surfaced for Currents today." -- one plain statement, no
+        # explanation. Fixed wording is a constant, not an LLM call
+        # (No Token Wasted), which also removes the whole class of
+        # LLM-emitted wrapper garbage from the quiet-day path.
+        section.synthesis = _QUIET_DAY_CURRENTS_SYNTHESIS
+        _LOG.info(
+            "summarise: zero Currents stories -- set the deterministic "
+            "quiet-day line (no LLM call)"
+        )
+        return
     if len(section.stories) == 1:
         _LOG.info(
             "summarise: section %s has exactly one story -- no synthesis "
@@ -5224,35 +5236,23 @@ def _populate_section_synthesis(
     temperature = float(os.getenv("LLM_TEMPERATURE_SUMMARISE", "0.6"))
     mandatory = section.name in _SECTIONS_WITH_MANDATORY_SYNTHESIS
 
-    if quiet_day:
-        stories_block = "(none -- zero Currents items today)"
-    else:
-        story_lines: list[str] = []
-        for st in section.stories:
-            body = st.summary if len(st.summary) <= 280 else st.summary[:280] + "..."
-            take_line = ""
-            st_take = getattr(st, "take", None)
-            if st_take:
-                take_line = f"\n  TAKE (do not restate): {st_take}"
-            story_lines.append(
-                f"- HEADLINE: {st.headline}\n  BODY: {body}{take_line}"
-            )
-        stories_block = "\n".join(story_lines)
-
-    if quiet_day:
-        register_addendum = (
-            "\n- QUIET DAY (zero Currents items today): you MUST still "
-            "return a synthesis. Acknowledge the quiet day in the "
-            "Currents register: calm, watchful, lightly wry; never "
-            "apologetic. Do NOT invent items or imply stories exist "
-            "below. VARY the wording day to day; a prior render (do not "
-            "copy verbatim): \"A quiet day in the undercurrents.\" Say "
-            "the day's signal sits in the sections above and the watch "
-            "resumes when the early signals return. The quiet-day "
-            "synthesis may run shorter than the 28-word floor and may "
-            "open on the quiet-day line."
+    # quiet_day never reaches here since the 2026-08-11 ruling: the
+    # quiet-day line is a fixed constant set above, no LLM call. Every
+    # prompt assembled below is byte-identical to v0.23's non-quiet
+    # prompts.
+    story_lines: list[str] = []
+    for st in section.stories:
+        body = st.summary if len(st.summary) <= 280 else st.summary[:280] + "..."
+        take_line = ""
+        st_take = getattr(st, "take", None)
+        if st_take:
+            take_line = f"\n  TAKE (do not restate): {st_take}"
+        story_lines.append(
+            f"- HEADLINE: {st.headline}\n  BODY: {body}{take_line}"
         )
-    elif section.name == "currents":
+    stories_block = "\n".join(story_lines)
+
+    if section.name == "currents":
         register_addendum = (
             "\n- CURRENTS DIRECTION: the synthesis must name the "
             "AGGREGATE DIRECTION today's items point at, as a claim the "
@@ -5414,18 +5414,13 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
 # v0.21 (2026-07-04), migrated to the synthesis field at v0.23: a
 # deterministic quiet-day framing for an empty Currents section. Three
 # shipped issues carried an empty Currents with null framing and needed a
-# manual fix (template-integrity failure per review). The LLM quiet-day
-# branch in ``_populate_section_synthesis`` is the voice path; THIS is the
-# contract guard -- plain code, not another LLM call, per No Token Wasted.
-# The wording intentionally reuses the ratified quiet-day register ("A
-# quiet day in the undercurrents." is the archive empty-state line).
-_QUIET_DAY_CURRENTS_SYNTHESIS = (
-    "A quiet day in the undercurrents. Nothing below the fold cleared the "
-    "bar today; the day's signal sits in the sections above, and the "
-    "watch resumes when the early signals return."
-)
-"""Deterministic fallback ``synthesis`` for a zero-story Currents section.
-Only used when the LLM quiet-day synthesis landed null/empty."""
+# manual fix (template-integrity failure per review). Since the 2026-08-11
+# ruling the wording is FIXED and set directly by
+# ``_populate_section_synthesis`` -- no LLM call, per No Token Wasted; the
+# ruling: one plain statement, no explanation.
+_QUIET_DAY_CURRENTS_SYNTHESIS = "Nothing surfaced for Currents today."
+"""The ``synthesis`` for a zero-story Currents section. Ratified wording
+(2026-08-11); change only on a ruling."""
 
 
 def _ensure_quiet_day_currents_synthesis(section: IssueSection) -> None:

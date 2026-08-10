@@ -2924,11 +2924,10 @@ class TestVoiceDiversityBlockReachesPromptBuilders:
 # v0.21 (2026-07-04), synthesis form since v0.23: empty-Currents quiet day.
 #
 # Three shipped issues carried an empty Currents section with null framing
-# (template-integrity failure per review). Two-layer fix: the synthesis
-# LLM pass runs on a zero-story Currents with a quiet-day instruction, and
-# ``_ensure_quiet_day_currents_synthesis`` is the deterministic code guard
-# that makes the template contract unbreakable (No Token Wasted: the
-# fallback is code, not another LLM call).
+# (template-integrity failure per review). Since the 2026-08-11 ruling the
+# line is a ratified constant set directly by the synthesis pass -- no LLM
+# call at all -- and ``_ensure_quiet_day_currents_synthesis`` remains as
+# the belt-and-braces contract guard.
 # ===========================================================================
 
 class TestQuietDayCurrentsSynthesis:
@@ -2980,31 +2979,24 @@ class TestQuietDayCurrentsSynthesis:
         summarise_mod._ensure_quiet_day_currents_synthesis(section)
         assert section.synthesis is None
 
-    def test_populate_synthesis_runs_quiet_day_prompt_for_empty_currents(
+    def test_populate_synthesis_sets_fixed_line_without_llm_for_empty_currents(
         self, monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """A zero-story Currents does not skip the synthesis pass: the
-        LLM is called with the QUIET DAY instruction and its paragraph
-        lands on the section."""
+        """The 2026-08-11 ruling: the quiet-day line is fixed wording set
+        by code -- one plain statement, no explanation, and NO LLM call
+        (No Token Wasted). This replaced the quiet-day prompt branch."""
         from src import summarise as summarise_mod
         section = IssueSection(name="currents", stories=[])
-        captured: dict[str, str] = {}
 
-        def fake_llm_call(prompt, **_kwargs):
-            captured["prompt"] = prompt
-            return (
-                '{"synthesis": "Still waters below the fold today. The '
-                "day's signal sits in the sections above, and the watch "
-                'resumes when the early signals return."}'
+        def fail_llm_call(prompt, **_kwargs):  # pragma: no cover
+            raise AssertionError(
+                "LLM must not be called for the quiet-day line: the "
+                "wording is a ratified constant"
             )
 
-        monkeypatch.setattr(summarise_mod, "_llm_call", fake_llm_call)
+        monkeypatch.setattr(summarise_mod, "_llm_call", fail_llm_call)
         summarise_mod._populate_section_synthesis(section)
-        assert "QUIET DAY" in captured["prompt"]
-        # The prior render is offered as a register example, not a script.
-        assert "A quiet day in the undercurrents." in captured["prompt"]
-        assert section.synthesis is not None
-        assert section.synthesis.startswith("Still waters")
+        assert section.synthesis == "Nothing surfaced for Currents today."
 
     def test_populate_synthesis_still_skips_empty_non_currents(
         self, monkeypatch: pytest.MonkeyPatch,
