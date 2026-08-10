@@ -749,13 +749,19 @@ class TestIssueDigest:
         with pytest.raises(ValidationError):
             Issue.model_validate(payload)
 
+    _FIRST_DIGEST_DATE = "2026-08-10"
+    """Issue #35, the first published under the v9 digest/synthesis schema.
+    Everything before it is the pre-redesign archive."""
+
     def test_all_released_issues_parse_with_digest_and_synthesis_none(self) -> None:
         """THE migration promise, proven by execution: every issue.json in
-        the released archive validates under the v8 model with digest=None
+        the released archive validates under the current model, and every
+        PRE-REDESIGN issue (before 2026-08-10 / #35) carries digest=None
         and synthesis=None on every section. Pins the archive-compat
         contract the same way the pre-take parse test does, but across the
         whole corpus -- a future field rename or a tightened validator that
-        breaks history fails here first."""
+        breaks history fails here first. Issues from #35 onward may carry
+        either shape; parsing is the only claim made about them."""
         from pathlib import Path
 
         released = sorted(Path("data/released").glob("*/issue.json"))
@@ -765,6 +771,8 @@ class TestIssueDigest:
             issue = Issue.model_validate_json(
                 archive.read_text(encoding="utf-8")
             )
+            if archive.parent.name >= self._FIRST_DIGEST_DATE:
+                continue
             assert issue.digest is None, archive
             for section in issue.sections:
                 assert section.synthesis is None, archive
