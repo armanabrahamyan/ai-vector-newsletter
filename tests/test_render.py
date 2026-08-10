@@ -1615,6 +1615,61 @@ class TestSectionSynthesis:
         assert '<p class="synthesis">' not in html
         assert "Speed is outrunning safety." not in html
 
+    def test_single_story_legacy_intro_still_renders(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """The n=1 guard applies to the v4 synthesis field only. A legacy
+        intro on a one-story section is ratified published content on every
+        archive issue; the 2026-08-10 conversion must not drop it."""
+        _write_staging(
+            FIXED_DATE,
+            self._issue_with_section(
+                story_count=1, intro_lead="The threat has already arrived."
+            ),
+        )
+        html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+        assert (
+            '<p class="synthesis">The threat has already arrived.</p>' in html
+        )
+
+    def test_empty_section_with_quiet_day_text_renders_it(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """A zero-story Currents carrying the quiet-day line is content,
+        not an empty shell: the section head and line render, the story
+        count kicker does not."""
+        issue = self._issue_with_section(story_count=2)
+        issue = issue.model_copy(update={"sections": issue.sections + [
+            IssueSection(
+                name="currents",
+                stories=[],
+                intro_lead="A quiet day in the undercurrents.",
+                intro_body="Little cleared the bar today.",
+            )
+        ]})
+        _write_staging(FIXED_DATE, issue)
+        html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+        currents = html[html.index('class="section currents"'):]
+        assert (
+            '<p class="synthesis">A quiet day in the undercurrents. '
+            'Little cleared the bar today.</p>' in currents
+        )
+        head = currents[:currents.index("</div>")]
+        assert '<span class="kicker">' not in head
+
+    def test_empty_section_with_no_text_stays_absent(
+        self, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """The other side of the empty-section rule: nothing to say, no
+        section shell."""
+        issue = self._issue_with_section(story_count=2)
+        issue = issue.model_copy(update={"sections": issue.sections + [
+            IssueSection(name="currents", stories=[])
+        ]})
+        _write_staging(FIXED_DATE, issue)
+        html = render(FIXED_DATE, mode="preview").read_text(encoding="utf-8")
+        assert 'class="section currents"' not in html
+
     def test_two_story_section_still_renders_the_synthesis(
         self, tmp_data_root: Path, tmp_docs: Path
     ) -> None:

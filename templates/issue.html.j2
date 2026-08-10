@@ -209,15 +209,20 @@ footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap
 {%- endfor %}
   </div>
 </section>
-{% for section in issue.sections %}{% if section.stories %}
+{#- An empty section still renders when it carries text: the quiet-day
+    line (new contract) or a legacy quiet-day intro (archive issues) is
+    published content, not an empty shell. -#}
+{% for section in issue.sections %}{% if section.stories or section_synthesis(section) %}
 <section class="section {{ section.name }}">
   <div class="section-head measure">
-    <div class="row"><h2>{{ section_title(section.name) }}</h2><span class="kicker">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}{{ 'item' if section.stories|length == 1 else 'items' }}{% else %}{{ 'story' if section.stories|length == 1 else 'stories' }}{% endif %}</span></div>
+    <div class="row"><h2>{{ section_title(section.name) }}</h2>{% if section.stories %}<span class="kicker">{{ section.stories|length }} {% if section.name in ('currents', 'on_the_radar') %}{{ 'item' if section.stories|length == 1 else 'items' }}{% else %}{{ 'story' if section.stories|length == 1 else 'stories' }}{% endif %}</span>{% endif %}</div>
 {#- A synthesis over a single story is just that story restated, so it is
     suppressed regardless of what generation produced. Belt-and-braces: the
-    generation side is being fixed too. -#}
+    generation side skips it too. The guard applies ONLY to the v4 synthesis
+    field -- legacy intro_lead/intro_body text is ratified published content
+    on archive issues at any story count and must never be dropped. -#}
 {%- set synthesis = section_synthesis(section) %}
-{%- if synthesis and section.stories|length > 1 %}
+{%- if synthesis and (section.stories|length > 1 or not section.synthesis) %}
     <p class="synthesis">{{ synthesis | code_spans }}</p>
 {%- endif %}
   </div>
