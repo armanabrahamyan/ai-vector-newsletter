@@ -1,0 +1,252 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-10T21:40:56.338048Z",
+  "computed_verdict": "red",
+  "one_line": "Three Muse Glimmer stories, two unsupported takes, and a blocking take misquoting its own finding dominate today's defects.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_4708dc6c1eaf7113",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "Meta's first Superintelligence Labs model runs locally for agentic coding",
+      "fix_kind": "structural",
+      "instruction": "This story covers the same model (Muse Glimmer 30B) as the Pulse story (c_01ca798a130f67a0) and the Hands-On story c_258de7908509944e. Three stories on the same model release in one issue is a duplication failure. Remove this story; its ollama-specific angle can be folded into c_258de7908509944e as a single sentence if the ollama integration is worth noting."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_258de7908509944e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "Meta's 30B open model brings long-context agents to local hardware",
+      "fix_kind": "structural",
+      "instruction": "This is the third story in the issue covering Meta Muse Glimmer 30B (also Pulse c_01ca798a130f67a0 and Hands-On c_4708dc6c1eaf7113). The Pulse already covers weights, tool calling, and single-GPU deployment; this story adds the NVIDIA NIM angle. Consolidate: either fold the NIM/120K-context detail into the Pulse summary and drop this story, or drop c_4708dc6c1eaf7113 and keep this one as the single Hands-On entry for the model."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_4708dc6c1eaf7113",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Local agentic coding workloads ran on closed APIs; Meta's 30B open model changes that today.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this take as unsupported. The source (ollama release notes) does not assert that local agentic coding workloads previously required closed APIs. Remove the unsupported premise; rewrite to state only what the source supports, e.g. 'Meta's 30B open model is now available via ollama for local agentic coding workloads.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1d2d2161265011f4",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Parallel Claude Code sessions ran silently; a blocked session now signals its sibling mid-task.",
+      "fix_kind": "sourcing",
+      "instruction": "Verification flags this take as unsupported by the source (a TLDR digest). The claim that sessions 'ran silently' before v2.1.224 is not asserted by the source. Remove the unsupported historical premise; rewrite to state only the new capability, e.g. 'Claude Code v2.1.224 lets a blocked session alert and send fixes to a sibling session mid-task.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9b0905b0b5f7dc90",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "New just-in-time warmup runs Triton kernels before the first request arrives, ending cold-start stalls.",
+      "fix_kind": "text_edit",
+      "instruction": "Verification flags 'The warmup covers five new model families' as unsupported; the source lists more than five new models and does not scope the warmup feature to exactly five families. Remove or qualify the 'five new model families' framing in the headline and summary. The headline 'vLLM adds five new model families' is also flagged unsupported — revise to reflect the actual scope (e.g. 'multiple new model families including Kimi K3, Qwen3.5, and K-EXAONE')."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9b0905b0b5f7dc90",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "vLLM adds five new model families and removes first-request startup delays",
+      "fix_kind": "text_edit",
+      "instruction": "Verification marks 'five new model families' as unsupported — the source lists more than five. Replace 'five new model families' with a description that matches the source, e.g. 'vLLM v0.27.0 adds Kimi K3, Qwen3.5, and more while removing first-request startup delays'."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_390b5f4d046f35a6",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Agents running below 4-bit compression lose half their safety refusals undetected.",
+      "fix_kind": "text_edit",
+      "instruction": "The body states decision margins shrink to 0.33 of baseline at 3-bit quantisation — a two-thirds reduction, not 'half'. The take overstates the finding and names a specific safety-critical metric ('safety refusals') that the body does not assert is the primary measure (the body says 'tool-calling toward inaction'). Rewrite to match the body: e.g. 'At 3-bit compression, tool-call decision margins collapse to a third of baseline while benchmark scores hold steady.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_68d32f0c7a92a2eb",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Truthful AI researchers found Claude models assign lower probabilities to an AI bubble bursting when the at-risk company is Anthropic rather than OpenAI, mostly without disclosing this in their reasoning.",
+      "fix_kind": "text_edit",
+      "instruction": "The phrase 'mostly without disclosing this in their reasoning' attributes a specific concealment behaviour to Claude models that the source (an Alignment Forum post) may not assert in those terms. Verify the source's exact language on disclosure/non-disclosure. If the source says something weaker (e.g. 'the skew was not reflected in chain-of-thought'), rewrite to match. Attaching an undisclosed-concealment claim to a named firm's model is a reputational liability if the source does not use that framing."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Researchers found frontier models assign lower probabilities to an AI bubble bursting when Anthropic is the at-risk firm.",
+      "fix_kind": "text_edit",
+      "instruction": "This sentence restates the story's summary almost verbatim and carries the same reputational framing concern as the summary. Rewrite to compress the finding without the 'at-risk firm' framing, e.g. 'Claude models skewed probability estimates on AI-bubble scenarios in Anthropic's favour, a pattern the paper calls value leakage.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_258de7908509944e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "On-prem agentic deployments now have a 30B open model sized for a single GPU.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares a syntactic frame with the Pulse take ('Agentic multimodal work that required closed APIs now runs on a single GPU with open weights') — both anchor on 'single GPU' and 'open weights/model'. As the later story, revise to differentiate: foreground the 120K-context or NIM-container angle rather than repeating the single-GPU frame."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8f1ee2316fd311eb",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Multilingual text-to-speech ran on closed APIs; open weights put latency tuning back on your hardware.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the 'X ran on closed APIs; open weights change that' scaffold with c_4708dc6c1eaf7113's take ('Local agentic coding workloads ran on closed APIs; Meta's 30B open model changes that today'). Three takes in the issue use the 'previously required closed APIs' frame (also the Pulse take). Rewrite to foreground the 32ms latency figure or the 12-language coverage as the distinctive claim."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e2939aeeb356dcb9",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "General-purpose deep research agents handled financial analysis as a generic task, not a specialist one.",
+      "fix_kind": "text_edit",
+      "instruction": "This take restates the summary's opening sentence ('General-purpose research agents produce reports inadequate for finance') rather than adding the position the body stopped short of. The body's news is that FinanceHarness lifts scores and even the best model is below 45%. Rewrite to state the publication's position on what that ceiling means, e.g. 'No current general-purpose research agent clears the bar FinanceHarness sets for production financial analysis.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1d2d2161265011f4",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "Cursor Router, separately, selects models by classifying turns against a taxonomy learned from real developer traffic.",
+      "fix_kind": "structural",
+      "instruction": "Cursor Router is a distinct product from a different vendor and is not covered by the source (Claude Code v2.1.224 release notes). Either source the Cursor Router claim separately or remove it; bundling two unrelated tool updates in one Hands-On story dilutes the artefact-specific headline contract."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "components that previously required closed APIs or cloud infrastructure are landing as open weights and drop-in upgrades",
+      "fix_kind": "carry_forward",
+      "instruction": "The 'closed APIs → open weights' frame has appeared in the Hands-On synthesis or intro for two consecutive issues (2026-08-08 'Ship the plumbing first'; 2026-08-10 'agents need durable scaffolding'). This issue's synthesis repeats the same directional claim without progression. Revise to name what is new today — the convergence of multimodal, voice, and inference-serving open weights arriving simultaneously — rather than restating the general trend."
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "8cbcdbd6cf0a798666d6eb1cda22a6a8c8f9b8baf0d5a982b25da5de554a6c68",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.)"
+}
