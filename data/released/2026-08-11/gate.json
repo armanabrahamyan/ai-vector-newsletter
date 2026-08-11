@@ -11,8 +11,8 @@
     "schema_version": 1,
     "present": true,
     "verdict": "red",
-    "issue_sha256": "8cbcdbd6cf0a798666d6eb1cda22a6a8c8f9b8baf0d5a982b25da5de554a6c68",
-    "computed_issue_sha256": "8cbcdbd6cf0a798666d6eb1cda22a6a8c8f9b8baf0d5a982b25da5de554a6c68",
+    "issue_sha256": "591247ca1d7444f6132714468c7172d6e1440099fb842ccbdd8b5588916418cc",
+    "computed_issue_sha256": "591247ca1d7444f6132714468c7172d6e1440099fb842ccbdd8b5588916418cc",
     "fresh": true,
     "prompt_version": "v1.3.0",
     "path": "data/staging/2026-08-11/review.json"
@@ -20,14 +20,10 @@
   "verify": {
     "schema_version": 1,
     "present": true,
-    "verdict": "flagged",
-    "stories_verified": 12,
+    "verdict": "clean",
+    "stories_verified": 11,
     "contradicted_story_ids": [],
-    "unsupported_story_ids": [
-      "c_1d2d2161265011f4",
-      "c_4708dc6c1eaf7113",
-      "c_9b0905b0b5f7dc90"
-    ],
+    "unsupported_story_ids": [],
     "path": "data/staging/2026-08-11/verify.json"
   },
   "checks": [
@@ -36,7 +32,7 @@
       "name": "issue_readable",
       "passed": true,
       "blocking": true,
-      "detail": "issue.json validates (12 stories)",
+      "detail": "issue.json validates (11 stories)",
       "hold_reason": null
     },
     {
@@ -60,7 +56,7 @@
       "name": "review_freshness",
       "passed": true,
       "blocking": true,
-      "detail": "review matches current issue.json (8cbcdbd6cf0a...)",
+      "detail": "review matches current issue.json (591247ca1d74...)",
       "hold_reason": null
     },
     {
@@ -68,7 +64,7 @@
       "name": "verify_readable",
       "passed": true,
       "blocking": true,
-      "detail": "verify.json parsed (verdict='flagged')",
+      "detail": "verify.json parsed (verdict='clean')",
       "hold_reason": null
     },
     {
@@ -76,7 +72,7 @@
       "name": "verify_available",
       "passed": true,
       "blocking": true,
-      "detail": "verify ran (verdict='flagged')",
+      "detail": "verify ran (verdict='clean')",
       "hold_reason": null
     },
     {
@@ -84,15 +80,15 @@
       "name": "no_contradicted_claims",
       "passed": true,
       "blocking": true,
-      "detail": "no contradicted claims across 12 verified stories",
+      "detail": "no contradicted claims across 11 verified stories",
       "hold_reason": null
     },
     {
       "schema_version": 1,
       "name": "verify_no_unsupported",
-      "passed": false,
+      "passed": true,
       "blocking": false,
-      "detail": "3 story/stories carry an unsupported claim (advisory, not blocking): c_1d2d2161265011f4, c_4708dc6c1eaf7113, c_9b0905b0b5f7dc90",
+      "detail": "no unsupported claims",
       "hold_reason": null
     },
     {
@@ -100,10 +96,10 @@
       "name": "revision_status",
       "passed": true,
       "blocking": false,
-      "detail": "1 revision cycle(s), 0 applied / 6 rejected / 3 proposed (shadow)",
+      "detail": "2 revision cycle(s), 3 applied / 11 rejected / 3 proposed (shadow)",
       "hold_reason": null
     }
   ],
-  "decided_at": "2026-08-10T21:41:16.306699Z",
+  "decided_at": "2026-08-11T10:37:53.677649Z",
   "note": ""
 }

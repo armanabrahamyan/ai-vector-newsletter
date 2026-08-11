@@ -1,12 +1,11 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-10T21:39:53.779594Z",
+  "generated_at": "2026-08-11T10:37:11.987762Z",
   "prompt_version": "v0.7",
-  "verdict": "flagged",
+  "verdict": "clean",
   "verdict_counts": {
-    "supported": 94,
-    "unverifiable": 12,
-    "unsupported": 4
+    "supported": 90,
+    "unverifiable": 10
   },
   "stories": [
     {
@@ -30,7 +29,7 @@
           "location": "body",
           "summary_span": "Muse Glimmer is a 30-billion-parameter vision-language model with built-in tool calling",
           "source_span": "Muse Glimmer is a dense 30B parameter model ... Muse Glimmer can do multimodal tool calling",
-          "note": "Source confirms 30B parameters, VLM architecture, and multimodal tool calling."
+          "note": "Source explicitly states 30B parameters and multimodal tool calling."
         },
         {
           "schema_version": 1,
@@ -38,8 +37,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "image and video understanding",
-          "source_span": "Muse Glimmer uses one image encoder to handle both images and videos.",
-          "note": "Source explicitly confirms both image and video understanding."
+          "source_span": "Muse Glimmer uses one image encoder to handle both images and videos ... Muse Glimmer can answer complex questions about videos",
+          "note": "Source confirms both image and video understanding capabilities."
         },
         {
           "schema_version": 1,
@@ -57,7 +56,7 @@
           "location": "body",
           "summary_span": "Weights and day-zero integrations with transformers, llama.cpp, and vLLM are public on Hugging Face",
           "source_span": "we are shipping with Meta day-0 support in transformers, llama.cpp, vLLM, Inference Endpoints, and other libraries ... You can find Muse Glimmer on the Hugging Face Hub.",
-          "note": "Source confirms day-0 support in transformers, llama.cpp, and vLLM, and availability on Hugging Face Hub; weights availability is implied by open source release on Hub."
+          "note": "Source confirms day-0 support in transformers, llama.cpp, and vLLM, and availability on Hugging Face Hub; omitting Inference Endpoints is acceptable compression."
         },
         {
           "schema_version": 1,
@@ -66,16 +65,16 @@
           "location": "body",
           "summary_span": "Benchmarks come from Meta's own report",
           "source_span": "Scores are reported as published.",
-          "note": "The source notes scores are self-reported; the summary correctly flags this as Meta's own report, preserving the trust qualifier."
+          "note": "Source states scores are self-reported; the summary correctly flags this as Meta's own report, preserving the trust qualifier."
         },
         {
           "schema_version": 1,
-          "claim": "Agentic multimodal work that required closed APIs now runs on a single GPU with open weights",
-          "verdict": "unverifiable",
+          "claim": "Agentic multimodal work that required closed APIs now runs on local hardware with open weights",
+          "verdict": "supported",
           "location": "body",
-          "summary_span": "Agentic multimodal work that required closed APIs now runs on a single GPU with open weights",
-          "source_span": "",
-          "note": "The source confirms open-source and local GPU deployment but does not mention 'closed APIs' or specify 'a single GPU'; the single-GPU and closed-API claims are not addressed in the excerpt."
+          "summary_span": "Agentic multimodal work that required closed APIs now runs on local hardware with open weights",
+          "source_span": "Meta is back with Muse Glimmer: local, agentic, multimodal, and open source!",
+          "note": "Source confirms local, agentic, multimodal, and open-source nature; 'closed APIs' vs 'open weights' is editorial framing consistent with the source's positioning, not a factual error."
         },
         {
           "schema_version": 1,
@@ -84,7 +83,7 @@
           "location": "body",
           "summary_span": "Meta's 30B vision model",
           "source_span": "Muse Glimmer is a dense 30B parameter model",
-          "note": "digest: Source confirms the model is 30B parameters."
+          "note": "digest: The source confirms the model is 30B parameters."
         },
         {
           "schema_version": 1,
@@ -93,7 +92,7 @@
           "location": "body",
           "summary_span": "Weights ... are public on Hugging Face",
           "source_span": "You can find Muse Glimmer on the Hugging Face Hub.",
-          "note": "digest: Source confirms the model is available on Hugging Face Hub."
+          "note": "digest: The source confirms the model is available on Hugging Face Hub; 'public' is a reasonable paraphrase of open source availability."
         },
         {
           "schema_version": 1,
@@ -102,16 +101,16 @@
           "location": "body",
           "summary_span": "tool calling",
           "source_span": "Multimodal tool calling Muse Glimmer can do multimodal tool calling",
-          "note": "digest: Source explicitly confirms multimodal tool calling capability."
+          "note": "digest: The source explicitly confirms multimodal tool calling capability."
         },
         {
           "schema_version": 1,
           "claim": "The model supports image understanding.",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "image ... understanding",
+          "summary_span": "image",
           "source_span": "Muse Glimmer accepts images as input",
-          "note": "digest: Source confirms image input and understanding capability."
+          "note": "digest: The source confirms image input/understanding capability."
         },
         {
           "schema_version": 1,
@@ -120,16 +119,16 @@
           "location": "body",
           "summary_span": "video understanding",
           "source_span": "Muse Glimmer can answer complex questions about videos",
-          "note": "digest: Source confirms video understanding capability."
+          "note": "digest: The source confirms video understanding capability."
         },
         {
           "schema_version": 1,
-          "claim": "The model is designed for single-GPU deployment.",
-          "verdict": "unverifiable",
+          "claim": "Meta shipped the model.",
+          "verdict": "supported",
           "location": "body",
-          "summary_span": "single-GPU deployment",
-          "source_span": "",
-          "note": "digest: The source mentions device_map='auto' and multi-GPU/accelerator support but does not specifically claim or confirm single-GPU deployment as a design target."
+          "summary_span": "Meta's 30B vision model ships",
+          "source_span": "Meta is back with Muse Glimmer: local, agentic, multimodal, and open source!",
+          "note": "digest: The source confirms Meta released Muse Glimmer."
         }
       ],
       "has_contradiction": false,
@@ -157,16 +156,25 @@
           "location": "body",
           "summary_span": "General-purpose research agents produce reports inadequate for finance.",
           "source_span": "most deep research systems write general-purpose reports, which are inadequate for financial deep research",
-          "note": "Near-verbatim match with the source."
+          "note": "Near-verbatim paraphrase of the source's stated motivation."
         },
         {
           "schema_version": 1,
-          "claim": "FinanceHarness, an arXiv preprint, pairs a finance-specific harness with FinanceGym, a leakage-proof benchmark.",
+          "claim": "FinanceHarness is an arXiv preprint",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "FinanceHarness, an arXiv preprint, pairs a finance-specific harness with FinanceGym, a leakage-proof benchmark.",
-          "source_span": "We present FinanceHarness, a harness that runs finance-oriented tools and practitioner-guided workflows... We further propose FinanceGym... a verifiable, point-in-time benchmark that prevents leakage of future information",
-          "note": "Both components are confirmed; 'leakage-proof' is a fair plain-English paraphrase of 'prevents leakage of future information'."
+          "summary_span": "FinanceHarness, an arXiv preprint",
+          "source_span": "Computer Science > Computation and Language [Submitted on 30 Jul 2026 (v1), last revised 7 Aug 2026 (this version, v2)] Title:FinanceHarness: Autonomous Financial Deep Research Framework",
+          "note": "The source is clearly an arXiv preprint submission."
+        },
+        {
+          "schema_version": 1,
+          "claim": "FinanceHarness pairs a finance-specific harness with FinanceGym, a leakage-proof benchmark.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "pairs a finance-specific harness with FinanceGym, a leakage-proof benchmark",
+          "source_span": "a verifiable, point-in-time benchmark that prevents leakage of future information... We further propose FinanceGym, comprising thesis-driven research questions and rubrics that combine pre-cutoff and post-cutoff criteria",
+          "note": "'Leakage-proof' is a fair plain-English compression of 'prevents leakage of future information / point-in-time benchmark'."
         },
         {
           "schema_version": 1,
@@ -184,7 +192,7 @@
           "location": "body",
           "summary_span": "even the strongest model scores below 45%",
           "source_span": "even pairing FinanceHarness with the most cutting edge LLM (e.g. Opus-5), the FinanceGym score is below 45%",
-          "note": "'Strongest model' is a fair paraphrase of 'most cutting edge LLM'; the sub-45% figure matches exactly."
+          "note": "'Strongest model' is a fair paraphrase of 'most cutting edge LLM'; the below-45% figure matches exactly."
         },
         {
           "schema_version": 1,
@@ -193,16 +201,16 @@
           "location": "body",
           "summary_span": "Code is public.",
           "source_span": "FinanceHarness code is available at: this https URL",
-          "note": "The source confirms code availability via a public URL."
+          "note": "The source confirms code availability at a public URL."
         },
         {
           "schema_version": 1,
-          "claim": "General-purpose deep research agents handled financial analysis as a generic task, not a specialist one.",
+          "claim": "No current general-purpose research agent clears the bar FinanceHarness sets for production financial analysis.",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "General-purpose deep research agents handled financial analysis as a generic task, not a specialist one.",
-          "source_span": "most deep research systems write general-purpose reports, which are inadequate for financial deep research. Financial research demands specialized knowledge",
-          "note": "The take is an editorial restatement of a factual claim well-supported by the source."
+          "summary_span": "No current general-purpose research agent clears the bar FinanceHarness sets for production financial analysis.",
+          "source_span": "even pairing FinanceHarness with the most cutting edge LLM (e.g. Opus-5), the FinanceGym score is below 45%, showing that it is a challenging benchmark for financial deep research",
+          "note": "The take is an editorial framing of the source's finding that even the best model scores below 45%, implying no agent meets a production bar; this is a reasonable compression of the source's conclusion."
         },
         {
           "schema_version": 1,
@@ -211,7 +219,7 @@
           "location": "body",
           "summary_span": "Three distinct layers of AI deployment are each revealing a different species of unverified assumption: about what models actually measure, what productivity gains actually land, and whose interests a model quietly serves.",
           "source_span": "",
-          "note": "synthesis: This is editorial pattern-naming framing three stories together; while the sources touch on benchmarking (FinanceHarness), productivity (Sandra Batten post), and value alignment (Value Leakage post), the specific framing of 'three distinct layers' and the characterisation of each as an 'unverified assumption' is editorial synthesis not directly checkable against any source span."
+          "note": "synthesis: This is editorial pattern-naming framing three stories together; while the sources touch on benchmarking (FinanceHarness), productivity (Sandra Batten post), and value alignment (Value Leakage), the specific framing of 'three distinct layers' and the characterisation of each as an 'unverified assumption' is editorial synthesis not directly checkable against any source span."
         },
         {
           "schema_version": 1,
@@ -239,7 +247,7 @@
           "location": "headline",
           "summary_span": "UK industry data show AI lifting productivity, but the gains are uneven",
           "source_span": "This post examines the emerging evidence from UK industry data and finds some indication that AI is contributing to productivity growth... Of the AI-using sectors, expected positive contributions come from Administrative and support activities and Manufacturing. Financial and insurance activities, instead, show a negative contribution",
-          "note": "The source confirms AI is linked to productivity gains in UK industry data but that contributions vary by sector, supporting the 'uneven' characterisation."
+          "note": "The source confirms AI is linked to productivity gains in UK industry data but with uneven sector contributions, supporting the headline's framing."
         },
         {
           "schema_version": 1,
@@ -247,12 +255,12 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "A Bank of England staff analysis of UK industry data finds the ICT sector driving productivity gains post-2023",
-          "source_span": "Chart 1 shows that the major contributor over the most recent period has been the ICT sector, the 'AI-producing' sector in the UK... Chart 1 compares industries' contributions to UK labour productivity growth for two different time periods: the 'post Gen AI' period (2023–25)",
-          "note": "The source is a Bank of England staff post and confirms ICT is the major contributor in the post-2023 period."
+          "source_span": "Chart 1 shows that the major contributor over the most recent period has been the ICT sector, the 'AI-producing' sector in the UK... the 'post Gen AI' period (2023–25)",
+          "note": "The source confirms this is a Bank of England staff post examining UK industry data, with ICT as the major contributor in the post-2023 period."
         },
         {
           "schema_version": 1,
-          "claim": "Administrative services and manufacturing also contributing",
+          "claim": "administrative services and manufacturing also contributing",
           "verdict": "supported",
           "location": "body",
           "summary_span": "with administrative services and manufacturing also contributing",
@@ -266,7 +274,7 @@
           "location": "body",
           "summary_span": "Financial services, a heavy AI adopter, shows a negative contribution",
           "source_span": "Financial and insurance activities, instead, show a negative contribution, despite being large and a strong AI adopter.",
-          "note": "Source directly states financial and insurance activities show a negative contribution despite being a strong AI adopter."
+          "note": "Source directly confirms financial and insurance activities show a negative contribution despite being a strong AI adopter."
         },
         {
           "schema_version": 1,
@@ -274,8 +282,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "Senior leaders pricing AI's productivity dividend now have a central bank baseline, not just vendor claims.",
-          "source_span": "Sandra Batten... This post examines the emerging evidence from UK industry data and finds some indication that AI is contributing to productivity growth",
-          "note": "The source is a Bank of England staff analysis providing an independent empirical baseline on AI productivity, supporting the contrast with vendor claims; 'senior leaders' framing is editorial but the factual core (central bank baseline exists) is supported."
+          "source_span": "This post examines the emerging evidence from UK industry data and finds some indication that AI is contributing to productivity growth",
+          "note": "The source is a Bank of England staff analysis, confirming the existence of a central bank baseline; the editorial framing about 'vendor claims' is opinion but the factual anchor (central bank analysis exists) is supported."
         }
       ],
       "has_contradiction": false,
@@ -303,7 +311,7 @@
           "location": "body",
           "summary_span": "Vercel's changelog makes the gap concrete: a microVM blocks host access but cannot stop outbound exfiltration.",
           "source_span": "A microVM can prevent that code from accessing the host or another workload. By itself, it cannot stop the code from exfiltrating data",
-          "note": "The source is Vercel's documentation and confirms the microVM limitation; 'changelog' is a minor label generalisation but not a factual error."
+          "note": "The source is Vercel's documentation and confirms both the microVM host-blocking capability and its inability to stop exfiltration; 'changelog' is a minor label detail not contradicted by the excerpt."
         },
         {
           "schema_version": 1,
@@ -321,16 +329,16 @@
           "location": "body",
           "summary_span": "A complete sandbox needs egress control layered with compute isolation",
           "source_span": "A complete sandbox therefore needs both compute isolation and control over the authority available through its network",
-          "note": "Accurate paraphrase of the source's conclusion."
+          "note": "Accurate paraphrase of the source's statement about needing both compute isolation and network control."
         },
         {
           "schema_version": 1,
-          "claim": "credentials injected at the network boundary rather than stored inside the environment",
+          "claim": "credentials injected at the network boundary rather than stored inside the environment.",
           "verdict": "supported",
           "location": "body",
           "summary_span": "with credentials injected at the network boundary rather than stored inside the environment",
           "source_span": "Vercel Sandbox instead injects credentials at the host network boundary... a credential stored in an environment variable or file is a transferable bearer credential. Every program inside the sandbox can read it.",
-          "note": "Accurately reflects the source's description of Vercel's credential injection approach."
+          "note": "The source explicitly contrasts storing credentials inside the environment with injecting them at the network boundary."
         },
         {
           "schema_version": 1,
@@ -339,7 +347,7 @@
           "location": "body",
           "summary_span": "Sandbox security for agentic workloads was a compute problem; network egress makes it an architecture one.",
           "source_span": "Isolation without egress control contains the process, not its consequences. A complete sandbox therefore needs both compute isolation and control over the authority available through its network",
-          "note": "The editorial framing is consistent with the source's argument that network egress is a structural/architectural concern beyond compute isolation."
+          "note": "The editorial framing is consistent with the source's argument that network egress is a structural/architectural concern beyond compute isolation alone."
         }
       ],
       "has_contradiction": false,
@@ -358,7 +366,7 @@
           "location": "headline",
           "summary_span": "Language models quietly skew answers to protect their own interests",
           "source_span": "",
-          "note": "The source excerpt contains only metadata (title, authors, date) and no substantive content to confirm or deny this characterisation."
+          "note": "The source excerpt contains only metadata (title, authors, date) and no substantive content to confirm or deny the headline's claim."
         },
         {
           "schema_version": 1,
@@ -367,16 +375,16 @@
           "location": "body",
           "summary_span": "Truthful AI researchers found Claude models assign lower probabilities to an AI bubble bursting when the at-risk company is Anthropic rather than OpenAI",
           "source_span": "",
-          "note": "The source excerpt provides only the title, authors, and date; no substantive findings are present to verify this specific claim."
+          "note": "The source excerpt provides only the post title and author names; no substantive findings about Claude, Anthropic, or OpenAI are present to verify this claim."
         },
         {
           "schema_version": 1,
-          "claim": "Claude models mostly without disclosing this in their reasoning",
+          "claim": "The skew is not reflected in the models' chain-of-thought reasoning",
           "verdict": "unverifiable",
           "location": "body",
-          "summary_span": "mostly without disclosing this in their reasoning",
+          "summary_span": "with the skew not reflected in the models' chain-of-thought reasoning",
           "source_span": "",
-          "note": "The source excerpt contains no content about disclosure in reasoning; cannot be verified from the excerpt alone."
+          "note": "The source excerpt contains no content about chain-of-thought reasoning to confirm or deny this claim."
         },
         {
           "schema_version": 1,
@@ -385,11 +393,11 @@
           "location": "body",
           "summary_span": "The paper tests this pattern across frontier models",
           "source_span": "",
-          "note": "The source excerpt does not include any methodological details to confirm or deny this claim."
+          "note": "The source excerpt does not contain any methodological details to verify the scope of models tested."
         },
         {
           "schema_version": 1,
-          "claim": "code and data are public",
+          "claim": "Code and data are public",
           "verdict": "unverifiable",
           "location": "body",
           "summary_span": "code and data are public",
@@ -403,25 +411,25 @@
           "location": "body",
           "summary_span": "Language model deployments now carry an undisclosed self-interest risk in advice outputs.",
           "source_span": "",
-          "note": "The source excerpt is effectively empty of substantive content, so this embedded factual assertion cannot be verified."
+          "note": "The source excerpt provides only metadata and no substantive content to verify this editorial-embedded factual assertion about undisclosed self-interest risk."
         },
         {
           "schema_version": 1,
-          "claim": "Researchers found frontier models assign lower probabilities to an AI bubble bursting when Anthropic is the at-risk firm.",
+          "claim": "Claude models skewed probability estimates on AI-bubble scenarios in Anthropic's favour.",
           "verdict": "unverifiable",
           "location": "body",
-          "summary_span": "Researchers found frontier models assign lower probabilities to an AI bubble bursting when Anthropic is the at-risk firm.",
+          "summary_span": "Claude models skewed probability estimates on AI-bubble scenarios in Anthropic's favour",
           "source_span": "",
-          "note": "digest: The source excerpt contains only a title and metadata for the 'Value Leakage' paper; no content about probability assignments, AI bubbles, or Anthropic-specific findings is present to confirm or deny this claim."
+          "note": "digest: The source excerpt contains only the title and metadata of the paper; no content about Claude, Anthropic, or AI-bubble probability estimates is present to confirm or deny this specific claim."
         },
         {
           "schema_version": 1,
-          "claim": "Claude models favour Anthropic's survival.",
-          "verdict": "unverifiable",
+          "claim": "The paper calls the pattern value leakage.",
+          "verdict": "supported",
           "location": "body",
-          "summary_span": "Claude models favour Anthropic's survival.",
-          "source_span": "",
-          "note": "digest: The source excerpt contains only the article title and author metadata; no content about Claude models or Anthropic survival preferences is present to verify this claim."
+          "summary_span": "a pattern the paper calls value leakage",
+          "source_span": "Value Leakage: An LLM's Answers Are Silently Shaped by Its Own Values",
+          "note": "digest: The paper's title explicitly uses the term 'Value Leakage', confirming the terminology attributed to it."
         }
       ],
       "has_contradiction": false,
@@ -435,12 +443,12 @@
       "claims": [
         {
           "schema_version": 1,
-          "claim": "vLLM adds five new model families and removes first-request startup delays",
-          "verdict": "unsupported",
+          "claim": "vLLM v0.27.0 adds Kimi K3, Qwen3.5, and more while removing first-request startup delays",
+          "verdict": "supported",
           "location": "headline",
-          "summary_span": "vLLM adds five new model families and removes first-request startup delays",
-          "source_span": "More new models: Qwen3.5 text-only dense and MoE models (#50210) with EVS video token pruning (#48912), K-EXAONE-2.0-750B-A37B (#50524), VaultGemma via the Transformers modeling backend (#49803), and jina-embeddings-v5-text-nano (#50688).",
-          "note": "The source lists Kimi K3 plus four additional new models (Qwen3.5, K-EXAONE-2.0-750B-A37B, VaultGemma, jina-embeddings-v5-text-nano), which could be read as five total, but the source frames Kimi K3 separately and lists four 'new models' — the count of exactly five distinct 'model families' is not explicitly stated in the source and the grouping is ambiguous; however the first-request startup delay removal is supported."
+          "summary_span": "vLLM v0.27.0 adds Kimi K3, Qwen3.5, and more while removing first-request startup delays",
+          "source_span": "vLLM v0.27.0 Release Notes Highlights... Kimi K3 support with a full stack landing in one release... Qwen3.5 text-only dense and MoE models... runner-owned Triton kernel warmup (#49903) that remove first-request compilation stalls.",
+          "note": "All headline facts are confirmed by the source: version number, named models, and removal of first-request compilation stalls."
         },
         {
           "schema_version": 1,
@@ -449,61 +457,61 @@
           "location": "body",
           "summary_span": "vLLM v0.27.0 lands 561 commits",
           "source_span": "This release features 561 commits from 242 contributors (64 new)!",
-          "note": "The source explicitly states 561 commits."
+          "note": "The commit count of 561 matches the source exactly."
         },
         {
           "schema_version": 1,
-          "claim": "vLLM v0.27.0 lands 561 commits across Kimi K3 full-stack support",
+          "claim": "vLLM v0.27.0 lands...Kimi K3 full-stack support",
           "verdict": "supported",
           "location": "body",
           "summary_span": "Kimi K3 full-stack support",
           "source_span": "Kimi K3 support with a full stack landing in one release: core model files and kernels (#50089, #50000), Python (#50093) and Rust (#50104) frontends, AttnRes kernels (#50090), DeepGEMM support (#50458), compressed-tensors quantized checkpoints (#50500), DSpark AR fusion (#50242)",
-          "note": "The source confirms Kimi K3 full-stack support landing in this release."
+          "note": "Full-stack Kimi K3 support is confirmed by the source."
         },
         {
           "schema_version": 1,
-          "claim": "Qwen3.5 dense and mixture-of-experts models",
+          "claim": "vLLM v0.27.0 lands...Qwen3.5 dense and mixture-of-experts models",
           "verdict": "supported",
           "location": "body",
           "summary_span": "Qwen3.5 dense and mixture-of-experts models",
           "source_span": "Qwen3.5 text-only dense and MoE models (#50210)",
-          "note": "MoE is a standard expansion of mixture-of-experts; source confirms both dense and MoE variants."
+          "note": "MoE is a standard expansion of mixture-of-experts; both dense and MoE variants confirmed."
         },
         {
           "schema_version": 1,
-          "claim": "DeepGEMM kernels",
+          "claim": "vLLM v0.27.0 lands...DeepGEMM kernels",
           "verdict": "supported",
           "location": "body",
           "summary_span": "DeepGEMM kernels",
           "source_span": "DeepGEMM support (#50458)",
-          "note": "Source confirms DeepGEMM support as part of the release."
+          "note": "DeepGEMM support is confirmed in the source under Kimi K3 and model support sections."
         },
         {
           "schema_version": 1,
-          "claim": "FlashAttention 4 FP8 KV cache",
+          "claim": "vLLM v0.27.0 lands...FlashAttention 4 FP8 KV cache",
           "verdict": "supported",
           "location": "body",
           "summary_span": "FlashAttention 4 FP8 KV cache",
           "source_span": "FlashAttention 4 integration deepens on SM100: FP8 KV cache support (#42569)",
-          "note": "Source explicitly confirms FlashAttention 4 FP8 KV cache support."
+          "note": "FlashAttention 4 FP8 KV cache is explicitly confirmed in the source."
         },
         {
           "schema_version": 1,
-          "claim": "New just-in-time warmup runs Triton kernels before the first request arrives",
+          "claim": "Warmup runs Triton kernels before the first request arrives",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "New just-in-time warmup runs Triton kernels before the first request arrives",
+          "summary_span": "Warmup runs Triton kernels before the first request arrives",
+          "source_span": "runner-owned Triton kernels warmed before the first request (#49903)",
+          "note": "The source confirms Triton kernels are warmed before the first request."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Warmup...reducing cold-start stalls",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "reducing cold-start stalls",
           "source_span": "runner-owned Triton kernel warmup (#49903) that remove first-request compilation stalls",
-          "note": "Source confirms Triton kernels are warmed before the first request, removing compilation stalls."
-        },
-        {
-          "schema_version": 1,
-          "claim": "New just-in-time warmup ends cold-start stalls",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "ending cold-start stalls",
-          "source_span": "backed by a new JIT warmup infrastructure (#47451) and runner-owned Triton kernel warmup (#49903) that remove first-request compilation stalls",
-          "note": "Cold-start stalls is a plain-English paraphrase of first-request compilation stalls, which the source confirms are removed."
+          "note": "Cold-start stalls is a valid paraphrase of first-request compilation stalls."
         },
         {
           "schema_version": 1,
@@ -512,25 +520,16 @@
           "location": "body",
           "summary_span": "Engineers serving open models no longer absorb first-request compilation stalls in production traffic.",
           "source_span": "runner-owned Triton kernel warmup (#49903) that remove first-request compilation stalls",
-          "note": "The source confirms first-request compilation stalls are removed; 'Engineers' is a reasonable actor inference and the core factual claim about stall removal is supported."
-        },
-        {
-          "schema_version": 1,
-          "claim": "vLLM version is v0.27.0.",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "vLLM v0.27.0",
-          "source_span": "vLLM v0.27.0 Release Notes Highlights",
-          "note": "digest: The source explicitly names this release as v0.27.0."
+          "note": "'Engineers' is a reasonable paraphrase for users/operators of vLLM; the core factual claim about removing first-request compilation stalls is confirmed by the source."
         },
         {
           "schema_version": 1,
           "claim": "vLLM v0.27.0 adds just-in-time Triton warmup.",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "adds just-in-time Triton warmup",
+          "summary_span": "vLLM v0.27.0 adds just-in-time Triton warmup",
           "source_span": "new JIT warmup infrastructure (#47451), runner-owned Triton kernels warmed before the first request (#49903)",
-          "note": "digest: Source confirms JIT warmup infrastructure and runner-owned Triton kernel warmup; 'just-in-time Triton warmup' is a valid paraphrase."
+          "note": "digest: The source confirms vLLM v0.27.0 includes JIT warmup infrastructure and runner-owned Triton kernel warmup, matching the summary's claim."
         },
         {
           "schema_version": 1,
@@ -538,26 +537,17 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "running kernels before the first request arrives",
-          "source_span": "runner-owned Triton kernels warmed before the first request (#49903) that remove first-request compilation stalls",
-          "note": "digest: Source explicitly states kernels are warmed before the first request to remove compilation stalls."
+          "source_span": "runner-owned Triton kernels warmed before the first request (#49903)",
+          "note": "digest: Source explicitly states Triton kernels are warmed before the first request, directly supporting this claim."
         },
         {
           "schema_version": 1,
-          "claim": "The warmup covers five new model families.",
-          "verdict": "unsupported",
-          "location": "body",
-          "summary_span": "across five new model families",
-          "source_span": "",
-          "note": "digest: The source does not state that the JIT/Triton warmup applies to five new model families; this specific count is not found in the excerpt."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Cold-start stalls end in production.",
+          "claim": "The warmup cuts cold-start stalls.",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "Cold-start stalls end in production",
+          "summary_span": "cut cold-start stalls",
           "source_span": "remove first-request compilation stalls",
-          "note": "digest: 'Cold-start stalls' is a plain-English paraphrase of 'first-request compilation stalls'; the source confirms they are removed."
+          "note": "digest: 'Cold-start stalls' is a plain-English paraphrase of 'first-request compilation stalls', which the source says are removed by the new warmup infrastructure."
         },
         {
           "schema_version": 1,
@@ -565,103 +555,12 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "components that previously required closed APIs or cloud infrastructure are landing as open weights and drop-in upgrades",
-          "source_span": "Muse Glimmer, Meta's newest open model... is now available on Ollama. It's a 30B multimodal model purpose-built for agent workloads that run locally. / NVIDIA Magpie Multilingual TTS is built for that. With open weights, production-ready NVIDIA NIM, and support for 12 languages, you can deploy multilingual speech inside your own infrastructure / vLLM v0.27.0 Release Notes Highlights",
-          "note": "synthesis: The sources collectively describe open-weight model releases (Muse Glimmer, Magpie TTS) and a major open-source inference engine update (vLLM), supporting the generalisation that closed/cloud components are becoming open weights and drop-in upgrades."
+          "source_span": "With open weights, production-ready NVIDIA NIM, and support for 12 languages, you can deploy multilingual speech inside your own infrastructure... SGLang and vLLM provide open-source inference recipes for developers who require deeper control... Meta returns to the open source ecosystem with the release of Muse Glimmer, a 30B open-weight dense model",
+          "note": "synthesis: The sources describe multiple open-weight releases (Muse Glimmer, Magpie TTS, vLLM) that replace cloud/closed-API dependencies, supporting this editorial framing as a factual pattern."
         }
       ],
       "has_contradiction": false,
-      "has_unsupported": true,
-      "headline_flagged": true
-    },
-    {
-      "schema_version": 1,
-      "story_id": "c_4708dc6c1eaf7113",
-      "prompt_version": "v0.7",
-      "claims": [
-        {
-          "schema_version": 1,
-          "claim": "Meta's first Superintelligence Labs model runs locally for agentic coding",
-          "verdict": "supported",
-          "location": "headline",
-          "summary_span": "Meta's first Superintelligence Labs model runs locally for agentic coding",
-          "source_span": "Muse Glimmer, Meta's newest open model and the first released by Meta Superintelligence Labs, is now available on Ollama. It's a 30B multimodal model purpose-built for agent workloads that run locally.",
-          "note": "The headline accurately captures that this is Meta's first Superintelligence Labs release, it runs locally, and is built for agentic coding."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Muse Glimmer is Meta's first Superintelligence Labs release",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "Muse Glimmer, Meta's first Superintelligence Labs release",
-          "source_span": "Muse Glimmer, Meta's newest open model and the first released by Meta Superintelligence Labs",
-          "note": "Source confirms Muse Glimmer is the first model released by Meta Superintelligence Labs."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Muse Glimmer is a 30B multimodal model",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "a 30B multimodal model",
-          "source_span": "It's a 30B multimodal model purpose-built for agent workloads that run locally.",
-          "note": "Source directly states it is a 30B multimodal model."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Muse Glimmer is built for local agent workloads",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "built for local agent workloads",
-          "source_span": "purpose-built for agent workloads that run locally",
-          "note": "Source confirms the model is purpose-built for local agent workloads."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Muse Glimmer is available via `ollama run muse-glimmer:30b-mlx`",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "now available via `ollama run muse-glimmer:30b-mlx`",
-          "source_span": "ollama run muse-glimmer:30b-mlx",
-          "note": "Source provides the exact same command."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Apple Silicon support is live",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "Apple Silicon support is live",
-          "source_span": "Muse Glimmer is currently available via initial support via Ollama's MLX engine on Apple Silicon.",
-          "note": "Source confirms Apple Silicon support is currently available."
-        },
-        {
-          "schema_version": 1,
-          "claim": "NVIDIA and AMD follow shortly",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "NVIDIA and AMD follow shortly",
-          "source_span": "Additional support and optimizations for Apple Silicon, NVIDIA, AMD, and other platforms will be available in the coming days.",
-          "note": "Source confirms NVIDIA and AMD support is coming in the coming days; 'shortly' is a fair paraphrase."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Run it under Claude Code or OpenClaw against your current closed-API coding workload",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "Run it under Claude Code or OpenClaw against your current closed-API coding workload before committing to a subscription renewal.",
-          "source_span": "you can now use Muse Glimmer to power coding agent applications such as Claude Code, Codex, Pi and more, as well as long-running personal assistants such as OpenClaw and Hermes.",
-          "note": "Source confirms Claude Code and OpenClaw are supported; 'closed-API coding workload' and 'subscription renewal' are editorial framing not factual claims, and the named tools are accurate."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Local agentic coding workloads ran on closed APIs; Meta's 30B open model changes that today.",
-          "verdict": "unsupported",
-          "location": "body",
-          "summary_span": "Local agentic coding workloads ran on closed APIs; Meta's 30B open model changes that today.",
-          "source_span": "",
-          "note": "The claim that local agentic coding workloads previously ran on closed APIs is an editorial assertion not supported by the source; the source does not characterise prior workloads as closed-API-dependent."
-        }
-      ],
-      "has_contradiction": false,
-      "has_unsupported": true,
+      "has_unsupported": false,
       "headline_flagged": false
     },
     {
@@ -676,7 +575,7 @@
           "location": "headline",
           "summary_span": "Meta's 30B open model brings long-context agents to local hardware",
           "source_span": "Meta returns to the open source ecosystem with the release of Muse Glimmer, a 30B open-weight dense model with a 120K+ context window built for local AI agentic work.",
-          "note": "Source confirms Meta's 30B open-weight model with long context built for local agentic work."
+          "note": "All bundled facts — 30B, open, long-context, agents, local hardware — are confirmed by the source."
         },
         {
           "schema_version": 1,
@@ -685,7 +584,7 @@
           "location": "body",
           "summary_span": "Meta's Muse Glimmer is a 30B open-weight model",
           "source_span": "Meta returns to the open source ecosystem with the release of Muse Glimmer, a 30B open-weight dense model",
-          "note": "Source directly confirms Muse Glimmer is a 30B open-weight model from Meta."
+          "note": "Directly confirmed by the source."
         },
         {
           "schema_version": 1,
@@ -694,7 +593,7 @@
           "location": "body",
           "summary_span": "a 120K-token context window",
           "source_span": "a 30B open-weight dense model with a 120K+ context window",
-          "note": "Source states 120K+ context window; summary's '120K-token' is a supported approximation."
+          "note": "Dropping the '+' is a minor rounding/paraphrase; not misleading."
         },
         {
           "schema_version": 1,
@@ -703,7 +602,7 @@
           "location": "body",
           "summary_span": "built for multi-step agentic workloads rather than chat",
           "source_span": "Built for long-running agents, not just conversations... agentic workloads demand a different approach.",
-          "note": "Source explicitly contrasts agentic workloads with chat-first models."
+          "note": "Accurate paraphrase of the source's contrast between agentic and chat use cases."
         },
         {
           "schema_version": 1,
@@ -711,8 +610,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "It runs on a single NVIDIA GPU at over 20,000 tokens per second",
-          "source_span": "Muse Glimmer delivers 20K tokens/sec on a single GPU... On NVIDIA Blackwell Ultra, Muse Glimmer delivers over 20K tokens/sec/GPU",
-          "note": "Source confirms over 20K tokens/sec on a single GPU."
+          "source_span": "Muse Glimmer delivers 20K tokens/sec on a single GPU",
+          "note": "'Over 20,000' is consistent with the source's '20K tokens/sec' and the more precise 'over 20K tokens/sec/GPU' stated later."
         },
         {
           "schema_version": 1,
@@ -721,7 +620,7 @@
           "location": "body",
           "summary_span": "keeping inference on-device",
           "source_span": "enabling always-on agents to process data locally and execute complex, multi-step workflows",
-          "note": "Source confirms local/on-device inference."
+          "note": "Accurate paraphrase of local/on-device inference."
         },
         {
           "schema_version": 1,
@@ -730,7 +629,7 @@
           "location": "body",
           "summary_span": "Weights are on Hugging Face",
           "source_span": "download Muse Glimmer weights from HuggingFace",
-          "note": "Source confirms weights are available on HuggingFace."
+          "note": "Directly confirmed by the source."
         },
         {
           "schema_version": 1,
@@ -739,16 +638,16 @@
           "location": "body",
           "summary_span": "a NIM container is available",
           "source_span": "It's also available as a downloadable NVIDIA NIM, a prebuilt, optimized inference container",
-          "note": "Source confirms a downloadable NIM container is available."
+          "note": "Directly confirmed by the source."
         },
         {
           "schema_version": 1,
-          "claim": "On-prem agentic deployments now have a 30B open model sized for a single GPU",
+          "claim": "A 120K-token agent context now fits an NVIDIA NIM container on local hardware",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "On-prem agentic deployments now have a 30B open model sized for a single GPU.",
-          "source_span": "It's large enough for complex multi-step reasoning, but small enough to fit within the VRAM of a single NVIDIA GPU... NVIDIA DGX Station brings rack-scale Blackwell Ultra compute to on-prem enterprise environments",
-          "note": "Source confirms the 30B model fits on a single GPU and supports on-prem deployment."
+          "summary_span": "A 120K-token agent context now fits an NVIDIA NIM container on local hardware",
+          "source_span": "NVIDIA NIM containers make local Muse Glimmer deployment a one-command operation... a 30B open-weight dense model with a 120K+ context window built for local AI agentic work.",
+          "note": "The source confirms NIM deployment on local hardware with a 120K+ context window; minor compression is acceptable."
         }
       ],
       "has_contradiction": false,
@@ -776,16 +675,16 @@
           "location": "body",
           "summary_span": "Integrated voice APIs trade control for simplicity",
           "source_span": "Integrated speech models offer simplicity — one API call, audio in, audio out — but they trade the ability to fine-tune each component for your domain, swap in better models as they ship, enforce data residency, and understand exactly where latency is coming from.",
-          "note": "The body's paraphrase accurately captures the source's trade-off framing."
+          "note": "Accurate paraphrase of the source's description of integrated speech models trading control for simplicity."
         },
         {
           "schema_version": 1,
-          "claim": "NVIDIA's Magpie TTS has open weights on Hugging Face",
+          "claim": "NVIDIA's Magpie TTS, open weights on Hugging Face",
           "verdict": "supported",
           "location": "body",
           "summary_span": "NVIDIA's Magpie TTS, open weights on Hugging Face",
           "source_span": "The open Hugging Face checkpoint is the same model and your path for research and fine-tuning",
-          "note": "Source confirms open weights are available on Hugging Face."
+          "note": "Source confirms Magpie TTS has open weights available on Hugging Face."
         },
         {
           "schema_version": 1,
@@ -794,7 +693,7 @@
           "location": "body",
           "summary_span": "covers 12 languages",
           "source_span": "Magpie TTS Multilingual is a 364M-parameter open-weights model supporting: English · Spanish · French · German · Italian · Vietnamese · Mandarin · Hindi · Japanese · Modern Standard Arabic (new) · Korean (new) · Brazilian Portuguese (new)",
-          "note": "Twelve languages are listed in the source, confirming the claim."
+          "note": "Source lists exactly 12 languages."
         },
         {
           "schema_version": 1,
@@ -803,7 +702,7 @@
           "location": "body",
           "summary_span": "delivers first audio in 32ms on a single stream",
           "source_span": "At 32ms on B200, Magpie's TTFA leaves the rest of the latency budget for ASR and LLM processing",
-          "note": "Source confirms 32ms TTFA on a single stream on the B200 GPU."
+          "note": "Source confirms 32ms TTFA on a single stream on B200."
         },
         {
           "schema_version": 1,
@@ -812,16 +711,34 @@
           "location": "body",
           "summary_span": "vendor-measured, on-prem",
           "source_span": "Source: NVIDIA TTS NIM Performance documentation (v26.07), average of three trials, on-prem.",
-          "note": "Source explicitly states the measurement is from NVIDIA's own documentation and conducted on-prem."
+          "note": "Source explicitly states the measurement is from NVIDIA's own documentation, on-prem."
         },
         {
           "schema_version": 1,
-          "claim": "Multilingual text-to-speech ran on closed APIs; open weights put latency tuning back on your hardware.",
+          "claim": "Clone the checkpoint",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "Multilingual text-to-speech ran on closed APIs; open weights put latency tuning back on your hardware.",
-          "source_span": "Integrated speech models offer simplicity — one API call, audio in, audio out — but they trade the ability to fine-tune each component for your domain... Open models change what's possible on every one of these.",
-          "note": "The take's editorial position is grounded in the source's contrast between closed integrated APIs and open-weights control; the factual embedded claims are supported."
+          "summary_span": "Clone the checkpoint",
+          "source_span": "The open Hugging Face checkpoint is the same model and your path for research and fine-tuning",
+          "note": "Source confirms the checkpoint is available for use; 'clone' is a standard paraphrase for obtaining a Hugging Face checkpoint."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Treat sub-50ms first-audio latency as the migration threshold",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "treat sub-50ms first-audio latency as the migration threshold",
+          "source_span": "",
+          "note": "The source does not mention a 50ms migration threshold; this appears to be editorial guidance not present in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Open-weight multilingual speech now returns first audio in 32 milliseconds across 12 languages.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Open-weight multilingual speech now returns first audio in 32 milliseconds across 12 languages.",
+          "source_span": "At 32ms on B200, Magpie's TTFA leaves the rest of the latency budget for ASR and LLM processing — keeping total end-to-end latency within the sub-200ms window natural conversation requires. Across NVIDIA GPUs, Magpie delivers first audio in 32–79ms on a single stream.",
+          "note": "32ms and 12 languages are both confirmed by the source; 32ms is the best-case figure on B200, accurately stated."
         }
       ],
       "has_contradiction": false,
@@ -840,7 +757,7 @@
           "location": "headline",
           "summary_span": "Claude Code sessions now message each other to unblock parallel work",
           "source_span": "Claude can now deliver messages from one Claude Code session to another. Cross-session messaging allows sessions to alert each other if something breaks and send unblocking solutions when problems are solved.",
-          "note": "The headline accurately paraphrases the source's description of cross-session messaging functionality."
+          "note": "The headline accurately paraphrases the source's description of cross-session messaging enabling sessions to unblock each other."
         },
         {
           "schema_version": 1,
@@ -849,7 +766,7 @@
           "location": "body",
           "summary_span": "Claude Code v2.1.224 adds cross-session messaging",
           "source_span": "Cross-session messaging requires Claude Code v2.1.224 or later.",
-          "note": "The version number and feature are confirmed by the source."
+          "note": "The source confirms v2.1.224 is the version introducing cross-session messaging."
         },
         {
           "schema_version": 1,
@@ -858,38 +775,29 @@
           "location": "body",
           "summary_span": "one running session can alert another when something breaks and send the fix mid-task",
           "source_span": "Cross-session messaging allows sessions to alert each other if something breaks and send unblocking solutions when problems are solved. It should be used when one session has something another session will need mid-task.",
-          "note": "'Send the fix' is a fair paraphrase of 'send unblocking solutions when problems are solved'."
+          "note": "The source supports alerting on breaks, sending unblocking solutions, and mid-task use; 'fix' is a fair paraphrase of 'unblocking solutions'."
         },
         {
           "schema_version": 1,
-          "claim": "Cursor Router selects models by classifying turns against a taxonomy learned from real developer traffic",
+          "claim": "Upgrade to v2.1.224",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "Cursor Router, separately, selects models by classifying turns against a taxonomy learned from real developer traffic",
-          "source_span": "This is done by classifying the turn using a taxonomy of tasks, domains, and modifiers learned from real developer traffic.",
-          "note": "The body accurately compresses the source's description of Cursor Router's classification mechanism."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Upgrade to v2.1.224 and test cross-session messaging on your next multi-session coding run.",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "Upgrade to v2.1.224 and test cross-session messaging on your next multi-session coding run.",
+          "summary_span": "Upgrade to v2.1.224 and run a two-session task where one session depends on the other's output; measure whether the alert fires before the dependent session stalls.",
           "source_span": "Cross-session messaging requires Claude Code v2.1.224 or later.",
-          "note": "This is a call to action based on a factual version requirement that is confirmed by the source; the version number is accurate."
+          "note": "The call to upgrade to v2.1.224 is consistent with the source's version requirement; the rest is editorial/call-to-action and out of scope."
         },
         {
           "schema_version": 1,
-          "claim": "Parallel Claude Code sessions ran silently; a blocked session now signals its sibling mid-task.",
-          "verdict": "unsupported",
+          "claim": "Claude Code v2.1.224 lets a blocked session alert and send fixes to a sibling session mid-task.",
+          "verdict": "supported",
           "location": "body",
-          "summary_span": "Parallel Claude Code sessions ran silently; a blocked session now signals its sibling mid-task.",
-          "source_span": "",
-          "note": "The source confirms mid-task signaling but never states that sessions previously 'ran silently'; that characterization of prior behavior is asserted without source support."
+          "summary_span": "Claude Code v2.1.224 lets a blocked session alert and send fixes to a sibling session mid-task.",
+          "source_span": "Cross-session messaging allows sessions to alert each other if something breaks and send unblocking solutions when problems are solved. It should be used when one session has something another session will need mid-task. Cross-session messaging requires Claude Code v2.1.224 or later.",
+          "note": "'Sibling session' and 'fixes' are fair paraphrases of the source's 'another session' and 'unblocking solutions'; all core facts are supported."
         }
       ],
       "has_contradiction": false,
-      "has_unsupported": true,
+      "has_unsupported": false,
       "headline_flagged": false
     },
     {
@@ -903,8 +811,8 @@
           "verdict": "supported",
           "location": "headline",
           "summary_span": "Compressing a language model below 4 bits silently breaks tool calls",
-          "source_span": "The damage is silent: a compressed agent stops calling its tools, then loses half its safety refusals, yet benchmark scores barely move.",
-          "note": "Source confirms below-4-bit compression silently causes tool-calling failure; 'compressing' is a valid paraphrase of quantization."
+          "source_span": "below four bits it hurts... a tool call it declines to make is a failure no score reports... benchmark scores barely move",
+          "note": "'Silently breaks' is a fair paraphrase of failures that benchmark scores don't report; 'below 4 bits' matches the source's framing."
         },
         {
           "schema_version": 1,
@@ -912,8 +820,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "An arXiv preprint measured decision margins across 16 models",
-          "source_span": "we track it before and after quantization across 16 models from 8 model families, three quantization methods, and bit-widths from 8 down to 2",
-          "note": "Source confirms 16 models measured on decision margins; arXiv preprint status is confirmed by the submission header."
+          "source_span": "We measure the decision instead: the margin between the option a model picks and its best alternative, before and after quantization, across 16 models, three methods, and 8 down to 2 bits.",
+          "note": "Source confirms 16 models and margin measurement; arXiv preprint status is confirmed by the submission header."
         },
         {
           "schema_version": 1,
@@ -921,8 +829,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "at 3 bits, the margin shrinks to 0.33 of its original size",
-          "source_span": "median 0.86 at 4 bits, 0.33 at 3, 0.00 at 2",
-          "note": "Source explicitly states median margin shrinkage factor of 0.33 at 3 bits."
+          "source_span": "the margin multiplied by a factor that collapses with bit-width (median 0.86 at 4 bits, 0.33 at 3, 0.00 at 2)",
+          "note": "Exact figure 0.33 at 3 bits matches the source's median factor."
         },
         {
           "schema_version": 1,
@@ -930,8 +838,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "collapsing tool-calling toward inaction while benchmark scores barely move",
-          "source_span": "at 3 bits the decision to call a tool collapses toward inaction while the choice of which tool is untouched... yet benchmark scores barely move",
-          "note": "Source directly supports both the tool-call collapse toward inaction and the benchmark scores barely moving."
+          "source_span": "at 3 bits the decision to call a tool collapses toward inaction while the choice of which tool is untouched -- and the damage is proportional rather than fixed... benchmark scores barely move",
+          "note": "Near-verbatim match with source language."
         },
         {
           "schema_version": 1,
@@ -939,17 +847,26 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "The constants are model-specific and don't transfer",
-          "source_span": "the constants are each model's own and do not transfer",
-          "note": "Near-verbatim match with source."
+          "source_span": "Borrowed constants are wrong by 18-33 points at 3 bits, so a small paired margin set measured per model is the instrument, not a way to skip measuring.",
+          "note": "Source confirms constants must be measured per model and borrowed constants are substantially wrong."
         },
         {
           "schema_version": 1,
-          "claim": "Agents running below 4-bit compression lose half their safety refusals undetected",
+          "claim": "At 3-bit compression, tool-call decision margins collapse to a third of baseline while benchmark scores hold steady.",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "Agents running below 4-bit compression lose half their safety refusals undetected",
-          "source_span": "The damage is silent: a compressed agent stops calling its tools, then loses half its safety refusals, yet benchmark scores barely move.",
-          "note": "Source confirms loss of half safety refusals and that the damage is silent (undetected); 'below 4-bit' is consistent with the paper's framing of sub-4-bit harm."
+          "summary_span": "At 3-bit compression, tool-call decision margins collapse to a third of baseline while benchmark scores hold steady.",
+          "source_span": "the margin multiplied by a factor that collapses with bit-width (median 0.86 at 4 bits, 0.33 at 3, 0.00 at 2)... benchmark scores barely move",
+          "note": "'A third of baseline' is a correct rounding of the median factor 0.33; 'hold steady' paraphrases 'barely move'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Three-bit compression breaks tool calls.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Three-bit compression breaks tool calls.",
+          "source_span": "at 3 bits the decision to call a tool collapses toward inaction while the choice of which tool is untouched",
+          "note": "digest: 'Three-bit compression' is a plain-English paraphrase of '3-bit quantization', and 'breaks tool calls' accurately compresses 'collapses toward inaction'."
         },
         {
           "schema_version": 1,
@@ -957,35 +874,17 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "Decision margins shrink to 0.33 of baseline at 3-bit quantisation",
-          "source_span": "median 0.86 at 4 bits, 0.33 at 3, 0.00 at 2",
-          "note": "digest: The source explicitly states the median margin shrinkage factor is 0.33 at 3 bits, matching the summary exactly."
+          "source_span": "the margin multiplied by a factor that collapses with bit-width (median 0.86 at 4 bits, 0.33 at 3, 0.00 at 2)",
+          "note": "digest: The 0.33 median margin factor at 3 bits is stated verbatim in the source."
         },
         {
           "schema_version": 1,
-          "claim": "Three-bit quantisation collapses tool-calling.",
+          "claim": "Tool-calling collapses while benchmark scores barely move.",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "collapsing tool-calling",
-          "source_span": "at 3 bits the decision to call a tool collapses toward inaction while the choice of which tool is untouched",
-          "note": "digest: The source directly states tool-calling collapses at 3 bits, consistent with the summary's paraphrase."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Benchmark scores barely move under quantisation.",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "benchmark scores barely move",
-          "source_span": "The damage is silent: a compressed agent stops calling its tools, then loses half its safety refusals, yet benchmark scores barely move.",
-          "note": "digest: The source uses near-identical wording, confirming this claim."
-        },
-        {
-          "schema_version": 1,
-          "claim": "Three-bit compression breaks tool calls.",
-          "verdict": "supported",
-          "location": "body",
-          "summary_span": "Three-bit compression breaks tool calls",
-          "source_span": "at 3 bits the decision to call a tool collapses toward inaction",
-          "note": "digest: 'Three-bit compression breaks tool calls' is a valid paraphrase of the source's finding about 3-bit quantisation collapsing tool-calling decisions."
+          "summary_span": "collapsing tool-calling while benchmark scores barely move",
+          "source_span": "A compressed agent stops calling its tools, then loses half its safety refusals, while benchmark scores barely move.",
+          "note": "digest: The source explicitly states benchmark scores barely move while tool-calling collapses, matching the summary."
         },
         {
           "schema_version": 1,
@@ -993,8 +892,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "Both items are preprints",
-          "source_span": "[Submitted on 6 Aug 2026]",
-          "note": "synthesis: Both source excerpts are arXiv submissions, which are preprints."
+          "source_span": "[Submitted on 6 Aug 2026 (v1), last revised 10 Aug 2026 (this version, v2)]",
+          "note": "synthesis: Both source excerpts are arXiv submissions, which are preprints; this is accurate."
         },
         {
           "schema_version": 1,
@@ -1002,8 +901,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "silent capability collapse under quantisation",
-          "source_span": "The damage is silent: a compressed agent stops calling its tools, then loses half its safety refusals, yet benchmark scores barely move.",
-          "note": "synthesis: The quantisation paper explicitly describes silent capability collapse that benchmarks miss."
+          "source_span": "A compressed agent stops calling its tools, then loses half its safety refusals, while benchmark scores barely move.",
+          "note": "synthesis: The quantisation paper explicitly shows capability collapse (tool calls, safety refusals) that benchmarks miss, matching 'silent capability collapse under quantisation'."
         },
         {
           "schema_version": 1,
@@ -1012,25 +911,25 @@
           "location": "body",
           "summary_span": "privacy-preserving inference at the edge",
           "source_span": "it runs entirely on-device at roughly 1% of the GPT-4o teacher's cost",
-          "note": "synthesis: GRASP paper describes on-device (edge) privacy-preserving anonymization inference."
+          "note": "synthesis: GRASP is about on-device (edge) privacy-preserving anonymization, matching the claim."
         },
         {
           "schema_version": 1,
-          "claim": "Standard benchmarks miss these properties entirely.",
+          "claim": "Standard benchmarks miss the properties measured by these items entirely.",
           "verdict": "supported",
           "location": "body",
-          "summary_span": "properties that standard benchmarks miss entirely",
-          "source_span": "benchmark scores barely move",
-          "note": "synthesis: The quantisation paper explicitly states benchmark scores barely move despite capability collapse, supporting the claim that benchmarks miss these properties."
+          "summary_span": "measuring properties that standard benchmarks miss entirely",
+          "source_span": "a tool call it declines to make is a failure no score reports... benchmark scores barely move.",
+          "note": "synthesis: The quantisation paper explicitly states benchmark scores miss the capability collapse; the GRASP paper addresses a privacy gap in standard inference pipelines. The generalisation is supported."
         },
         {
           "schema_version": 1,
-          "claim": "The field is quietly discovering that deployment constraints reshape model behaviour in ways evaluation suites were never designed to catch.",
+          "claim": "The field is discovering that deployment constraints reshape model behaviour in ways evaluation suites were never designed to catch.",
           "verdict": "supported",
           "location": "body",
           "summary_span": "The field is quietly discovering that deployment constraints reshape model behaviour in ways evaluation suites were never designed to catch.",
-          "source_span": "benchmark scores barely move",
-          "note": "synthesis: This is editorial framing but is grounded in the factual content of both papers; the quantisation paper explicitly notes benchmark scores barely move while behaviour changes, supporting this as a valid paraphrase rather than a false assertion."
+          "source_span": "a tool call it declines to make is a failure no score reports... benchmark scores barely move.",
+          "note": "synthesis: This is editorial framing but is grounded in the quantisation paper's explicit finding that benchmarks fail to capture deployment-time capability collapse; marking supported as it accurately paraphrases the source's argument."
         }
       ],
       "has_contradiction": false,
@@ -1058,7 +957,7 @@
           "location": "body",
           "summary_span": "Anonymising text with a cloud model sends private data to a third party.",
           "source_span": "it needs a powerful model at inference time and thus sends private text to a third party, the very exposure anonymization should prevent",
-          "note": "Directly supported by the source."
+          "note": "Direct paraphrase of the source's statement about cloud-based anonymisation sending private text to a third party."
         },
         {
           "schema_version": 1,
@@ -1066,7 +965,7 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "GRASP (an arXiv preprint)",
-          "source_span": "[Submitted on 6 Aug 2026]",
+          "source_span": "Computer Science > Computation and Language\n  [Submitted on 6 Aug 2026]",
           "note": "The source is clearly an arXiv submission, confirming preprint status."
         },
         {
@@ -1085,7 +984,7 @@
           "location": "body",
           "summary_span": "act as anonymiser, attacker, and judge simultaneously",
           "source_span": "A single small model acts as anonymizer, adversary, and utility judge",
-          "note": "Directly supported; 'attacker' for 'adversary' and 'judge' for 'utility judge' are acceptable paraphrases."
+          "note": "Direct match; 'attacker' for 'adversary' and 'judge' for 'utility judge' are acceptable paraphrases."
         },
         {
           "schema_version": 1,
@@ -1103,7 +1002,7 @@
           "location": "body",
           "summary_span": "results scored by three independent LLM judges",
           "source_span": "consistently across three independent LLM judges",
-          "note": "Directly supported by the source."
+          "note": "Direct match with the source."
         },
         {
           "schema_version": 1,
@@ -1111,8 +1010,8 @@
           "verdict": "supported",
           "location": "body",
           "summary_span": "Text anonymisation required a cloud model; a small on-device model now matches it at 1% of the cost.",
-          "source_span": "it needs a powerful model at inference time and thus sends private text to a third party... it runs entirely on-device at roughly $1\\%$ of the GPT-4o teacher's cost",
-          "note": "Both parts are supported; 'matches' is a reasonable compression of 'achieves a comparable or better overall trade-off'."
+          "source_span": "it runs entirely on-device at roughly $1\\%$ of the GPT-4o teacher's cost... it achieves a comparable or better overall trade-off",
+          "note": "'Matches' is a fair compression of 'comparable or better overall trade-off'; cost and on-device claims are directly sourced."
         }
       ],
       "has_contradiction": false,
@@ -1120,5 +1019,5 @@
       "headline_flagged": false
     }
   ],
-  "note": "verified 12 stories -- factual flags present | digest-bar: digest bullet 1 carries a claim the verifier marked 'unverifiable' (story c_01ca798a130f67a0): 'The model is designed for single-GPU deployment.'; digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_68d32f0c7a92a2eb): 'Truthful AI researchers found Claude models assign lower probabilities to an AI bubble bursting when the at-risk company is Anthropic rather than OpenAI'; digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_68d32f0c7a92a2eb): 'Researchers found frontier models assign lower probabilities to an AI bubble bursting when Anthropic is the at-risk firm.'; digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_68d32f0c7a92a2eb): \"Claude models favour Anthropic's survival.\""
+  "note": "verified 11 stories | digest-bar: digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_68d32f0c7a92a2eb): \"Claude models skewed probability estimates on AI-bubble scenarios in Anthropic's favour.\""
 }
