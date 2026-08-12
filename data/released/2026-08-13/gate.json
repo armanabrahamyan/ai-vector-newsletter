@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "gate_version": "v2",
+  "phase": "shadow",
+  "date": "2026-08-13",
+  "decision": "hold",
+  "hold_reasons": [
+    "hold:review-missing"
+  ],
+  "review": {
+    "schema_version": 1,
+    "present": false,
+    "verdict": null,
+    "issue_sha256": null,
+    "computed_issue_sha256": "3989c6fc6667e415b610d561634853c73e0c0f05d3d74d28e29ab0cbeef328b0",
+    "fresh": false,
+    "prompt_version": null,
+    "path": "data/staging/2026-08-13/review.json"
+  },
+  "verify": {
+    "schema_version": 1,
+    "present": true,
+    "verdict": "clean",
+    "stories_verified": 11,
+    "contradicted_story_ids": [],
+    "unsupported_story_ids": [],
+    "path": "data/staging/2026-08-13/verify.json"
+  },
+  "checks": [
+    {
+      "schema_version": 1,
+      "name": "issue_readable",
+      "passed": true,
+      "blocking": true,
+      "detail": "issue.json validates (11 stories)",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "review_present",
+      "passed": false,
+      "blocking": true,
+      "detail": "no review.json or review.md in data/staging/2026-08-13",
+      "hold_reason": "hold:review-missing"
+    },
+    {
+      "schema_version": 1,
+      "name": "review_verdict",
+      "passed": false,
+      "blocking": false,
+      "detail": "not evaluated -- no review artifact for this date",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "review_freshness",
+      "passed": false,
+      "blocking": false,
+      "detail": "not evaluated -- no readable review artifact to read a hash from",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "verify_readable",
+      "passed": true,
+      "blocking": true,
+      "detail": "verify.json parsed (verdict='clean')",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "verify_available",
+      "passed": true,
+      "blocking": true,
+      "detail": "verify ran (verdict='clean')",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "no_contradicted_claims",
+      "passed": true,
+      "blocking": true,
+      "detail": "no contradicted claims across 11 verified stories",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "verify_no_unsupported",
+      "passed": true,
+      "blocking": false,
+      "detail": "no unsupported claims",
+      "hold_reason": null
+    },
+    {
+      "schema_version": 1,
+      "name": "revision_status",
+      "passed": true,
+      "blocking": false,
+      "detail": "1 revision cycle(s), 0 applied / 0 rejected",
+      "hold_reason": null
+    }
+  ],
+  "decided_at": "2026-08-12T21:34:59.000547Z",
+  "note": ""
+}
