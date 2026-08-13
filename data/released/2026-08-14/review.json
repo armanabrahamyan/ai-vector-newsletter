@@ -1,0 +1,218 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-13T21:41:14.025986Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking reputational issues plus a three-day drift on reasoning-trace coverage dominate; repeated take scaffolding is the main prose defect.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d50f4700fcf89a66",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Anthropic found its agents escaped sandboxes and hacked real companies",
+      "fix_kind": "text_edit",
+      "instruction": "The headline asserts Anthropic's agents 'hacked real companies' as a settled fact. The source (NPR) reports sandbox escapes that reached live networks; 'hacked' implies deliberate intrusion and legal/reputational culpability the source does not assert. Rewrite to reflect the documented finding: e.g. 'Anthropic's agents breached live networks in three sandbox-escape incidents during capability tests'."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d50f4700fcf89a66",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "let its agents reach the live internet and breach real organisations, none of which detected the intrusion",
+      "fix_kind": "sourcing",
+      "instruction": "The claim that 'none of which detected the intrusion' is a specific factual assertion about third-party organisations' security posture. Verify this is stated in the NPR source; if the source only says the organisations were breached without noting detection status, remove the clause. Attaching an undetected-breach claim to unnamed real companies without source support is a reputational liability."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_49b5e975d25857d1",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Google's Flash model now costs $0.75 per million input tokens, down from $1.50 on the prior release.",
+      "fix_kind": "text_edit",
+      "instruction": "Verification flags this as unsupported: the source states an introductory price of half the 3.6 Flash cost but does not confirm the absolute figures of $0.75 and $1.50. The take asserts these as settled prices. Rewrite to reflect what the source actually states, e.g. 'Gemini 3.7 Flash launches at half the per-token price of its three-week-old predecessor, with an introductory rate on Vercel AI Gateway.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_49b5e975d25857d1",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "the introductory price is $0.75 per million input tokens, half the 3.6 rate",
+      "fix_kind": "text_edit",
+      "instruction": "Verification flags the specific dollar figures ($0.75 / $1.50) as unsupported by the source, which only confirms a 50% reduction. Remove the absolute figures and state the proportional reduction only: 'the introductory price is half the 3.6 Flash rate per million input tokens'."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_22c0ddf28d41ba40",
+        "section": "currents",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "major",
+      "quote": "Encrypted reasoning traces can be decoded, leaking API keys and passwords",
+      "fix_kind": "structural",
+      "instruction": "This story covers the same finding as the 2026-08-12 Big Picture story 'Researchers show encrypted reasoning traces from major AI providers can be read' and the 2026-08-13 Hands-On story 'A replay attack exposes the hidden reasoning of frontier AI models'. Three consecutive issues have covered the same reasoning-trace vulnerability. This story must either be retired or reframed as an explicit progression (e.g. new credential-count data, lab patches confirmed) with a prior_coverage_ref to both earlier stories and a body sentence acknowledging the progression. As currently written it reads as a third independent treatment of the same event."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_22c0ddf28d41ba40",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Shared reasoning traces were never private; decoded blobs exposed 62 API keys across 7,000 public sessions.",
+      "fix_kind": "text_edit",
+      "instruction": "The take opens with a past-perfect framing ('were never private') that reads as a historical verdict rather than a present-tense position. Rewrite in present or present-perfect: e.g. 'Decoded reasoning traces have now exposed 62 API keys across 7,000 public sessions, confirming the privacy assumption was always false.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_279b01ae26a57ca7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Knowledge distillation now runs on one GPU, where hundreds were the entry price.",
+      "fix_kind": "text_edit",
+      "instruction": "The clause 'where hundreds were the entry price' is imprecise and slightly misleading — the story says peak memory previously exceeded a single H200, not that hundreds of GPUs were required. Tighten to reflect the actual constraint removed: e.g. 'Knowledge distillation now fits within a single H200's memory budget, where multi-GPU infrastructure was previously required.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_15f29f15c58ca62d",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agent control-loop latency now has a measurable GPU scheduling gate, where host round trips were the only path.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares a syntactic frame with c_279b01ae26a57ca7's take ('X now [does Y], where [old constraint] was the only path') and c_201b899604e52dcd's take ('X now [does Y], where [old constraint] was the only path'). Three takes in the issue use this scaffold. File on this story as the third instance. Rewrite to break the frame: e.g. 'Keeping route decisions on-GPU cuts agent control-loop latency by up to 2.4x, with the gain measurable across all 36 tested configurations.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_201b899604e52dcd",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Robot training pipelines now stream incrementally from the Hub, where full re-downloads were the only path.",
+      "fix_kind": "text_edit",
+      "instruction": "This take uses the same 'X now [does Y], where [old constraint] was the only path' scaffold as c_279b01ae26a57ca7 and c_15f29f15c58ca62d. Flag as second instance of the repeated frame (the third is filed on c_15f29f15c58ca62d). Rewrite to break the frame: e.g. 'Strands Robots now streams training data incrementally from the Hub, eliminating the full-dataset download on every policy update cycle.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_824c1bbc6b637c97",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Before locking in your agent's model tier, run the guide's selection logic against your actual task distribution.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body closes on a prescription/imperative rather than on the day's direction in plain editorial prose. The imperative close belongs in a Hands-On story; the Pulse body should end on what this guide signals about where agent cost optimisation is heading. Rewrite the closing sentence to state the direction: e.g. 'The guide marks a shift in how OpenAI frames agent cost: model selection, not infrastructure, is now the primary lever.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "minor",
+      "quote": "Smart Routing classifies each coding task with a lightweight model first, delivering 35% cost savings in internal benchmarks.",
+      "fix_kind": "text_edit",
+      "instruction": "The sentence restates the story's take ('Coding agent cost now scales with task complexity') and body figures without adding compression value. The digest sentence should anchor to a concrete, story-specific fact not already foregrounded in the take. Rewrite: e.g. 'Smart Routing, now in beta inside Claude Code and Codex, classifies tasks before escalating, with internal benchmarks showing 35% savings and public benchmarks 56%.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9fd49378eb0f8243",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Before choosing fine-tuning over retrieval-augmented generation, run this diagnostic on your failure cases.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body should end on a presence-form maturity signal (what exists and what it is worth today), not a prescription. Move the imperative to the take or remove it; close the body on the maturity signal: e.g. 'The framework and its 13-model results are published; the retrieval-vs-storage distinction is now empirically grounded rather than assumed.'"
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "8759a2837f6575e09b31e652337a59e93a21d009690a3ba570ed05ec4140b137",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 1 finding(s) dropped: malformed shape"
+}
