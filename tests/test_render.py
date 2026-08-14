@@ -1276,6 +1276,8 @@ _RATIFIED_SENTENCES: list[str] = [
     "No. 34 becomes No. 34.1.",
     "Factual errors are corrected on the day they are confirmed. A story "
     "that should not have run is removed.",
+    "Visits are counted with GoatCounter, which stores no cookies and no "
+    "personal data.",
     "Corrections, disagreements, and sources worth adding go to",
     "who approves every issue before it publishes:",
 ]
@@ -1286,6 +1288,7 @@ _RATIFIED_HEADINGS: list[str] = [
     "How a story is chosen",
     "What the machine does and what a person does",
     "Corrections",
+    "Privacy",
     "Contact",
 ]
 
