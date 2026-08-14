@@ -1056,13 +1056,25 @@ class TestAnalytics:
         }
 
     def test_no_script_when_code_unset(
-        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+        self,
+        rich_issue: Issue,
+        tmp_data_root: Path,
+        tmp_docs: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """The shipped default: config/brand.yaml carries an empty code, so
-        no page loads any third-party script."""
+        """The gate itself: an empty code renders no third-party script on
+        any page (the fork-safe and pre-signup state)."""
+        brand = dict(_render_mod._load_brand())
+        brand["goatcounter"] = ""
+        monkeypatch.setattr(_render_mod, "_load_brand", lambda: brand)
         for name, html in self._release_pages(rich_issue).items():
             assert "goatcounter" not in html, name
             assert "gc.zgo.at" not in html, name
+
+    def test_brand_yaml_carries_the_live_site_code(self) -> None:
+        """Pins the production config (set 2026-08-14): the aivector.day
+        pages count to aivector.goatcounter.com."""
+        assert _render_mod._load_brand()["goatcounter"] == "aivector"
 
     def test_script_on_every_page_when_code_set(
         self,
