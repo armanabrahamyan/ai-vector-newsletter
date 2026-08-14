@@ -1033,6 +1033,54 @@ def _brand_without(env_key: str) -> dict:
     return brand
 
 
+class TestAnalytics:
+    """GoatCounter is config-gated: no site code, no script -- on any page.
+    The script must never ship half-configured."""
+
+    _SNIPPET = (
+        '<script data-goatcounter="https://aivector.goatcounter.com/count" '
+        'async src="//gc.zgo.at/count.js"></script>'
+    )
+
+    def _release_pages(self, rich_issue: Issue) -> dict[str, str]:
+        _write_released(FIXED_DATE, rich_issue, number=1)
+        render(FIXED_DATE, mode="release")
+        return {
+            "issue": _paths.released_html_path(FIXED_DATE).read_text(
+                encoding="utf-8"
+            ),
+            "index": _paths.DOCS_INDEX.read_text(encoding="utf-8"),
+            "how": (_paths.DOCS_ROOT / "how-its-made.html").read_text(
+                encoding="utf-8"
+            ),
+        }
+
+    def test_no_script_when_code_unset(
+        self, rich_issue: Issue, tmp_data_root: Path, tmp_docs: Path
+    ) -> None:
+        """The shipped default: config/brand.yaml carries an empty code, so
+        no page loads any third-party script."""
+        for name, html in self._release_pages(rich_issue).items():
+            assert "goatcounter" not in html, name
+            assert "gc.zgo.at" not in html, name
+
+    def test_script_on_every_page_when_code_set(
+        self,
+        rich_issue: Issue,
+        tmp_data_root: Path,
+        tmp_docs: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        brand = dict(_render_mod._load_brand())
+        brand["goatcounter"] = "aivector"
+        monkeypatch.setattr(_render_mod, "_load_brand", lambda: brand)
+        for name, html in self._release_pages(rich_issue).items():
+            assert self._SNIPPET in html, name
+
+    def test_default_brand_ships_with_analytics_off(self) -> None:
+        assert _render_mod._DEFAULT_BRAND["goatcounter"] == ""
+
+
 class TestNavigation:
     @pytest.fixture
     def issue_html(

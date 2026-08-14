@@ -89,6 +89,10 @@ _DEFAULT_BRAND: dict = {
     # Where the by-line author links to. Falsy (absent or empty string) renders
     # the author as plain text -- see the degrade branch in both templates.
     "author_url": "https://armanabrahamyan.com",
+    # GoatCounter site code (the <code> in https://<code>.goatcounter.com).
+    # Falsy (absent or empty string) renders NO analytics script anywhere --
+    # the fork-safe and pre-signup default. Set in config/brand.yaml.
+    "goatcounter": "",
 }
 
 # Peripheral files copied from staging -> canonical during release_promote
