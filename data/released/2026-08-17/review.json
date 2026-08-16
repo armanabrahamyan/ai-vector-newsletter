@@ -1,0 +1,201 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-16T21:23:21.822012Z",
+  "computed_verdict": "red",
+  "one_line": "Solid sourcing day undercut by two scaffold-echo takes, a synthesis carrying an unsupported cryptography claim, and three closing-shape failures.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7fdc859f56fa201c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "When does your agent governance need sequence awareness?",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags 'The locus of control is shifting toward cryptographically verifiable constraints' as unsupported by the Dogwood/Cedar source. The closing strategic question is fine, but confirm no prose in the body asserts cryptographic verifiability as a property of Dogwood — the synthesis carries that claim and it should be removed or sourced separately. The story body itself does not appear to assert it, so no edit is needed here; see the synthesis finding below."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "from static permissions toward dynamic, history-aware, and cryptographically verifiable constraints",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block for c_7fdc859f56fa201c flags 'cryptographically verifiable constraints' as unsupported by the Dogwood source. The synthesis attributes this property to the section's aggregate motion, but only the Claude watermarking story (c_09facd7bde2ab39a) involves cryptography, and that story is about content provenance, not agent authorisation constraints. Remove 'cryptographically verifiable' from the synthesis or restrict the claim to the watermarking story only."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8fb9bc77cc922746",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "When your eval environment permits internet access, what containment failure looks like is now documented.",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture closing shape requires a strategic question anchored to a specific role, decision, or constraint in the reader's org. This sentence is a declarative statement dressed as a contextual observation, not a question. Rewrite as a genuine strategic question anchored to the reader's org — e.g. 'Does your eval environment's internet-access policy account for the containment failures now documented in AISI's report?'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8fb9bc77cc922746",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "Last week we flagged the incident; AISI's full report confirms 19 unsanctioned actions across 122 test runs",
+      "fix_kind": "carry_forward",
+      "instruction": "This story extends prior coverage (prior_coverage_ref c_4d5ce4e248177431) and correctly references it inline. The 2026-08-13 Pulse also covered unsanctioned OpenAI agent coordination. Two consecutive issues leading with unsanctioned autonomous agent behaviour risks register collapse. The story earns its place because it is a new primary source (AISI's full report), but note for tomorrow: if a third agent-autonomy story surfaces, route it to Currents unless the sourcing is substantially new."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_09facd7bde2ab39a",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Content-integrity teams now have a detectable signal in AI-generated text, where unverifiable origin was the default.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates what the body already establishes (the watermark is detectable, origin was previously unverifiable) rather than adding the publication's position on what that shift means. Push one step further — e.g. 'EU-mandated watermarking has made AI-text provenance a solvable detection problem for the first time.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e4e05daeca1ed19e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "map it against your own integration backlog before scoping headcount for the next cycle.",
+      "fix_kind": "text_edit",
+      "instruction": "Hands-On closing shape requires an imperative action sharpened to a specific artefact plus trigger. 'Map it against your integration backlog' is too generic — it names no artefact and no trigger. Rewrite to name a concrete artefact from the story (e.g. the request-trigger architecture pattern described in the Ramp post) and a specific trigger condition — e.g. 'Before your next headcount review, map the request-trigger pattern from Ramp's architecture against the integrations currently queued for manual engineering.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a20fe378cd8a42f6",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "LLM CLI users can now inspect Gemini's reasoning steps and run server-side code execution.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is a capability list that restates the body's feature summary rather than stating the publication's position on what this means. Add the editorial position — e.g. 'Gemini reasoning traces are now a first-class CLI artefact, closing the visibility gap that kept the tool at arm's length from debugging workflows.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "so auditing SDK verbosity now avoids surprise costs.",
+      "fix_kind": "text_edit",
+      "instruction": "The digest sentence's second clause ('so auditing SDK verbosity now avoids surprise costs') restates the story's take and imperative close rather than compressing a story fact. The digest should be story-anchored and falsifiable. Rewrite to a single factual sentence — e.g. 'Cloudflare's agent tracing wraps invocations, model calls, tool runs, and approvals into nested trace waterfalls, with every span counting as a billable observability event from 1 October 2026.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_5fe567765decc9f1",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Treat likes as a sentiment signal, downloads as your infrastructure map, before your next model-selection decision.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body must end on the day's direction in plain editorial prose; prescriptions and imperatives belong in the take, not the body close. This sentence is a direct instruction to the reader. Rewrite as a declarative statement of direction — e.g. 'The gap between what practitioners star and what they actually run has become the defining structural fact of the open-model ecosystem.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_625f649e49388168",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Practitioners can now run Kimi-K3's novel architecture locally, where cloud-only inference was the only path.",
+      "fix_kind": "text_edit",
+      "instruction": "The take shares a syntactic frame with c_40ea3e4b0e065671's take ('X that each needed Y now Z from a single Ollama command') and c_74b16df02a4894a7's take ('X becomes Y from October, where Z was the default') — specifically the 'now [verb], where [prior state] was the [only/default] path' scaffold appears here and in the Cloudflare take. Rewrite to break the frame — e.g. 'Kimi-K3's hybrid attention and MoE architecture is now a local inference option, with GPU acceleration pending custom Metal and Vulkan kernels.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_74b16df02a4894a7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Every Cloudflare agent span becomes a billable event from October, where infrastructure traces were free.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the 'X becomes Y, where Z was [the default/free]' scaffold with c_625f649e49388168's take. Filed on this story as the later one. Rewrite to a distinct frame — e.g. 'Cloudflare's October billing change makes SDK verbosity a cost variable that agent teams must now actively manage.'"
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "4cab123b9889b25867cbf02c671718425ee35960abac6d53c547cd4d66a146ca",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.)"
+}
