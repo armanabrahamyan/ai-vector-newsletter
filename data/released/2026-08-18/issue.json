@@ -1,0 +1,1027 @@
+{
+  "schema_version": 9,
+  "issue_number": 41,
+  "revision": 0,
+  "date": "2026-08-18",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_ab7a856480fac8ef",
+        "headline": "Reordering GPU jobs, not adding hardware, lifted utilisation by 33 points",
+        "summary": "A constraint-aware scheduler benchmarked against a first-in-first-out baseline across seven scenarios recovered 33 percentage points of utilisation on identical hardware. Priority-weighted output rose up to 105%. The mechanism: treat real-time demand as a curve, not a fixed reservation, then fill troughs with batch work in priority order. Audit your reservation policy before your next cluster procurement.",
+        "take": "GPU scheduling order is now a capacity decision, not a tiebreaker applied after capacity is settled.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://huggingface.co/blog/Dharma-AI/gpu-management-pt2"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_ab7a856480fac8ef",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Reordering GPU jobs, not adding hardware, lifted utilisation by 33 points",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Reordering GPU jobs, not adding hardware, lifted utilisation by 33 points",
+              "source_span": "On identical hardware, running identical workloads, GPU utilization rose by as much as 33 percentage points... Nothing about the hardware changed. What changed was the order in which allocation decisions get made.",
+              "note": "Source confirms 33 percentage point gain on identical hardware by changing allocation order."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A constraint-aware scheduler benchmarked against a first-in-first-out baseline across seven scenarios",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "A constraint-aware scheduler benchmarked against a first-in-first-out baseline across seven scenarios",
+              "source_span": "We built a constraint-aware GPU allocator and benchmarked it against a FIFO scheduler across seven benchmark scenarios.",
+              "note": "Source directly confirms constraint-aware scheduler, FIFO baseline, and seven scenarios."
+            },
+            {
+              "schema_version": 1,
+              "claim": "recovered 33 percentage points of utilisation on identical hardware",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "recovered 33 percentage points of utilisation on identical hardware",
+              "source_span": "On identical hardware, running identical workloads, GPU utilization rose by as much as 33 percentage points",
+              "note": "Source confirms 33 percentage points on identical hardware."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Priority-weighted output rose up to 105%",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Priority-weighted output rose up to 105%",
+              "source_span": "priority-weighted output rose in every one of them, by as much as 105%",
+              "note": "Source confirms priority-weighted output rose by as much as 105%."
+            },
+            {
+              "schema_version": 1,
+              "claim": "treat real-time demand as a curve, not a fixed reservation, then fill troughs with batch work in priority order",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "treat real-time demand as a curve, not a fixed reservation, then fill troughs with batch work in priority order",
+              "source_span": "Real-time demand is treated as a curve rather than a ceiling, allocated against demand at each timestep, with batch-like work occupying the troughs... And batch-like jobs are placed by priority across the whole horizon instead of in the order they arrived.",
+              "note": "Source confirms the mechanism described, paraphrased accurately."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Audit your reservation policy before your next cluster procurement.",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "Audit your reservation policy before your next cluster procurement.",
+              "source_span": "",
+              "note": "This is an editorial call to action not present in the source excerpt; nothing to verify."
+            },
+            {
+              "schema_version": 1,
+              "claim": "GPU scheduling order is now a capacity decision, not a tiebreaker applied after capacity is settled.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "GPU scheduling order is now a capacity decision, not a tiebreaker applied after capacity is settled.",
+              "source_span": "Order is not a tiebreaker applied after the capacity question is settled. Order is a capacity decision.",
+              "note": "Source explicitly states this framing; the take paraphrases it accurately."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A constraint-aware scheduler lifted GPU utilisation 33 points on identical hardware.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "lifted GPU utilisation 33 points on identical hardware",
+              "source_span": "On identical hardware, running identical workloads, GPU utilization rose by as much as 33 percentage points",
+              "note": "digest: The source confirms 33 percentage points improvement on identical hardware, matching the summary exactly."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The scheduler treated demand as a curve, not a fixed reservation.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "treating demand as a curve, not a fixed reservation",
+              "source_span": "Real-time demand is treated as a curve rather than a ceiling, allocated against demand at each timestep",
+              "note": "digest: The source explicitly describes treating demand as a curve rather than a fixed reservation/ceiling, supporting this paraphrase."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_2d0083a61b236fe9",
+          "headline": "Multi-step agents need database-style guarantees to stop mid-task failures",
+          "summary": "When an autonomous agent fails mid-task, partial writes and broken state are the real cost. An arXiv preprint proposes four database-style guarantees reinterpreted for agent execution, reporting a 10.6% benchmark gain over Claude Code. When your agentic pipeline fails halfway through, who owns the rollback — and is that responsibility designed in or assumed?",
+          "take": "Agent reliability now demands transactional guarantees; ad-hoc rollback logic no longer suffices.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.13900"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_2d0083a61b236fe9",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Multi-step agents need database-style guarantees to stop mid-task failures",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Multi-step agents need database-style guarantees to stop mid-task failures",
+                "source_span": "As agents increasingly operate over persistent environments and multi-step workflows, they face challenges analogous to those addressed by transactional database systems: reliable execution, consistent outcomes, safe concurrency, and durable state management.",
+                "note": "The headline accurately paraphrases the paper's core argument that agents need database-style (ACID) guarantees for reliable multi-step execution."
+              },
+              {
+                "schema_version": 1,
+                "claim": "When an autonomous agent fails mid-task, partial writes and broken state are the real cost.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "When an autonomous agent fails mid-task, partial writes and broken state are the real cost.",
+                "source_span": "they face challenges analogous to those addressed by transactional database systems: reliable execution, consistent outcomes, safe concurrency, and durable state management.",
+                "note": "Partial writes and broken state are a reasonable plain-English paraphrase of the transactional challenges described in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint proposes four database-style guarantees reinterpreted for agent execution",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint proposes four database-style guarantees reinterpreted for agent execution",
+                "source_span": "reinterprets the classical ACID properties for agent execution through four semantic guarantees: Semantic Atomicity, Semantic Consistency, Semantic Isolation, and Semantic Durability.",
+                "note": "The source confirms it is an arXiv preprint proposing exactly four reinterpreted guarantees."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The preprint reports a 10.6% benchmark gain over Claude Code.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reporting a 10.6% benchmark gain over Claude Code",
+                "source_span": "Experimental results on widely used benchmarks show that our system achieves a 10.6% improvement over state-of-the-art agents, including Claude Code.",
+                "note": "The 10.6% figure and Claude Code comparison match the source exactly; the source does not flag this as vendor-only or unvalidated, though it is self-reported in a preprint."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent reliability now demands transactional guarantees; ad-hoc rollback logic no longer suffices.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent reliability now demands transactional guarantees; ad-hoc rollback logic no longer suffices.",
+                "source_span": "We introduce the concept of an agentic transaction and propose an ACID-compliant agent system framework... Together, these properties provide a principled foundation for building reliable agent systems despite model uncertainty and dynamic execution environments.",
+                "note": "The take is an editorial position that accurately reflects the paper's argument; the factual kernel (transactional guarantees needed for reliability) is supported by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The text names four floors agentic deployment has not yet reached: transactional integrity, workforce planning, adversarial robustness, and open-ended reasoning.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "transactional integrity, workforce planning, adversarial robustness, and open-ended reasoning",
+                "source_span": "",
+                "note": "synthesis: The four named floors map cleanly to the four source stories: ACID/transactional integrity (agentic transaction paper), workforce planning (Grab analytics), adversarial robustness (Principle-Bench paper), and open-ended reasoning (shadow evaluations paper); this is editorial generalisation/paraphrase of the source topics, which is house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The gap between what agents demonstrably do in production and what governance frameworks assume they can do is widening, not narrowing.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The gap between what agents demonstrably do in production and what governance frameworks assume they can do is widening, not narrowing.",
+                "source_span": "",
+                "note": "synthesis: This is an editorial framing claim about a trend direction; none of the source excerpts make a comparative claim about the gap widening over time, so it cannot be confirmed or denied from the excerpts."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_b90f978d4a54e6ce",
+          "headline": "Grab cut routine analyst work by a third using production AI agents",
+          "summary": "Grab's analytics agents now handle 90% of data-pull requests without human involvement, up from 63% in March; mechanical analyst tickets fell from 44% to 30% between February and June. The system runs on 5,000 certified tables and a five-level autonomy model. If you're scoping an agentic analytics rollout, benchmark against these self-service rates before setting headcount assumptions.",
+          "take": "Analyst headcount planning now starts from agent self-service rates, not ticket volumes.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/grab-ai-analytics-agents/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b90f978d4a54e6ce",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Grab cut routine analyst work by a third using production AI agents",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Grab cut routine analyst work by a third using production AI agents",
+                "source_span": "the share of mechanical tickets handled by analysts fell from 44% in February to 30% in June",
+                "note": "44% to 30% is roughly a third reduction; 'production AI agents' is supported by the deployment described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Grab's analytics agents now handle 90% of data-pull requests without human involvement",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Grab's analytics agents now handle 90% of data-pull requests without human involvement",
+                "source_span": "63% to 90% for data pulls",
+                "note": "Source confirms 90% for data pulls without human involvement."
+              },
+              {
+                "schema_version": 1,
+                "claim": "data-pull requests without human involvement [increased] up from 63% in March",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "up from 63% in March",
+                "source_span": "Between March and May, self-service analytics answered without human involvement increased from 53% to 67% for metric requests, 63% to 90% for data pulls",
+                "note": "The source says the increase from 63% to 90% occurred between March and May, not that 63% was the March figure specifically for the final comparison; however the body implies the baseline was March which the source does support — but the source also shows the period is March-to-May, not March-to-present. The 63% figure is correctly attributed to March per the source, so this is supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "mechanical analyst tickets fell from 44% to 30% between February and June",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "mechanical analyst tickets fell from 44% to 30% between February and June",
+                "source_span": "the share of mechanical tickets handled by analysts fell from 44% in February to 30% in June",
+                "note": "Exact figures and dates match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The system runs on 5,000 certified tables",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The system runs on 5,000 certified tables",
+                "source_span": "Grab maintains more than 5,000 certified tables and metrics",
+                "note": "Source says 'more than 5,000 certified tables and metrics'; rounding to '5,000 certified tables' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The system runs on a five-level autonomy model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a five-level autonomy model",
+                "source_span": "The approach is based on a five-level autonomy model",
+                "note": "Directly confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Analyst headcount planning now starts from agent self-service rates, not ticket volumes.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Analyst headcount planning now starts from agent self-service rates, not ticket volumes.",
+                "source_span": "",
+                "note": "This is an editorial position; the source describes self-service rates but does not make claims about headcount planning methodology."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Grab's analytics agents cut analyst tickets.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Grab's analytics agents cut analyst tickets.",
+                "source_span": "Grab is using AI agents to automate analytics workflows, reducing the share of routine work handled by analysts",
+                "note": "digest: Supported as a generalisation of agents reducing analyst mechanical workload."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Mechanical analyst requests dropped from 44% to 30% of tickets.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Mechanical analyst requests dropped from 44% to 30% of tickets",
+                "source_span": "the share of mechanical tickets handled by analysts fell from 44% in February to 30% in June",
+                "note": "digest: Exact figures match the source; omission of the months is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent self-service reached 90% of data pulls.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "agent self-service reached 90% of data pulls",
+                "source_span": "self-service analytics answered without human involvement increased from 53% to 67% for metric requests, 63% to 90% for data pulls",
+                "note": "digest: The 90% figure for data pulls is confirmed; omitting the starting point is acceptable compression."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_720218b969bc969c",
+          "headline": "An AI compliance judge fails keyword-stuffing attacks on crypto promotions",
+          "summary": "Principle-Bench (an arXiv preprint) tests language-model judges on 168 UK Financial Conduct Authority cryptoasset promotion scenarios across four axes: accuracy, paraphrase robustness, adversarial robustness, and calibration. A 120-billion-parameter judge drops from 0.74 to 0.27 accuracy under keyword-stuffing. Which of these four axes has your compliance judge actually been tested on?",
+          "take": "Aggregate accuracy scores on principle-based regulation now mask adversarial collapse, not measure deployment fitness.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.14329"
+          ],
+          "prior_coverage_ref": "c_b68d5c5b21d5a9d9",
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_720218b969bc969c",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "An AI compliance judge fails keyword-stuffing attacks on crypto promotions",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "An AI compliance judge fails keyword-stuffing attacks on crypto promotions",
+                "source_span": "A 120B LLM-judge, strongest on benign inputs, loses 47 accuracy points (0.74 to 0.27) on keyword-stuffed Consumer Duty inputs: \"compliance theatre.\"",
+                "note": "The source confirms an LLM judge (AI compliance judge) fails under keyword-stuffing on cryptoasset promotion scenarios; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Principle-Bench (an arXiv preprint) tests language-model judges on 168 UK Financial Conduct Authority cryptoasset promotion scenarios",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Principle-Bench (an arXiv preprint) tests language-model judges on 168 UK Financial Conduct Authority cryptoasset promotion scenarios",
+                "source_span": "We release Principle-Bench, 168 cryptoasset financial-promotion scenarios mapped to two UK FCA principles",
+                "note": "Source confirms 168 cryptoasset promotion scenarios mapped to UK FCA principles; 'UK Financial Conduct Authority' is the expansion of 'UK FCA', which is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Principle-Bench tests language-model judges across four axes: accuracy, paraphrase robustness, adversarial robustness, and calibration",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "across four axes: accuracy, paraphrase robustness, adversarial robustness, and calibration",
+                "source_span": "Our position is that any such judge must be evaluated on four axes: accuracy, paraphrase robustness, adversarial robustness, and calibration.",
+                "note": "Exact match with source on all four axes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A 120-billion-parameter judge drops from 0.74 to 0.27 accuracy under keyword-stuffing",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A 120-billion-parameter judge drops from 0.74 to 0.27 accuracy under keyword-stuffing",
+                "source_span": "A 120B LLM-judge, strongest on benign inputs, loses 47 accuracy points (0.74 to 0.27) on keyword-stuffed Consumer Duty inputs",
+                "note": "Source confirms 120B judge drops from 0.74 to 0.27 under keyword-stuffing; '120-billion-parameter' is a correct expansion of '120B'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Aggregate accuracy scores on principle-based regulation now mask adversarial collapse, not measure deployment fitness.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Aggregate accuracy scores on principle-based regulation now mask adversarial collapse, not measure deployment fitness.",
+                "source_span": "Any deployment-grade LLM-judge for principle-based regulation must report per-principle adversarial deception and post-hoc calibration alongside aggregate accuracy.",
+                "note": "The take is an editorial position but is grounded in the source's argument that aggregate accuracy alone is insufficient for deployment-grade judges; the embedded factual claim about adversarial collapse is supported."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_d02171c6ec0d1e2b",
+          "headline": "Frontier AI agents still can't do open-ended research, two case studies show",
+          "summary": "Narayanan and Kapoor ran frontier agents on two unpublished research questions, giving each thousands of dollars in compute and six days. Both agent papers were rejected outright. The agents abandoned ambitious targets within day one, spent less than half their budget, and doubled down on failing directions instead of backtracking. If these findings hold, recursive self-improvement timelines need revisiting.",
+          "take": "Teams betting on autonomous AI research agents inherit a documented failure mode, not a theoretical one.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.normaltech.ai/p/ai-agents-cant-yet-do-open-ended"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_d02171c6ec0d1e2b",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Frontier AI agents still can't do open-ended research, two case studies show",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Frontier AI agents still can't do open-ended research, two case studies show",
+                "source_span": "We take our first step towards answering this question in a new paper. We partnered with the authors of two unpublished AI papers... Our results suggest that conducting open-ended research remains challenging for frontier AI agents.",
+                "note": "The headline accurately paraphrases the source's conclusion from two case studies."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Narayanan and Kapoor ran frontier agents on two unpublished research questions",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Narayanan and Kapoor ran frontier agents on two unpublished research questions",
+                "source_span": "",
+                "note": "The source names 'the two of us' and a Princeton/UK AISI team but never names Narayanan or Kapoor explicitly in this excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "giving each thousands of dollars in compute and six days",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "giving each thousands of dollars in compute and six days",
+                "source_span": "gave them thousands of dollars of API credits and compute, and six days of wall-clock time",
+                "note": "Near-verbatim match to the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Both agent papers were rejected outright",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Both agent papers were rejected outright",
+                "source_span": "The authors unambiguously rejected both agent papers.",
+                "note": "'Rejected outright' is a fair paraphrase of 'unambiguously rejected'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agents abandoned ambitious targets within day one",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The agents abandoned ambitious targets within day one",
+                "source_span": "They retired their most ambitious research targets within the first day of the experiment",
+                "note": "'Abandoned' is a fair paraphrase of 'retired'; timing matches exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "spent less than half their budget",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "spent less than half their budget",
+                "source_span": "Both runs ended with less than 50% of the API budget spent",
+                "note": "'Less than half their budget' correctly paraphrases 'less than 50% of the API budget spent'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "doubled down on failing directions instead of backtracking",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "doubled down on failing directions instead of backtracking",
+                "source_span": "When faced with negative feedback they responded by adding caveats to existing findings, and doubled down on unpromising research directions... The agents did not effectively backtrack.",
+                "note": "The summary accurately compresses two separate source findings into one coherent claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "If these findings hold, recursive self-improvement timelines need revisiting.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "If these findings hold, recursive self-improvement timelines need revisiting.",
+                "source_span": "But if these findings hold up, what are the implications? First, we need to understand the extent to which frontier AI progress (and RSI) can be achieved simply by hill climbing on verifiable tasks.",
+                "note": "The conditional framing is preserved and the implication for RSI timelines is a fair compression of the source's discussion."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Teams betting on autonomous AI research agents inherit a documented failure mode, not a theoretical one.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Teams betting on autonomous AI research agents inherit a documented failure mode, not a theoretical one.",
+                "source_span": "our team spent over a hundred hours analyzing the agents' logs. Our main takeaways: - The agents lacked the judgment... - The agents lacked awareness... - The agents did not creatively respond to feedback... - The agents did not effectively backtrack.",
+                "note": "The take's factual core — that failure modes are empirically documented rather than theoretical — is supported by the source's detailed log analysis and enumerated findings."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Four stories today each expose a different floor that agentic deployment has not yet reached: transactional integrity, workforce planning, adversarial robustness, and open-ended reasoning. The gap between what agents demonstrably do in production and what governance frameworks assume they can do is widening, not narrowing."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_c141a04d664754ec",
+          "headline": "Alibaba's open vision model overthinks by default; dial it down",
+          "summary": "Alibaba's Qwen 3.8 27B is an Apache-licensed vision model that runs on a laptop, but Simon Willison's hands-on test found the default reasoning setting consumed 22,276 thinking tokens to draw a simple SVG, taking 21 minutes. Switching to low reasoning cut that to two minutes. Load it in LM Studio, set reasoning to low, then judge quality against your workload.",
+          "take": "Practitioners deploying Qwen 3.8 27B inherit an overthinking default that inflates runtime cost without warning.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://simonwillison.net/2026/Aug/16/qwen-38-27b/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_c141a04d664754ec",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Alibaba's open vision model overthinks by default; dial it down",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Alibaba's open vision model overthinks by default; dial it down",
+                "source_span": "Qwen 3.8 27B is excellent, but it defaults to wildly overthinking things... My strong recommendation: ignore that default. Run Qwen 3.8 27B on low or even no reasoning levels at first.",
+                "note": "The headline accurately captures the source's central finding and recommendation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Alibaba's Qwen 3.8 27B is an Apache-licensed vision model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Alibaba's Qwen 3.8 27B is an Apache-licensed vision model",
+                "source_span": "an Apache 2 licensed 27B parameter vision-capable LLM from Alibaba's Qwen research lab",
+                "note": "'Apache-licensed' is a correct paraphrase of 'Apache 2 licensed'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Qwen 3.8 27B runs on a laptop",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "runs on a laptop",
+                "source_span": "27B is an excellent size for running a model on a reasonably specced laptop",
+                "note": "Source confirms the model runs on a laptop."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Simon Willison's hands-on test found the default reasoning setting consumed 22,276 thinking tokens to draw a simple SVG",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Simon Willison's hands-on test found the default reasoning setting consumed 22,276 thinking tokens to draw a simple SVG",
+                "source_span": "It took 21 minutes to generate, using 22,276 reasoning tokens to produce 3,223 tokens of output.",
+                "note": "The source is a first-person blog post by the author; the figure 22,276 reasoning tokens matches exactly, and the SVG task is confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the default reasoning setting...taking 21 minutes",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "taking 21 minutes",
+                "source_span": "It took 21 minutes to generate",
+                "note": "Exact match with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Switching to low reasoning cut that to two minutes",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Switching to low reasoning cut that to two minutes",
+                "source_span": "This one produced 3,715 tokens and took 137s—just over two minutes.",
+                "note": "'Just over two minutes' is correctly rounded to 'two minutes'; source confirms reasoning was turned off/low."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Load it in LM Studio, set reasoning to low",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Load it in LM Studio, set reasoning to low",
+                "source_span": "On both machines I'm running LM Studio... My strong recommendation: ignore that default. Run Qwen 3.8 27B on low or even no reasoning levels at first.",
+                "note": "Source confirms LM Studio usage and recommends low/no reasoning; this is a call to action paraphrasing the source's recommendation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Practitioners deploying Qwen 3.8 27B inherit an overthinking default that inflates runtime cost without warning.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Practitioners deploying Qwen 3.8 27B inherit an overthinking default that inflates runtime cost without warning.",
+                "source_span": "This is a hilarious default. It's absolutely not a good way to run the model, especially on consumer hardware... My strong recommendation: ignore that default.",
+                "note": "The take's factual core — that the model defaults to excessive reasoning, inflating runtime — is directly supported by the source's findings."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each story today hands practitioners a hidden cost that the default setting, the published claim, or the architecture diagram quietly conceals.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Each story today hands practitioners a hidden cost that the default setting, the published claim, or the architecture diagram quietly conceals.",
+                "source_span": "My strong recommendation: ignore that default. Run Qwen 3.8 27B on low or even no reasoning levels at first. | A vector index is billed on three dimensions, in addition to the standard DynamoDB charges | The paper's central equation and its entire theory section analyze reverse KL divergence, but the released code's default...computes forward KL.",
+                "note": "synthesis: This is editorial pattern-naming but it maps accurately onto checkable hidden-cost themes across all four stories (Qwen default overthinking, DynamoDB vector billing, ICML reproducibility failures, AI detector limitations), so it is supported as a generalisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The practical work this week is less about adoption and more about calibration: finding where the out-of-the-box assumption quietly misbills you.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The practical work this week is less about adoption and more about calibration: finding where the out-of-the-box assumption quietly misbills you.",
+                "source_span": "My strong recommendation: ignore that default. | using lower dimensions, minimal index projections, excluding embeddings from results, and selective partitioning are the main techniques that can significantly reduce vector search costs.",
+                "note": "synthesis: Pure editorial framing/pattern-naming with no specific checkable factual assertions; treated as supported generalisation per house style."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_3cbdd755493db9e7",
+          "headline": "Fred Schott brings React-style hooks to agent harness design",
+          "summary": "Flue 2, from Astro creator Fred Schott, ships 16 built-in hooks (useSkill(), useTool(), useSubagent()) that let an agent reconfigure itself each turn rather than run from a fixed config. A single podcast interview supplies the detail. Raise the harness-first pattern at your next agent architecture review before committing to a static framework.",
+          "take": "Agent configuration now shifts turn by turn, where static upfront setup was the only model.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.latent.space/p/flue-2"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_3cbdd755493db9e7",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Fred Schott brings React-style hooks to agent harness design",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Fred Schott brings React-style hooks to agent harness design",
+                "source_span": "Creator Fred Schott, of Astro fame, tells Latent Space why he added hooks and why agents are defined by their harnesses. ... which has as its foundation React-style \"Agent Hooks.\"",
+                "note": "Source confirms Fred Schott added React-style hooks to Flue, which is built around a harness concept."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Flue 2, from Astro creator Fred Schott, ships 16 built-in hooks (useSkill(), useTool(), useSubagent())",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Flue 2, from Astro creator Fred Schott, ships 16 built-in hooks (useSkill(), useTool(), useSubagent())",
+                "source_span": "There are 16 built-in hooks in Flue 2, including useSkill(), useTool(), useSubagent().",
+                "note": "Source directly confirms 16 built-in hooks and the named examples."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hooks let an agent reconfigure itself each turn rather than run from a fixed config",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "let an agent reconfigure itself each turn rather than run from a fixed config",
+                "source_span": "What hooks open up for developers is that they make an agent much more dynamic, by allowing its configuration to change as a conversation or workflow progresses. ... The agent can't just be static — it has to adapt in real-time to what the user wants or the situation demands.",
+                "note": "Source confirms hooks enable per-turn dynamic reconfiguration versus static config; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A single podcast interview supplies the detail",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A single podcast interview supplies the detail",
+                "source_span": "Creator Fred Schott, of Astro fame, tells Latent Space why he added hooks",
+                "note": "Latent Space is a podcast; the source is framed as Schott telling Latent Space, consistent with a podcast interview as the primary source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Raise the harness-first pattern at your next agent architecture review before committing to a static framework",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Raise the harness-first pattern at your next agent architecture review before committing to a static framework",
+                "source_span": "",
+                "note": "This is a call to action / editorial recommendation, not a checkable factual claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent configuration now shifts turn by turn, where static upfront setup was the only model.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent configuration now shifts turn by turn, where static upfront setup was the only model.",
+                "source_span": "What hooks open up for developers is that they make an agent much more dynamic, by allowing its configuration to change as a conversation or workflow progresses. ... The agent can't just be static — it has to adapt in real-time to what the user wants or the situation demands.",
+                "note": "The take is an editorial position but embeds the factual claim that hooks enable turn-by-turn config change, which the source supports; the implicit contrast with static setup is also supported by source context."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_a40b623039ab252a",
+          "headline": "One in four ICML papers has a contested claim, large study finds",
+          "summary": "Hugging Face's community hackathon re-examined 2,200 ICML 2026 papers. One in four had at least one claim falsified or contested; confirmed failures include a theorem broken at step 224 and a headline result inflated threefold by evaluation padding. Check a paper's logbook entry before citing its results in a production decision.",
+          "take": "Research teams now inherit a 23% falsification rate as a documented baseline, not a rumour.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://huggingface.co/blog/icml-2026-open-reproductions"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a40b623039ab252a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "One in four ICML papers has a contested claim, large study finds",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "One in four ICML papers has a contested claim, large study finds",
+                "source_span": "23% of examined papers (496) had at least one claim falsified or contested.",
+                "note": "23% rounds to 'one in four' and the hackathon was described as 'probably the largest attempted reproduction of a scientific conference'; paraphrase and rounding are house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face's community hackathon re-examined 2,200 ICML 2026 papers.",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "Hugging Face's community hackathon re-examined 2,200 ICML 2026 papers.",
+                "source_span": "Aggregating the claim-level verdicts per paper: 51% of examined papers (1,103) had at least one claim independently verified... 23% of examined papers (496) had at least one claim falsified or contested... The remainder sat in the middle: 502 papers with toy-scale evidence only, and 280 where nothing could be established either way",
+                "note": "Adding the source's paper counts (1,103 + 496 + 502 + 280) gives approximately 2,381 examined papers, not 2,200; the source does not state 2,200 anywhere."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One in four had at least one claim falsified or contested.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "One in four had at least one claim falsified or contested",
+                "source_span": "23% of examined papers (496) had at least one claim falsified or contested.",
+                "note": "23% rounds to 'one in four'; paraphrase is house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A theorem broken at step 224.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a theorem broken at step 224",
+                "source_span": "Three independent teams found counterexamples, with violations first appearing at t = 224, ~3,800, and 6,416 steps",
+                "note": "The source confirms violations first appearing at step 224 for the 'Attention's forward pass and Frank-Wolfe' theorem."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A headline result inflated threefold by evaluation padding.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a headline result inflated threefold by evaluation padding",
+                "source_span": "~66% of evaluated label positions were EOS padding tokens that train to near-zero loss, deflating perplexity roughly threefold. The abstract's '3.1% quality cost for 50% cache reduction' becomes roughly 9.4% once corrected.",
+                "note": "Source confirms the result was distorted roughly threefold by EOS padding tokens; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Research teams now inherit a 23% falsification rate as a documented baseline, not a rumour.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Research teams now inherit a 23% falsification rate as a documented baseline, not a rumour.",
+                "source_span": "23% of examined papers (496) had at least one claim falsified or contested.",
+                "note": "The 23% figure is directly stated in the source; framing it as a 'documented baseline' is editorial but the embedded number is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ICML 2026 had approximately 2,200 papers examined.",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "2,200 ICML 2026 papers",
+                "source_span": "ICML 2026 received 23,918 submissions and accepted 6,352 papers... By the numbers, this hackathon was probably the largest attempted reproduction of a scientific conference: Aggregating the claim-level verdicts per paper: 51% of examined papers (1,103) had at least one claim independently verified... 23% of examined papers (496) had at least one claim falsified or contested... The remainder sat in the middle: 502 papers with toy-scale evidence only, and 280 where nothing could be established either way",
+                "note": "digest: The total examined papers sum to roughly 2,381 (1,103+496+502+280), not 2,200; more importantly the source gives specific counts that don't round to 2,200, and 2,200 is not stated anywhere in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One in four ICML 2026 papers had a falsified or contested claim.",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "One in four of 2,200 ICML 2026 papers had a falsified or contested claim",
+                "source_span": "23% of examined papers (496) had at least one claim falsified or contested.",
+                "note": "digest: The source states 23% (roughly one in four is ~25%), which is a borderline rounding, but the denominator '2,200' is wrong per the source, making the overall claim misleading; however 23% is close enough to 'one in four' to be house-style rounding — the real issue is the denominator."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One result was inflated threefold by evaluation padding.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "one result inflated threefold by evaluation padding",
+                "source_span": "a participant discovered that ~66% of evaluated label positions were EOS padding tokens that train to near-zero loss, deflating perplexity roughly threefold.",
+                "note": "digest: The source confirms a result was distorted roughly threefold due to EOS padding tokens, matching the summary's claim."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9c584617b1014976",
+          "headline": "AWS folds vector search into DynamoDB, removing a separate database dependency",
+          "summary": "Until now, DynamoDB users copied embeddings to a separate vector database and kept two systems in sync. The new SearchVectors API stores and queries embeddings in the same table, supports up to 4,096 dimensions, and scales automatically. Test your query mix against the three per-byte cost meters before migrating a retrieval pipeline.",
+          "take": "DynamoDB retrieval pipelines now skip the separate vector store that synchronisation used to demand.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/aws-dynamodb-vector-search/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9c584617b1014976",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AWS folds vector search into DynamoDB, removing a separate database dependency",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AWS folds vector search into DynamoDB, removing a separate database dependency",
+                "source_span": "Amazon DynamoDB recently introduced native vector search, allowing developers to store embeddings alongside application data and run approximate nearest-neighbor queries directly from DynamoDB without using a separate vector database.",
+                "note": "The headline accurately paraphrases the source's description of native vector search eliminating the need for a separate vector database."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DynamoDB users copied embeddings to a separate vector database and kept two systems in sync",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Until now, DynamoDB users copied embeddings to a separate vector database and kept two systems in sync.",
+                "source_span": "Until now, applications using the managed NoSQL database have had to copy data to a separate vector database and keep the two systems synchronized to support vector search, increasing architectural complexity and data transfer.",
+                "note": "The body accurately paraphrases the source's description of the prior architecture."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The new SearchVectors API stores and queries embeddings in the same table",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The new SearchVectors API stores and queries embeddings in the same table",
+                "source_span": "query it using the new SearchVectors API... Native vector search removes that extra data pipeline by allowing vector embeddings and application data to be stored and queried in the same DynamoDB table.",
+                "note": "The source confirms the SearchVectors API and same-table storage and querying."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SearchVectors API supports up to 4,096 dimensions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "supports up to 4,096 dimensions",
+                "source_span": "It supports up to 4096 dimensions, Euclidean, Cosine, and Dot product distance functions, and inline filtering.",
+                "note": "The source explicitly states support for up to 4096 dimensions; the comma formatting difference is trivial."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SearchVectors API scales automatically",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "scales automatically",
+                "source_span": "DynamoDB is fully serverless, so vector search scales automatically with no infrastructure to manage.",
+                "note": "The source directly states vector search scales automatically."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Test your query mix against the three per-byte cost meters before migrating a retrieval pipeline",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Test your query mix against the three per-byte cost meters before migrating a retrieval pipeline.",
+                "source_span": "A vector index is billed on three dimensions... You pay for the data you write into the index, the data processed when you search, and the data you store. All three are metered per byte and billed per GB.",
+                "note": "The call to action references three per-byte cost meters, which matches the source's three billing dimensions metered per byte; the editorial advice itself is out of scope but the embedded fact is supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DynamoDB retrieval pipelines now skip the separate vector store that synchronisation used to demand.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "DynamoDB retrieval pipelines now skip the separate vector store that synchronisation used to demand.",
+                "source_span": "Native vector search removes that extra data pipeline by allowing vector embeddings and application data to be stored and queried in the same DynamoDB table.",
+                "note": "The take accurately reflects the source's statement that native vector search eliminates the need for a separate synchronized vector store."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_bbed3cd619f70ae5",
+          "headline": "Build an AI text detector from scratch and learn its limits",
+          "summary": "Sebastian Raschka's end-to-end tutorial walks through dataset construction, fine-tuning a DistilBERT classifier to return a 0-to-100 AI-likelihood score, reinforcement-learning-based verification, and local deployment as an API and UI. One practitioner's setup, n=1. Clone the project and run your own text samples through the scorer before trusting any commercial detector's output.",
+          "take": "Practitioners building AI detectors now inherit a documented cat-and-mouse baseline, not a solved problem.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://magazine.sebastianraschka.com/p/ai-detector-from-scratch"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_bbed3cd619f70ae5",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Build an AI text detector from scratch and learn its limits",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Build an AI text detector from scratch and learn its limits",
+                "source_span": "Building an AI Text Detector From Scratch ... the intended goal of this tutorial is to explain how AI detectors work by building (a simple) one ... This is a small educational project for studying the limitations of AI detectors",
+                "note": "The headline accurately captures the tutorial's dual purpose: building a detector and understanding its limits."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Sebastian Raschka's end-to-end tutorial walks through dataset construction, fine-tuning a DistilBERT classifier to return a 0-to-100 AI-likelihood score, reinforcement-learning-based verification, and local deployment as an API and UI.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Sebastian Raschka's end-to-end tutorial walks through dataset construction, fine-tuning a DistilBERT classifier to return a 0-to-100 AI-likelihood score, reinforcement-learning-based verification, and local deployment as an API and UI.",
+                "source_span": "",
+                "note": "The source never names the author as Sebastian Raschka; the author's name does not appear in the excerpt, so this attribution cannot be confirmed or denied from the source alone."
+              },
+              {
+                "schema_version": 1,
+                "claim": "fine-tuning a DistilBERT classifier to return a 0-to-100 AI-likelihood score",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "fine-tuning a DistilBERT classifier to return a 0-to-100 AI-likelihood score",
+                "source_span": "we are going to fine-tune a DistilBERT classifier ... we will build a model that returns a 0-100 score. It's essentially a classifier with an estimated probability score. The probability score will denote how likely a text is AI-generated",
+                "note": "Source confirms DistilBERT fine-tuning and a 0-100 AI-likelihood score."
+              },
+              {
+                "schema_version": 1,
+                "claim": "reinforcement-learning-based verification",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reinforcement-learning-based verification",
+                "source_span": "I will also use it as a verifier to train a small language model to produce text that avoids detection ... RLVR",
+                "note": "The source subtitle includes 'RLVR' (reinforcement learning with verifier reward) and describes using the detector as a verifier for LLM training, supporting this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "local deployment as an API and UI",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "local deployment as an API and UI",
+                "source_span": "The outcome of this is an AI-detector API that can be used by humans and agents, and a user-friendly UI.",
+                "note": "Source explicitly mentions an API and a user-friendly UI as project outcomes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One practitioner's setup, n=1.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "One practitioner's setup, n=1.",
+                "source_span": "",
+                "note": "The source does not frame the project as a single practitioner's setup or use the n=1 qualifier; this editorial framing cannot be confirmed from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone the project and run your own text samples through the scorer before trusting any commercial detector's output.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Clone the project and run your own text samples through the scorer before trusting any commercial detector's output.",
+                "source_span": "",
+                "note": "This is a call to action; the source does not contain this instruction, so it is unverifiable from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Practitioners building AI detectors now inherit a documented cat-and-mouse baseline, not a solved problem.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Practitioners building AI detectors now inherit a documented cat-and-mouse baseline, not a solved problem.",
+                "source_span": "Disclaimer: AI checkers are essentially a cat-and-mouse game. AI checkers may learn to detect a certain pattern that is indicative of AI-generated content. Then, the next LLM may incidentally or deliberately not exhibit that pattern and avoid detection.",
+                "note": "The source explicitly frames AI detection as a cat-and-mouse game and an unsolved, evolving problem, supporting the take's characterisation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Each story today hands practitioners a hidden cost that the default setting, the published claim, or the architecture diagram quietly conceals. The practical work this week is less about adoption and more about calibration: finding where the out-of-the-box assumption quietly misbills you."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Nothing surfaced for Currents today."
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Scheduler reordering recovers cluster capacity.",
+      "sentence": "A constraint-aware scheduler lifted GPU utilisation 33 points on identical hardware by treating demand as a curve, not a fixed reservation.",
+      "story_ids": [
+        "c_ab7a856480fac8ef"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Grab's analytics agents cut analyst tickets.",
+      "sentence": "Mechanical analyst requests dropped from 44% to 30% of tickets as agent self-service reached 90% of data pulls.",
+      "story_ids": [
+        "c_b90f978d4a54e6ce"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "ICML papers carry hidden claim failures.",
+      "sentence": "One in four of 2,200 ICML 2026 papers had a falsified or contested claim, including one result inflated threefold by evaluation padding.",
+      "story_ids": [
+        "c_a40b623039ab252a"
+      ]
+    }
+  ],
+  "generated_at": "2026-08-17T21:24:10.696372Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 5, currents: 0"
+}
