@@ -1,0 +1,184 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-17T21:28:04.035980Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual contradictions on ICML paper counts plus one on Grab figures; Big Picture close and a trust-flag defect also need repair.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_b90f978d4a54e6ce",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Grab's analytics agents now handle 90% of data-pull requests without human involvement, up from 63% in March",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as contradicted: the source says self-service for data pulls rose from 63% to 90% between March and May, but the starting figure of 63% applies to data pulls specifically, while metric requests started at 53%. The prose is directionally correct on data pulls (63%→90%) but the framing 'up from 63% in March' conflates the two tracks. Rewrite to: 'Grab's analytics agents now handle 90% of data-pull requests without human involvement, up from 63% in March for that category' — and separately note metric requests rose from 53% to 67% if space allows, or drop the March baseline and state only the current 90% figure."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a40b623039ab252a",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "One in four ICML papers has a contested claim, large study finds",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as contradicted: the source says 23% of examined papers had at least one claim falsified or contested, and the total examined was not 2,200 — ICML 2026 accepted 6,352 papers; 2,200 appears to be a misread of the submission or examined count. 'One in four' overstates 23%. Rewrite headline to: '23% of examined ICML 2026 papers carry a falsified or contested claim, large study finds'. Also correct the summary's '2,200 ICML 2026 papers' to reflect the actual examined count from the source."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "One in four of 2,200 ICML 2026 papers had a falsified or contested claim, including one result inflated threefold by evaluation padding.",
+      "fix_kind": "text_edit",
+      "instruction": "Both the '2,200' paper count and 'one in four' fraction are contradicted by the source (23% of the examined subset, not one in four of 2,200 total). Rewrite to: '23% of examined ICML 2026 papers had at least one falsified or contested claim, including one result inflated threefold by evaluation padding.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a40b623039ab252a",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Hugging Face's community hackathon re-examined 2,200 ICML 2026 papers. One in four had at least one claim falsified or contested",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags both figures as contradicted. The source states ICML 2026 accepted 6,352 papers; 2,200 is not the correct examined count. The source also states 23% (496 papers) had at least one claim falsified or contested — not 'one in four' (25%). Correct both: replace '2,200' with the actual examined count from the source, and replace 'One in four' with '23%'."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a40b623039ab252a",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Research teams now inherit a 23% falsification rate as a documented baseline, not a rumour.",
+      "fix_kind": "text_edit",
+      "instruction": "The take correctly uses 23% but the body and headline still say 'one in four' and '2,200 papers'. Once the body is corrected, verify the take's '23%' is consistent with the corrected examined-paper count. If the source's 23% figure is of the examined subset (not all accepted papers), the take should clarify scope: e.g., 'Research teams citing ICML 2026 papers now inherit a 23% falsification rate among examined papers as a documented baseline.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d02171c6ec0d1e2b",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "If these findings hold, recursive self-improvement timelines need revisiting.",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture closing shape requires a strategic question anchored to a specific role, decision, or constraint in the reader's org. 'If these findings hold, recursive self-improvement timelines need revisiting' is a conditional prescription, not a strategic question. Rewrite as an anchored question, e.g.: 'If your roadmap assumes autonomous AI research agents within 18 months, which assumption does this failure mode invalidate first?'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_b90f978d4a54e6ce",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Analyst headcount planning now starts from agent self-service rates, not ticket volumes.",
+      "fix_kind": "text_edit",
+      "instruction": "The take shares a syntactic scaffold ('X now starts from Y, not Z') with the Pulse take ('GPU scheduling order is now a capacity decision, not a tiebreaker applied after capacity is settled') — both use the 'now [reframed as] X, not Y' frame. Rewrite to break the parallel, e.g.: 'Grab's production data shows agent self-service rates have displaced ticket volume as the baseline for analytics headcount decisions.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_3cbdd755493db9e7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "A single podcast interview supplies the detail.",
+      "fix_kind": "text_edit",
+      "instruction": "This is an absence-inventory trust flag embedded in the body prose — it characterises what is missing rather than what exists. Per trust_flags, absence inventories are defects. Remove the sentence; the sourcing note belongs in the trust_flags metadata, not the body. If the single-source limitation is editorially important, reframe as a presence statement: 'The detail comes from Schott's own account in a Latent Space interview.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bbed3cd619f70ae5",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "trust_flags",
+      "severity": "minor",
+      "quote": "One practitioner's setup, n=1.",
+      "fix_kind": "text_edit",
+      "instruction": "This is an absence-inventory flag ('n=1' characterises what the evidence lacks). Per trust_flags, absence inventories are defects. Remove it. If the single-author scope matters, reframe as a presence statement: 'The tutorial reflects Raschka's own end-to-end implementation and deployment.' The body already names Raschka, so the calibration is already present."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_720218b969bc969c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Aggregate accuracy scores on principle-based regulation now mask adversarial collapse, not measure deployment fitness.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is syntactically awkward: 'now mask X, not measure Y' pairs a verb with a noun phrase in a way that doesn't parse cleanly ('not measure deployment fitness' reads as a truncated clause). Rewrite for clarity: 'Aggregate accuracy scores on principle-based regulation now conceal adversarial collapse rather than measure deployment fitness.'"
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "270c4b17ccb6e2ab8ade720aa9c35b1cf1b66d989b8d19f41d32a2b0b40512ab",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.)"
+}
