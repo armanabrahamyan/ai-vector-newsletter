@@ -1,0 +1,1114 @@
+{
+  "schema_version": 9,
+  "issue_number": 42,
+  "revision": 0,
+  "date": "2026-08-19",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_654fc0d169ce3cb9",
+        "headline": "Vercel offers $1 million to break its code-execution sandbox",
+        "summary": "Vercel's Sandbox runs untrusted code inside Firecracker microVMs on bare-metal EC2 hosts; the microVM is the security boundary, not the container inside it. A two-week HackerOne programme pays up to $50,000 per confirmed escape, $1 million total. If your agentic pipeline executes untrusted code, read the scope before choosing a sandbox vendor.",
+        "take": "Sandbox security claims now carry a $1 million proof-of-work, not a vendor attestation.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://vercel.com/blog/one-million-dollar-hacker-challenge-for-vercel-sandbox"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_654fc0d169ce3cb9",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Vercel offers $1 million to break its code-execution sandbox",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Vercel offers $1 million to break its code-execution sandbox",
+              "source_span": "So for two weeks, we are paying up to $1,000,000 USD to the researchers who can escape a Vercel Sandbox.",
+              "note": "Source confirms Vercel is offering up to $1,000,000 to escape its sandbox, matching the headline."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Vercel's Sandbox runs untrusted code inside Firecracker microVMs on bare-metal EC2 hosts",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Vercel's Sandbox runs untrusted code inside Firecracker microVMs on bare-metal EC2 hosts",
+              "source_span": "Vercel Sandbox runs on bare-metal EC2 hosts. Each sandbox gets its own Firecracker microVM with a dedicated guest kernel, and inside that microVM a Linux container runs the operator's code.",
+              "note": "Source directly confirms bare-metal EC2 hosts and Firecracker microVMs running operator (untrusted) code."
+            },
+            {
+              "schema_version": 1,
+              "claim": "the microVM is the security boundary, not the container inside it",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the microVM is the security boundary, not the container inside it",
+              "source_span": "The microVM, not the container, is the security boundary, so operator-supplied code runs two layers removed from the host.",
+              "note": "Source explicitly states the microVM, not the container, is the security boundary."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A two-week HackerOne programme pays up to $50,000 per confirmed escape",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "A two-week HackerOne programme pays up to $50,000 per confirmed escape",
+              "source_span": "Max per report: $50,000 USD, for a vulnerability that lets a threat actor read or modify another Vercel tenant's data",
+              "note": "Source confirms two-week HackerOne program with $50,000 max per report; 'confirmed escape' is a reasonable paraphrase of the scope."
+            },
+            {
+              "schema_version": 1,
+              "claim": "$1 million total",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "$1 million total",
+              "source_span": "Total pool: Up to $1,000,000 USD in total payouts",
+              "note": "Source confirms $1,000,000 total pool."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Sandbox security claims now carry a $1 million proof-of-work, not a vendor attestation.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Sandbox security claims now carry a $1 million proof-of-work, not a vendor attestation.",
+              "source_span": "We are proactively choosing to test Vercel Sandbox on our own schedule, not an attacker's, and we are doing it in the open, with the best researchers in the world. So for two weeks, we are paying up to $1,000,000 USD to the researchers who can escape a Vercel Sandbox.",
+              "note": "The $1 million figure is factually grounded in the source; 'proof-of-work vs vendor attestation' is editorial framing consistent with the source's open-testing rationale."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The programme is a two-week HackerOne programme.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "A two-week HackerOne programme",
+              "source_span": "Starting today, Vercel is running a two-week public HackerOne program focused on Vercel Sandbox isolation.",
+              "note": "digest: Source explicitly states it is a two-week public HackerOne program."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The programme pays up to $50,000 per confirmed Firecracker microVM escape.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "pays up to $50,000 per confirmed Firecracker microVM escape",
+              "source_span": "Max per report: $50,000 USD, for a vulnerability that lets a threat actor read or modify another Vercel tenant's data",
+              "note": "digest: The $50,000 max per report is confirmed; the summary characterises the top-tier finding as a Firecracker microVM escape, which aligns with the source's compute boundary scope, making this a supported paraphrase."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The programme has a $1 million total reward pool.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "$1 million total",
+              "source_span": "Total pool: Up to $1,000,000 USD in total payouts",
+              "note": "digest: Source states the total pool is up to $1,000,000 USD; rounding to '$1 million' is house-style approximation."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_7577032c5e103f6a",
+          "headline": "Stripe's $7B bet makes model routing a payments infrastructure play",
+          "summary": "Stripe has acquired OpenRouter for $7 billion, roughly 50 times its $140 million annualised revenue. OpenRouter routes 250 trillion tokens per month across models, up fivefold in six months, at a 70% gross margin. The deal reframes where value accrues in AI infrastructure: distribution, not compute. Which layer does your AI vendor strategy actually depend on?",
+          "take": "AI infrastructure value now settles at the routing layer, not the model or GPU layer.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-stripe-buys-openrouter-for"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_7577032c5e103f6a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Stripe's $7B bet makes model routing a payments infrastructure play",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Stripe's $7B bet makes model routing a payments infrastructure play",
+                "source_span": "OpenRouter's acquisition by Stripe for $7B",
+                "note": "The $7B acquisition figure and Stripe as acquirer are confirmed; 'payments infrastructure play' is a supported editorial framing of the deal's implications."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Stripe has acquired OpenRouter for $7 billion",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Stripe has acquired OpenRouter for $7 billion",
+                "source_span": "OpenRouter's acquisition by Stripe for $7B was seems all but closed this weekend",
+                "note": "The $7B acquisition by Stripe is confirmed in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "roughly 50 times its $140 million annualised revenue",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "roughly 50 times its $140 million annualised revenue",
+                "source_span": "Their last revenue number out there was $140m annualized, so this represents a 'standard' 50x multiple for a top tier AI company",
+                "note": "Both the $140M annualised revenue and the 50x multiple are confirmed in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenRouter routes 250 trillion tokens per month across models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenRouter routes 250 trillion tokens per month across models",
+                "source_span": "OpenRouter is facilitating AI model usage at a rate of 250 trillion tokens per month",
+                "note": "The 250 trillion tokens per month figure is directly confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "up fivefold in six months",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "up fivefold in six months",
+                "source_span": "up from 50 trillion tokens per month in February... high growth (5x in 6 months)",
+                "note": "The 5x in 6 months growth figure is confirmed in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "at a 70% gross margin",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "at a 70% gross margin",
+                "source_span": "With a roughly 70% gross profit margin",
+                "note": "The ~70% gross profit margin is directly confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The deal reframes where value accrues in AI infrastructure: distribution, not compute.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The deal reframes where value accrues in AI infrastructure: distribution, not compute.",
+                "source_span": "where value accrues in AI infra (much less GPU infra, much less Agent Labs, much less Frontier Model Labs)",
+                "note": "The source discusses value accruing away from GPU/compute infrastructure, supporting this framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI infrastructure value now settles at the routing layer, not the model or GPU layer.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AI infrastructure value now settles at the routing layer, not the model or GPU layer.",
+                "source_span": "where value accrues in AI infra (much less GPU infra, much less Agent Labs, much less Frontier Model Labs)... how valuable the aggregation/routing API layer has become",
+                "note": "The source explicitly discusses value shifting to the routing/aggregation layer away from GPU and model infrastructure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Three of today's four stories share an underlying structure: something assumed to be working, or priced as intractable, has just been made measurable or tradeable.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Three of today's four stories share an underlying structure: something that was assumed to be working, or priced as intractable, has just been made measurable or tradeable.",
+                "source_span": "",
+                "note": "synthesis: This is pure editorial pattern-naming with no checkable factual content; no source excerpt confirms or denies the count or framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "That shift from assumption to instrument is where financial-services leaders should be looking for both exposure and leverage.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "That shift from assumption to instrument is where financial-services leaders should be looking for both exposure and leverage.",
+                "source_span": "",
+                "note": "synthesis: This is an editorial call to action directed at financial-services leaders; no source excerpt contains this assertion or anything to check it against."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_eb60a09a2e930a15",
+          "headline": "EU watermarking rules are live; open-source models face a compliance gap",
+          "summary": "Since 2 August 2026, EU AI Act Article 50 requires machine-detectable marks on synthetic outputs. Anthropic and Google deployed statistical token watermarking across production APIs; Google open-sourced its SynthID text implementation for Hugging Face. A removal tool hit thousands of GitHub stars within hours. If you self-host open weights, enforcement falls on you, not the vendor.",
+          "take": "Synthetic-output compliance shifted from voluntary practice to enforceable law on 2 August 2026.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/eu-ai-content-watermark/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_eb60a09a2e930a15",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "EU watermarking rules are live; open-source models face a compliance gap",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "EU watermarking rules are live; open-source models face a compliance gap",
+                "source_span": "Beginning August 2, 2026, regulatory enforcement under the EU AI Act Article 50 officially took effect across member states... open-weight ecosystems face compliance boundaries under Article 50 provisions",
+                "note": "Both parts of the headline are confirmed: enforcement is live and open-source/open-weight models face a compliance gap."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Since 2 August 2026, EU AI Act Article 50 requires machine-detectable marks on synthetic outputs.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Since 2 August 2026, EU AI Act Article 50 requires machine-detectable marks on synthetic outputs.",
+                "source_span": "Beginning August 2, 2026, regulatory enforcement under the EU AI Act Article 50 officially took effect across member states, mandating that providers of general-purpose and generative AI systems mark synthetic outputs in a machine-detectable format.",
+                "note": "Date, article number, and requirement are all confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Anthropic and Google deployed statistical token watermarking across production APIs.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Anthropic and Google deployed statistical token watermarking across production APIs",
+                "source_span": "Anthropic announced global deployment of this mechanism across Claude models released on or after August 2... Google integrated its Google SynthID framework into Gemini production infrastructure",
+                "note": "Both Anthropic and Google deploying statistical watermarking across production infrastructure is confirmed; 'APIs' is a fair paraphrase of 'inference pipelines' and 'developer APIs'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google open-sourced its SynthID text implementation for Hugging Face.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google open-sourced its SynthID text implementation for Hugging Face",
+                "source_span": "Google integrated its Google SynthID framework into Gemini production infrastructure and open-sourced text watermarking implementations for Hugging Face runtimes.",
+                "note": "Source confirms Google open-sourced SynthID text watermarking for Hugging Face runtimes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A removal tool hit thousands of GitHub stars within hours.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A removal tool hit thousands of GitHub stars within hours.",
+                "source_span": "the watermarks-remover repository accumulated thousands of GitHub stars in less than twenty-four hours",
+                "note": "'Within hours' is a slight compression of 'less than twenty-four hours' but is a reasonable paraphrase; thousands of stars is confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "If you self-host open weights, enforcement falls on you, not the vendor.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "If you self-host open weights, enforcement falls on you, not the vendor.",
+                "source_span": "downstream engineers hosting weights locally retain full control over decoding parameters, sampling temperature, and custom decoding logic",
+                "note": "The source confirms that self-hosting shifts compliance responsibility to the downstream engineer, not the vendor."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Synthetic-output compliance shifted from voluntary practice to enforceable law on 2 August 2026.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Synthetic-output compliance shifted from voluntary practice to enforceable law on 2 August 2026.",
+                "source_span": "Beginning August 2, 2026, regulatory enforcement under the EU AI Act Article 50 officially took effect across member states",
+                "note": "The date and shift to enforceable law are confirmed; 'voluntary practice' is an editorial framing but the factual core (enforcement began 2 August 2026) is supported."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_a142840e54c4a168",
+          "headline": "Asana cleared five years of test-suite debt in two weeks for $12K",
+          "summary": "Asana's engineering team used OpenAI's Codex to replace an outdated testing system, finishing in two weeks what was projected to take five years, at a cost of roughly $12,000. The sourcing is OpenAI's own case study. Before treating this as your ROI benchmark, ask what five years of debt actually looked like in their codebase versus yours.",
+          "take": "Engineering backlogs once priced in years now have a dollar figure attached: $12,000 for two weeks.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://openai.com/index/asana"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a142840e54c4a168",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Asana cleared five years of test-suite debt in two weeks for $12K",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "Asana cleared five years of test-suite debt in two weeks for $12K",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source material exists to confirm or deny any part of this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Asana's engineering team used OpenAI's Codex to replace an outdated testing system",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Asana's engineering team used OpenAI's Codex to replace an outdated testing system",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the tool used or the nature of the system replaced."
+              },
+              {
+                "schema_version": 1,
+                "claim": "finishing in two weeks what was projected to take five years",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "finishing in two weeks what was projected to take five years",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the timeline claims."
+              },
+              {
+                "schema_version": 1,
+                "claim": "at a cost of roughly $12,000",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "at a cost of roughly $12,000",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the cost figure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The sourcing is OpenAI's own case study",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The sourcing is OpenAI's own case study",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the provenance of the original report."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Engineering backlogs once priced in years now have a dollar figure attached: $12,000 for two weeks",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Engineering backlogs once priced in years now have a dollar figure attached: $12,000 for two weeks",
+                "source_span": "",
+                "note": "Source excerpt is empty; the embedded factual assertion ($12,000 / two weeks) cannot be verified against any source material."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Asana cleared a legacy test suite in two weeks using an AI coding tool.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Asana cleared a legacy test suite in two weeks using an AI coding tool",
+                "source_span": "",
+                "note": "digest: Source excerpt is empty; no source material available to confirm or deny this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The cost was a reported $12,000.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "at a reported cost of $12,000",
+                "source_span": "",
+                "note": "digest: Source excerpt is empty; the $12,000 figure cannot be verified or contradicted."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_db1524768073de1a",
+          "headline": "A black-box audit catches vendor API drift before it breaks agents",
+          "summary": "When a vendor hosts an open-weight model, you have no visibility into whether the inference route has degraded. Ventor-QTest (an arXiv preprint, code public on GitHub) probes APIs without needing probability outputs, measuring two fidelity-loss scores; pronounced extreme loss correlates with a 20-run decline in long-horizon task completion. Run it against any third-party API before renewing a contract.",
+          "take": "Vendor API quality was assumed, not measured; now a black-box audit makes the gap visible.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/papers/2608.16391"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_db1524768073de1a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A black-box audit catches vendor API drift before it breaks agents",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A black-box audit catches vendor API drift before it breaks agents",
+                "source_span": "Ventor-QTest audits hosted open-weight model APIs via repeated and long-sequence black-box probes, measuring average and extreme fidelity loss to detect degradation in long-horizon agentic performance.",
+                "note": "The headline is a fair paraphrase of the paper's purpose; 'drift' maps to 'degradation' and 'agents' maps to 'long-horizon agentic performance'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "When a vendor hosts an open-weight model, you have no visibility into whether the inference route has degraded.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "When a vendor hosts an open-weight model, you have no visibility into whether the inference route has degraded.",
+                "source_span": "Auditing the quality of their inference APIs is therefore an open problem.",
+                "note": "The body's 'no visibility' is a plain-English paraphrase of the source's 'open problem' of auditing inference API quality."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ventor-QTest is an arXiv preprint",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Ventor-QTest (an arXiv preprint, code public on GitHub)",
+                "source_span": "hf papers read 2608.16391",
+                "note": "The Hugging Face papers reference and arXiv paper ID confirm it is an arXiv preprint."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ventor-QTest code is public on GitHub",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Ventor-QTest (an arXiv preprint, code public on GitHub)",
+                "source_span": "The open-source implementation is available at https://github.com/Tencent/AI-Infra-Guard/tree/main/services/api_checker/ventor_qtest.",
+                "note": "Source explicitly states the open-source implementation is on GitHub."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ventor-QTest probes APIs without needing probability outputs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "probes APIs without needing probability outputs",
+                "source_span": "a composite black-box audit that requires no probability information from the target API",
+                "note": "'Without needing probability outputs' is a plain-English paraphrase of 'requires no probability information from the target API'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ventor-QTest measures two fidelity-loss scores",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "measuring two fidelity-loss scores",
+                "source_span": "reports average fidelity loss (AFL) ... reports extreme fidelity loss (EFL)",
+                "note": "The source describes exactly two fidelity-loss scores: AFL and EFL."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pronounced extreme loss correlates with a 20-run decline in long-horizon task completion",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "pronounced extreme loss correlates with a 20-run decline in long-horizon task completion",
+                "source_span": "Across seven route snapshots, 20-run sequence probes reveal route-specific EFL variation. ... pronounced EFL coincides with a decline in Terminal-Bench pass rate as task exposure increases.",
+                "note": "'20-run decline in long-horizon task completion' correctly combines the 20-run probe detail and the EFL-linked decline in Terminal-Bench pass rate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vendor API quality was assumed, not measured; now a black-box audit makes the gap visible.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vendor API quality was assumed, not measured; now a black-box audit makes the gap visible.",
+                "source_span": "Auditing the quality of their inference APIs is therefore an open problem. We formalize hosted model routing as a stochastic process and propose Ventor-QTest, a composite black-box audit that requires no probability information from the target API.",
+                "note": "The take's editorial framing is grounded in the source's statement that API quality auditing was an open problem now addressed by Ventor-QTest."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Three of today's four stories share an underlying structure: something that was assumed to be working, or priced as intractable, has just been made measurable or tradeable. That shift from assumption to instrument is where financial-services leaders should be looking for both exposure and leverage."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_df55f4865ba17042",
+          "headline": "Higher retrieval recall shrinks the code your model actually fixes",
+          "summary": "Tuning a retrieval system on recall metrics is standard practice, but an arXiv preprint on SWE-bench Verified shows it backfires at a fixed context budget. Disabling one-chunk-per-file deduplication, which lowers recall, raised code repair by 7.6 percentage points. A/B your packing policy against task resolution, not the retrieval metric.",
+          "take": "Retrieval recall scores now mislead code-assistant tuning, where task resolution rates did not.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.14838"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_df55f4865ba17042",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Higher retrieval recall shrinks the code your model actually fixes",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Higher retrieval recall shrinks the code your model actually fixes",
+                "source_span": "The flag is the higher-recall configuration (gold file present in 0.878 of served packs against 0.806 disabled), yet disabling it... raises the single-shot resolve rate",
+                "note": "The source confirms that the higher-recall configuration reduces task resolution, supporting the headline's causal framing as a legitimate paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Tuning a retrieval system on recall metrics is standard practice",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Tuning a retrieval system on recall metrics is standard practice",
+                "source_span": "Retrieval components for code assistants are tuned against retrieval metrics: a configuration that raises recall@k is adopted, and downstream task success is assumed to follow.",
+                "note": "The source explicitly states this is the standard practice being critiqued."
+              },
+              {
+                "schema_version": 1,
+                "claim": "an arXiv preprint on SWE-bench Verified shows it backfires at a fixed context budget",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "an arXiv preprint on SWE-bench Verified shows it backfires at a fixed context budget",
+                "source_span": "On SWE-bench Verified we inject a retriever's hits as a fixed 12-slot context pack with no search tools",
+                "note": "The source is an arXiv preprint, uses SWE-bench Verified, and operates under a fixed context budget; 'backfires' is a supported paraphrase of the mismatch finding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Disabling one-chunk-per-file deduplication, which lowers recall, raised code repair by 7.6 percentage points",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Disabling one-chunk-per-file deduplication, which lowers recall, raised code repair by 7.6 percentage points",
+                "source_span": "toggle one flag (one-chunk-per-file deduplication) on an otherwise identical stack. The flag is the higher-recall configuration... yet disabling it... raises the single-shot resolve rate: gpt-5.6-sol +7.6pp (39.2% to 46.8%",
+                "note": "All three facts — the mechanism, the direction of recall change, and the 7.6pp gain — are directly confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Retrieval recall scores now mislead code-assistant tuning, where task resolution rates did not.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Retrieval recall scores now mislead code-assistant tuning, where task resolution rates did not.",
+                "source_span": "a configuration that raises recall@k is adopted, and downstream task success is assumed to follow... yet disabling it... raises the single-shot resolve rate",
+                "note": "The source's core finding supports the take's factual assertion that recall metrics mislead while task resolution rates provide a more accurate signal; the editorial framing is a legitimate compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Several of today's releases expose a calibration problem hiding inside what looked like a binary choice: recall on or off, memory enabled or disabled, pseudonymisation custom-built or absent.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "recall on or off, memory enabled or disabled, pseudonymisation custom-built or absent",
+                "source_span": "toggle one flag (one-chunk-per-file deduplication) on an otherwise identical stack ... Agentic memory is not a feature you switch on. It's a dose you calibrate to the model ... AWED-PIPER, an open-source framework comprising agentic tools, interactive web applications, and 54 state-of-the-art expert detector models that provide unified Fine-grained Named Entity Recognition (FgNER) and reversible synthetic PII pseudonymization",
+                "note": "synthesis: The three binary-choice framings map accurately to the three source stories: recall flag, memory on/off, and pseudonymisation framework; this is supported editorial generalisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The practical question each story forces is not whether to use the tool, but at what setting.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The practical question each story forces is not whether to use the tool, but at what setting.",
+                "source_span": "Agentic memory is not a feature you switch on. It's a dose you calibrate to the model ... do not hard-deduplicate by file, and A/B packing policies against the task, not the metric the flag was tuned to",
+                "note": "synthesis: This is editorial pattern-naming but accurately reflects the calibration/dosage theme present across the sources; treated as supported house-style synthesis."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_a1da63d28b6cd5e7",
+          "headline": "Sentence Transformers now matches queries token-by-token for sharper retrieval",
+          "summary": "Dense models squeeze a whole document into one vector, losing rare terms and multi-part queries. Sentence Transformers' MultiVectorEncoder loads ColBERT-style checkpoints and scores each query token against every document token; a compressed index averages 124 vectors per passage. Install with pip install -U sentence-transformers and test it on your hardest retrieval failures.",
+          "take": "Dense retrieval's single-vector compression now has a pip-installable alternative that preserves token-level matches.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/blog/multi-vector-encoder"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a1da63d28b6cd5e7",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Sentence Transformers now matches queries token-by-token for sharper retrieval",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Sentence Transformers now matches queries token-by-token for sharper retrieval",
+                "source_span": "scoring compares every query token against every document token, which leaves far more room for the two to interact... That preserves token-level matching information that a single vector has to average away, which usually means stronger retrieval",
+                "note": "Source confirms Sentence Transformers' new multi-vector feature scores every query token against every document token for stronger retrieval."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Dense models squeeze a whole document into one vector, losing rare terms and multi-part queries.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Dense models squeeze a whole document into one vector, losing rare terms and multi-part queries.",
+                "source_span": "a rare entity, an exact identifier, or one crucial clause in a long passage all have to compete for room in the same vector. A query with several requirements at once runs into the same wall.",
+                "note": "Source explicitly describes both failure modes of single-vector compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Sentence Transformers' MultiVectorEncoder loads ColBERT-style checkpoints",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Sentence Transformers' MultiVectorEncoder loads ColBERT-style checkpoints",
+                "source_span": "MultiVectorEncoder, for ColBERT-style late interaction retrieval. Any PyLate checkpoint and any Stanford-NLP ColBERT checkpoint loads straight into it",
+                "note": "Source confirms MultiVectorEncoder loads ColBERT-style checkpoints."
+              },
+              {
+                "schema_version": 1,
+                "claim": "MultiVectorEncoder scores each query token against every document token",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "scores each query token against every document token",
+                "source_span": "scoring compares every query token against every document token",
+                "note": "Direct paraphrase of source language."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A compressed index averages 124 vectors per passage.",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "a compressed index averages 124 vectors per passage",
+                "source_span": "Encoding 4,874 Natural Questions passages with lightonai/LateOn produced 608,414 token vectors, an average of 124.8 per passage",
+                "note": "The 124.8 average vectors per passage is the uncompressed count; the source describes the compressed (PLAID) index separately as 92 MB total, not as averaging 124 vectors per passage."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Install with pip install -U sentence-transformers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Install with pip install -U sentence-transformers",
+                "source_span": "Everything below runs on a plain pip install -U sentence-transformers.",
+                "note": "Exact install command matches source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Dense retrieval's single-vector compression now has a pip-installable alternative that preserves token-level matches.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Dense retrieval's single-vector compression now has a pip-installable alternative that preserves token-level matches.",
+                "source_span": "Everything below runs on a plain pip install -U sentence-transformers... That preserves token-level matching information that a single vector has to average away",
+                "note": "Source confirms both the pip-installable nature and the token-level match preservation."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_0dddc342735412a5",
+          "headline": "Agent memory works only when matched to the model's capability",
+          "summary": "IBM Research's ALTK-Evolve mines an agent's own past runs into reusable guidelines, injecting them at inference time without retraining. The right dose varies sharply: a 120B model gained 16.1 percentage points in task completion using selective retrieval at only 5% extra token cost, while the largest models saw no gain at all. Profile your model's headroom before enabling memory.",
+          "take": "Agent memory sizing is now a calibration problem, not a binary feature flag.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://huggingface.co/blog/ibm-research/altk-evolve-hmm"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0dddc342735412a5",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Agent memory works only when matched to the model's capability",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Agent memory works only when matched to the model's capability",
+                "source_span": "Agentic memory is not a feature you switch on. It's a dose you calibrate to the model.",
+                "note": "The headline is a fair paraphrase of the source's central finding that memory benefit depends on model capability."
+              },
+              {
+                "schema_version": 1,
+                "claim": "IBM Research's ALTK-Evolve mines an agent's own past runs into reusable guidelines",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "IBM Research's ALTK-Evolve mines an agent's own past runs into reusable guidelines",
+                "source_span": "ALTK-Evolve lets an agent learn from its own past trajectories: distilling reusable guidelines and injecting them back at inference time",
+                "note": "ALTK-Evolve and its function are confirmed by the source, but 'IBM Research' as the named actor does not appear in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ALTK-Evolve injects guidelines at inference time without retraining",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "injecting them at inference time without retraining",
+                "source_span": "injecting them back at inference time, with no weight updates and no human annotation.",
+                "note": "'Without retraining' is a correct plain-English paraphrase of 'no weight updates'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a 120B model gained 16.1 percentage points in task completion using selective retrieval at only 5% extra token cost",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a 120B model gained 16.1 percentage points in task completion using selective retrieval at only 5% extra token cost",
+                "source_span": "gpt-oss-120b gained +16.1pp task completion at only +5% tokens",
+                "note": "The figure and token cost match the source exactly; '120B model' is a supported generalisation of 'gpt-oss-120b (117B MoE)'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the largest models saw no gain at all",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "while the largest models saw no gain at all",
+                "source_span": "Already-saturated models show no measurable gain... GLM-5 (745B MoE) sat here in our runs... GPT-5.5 and Opus, both near the ceiling on TGC, still gain +7.2 and +7.1pp SGC respectively.",
+                "note": "The source says saturated models show no gain, but explicitly states this is not simply about being the largest models, and the largest models tested (GPT-5.5, Opus) still gained on SGC; 'largest models' mischaracterises the saturated pattern."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Profile your model's headroom before enabling memory",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Profile your model's headroom before enabling memory",
+                "source_span": "the right dose of memory depends on the model, and we can calibrate it.",
+                "note": "This is an editorial call-to-action derived from the source's practical takeaway; it is not a checkable factual assertion and should be skipped per scope rules, but treated as supported paraphrase of the source's recommendation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent memory sizing is now a calibration problem, not a binary feature flag.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent memory sizing is now a calibration problem, not a binary feature flag.",
+                "source_span": "Agentic memory is not a feature you switch on. It's a dose you calibrate to the model.",
+                "note": "The take is a direct paraphrase of the source's central thesis and is well supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Memory gains vary by model.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Memory gains vary by model.",
+                "source_span": "Agentic memory is not a feature you switch on. It's a dose you calibrate to the model.",
+                "note": "digest: The source explicitly states that memory gains differ by model, supporting this editorial framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "IBM's agent memory tool added 16 percentage points for a 120B model.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "IBM's agent memory tool",
+                "source_span": "",
+                "note": "digest: The source attributes the tool to 'ALTK-Evolve' and names the model 'gpt-oss-120b'; IBM is never mentioned in the source excerpt, making the IBM attribution unsupported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agent memory tool added 16 percentage points for a 120B model.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "added 16 percentage points for a 120B model",
+                "source_span": "gpt-oss-120b (117B MoE) gained +16.1pp with this selective approach",
+                "note": "digest: The +16.1pp gain for gpt-oss-120b (117B MoE) rounds to 16 percentage points for a ~120B model, consistent with house style rounding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agent memory tool gave larger models no gain at all.",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "gave larger models no gain at all",
+                "source_span": "DeepSeek-V3.2 (671B MoE) climbed +9.5 percentage points in task completion when given its full self-mined guideline set.",
+                "note": "digest: The source shows larger models (e.g. DeepSeek-V3.2 at 671B) gained substantially; only already-saturated models showed no gain, not larger models as a class."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_7b280c18e216c95f",
+          "headline": "Netflix open-sources an agentic causal inference workflow that flags bias",
+          "summary": "Netflix's oci-agent (code on GitHub) takes an analysis plan and observational data, runs an actor-critic loop, and flags issues like early-adopter bias. In a retention case study, it produced an estimate just 25% of the naive baseline. Clone the repo and run it against your next causal uplift model before trusting a simple regression.",
+          "take": "Causal analysis that once required manual sensitivity checks now runs through an actor-critic loop.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/netflix-oci-agent/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_7b280c18e216c95f",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Netflix open-sources an agentic causal inference workflow that flags bias",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Netflix open-sources an agentic causal inference workflow that flags bias",
+                "source_span": "Netflix open-sourced an agentic workflow for Observational Causal Inference (OCI) ... The critic agent flagged several issues, including potential early adopter bias",
+                "note": "Source confirms Netflix open-sourced an agentic OCI workflow and that the critic agent flags bias issues."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Netflix's oci-agent (code on GitHub) takes an analysis plan and observational data",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Netflix's oci-agent (code on GitHub) takes an analysis plan and observational data",
+                "source_span": "Given observational data and the human user's analysis plan, the agent uses an actor-critic loop ... The oci-agent source code is available on GitHub.",
+                "note": "Source confirms the agent takes observational data and an analysis plan, and code is on GitHub."
+              },
+              {
+                "schema_version": 1,
+                "claim": "oci-agent runs an actor-critic loop",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "runs an actor-critic loop",
+                "source_span": "the agent uses an actor-critic loop to estimate causality, write a report, and suggest next steps",
+                "note": "Source explicitly confirms the actor-critic loop."
+              },
+              {
+                "schema_version": 1,
+                "claim": "oci-agent flags issues like early-adopter bias",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "flags issues like early-adopter bias",
+                "source_span": "The critic agent flagged several issues, including potential early adopter bias and a failed placebo test.",
+                "note": "Source confirms early adopter bias was flagged among several issues."
+              },
+              {
+                "schema_version": 1,
+                "claim": "In a retention case study, it produced an estimate just 25% of the naive baseline",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "In a retention case study, it produced an estimate just 25% of the naive baseline",
+                "source_span": "When the research team used the oci-agent workflow, they produced an estimated effect that was \"just 25% of the baseline.\" ... Netflix published a case study of using the workflow to estimate the impact on retention",
+                "note": "Source confirms the retention case study and the 25% of baseline figure; 'naive baseline' is a fair paraphrase of the simple linear regression baseline."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone the repo and run it against your next causal uplift model before trusting a simple regression.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Clone the repo and run it against your next causal uplift model before trusting a simple regression.",
+                "source_span": "",
+                "note": "This is a call to action / editorial instruction, not a checkable factual claim; it is out of scope for fact-checking."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Causal analysis that once required manual sensitivity checks now runs through an actor-critic loop.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Causal analysis that once required manual sensitivity checks now runs through an actor-critic loop.",
+                "source_span": "The goal is to automate error-prone or repetitive tasks such as sensitivity analysis or tracking multiple iterations ... the agent uses an actor-critic loop",
+                "note": "Source confirms sensitivity analysis was a manual/repetitive task now automated via the actor-critic loop workflow."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_57a0d3654b511510",
+          "headline": "Open-source agents now pseudonymise personal data across 36 languages",
+          "summary": "AWED-PIPER ships 54 specialist named-entity models covering person, location, medical, and structured identifiers like credit cards and native-script phone numbers, with reversible pseudonymisation that maps back via a de-anonymisation dictionary. Agentic tools and web apps are public on Hugging Face. Drop the PII Protector agent into your next know-your-customer pipeline before processing multilingual customer records.",
+          "take": "Multilingual personal-data scrubbing now has a deployable open alternative, where custom-built pipelines held the field.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2601.10161"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_57a0d3654b511510",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Open-source agents now pseudonymise personal data across 36 languages",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Open-source agents now pseudonymise personal data across 36 languages",
+                "source_span": "an open-source framework comprising agentic tools, interactive web applications, and 54 state-of-the-art expert detector models that provide unified Fine-grained Named Entity Recognition (FgNER) and reversible synthetic PII pseudonymization across 36 languages",
+                "note": "Source confirms open-source agentic tools with reversible PII pseudonymisation across 36 languages."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AWED-PIPER ships 54 specialist named-entity models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AWED-PIPER ships 54 specialist named-entity models",
+                "source_span": "54 state-of-the-art expert detector models",
+                "note": "Source explicitly states 54 expert detector models."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Models cover person, location, medical, and structured identifiers like credit cards and native-script phone numbers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "covering person, location, medical, and structured identifiers like credit cards and native-script phone numbers",
+                "source_span": "identify contextual entities (Person, Location, Organization, Medical) as well as structured technical PII (Emails, native-script Phone Numbers, IP Addresses, Credit Cards)",
+                "note": "Source confirms these entity types; omission of Organization and Emails/IP Addresses is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AWED-PIPER offers reversible pseudonymisation that maps back via a de-anonymisation dictionary",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reversible pseudonymisation that maps back via a de-anonymisation dictionary",
+                "source_span": "privacy-preserving reversible anonymization with persistent placeholders and de-anonymization dictionary mappings",
+                "note": "Source confirms reversible anonymisation with de-anonymisation dictionary mappings."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agentic tools and web apps are public on Hugging Face",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agentic tools and web apps are public on Hugging Face",
+                "source_span": "",
+                "note": "Source lists URLs for agentic tools and web apps but does not specify they are hosted on Hugging Face; Hugging Face is only mentioned as a bibliographic tool in the sidebar."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Drop the PII Protector agent into your next know-your-customer pipeline before processing multilingual customer records",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Drop the PII Protector agent into your next know-your-customer pipeline before processing multilingual customer records",
+                "source_span": "",
+                "note": "This is a call to action; the PII Protector tool is named in the source but the know-your-customer pipeline application is not mentioned."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Multilingual personal-data scrubbing now has a deployable open alternative, where custom-built pipelines held the field",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Multilingual personal-data scrubbing now has a deployable open alternative, where custom-built pipelines held the field",
+                "source_span": "",
+                "note": "The claim that custom-built pipelines previously held the field is an editorial position not addressed in the source excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Several of today's releases expose a calibration problem hiding inside what looked like a binary choice: recall on or off, memory enabled or disabled, pseudonymisation custom-built or absent. The practical question each story forces is not whether to use the tool, but at what setting."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_fc8527eddd6321fc",
+          "headline": "A language model that redacts documents explains every cut it makes",
+          "summary": "Traditional redaction tools handle structured fields but give auditors no explanation. This arXiv preprint fine-tunes a smaller model on natural-language rules generated by a general-purpose model; it reasons step-by-step over documents and names the specific rule behind each cut. Bring the architecture to your next legal-discovery or audit-trail design review before specifying a vendor solution.",
+          "take": "Redaction audit trails shift from 'trust the system' to a named rule behind every cut.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.14693"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_fc8527eddd6321fc",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A language model that redacts documents explains every cut it makes",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A language model that redacts documents explains every cut it makes",
+                "source_span": "an explainable, domain-agnostic text redaction solution that uses natural language rules of redaction, applied via an instruction-tuned language model, to identify and redact sensitive information in unstructured documents... providing transparent justifications for each redaction and highlighting the specific rule that triggered the decision",
+                "note": "The source confirms the model redacts documents and provides an explanation (transparent justification) for each redaction, supporting the headline."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Traditional redaction tools handle structured fields but give auditors no explanation.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Traditional redaction tools handle structured fields but give auditors no explanation.",
+                "source_span": "Traditional text sanitization solutions are majorly suitable for obscuring sensitive data with standard structure such as Personal Identifiable Information (PII). These solutions do not provide transparent justification for their redaction, which makes it difficult to audit them.",
+                "note": "The source confirms traditional tools focus on structured data (PII) and lack transparent justification for auditing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "This arXiv preprint fine-tunes a smaller model on natural-language rules generated by a general-purpose model.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "This arXiv preprint fine-tunes a smaller model on natural-language rules generated by a general-purpose model",
+                "source_span": "A general-purpose LLM generates or augments these natural language rules of redaction from the user's definition, which are then used to instruction-fine-tune a smaller language model",
+                "note": "The source confirms a general-purpose LLM generates natural-language rules used to fine-tune a smaller model."
+              },
+              {
+                "schema_version": 1,
+                "claim": "It reasons step-by-step over documents and names the specific rule behind each cut.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it reasons step-by-step over documents and names the specific rule behind each cut",
+                "source_span": "a smaller language model that reasons the rules step-by-step over any given document to identify and redact the corresponding sensitive content, while providing transparent justifications for each redaction and highlighting the specific rule that triggered the decision",
+                "note": "The source explicitly confirms step-by-step reasoning and identification of the specific rule behind each redaction."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Bring the architecture to your next legal-discovery or audit-trail design review before specifying a vendor solution.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Bring the architecture to your next legal-discovery or audit-trail design review before specifying a vendor solution.",
+                "source_span": "",
+                "note": "This is a call to action / editorial recommendation; no factual claim to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Redaction audit trails shift from 'trust the system' to a named rule behind every cut.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Redaction audit trails shift from 'trust the system' to a named rule behind every cut.",
+                "source_span": "These solutions do not provide transparent justification for their redaction... highlighting the specific rule that triggered the decision. This explanation is generated in natural language to support human reviewers and auditors in understanding why specific content was redacted.",
+                "note": "The take is editorial framing but its embedded factual assertion — that the system provides a named rule per redaction versus prior opacity — is supported by the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": null
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Vercel's sandbox bounty programme.",
+      "sentence": "A two-week HackerOne programme pays up to $50,000 per confirmed Firecracker microVM escape, $1 million total.",
+      "story_ids": [
+        "c_654fc0d169ce3cb9"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Five years of debt, priced.",
+      "sentence": "Asana cleared a legacy test suite in two weeks using an AI coding tool, at a reported cost of $12,000.",
+      "story_ids": [
+        "c_a142840e54c4a168"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Memory gains vary by model.",
+      "sentence": "IBM's agent memory tool added 16 percentage points for a 120B model but gave larger models no gain at all.",
+      "story_ids": [
+        "c_0dddc342735412a5"
+      ]
+    }
+  ],
+  "generated_at": "2026-08-18T21:25:44.271306Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: amber -- currents: 1 (tier pool exhausted)"
+}

@@ -1,0 +1,218 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-18T21:29:53.392017Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual errors on agent-memory gains; one blocking investment-framing take; several shape and drift issues.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_0dddc342735412a5",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "the largest models saw no gain at all",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as contradicted: DeepSeek-V3.2 (671B MoE) gained +9.5 pp and GPT-5.5 and Opus still gained +7.2 pp. Replace 'the largest models saw no gain at all' with a hedged, accurate formulation such as 'already-saturated models near the task ceiling saw no measurable gain, while other large models still benefited'."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "IBM's agent memory tool added 16 percentage points for a 120B model but gave larger models no gain at all.",
+      "fix_kind": "text_edit",
+      "instruction": "The claim 'gave larger models no gain at all' is contradicted by the source (DeepSeek-V3.2 671B gained +9.5 pp; GPT-5.5 and Opus gained +7.2 pp). Rewrite the sentence to reflect that gains vary by model saturation, e.g. 'IBM's agent memory tool added 16 percentage points for a 120B model; already-saturated frontier models saw little or no gain.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_0dddc342735412a5",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Agent memory sizing is now a calibration problem, not a binary feature flag.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is built on the (contradicted) premise that larger models see no gain. Once the summary is corrected to reflect that gains vary by saturation level rather than model size per se, revise the take to reflect the accurate finding, e.g. 'Agent memory gains depend on a model's headroom, not on whether memory is enabled.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a1da63d28b6cd5e7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "a compressed index averages 124 vectors per passage",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this contradicted but then quotes the source as '124.8 per passage' — the prose rounds to 124, which is consistent. However the flag notes the source figure is 124.8; round to '~125' or '124.8' to match the source precisely and avoid the contradicted flag."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7577032c5e103f6a",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "AI infrastructure value now settles at the routing layer, not the model or GPU layer.",
+      "fix_kind": "text_edit",
+      "instruction": "This is an investment-advice-adjacent assertion framed as settled fact: telling readers where 'value settles' in a sector is directional market guidance a reader could act on. Reframe as an editorial observation about the deal's strategic signal rather than a valuation verdict, e.g. 'Stripe's acquisition signals that model-routing distribution commands a premium over compute in AI infrastructure deals.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_db1524768073de1a",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "A black-box audit catches vendor API drift before it breaks agents",
+      "fix_kind": "text_edit",
+      "instruction": "Big Picture voice leads with named actors and first-order consequence. 'A black-box audit' is tool-voice (Hands-On register). Reframe to name the actor and consequence, e.g. 'Ventor-QTest gives teams a black-box measure of vendor API drift before it breaks agents'."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_db1524768073de1a",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Run it against any third-party API before renewing a contract.",
+      "fix_kind": "text_edit",
+      "instruction": "Big Picture bodies must close on a strategic question anchored to a specific role or decision in the reader's org, not an imperative action (that is Hands-On shape). Replace with a strategic question, e.g. 'Does your vendor renewal process currently include any fidelity check on the inference route you are actually getting?'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_db1524768073de1a",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "section_routing",
+      "severity": "minor",
+      "quote": "Run it against any third-party API before renewing a contract.",
+      "fix_kind": "structural",
+      "instruction": "The story's operative value is a specific tool (Ventor-QTest, arXiv preprint, code on GitHub) with a concrete action step — that is Hands-On territory. Consider routing to Hands-On and replacing with a Big Picture story that addresses the strategic consequence of vendor API opacity at the organisational level."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a142840e54c4a168",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Engineering backlogs once priced in years now have a dollar figure attached: $12,000 for two weeks.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's central data point rather than adding the publication's position the body stopped short of. Advance to the editorial stance, e.g. 'Vendor-sourced ROI figures now set the negotiating floor for AI coding tool procurement, whether or not the numbers generalise.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_fc8527eddd6321fc",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Bring the architecture to your next legal-discovery or audit-trail design review before specifying a vendor solution.",
+      "fix_kind": "text_edit",
+      "instruction": "Currents bodies must close on a presence-form maturity signal (what exists and what it is worth today), not an imperative action. Replace with a maturity signal, e.g. 'The architecture exists as an arXiv preprint with no production deployment reported; it is a design reference, not a deployable system today.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_eb60a09a2e930a15",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "Since 2 August 2026, EU AI Act Article 50 requires machine-detectable marks on synthetic outputs.",
+      "fix_kind": "carry_forward",
+      "instruction": "The 2026-08-17 issue already covered Claude's EU watermarking compliance ('Claude now watermarks text invisibly to comply with EU content rules'). Today's story extends that coverage without referencing the prior story or advancing the narrative beyond the compliance-gap angle. Add a forward reference to the prior coverage and sharpen the new angle (the open-source enforcement gap and the removal tool) to distinguish it from the earlier story."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_57a0d3654b511510",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "trust_flags",
+      "severity": "minor",
+      "quote": "AWED-PIPER ships 54 specialist named-entity models covering person, location, medical, and structured identifiers like credit cards and native-script phone numbers, with reversible pseudonymisation that maps back via a de-anonymisation dictionary.",
+      "fix_kind": "text_edit",
+      "instruction": "The source is an arXiv preprint (arxiv.org/abs/2601.10161). The body does not name this, so readers have no calibration on evidence maturity. Add 'an arXiv preprint' as a source-class noun phrase in the body (e.g. 'An arXiv preprint introduces AWED-PIPER…') rather than a parenthetical flag."
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "80f9a29e69366a9af892af4448e3b8ca84039e683888106ef5ab261488f92322",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 1 finding(s) dropped: malformed shape"
+}
