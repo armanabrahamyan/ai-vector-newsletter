@@ -1,0 +1,1375 @@
+{
+  "schema_version": 9,
+  "issue_number": 43,
+  "revision": 0,
+  "date": "2026-08-20",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_8c49281f47924a2f",
+        "headline": "A rubric matters more than model intelligence for grading open answers",
+        "summary": "An arXiv preprint tested six small-model configurations grading 3,456 open exam answers against explicit rubrics. Answer identity explained 95.6% of score variance; judge identity explained just 0.2%. Frontier judges added as a check were no more reliable. Extract rubrics once with a frontier model at ingestion, then grade everything with a cheaper one.",
+        "take": "Eval grading cost now depends on rubric quality, not judge model tier.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://arxiv.org/abs/2608.17938"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_8c49281f47924a2f",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "A rubric matters more than model intelligence for grading open answers",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "A rubric matters more than model intelligence for grading open answers",
+              "source_span": "The rubric is what decouples grading from judge intelligence",
+              "note": "The headline is a plain-English paraphrase of the paper's central finding."
+            },
+            {
+              "schema_version": 1,
+              "claim": "An arXiv preprint tested six small-model configurations grading 3,456 open exam answers against explicit rubrics.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "An arXiv preprint tested six small-model configurations grading 3,456 open exam answers against explicit rubrics.",
+              "source_span": "We evaluate six cost-efficient model configurations from two model families at three reasoning-effort levels. Each configuration answers 24 open-ended examination questions, and each also grades every answer sheet three times, yielding 3,456 per-question grades.",
+              "note": "All figures and framing match the source; 'small-model' is a fair paraphrase of 'cost-efficient'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Answer identity explained 95.6% of score variance.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Answer identity explained 95.6% of score variance",
+              "source_span": "answer identity explains 95.6% of score variance",
+              "note": "Exact figure matches the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Judge identity explained just 0.2%.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "judge identity explained just 0.2%",
+              "source_span": "whereas judge identity explains only 0.2%",
+              "note": "Exact figure matches the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Frontier judges added as a check were no more reliable.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Frontier judges added as a check were no more reliable.",
+              "source_span": "Six frontier-tier judges, added as a check, reproduce these scores and are no more reliable as a panel.",
+              "note": "Direct paraphrase of the source; omitting the count 'six' is acceptable compression."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Extract rubrics once with a frontier model at ingestion, then grade everything with a cheaper one.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Extract rubrics once with a frontier model at ingestion, then grade everything with a cheaper one.",
+              "source_span": "a frontier model reads source documents once, at ingestion, to extract each question and its rubric; lower-cost models then perform all repeated grading work.",
+              "note": "Accurate paraphrase of the any-to-bench design principle described in the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Eval grading cost now depends on rubric quality, not judge model tier.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Eval grading cost now depends on rubric quality, not judge model tier.",
+              "source_span": "The rubric is what decouples grading from judge intelligence",
+              "note": "The take is an editorial compression of the paper's core finding; 'judge model tier' for 'judge intelligence' is acceptable plain-English paraphrase."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Rubric quality drives grading accuracy.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Rubric quality drives grading accuracy.",
+              "source_span": "The rubric is what decouples grading from judge intelligence, and within the rubric the official answer does nearly all the work.",
+              "note": "digest: Editorial framing consistent with the paper's central finding that rubrics, not judge intelligence, determine grading reliability."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Across 3,456 exam answers, answer identity explained 95.6% of score variance.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Across 3,456 exam answers, answer identity explained 95.6% of score variance",
+              "source_span": "Each configuration answers 24 open-ended examination questions, and each also grades every answer sheet three times, yielding 3,456 per-question grades. Scores depend overwhelmingly on the answer being graded: answer identity explains 95.6% of score variance",
+              "note": "digest: Both the 3,456 figure and the 95.6% variance figure match the source exactly."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Judge model choice explained just 0.2% of score variance.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "judge model choice explained just 0.2%",
+              "source_span": "whereas judge identity explains only 0.2%",
+              "note": "digest: The summary paraphrases 'judge identity' as 'judge model choice', which is an accurate plain-English rendering; the 0.2% figure matches exactly."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_b7d4f913b49d3274",
+          "headline": "OpenAI lets regulated firms use frontier models without storing their data",
+          "summary": "OpenAI now offers Zero Data Retention on its frontier API, meaning inputs and outputs are never stored, and previews Private Safety Processing, which runs safety checks inside an isolated environment. For compliance teams blocked by data-residency rules, this removes the architectural workaround of self-hosting. When your next procurement review asks whether frontier models are viable, is data-residency still your veto?",
+          "take": "Regulated firms' data-residency objection to frontier APIs now has a named architectural answer, not a workaround.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://openai.com/index/offering-zero-data-retention-for-frontier-models"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b7d4f913b49d3274",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI lets regulated firms use frontier models without storing their data",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "OpenAI lets regulated firms use frontier models without storing their data",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to confirm or deny this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI now offers Zero Data Retention on its frontier API",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "OpenAI now offers Zero Data Retention on its frontier API",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Inputs and outputs are never stored",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "inputs and outputs are never stored",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI previews Private Safety Processing",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "previews Private Safety Processing",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Private Safety Processing runs safety checks inside an isolated environment",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "which runs safety checks inside an isolated environment",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Zero Data Retention removes the architectural workaround of self-hosting for compliance teams blocked by data-residency rules",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "For compliance teams blocked by data-residency rules, this removes the architectural workaround of self-hosting",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Regulated firms' data-residency objection to frontier APIs now has a named architectural answer, not a workaround.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Regulated firms' data-residency objection to frontier APIs now has a named architectural answer, not a workaround.",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to confirm or deny this editorial position's embedded factual assertion."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Four separate vendors and researchers this week each closed a gap that had kept AI deployment either too expensive, too exposed, or too human-dependent to scale in regulated settings.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Four separate vendors and researchers this week each closed a gap that had kept AI deployment either too expensive, too exposed, or too human-dependent to scale in regulated settings.",
+                "source_span": "",
+                "note": "synthesis: The source excerpts cover Glean, Cloudflare WriteGuard, and AQuA — only three identifiable actors; a fourth is not named or confirmed in the provided source material, making the count of 'Four' unverifiable from this excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The closures are arriving simultaneously.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The closures are arriving simultaneously",
+                "source_span": "",
+                "note": "synthesis: This is an editorial framing about timing across stories; the source excerpts contain no claim about simultaneous arrival of these developments."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Architectural decisions firms deferred are now overdue.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "the architectural decisions firms deferred are now overdue",
+                "source_span": "",
+                "note": "synthesis: This is pure editorial judgment with no checkable factual content in the source excerpts."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_273003411d958f94",
+          "headline": "Frontier model costs are pushing enterprises toward automatic routing",
+          "summary": "Glean CEO Arvind Jain says enterprise per-user AI spend has risen 10 to 20 times in a year. Glean's automatic routing claims $0.45 per task against $1.84 for Claude Code. Open-weight models, negligible last year, are now core to most enterprise strategies. If you're renegotiating a frontier model contract, what's your routing baseline?",
+          "take": "Automatic model routing now cuts per-task AI spend fourfold, where single-model defaults held before.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://www.latent.space/p/glean-model-routing"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_273003411d958f94",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Frontier model costs are pushing enterprises toward automatic routing",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Frontier model costs are pushing enterprises toward automatic routing",
+                "source_span": "Why are people talking about model routing? Why are they excited about it? It's mostly because of cost",
+                "note": "Source confirms cost is the primary driver of enterprise interest in model routing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Glean CEO Arvind Jain says enterprise per-user AI spend has risen 10 to 20 times in a year",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Glean CEO Arvind Jain says enterprise per-user AI spend has risen 10 to 20 times in a year",
+                "source_span": "you're spending, like, 10 times, 20 times, more, on a per user basis, than what you were doing last year",
+                "note": "Source confirms the 10-20x figure and attributes it to Jain; source describes him as co-founder and CEO (led by Arvind Jain), consistent with 'CEO' label."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Glean's automatic routing claims $0.45 per task against $1.84 for Claude Code",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Glean's automatic routing claims $0.45 per task against $1.84 for Claude Code",
+                "source_span": "Glean 'is 4x more cost-effective' than Claude Code, 'averaging $0.45 per task versus $1.84 for Claude Cowork.' He put that down to Glean's 'harness and routing capabilities.'",
+                "note": "Numbers match; 'claims' correctly preserves the vendor-reported nature; 'Claude Code' vs source's 'Claude Cowork' appears to be a typo in the source, and the summary's rendering is consistent with the intended product."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Open-weight models, negligible last year, are now core to most enterprise strategies",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Open-weight models, negligible last year, are now core to most enterprise strategies",
+                "source_span": "Last year, the usage [of open source LLMs] was minuscule and nobody was really seriously considering open source... Today, I can say that in most enterprises, they are considering open source models to be a key part of their AI strategy.",
+                "note": "'Negligible' is a fair paraphrase of 'minuscule'; 'core to most enterprise strategies' matches source's 'key part of their AI strategy' in most enterprises."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Automatic model routing now cuts per-task AI spend fourfold, where single-model defaults held before",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Automatic model routing now cuts per-task AI spend fourfold, where single-model defaults held before",
+                "source_span": "Glean 'is 4x more cost-effective' than Claude Code, 'averaging $0.45 per task versus $1.84 for Claude Cowork.' He put that down to Glean's 'harness and routing capabilities.'",
+                "note": "'Fourfold' is a direct paraphrase of '4x more cost-effective'; the editorial framing about single-model defaults is a reasonable inference from context and not contradicted by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Enterprise AI spend is up twentyfold (on a per user basis).",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Enterprise AI spend up twentyfold",
+                "source_span": "So you're spending, like, 10 times, 20 times, more, on a per user basis, than what you were doing last year.",
+                "note": "digest: Source gives a range of 10x–20x; the summary picks the upper bound '20 times', which is a legitimate selection from the stated range and not a fabrication."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Glean's automatic routing delivers tasks at $0.45 per task.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "$0.45 against $1.84",
+                "source_span": "averaging $0.45 per task versus $1.84 for Claude Cowork",
+                "note": "digest: Exact figure matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The frontier alternative costs $1.84 per task.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "$0.45 against $1.84 for a frontier alternative",
+                "source_span": "averaging $0.45 per task versus $1.84 for Claude Cowork",
+                "note": "digest: The source names Claude Code/Cowork specifically; 'frontier alternative' is an acceptable plain-English paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Glean's automatic routing represents a fourfold cost reduction.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a fourfold cost reduction",
+                "source_span": "Glean \"is 4x more cost-effective\" than Claude Code",
+                "note": "digest: 'Fourfold cost reduction' is a direct paraphrase of '4x more cost-effective' as stated by Glean's co-founder; house style allows this paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Glean's automatic routing delivers tasks (implying this is Glean's automatic mode).",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Glean's automatic routing delivers tasks",
+                "source_span": "Glean's automatic mode selects a model dynamically for each task... He put that down to Glean's \"harness and routing capabilities.\"",
+                "note": "digest: The source confirms automatic routing is the mechanism behind the cost figures cited."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_0777a84f532a2c0e",
+          "headline": "Cloudflare adds a write-action gatekeeper for AI agents using external tools",
+          "summary": "AI agents with write access to GitHub, Jira, or internal APIs have operated without a shared policy layer. Cloudflare's WriteGuard intercepts every tool call, assigns a risk tier from read-only to critical, and logs the outcome with user and session context. Currently private beta. Map your agents' write-tier tools before requesting access.",
+          "take": "Agent write-access governance shifts from per-server custom logic to a shared interception layer.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/cloudflare-writeguard-mcp-safety/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0777a84f532a2c0e",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Cloudflare adds a write-action gatekeeper for AI agents using external tools",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Cloudflare adds a write-action gatekeeper for AI agents using external tools",
+                "source_span": "Cloudflare is introducing WriteGuard, now in private beta, to provide fine-grained security controls for MCP (Model Context Protocol) servers. It aims to make AI agents safer by controlling their access to tools that can modify data or perform actions",
+                "note": "'Write-action gatekeeper' is a fair plain-English paraphrase of WriteGuard's interception and policy enforcement for write-access tools."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI agents with write access to GitHub, Jira, or internal APIs have operated without a shared policy layer.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AI agents with write access to GitHub, Jira, or internal APIs have operated without a shared policy layer.",
+                "source_span": "WriteGuard is a shared policy, attribution, and auditing layer that aims to address the risks that arise when AI agents use MCP to access external services with write-access privileges, including databases, GitHub, SaaS applications, internal APIs, etc.",
+                "note": "The source confirms the prior absence of a shared policy layer and lists GitHub and internal APIs among the services; Jira is also mentioned elsewhere in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Cloudflare's WriteGuard intercepts every tool call",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Cloudflare's WriteGuard intercepts every tool call",
+                "source_span": "WriteGuard sits right behind Cloudflare's MCP server portal and intercepts all incoming MCP requests.",
+                "note": "'Every tool call' is a fair paraphrase of 'intercepts all incoming MCP requests'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "WriteGuard assigns a risk tier from read-only to critical",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "assigns a risk tier from read-only to critical",
+                "source_span": "Each tool is assigned a risk tier ranging from read-only, which carries no risk at all, to critical.",
+                "note": "Directly matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "WriteGuard logs the outcome with user and session context",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "logs the outcome with user and session context",
+                "source_span": "It includes the server, tool, risk tier, outcome, user, client, and duration. ... WriteGuards adds MCP client and session context to the human identity.",
+                "note": "The source confirms logging of outcome, user, and session/client context."
+              },
+              {
+                "schema_version": 1,
+                "claim": "WriteGuard is currently private beta.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Currently private beta.",
+                "source_span": "WriteGuard is currently available as a private beta",
+                "note": "Directly matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Map your agents' write-tier tools before requesting access.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Map your agents' write-tier tools before requesting access.",
+                "source_span": "",
+                "note": "This is a call-to-action recommendation not present in the source excerpt; it is editorial advice and not a checkable factual claim from the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent write-access governance shifts from per-server custom logic to a shared interception layer.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent write-access governance shifts from per-server custom logic to a shared interception layer.",
+                "source_span": "For GitLab alone, we could have built these controls directly into the server. But we needed the same capabilities for Jira, our internal wiki, Google Workspace, and every new MCP server we added. Reimplementing them in each server would take more work and produce inconsistent behavior.",
+                "note": "The source explicitly describes the shift away from per-server implementation to a shared layer, supporting this editorial characterisation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_c784fd61d07bcac7",
+          "headline": "Self-improving agents discover quant trading factors without human researchers",
+          "summary": "AQuA, an arXiv preprint, runs two separate agent pipelines: one for factor discovery, one for model development; each retains validated evidence to guide its next proposals. The model system reached a Sharpe of up to +2.50 on US equities, positive every year from 2021 to 2025. When agents close the research loop autonomously, what does your quant team still own?",
+          "take": "Quantitative researchers' hypothesis loop now has an autonomous agent challenger, not just a tool.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.12841"
+          ],
+          "prior_coverage_ref": "c_e2939aeeb356dcb9",
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_c784fd61d07bcac7",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Self-improving agents discover quant trading factors without human researchers",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Self-improving agents discover quant trading factors without human researchers",
+                "source_span": "We study recursive self-improvement at the level of quantitative-investment research: whether an autonomous system can use evidence from earlier experiments to improve the hypotheses and candidates proposed in later iterations.",
+                "note": "The source confirms autonomous recursive self-improvement for quant research including factor discovery; 'without human researchers' is a fair paraphrase of the autonomous/closed-loop framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AQuA, an arXiv preprint, runs two separate agent pipelines: one for factor discovery, one for model development",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AQuA, an arXiv preprint, runs two separate agent pipelines: one for factor discovery, one for model development",
+                "source_span": "We present AQuA, which comprises two separate language-model-driven research systems: one for symbolic factor discovery and one for trainable model development.",
+                "note": "Source confirms AQuA is an arXiv preprint with two separate systems matching the described purposes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "each retains validated evidence to guide its next proposals",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "each retains validated evidence to guide its next proposals",
+                "source_span": "each independently closes its own research loop by retaining validated evidence and using it to guide subsequent proposals",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The model system reached a Sharpe of up to +2.50 on US equities",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The model system reached a Sharpe of up to +2.50 on US equities",
+                "source_span": "reaches a per-stock information coefficient of +0.0843 on US equities and converts it into a threshold long/short strategy with a held-out Sharpe of up to +2.50 at a two-leg cost",
+                "note": "Source confirms Sharpe of up to +2.50 on US equities for the model system."
+              },
+              {
+                "schema_version": 1,
+                "claim": "positive every year from 2021 to 2025",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "positive every year from 2021 to 2025",
+                "source_span": "The strategy is positive in every year from 2021 to 2025.",
+                "note": "Exact match with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Quantitative researchers' hypothesis loop now has an autonomous agent challenger, not just a tool.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Quantitative researchers' hypothesis loop now has an autonomous agent challenger, not just a tool.",
+                "source_span": "",
+                "note": "This is an editorial position characterising the significance of AQuA; the source does not use this framing and there is no factual assertion to verify against the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Four separate vendors and researchers this week each closed a gap that had kept AI deployment either too expensive, too exposed, or too human-dependent to scale in regulated settings. The closures are arriving simultaneously, which means the architectural decisions firms deferred are now overdue."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_5bc9aa307947dbcf",
+          "headline": "Anthropic's Python SDK graduates file storage and skills to production-ready",
+          "summary": "Anthropic's Python SDK v0.124.0 graduates the Files and Skills APIs from beta to generally available, and adds computer-use and browser-use toolsets. These APIs let agents persist files and reuse learned capabilities across sessions. Install v0.124.0 and wire the Skills API into your next agentic workflow before relying on beta-era workarounds.",
+          "take": "Agentic file storage graduates from beta to production-ready, with browser-use toolsets added.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://github.com/anthropics/anthropic-sdk-python/releases/tag/v0.124.0"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5bc9aa307947dbcf",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Anthropic's Python SDK graduates file storage and skills to production-ready",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "Anthropic's Python SDK graduates file storage and skills to production-ready",
+                "source_span": "",
+                "note": "The source excerpt failed to load; only a changelog reference 'v0.123.0...v0.124.0' is present, providing no content to confirm or deny any claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Anthropic's Python SDK v0.124.0 graduates the Files and Skills APIs from beta to generally available",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Anthropic's Python SDK v0.124.0 graduates the Files and Skills APIs from beta to generally available",
+                "source_span": "",
+                "note": "Source excerpt failed to load; the only available text is a changelog version reference, which does not confirm or deny this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Python SDK v0.124.0 adds computer-use and browser-use toolsets",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "adds computer-use and browser-use toolsets",
+                "source_span": "",
+                "note": "Source excerpt failed to load; no content is available to verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "These APIs let agents persist files and reuse learned capabilities across sessions",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "These APIs let agents persist files and reuse learned capabilities across sessions",
+                "source_span": "",
+                "note": "Source excerpt failed to load; no content is available to verify this capability description."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Install v0.124.0 and wire the Skills API into your next agentic workflow",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Install v0.124.0 and wire the Skills API into your next agentic workflow before relying on beta-era workarounds",
+                "source_span": "",
+                "note": "Source excerpt failed to load; this is also largely a call to action, but the version reference cannot be verified from the available source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agentic file storage graduates from beta to production-ready, with browser-use toolsets added.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agentic file storage graduates from beta to production-ready, with browser-use toolsets added.",
+                "source_span": "",
+                "note": "Source excerpt failed to load; no content is available to verify any factual assertion in the take."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Today's practical releases share a verification logic: each tool graduates a capability that previously required guesswork into something scored, measured, or production-stamped.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "each tool graduates a capability that previously required guesswork into something scored, measured, or production-stamped",
+                "source_span": "NVIDIA SkillEvaluator is an open source tool for measuring how skills affect agent performance through static checks and real-world task runs with and without each skill. ... Recovery: 97% of their BF16 average accuracy lost to quantization is recovered ... We measure what that compression conceals.",
+                "note": "synthesis: The editorial framing accurately characterises the sources, which all introduce measurement/scoring frameworks for previously unquantified capabilities; this is supported as a valid generalisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "'good enough' judgements made before this week now have a numbered baseline to argue against.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "'good enough' judgements made before this week now have a numbered baseline to argue against",
+                "source_span": "Migration decisions based on aggregate scores alone miss substantial bidirectional item-level change. ... Skill Lift is the with-skill score minus the without-skill score, measured in points. ... The QAD checkpoints retain 97.1%, 96.5%, 97.4%, and 96.6% of their respective BF16 baseline performance.",
+                "note": "synthesis: The sources all provide concrete numbered baselines where previously only aggregate or informal judgements existed; this is a valid supported generalisation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_e76170e28ead64e2",
+          "headline": "Liquid AI's tiny models lose almost nothing when shrunk for edge devices",
+          "summary": "Liquid AI's LFM2.5 models (230M to 2.6B) now ship as quantisation-aware distilled GGUFs on Hugging Face, recovering 97% of accuracy lost in standard quantisation. They run in llama.cpp on a Raspberry Pi or Android phone. Drop the QAD GGUF into your next edge inference build; the standard post-training numbers are the comparison to beat.",
+          "take": "Quantised edge models used to mean a real accuracy cut; Liquid AI's new checkpoints recover 97% of it.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/blog/LiquidAI/qad"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e76170e28ead64e2",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Liquid AI's tiny models lose almost nothing when shrunk for edge devices",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Liquid AI's tiny models lose almost nothing when shrunk for edge devices",
+                "source_span": "Recovery: 97% of their BF16 average accuracy lost to quantization is recovered",
+                "note": "Recovering 97% of accuracy lost is a fair paraphrase of 'losing almost nothing'; edge deployment is confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Liquid AI's LFM2.5 models (230M to 2.6B) now ship as quantisation-aware distilled GGUFs on Hugging Face",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Liquid AI's LFM2.5 models (230M to 2.6B) now ship as quantisation-aware distilled GGUFs on Hugging Face",
+                "source_span": "The QAD GGUFs are available on Hugging Face today: LFM2.5-230M, LFM2.5-350M, LFM2.5-1.2B-Instruct, and LFM2.5-2.6B.",
+                "note": "Model range and Hugging Face availability are confirmed; QAD GGUF format is confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "LFM2.5 models recover 97% of accuracy lost in standard quantisation",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "recovering 97% of accuracy lost in standard quantisation",
+                "source_span": "Recovery: 97% of their BF16 average accuracy lost to quantization is recovered",
+                "note": "97% recovery figure matches the source; individual model figures range 96.5–97.4%, so '97%' is a fair rounding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "LFM2.5 models run in llama.cpp on a Raspberry Pi or Android phone",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "They run in llama.cpp on a Raspberry Pi or Android phone",
+                "source_span": "Use the files with llama.cpp or any runtime that supports GGUF Q4_0 artifacts... Samsung Galaxy S26 Ultra, and Raspberry Pi 5... Samsung and Raspberry Pi use Arm CPU inference.",
+                "note": "The source names a Samsung Galaxy S26 Ultra as the mobile device tested, not a generic 'Android phone'; llama.cpp and Raspberry Pi are confirmed, but substituting 'Android phone' for the specific Samsung device is a factual substitution the source does not support as stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Drop the QAD GGUF into your next edge inference build",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Drop the QAD GGUF into your next edge inference build",
+                "source_span": "Use the files with llama.cpp or any runtime that supports GGUF Q4_0 artifacts.",
+                "note": "This is a call to action / editorial instruction, not a checkable factual claim; the underlying availability fact is confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the standard post-training numbers are the comparison to beat",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the standard post-training numbers are the comparison to beat",
+                "source_span": "we compare their released GGUFs produced with post-training quantization (PTQ) against the trained QAD Q4_0 checkpoints",
+                "note": "PTQ (post-training quantization) is the baseline comparison used in the benchmark, consistent with the summary's framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Quantised edge models used to mean a real accuracy cut; Liquid AI's new checkpoints recover 97% of it.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Quantised edge models used to mean a real accuracy cut; Liquid AI's new checkpoints recover 97% of it.",
+                "source_span": "Recovery: 97% of their BF16 average accuracy lost to quantization is recovered",
+                "note": "The 97% recovery figure is confirmed; the editorial framing about prior accuracy cuts is a position, but the embedded factual claim about 97% recovery is supported."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_5f5780e8d4210264",
+          "headline": "Aggregate benchmark scores hide item-level regressions during model upgrades",
+          "summary": "An arXiv preprint tested three successive GPT API upgrades across 900 benchmark items, queried 50 times each. Aggregate gains of up to 7.3 percentage points coexisted with up to 8.3% reliably regressed items. Response-level data are public. Before your next API migration sign-off, run item-level regression checks, not just headline scores.",
+          "take": "Migration sign-off built on aggregate scores now misses bidirectional item-level change.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.17719"
+          ],
+          "prior_coverage_ref": "c_b68d5c5b21d5a9d9",
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5f5780e8d4210264",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Aggregate benchmark scores hide item-level regressions during model upgrades",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Aggregate benchmark scores hide item-level regressions during model upgrades",
+                "source_span": "Migration decisions typically rely on aggregate benchmark scores, which compress heterogeneous item-level behaviour into a single net figure. Objective: We measure what that compression conceals.",
+                "note": "The headline accurately paraphrases the paper's central finding that aggregate scores conceal item-level regressions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint tested three successive GPT API upgrades across 900 benchmark items",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint tested three successive GPT API upgrades across 900 benchmark items",
+                "source_span": "On three pairwise upgrades in the GPT-5.4 to GPT-5.6 Sol product sequence, we query 900 public benchmark items",
+                "note": "'GPT API upgrades' is a fair plain-English paraphrase of the GPT-5.4 to GPT-5.6 Sol product sequence; three upgrades and 900 items match exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "queried 50 times each",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "queried 50 times each",
+                "source_span": "50 times per item per model",
+                "note": "Matches the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Aggregate gains of up to 7.3 percentage points coexisted with up to 8.3% reliably regressed items",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Aggregate gains of up to 7.3 percentage points coexisted with up to 8.3% reliably regressed items",
+                "source_span": "Edges with aggregate gains of up to 7.3 percentage points contain up to 8.3% reliably regressed items",
+                "note": "Both figures match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Response-level data are public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Response-level data are public",
+                "source_span": "The complete response-level archive and per-item scoring outputs are released.",
+                "note": "Accurate paraphrase of the source's statement that response-level data are released."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Before your next API migration sign-off, run item-level regression checks, not just headline scores",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Before your next API migration sign-off, run item-level regression checks, not just headline scores",
+                "source_span": "",
+                "note": "This is an editorial call to action; no factual claim to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Migration sign-off built on aggregate scores now misses bidirectional item-level change.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Migration sign-off built on aggregate scores now misses bidirectional item-level change.",
+                "source_span": "Migration decisions based on aggregate scores alone miss substantial bidirectional item-level change.",
+                "note": "The take closely paraphrases the paper's stated conclusion; 'substantial' is omitted but no false assertion is made."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Aggregate gains of 7.3 points masked item-level regressions.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Aggregate gains of 7.3 points masked 8.3% of items reliably degrading",
+                "source_span": "Edges with aggregate gains of up to 7.3 percentage points contain up to 8.3% reliably regressed items",
+                "note": "digest: The source confirms 7.3 percentage-point aggregate gains coexisting with 8.3% reliably regressed items; 'masked' is a fair paraphrase of 'compress/conceal'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "8.3% of items reliably degraded.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "8.3% of items reliably degrading",
+                "source_span": "Edges with aggregate gains of up to 7.3 percentage points contain up to 8.3% reliably regressed items",
+                "note": "digest: 'Reliably degrading' is a plain-English paraphrase of 'reliably regressed items', matching the source figure exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The study examined three successive GPT API upgrades.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "across three successive GPT API upgrades",
+                "source_span": "On three pairwise upgrades in the GPT-5.4 to GPT-5.6 Sol product sequence",
+                "note": "digest: 'GPT API upgrades' is a fair generalisation of 'three pairwise upgrades in the GPT-5.4 to GPT-5.6 Sol product sequence'; three upgrades matches the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_d0809ad2c5d1615f",
+          "headline": "NVIDIA's open tool proves which agent skills actually help, not just claim to",
+          "summary": "Without structured context, agents running NVIDIA tools scored 39-46 out of 100 on correctness and effectiveness. Adding verified skills lifted those averages to 87 and 78 respectively, a gain of roughly 40 points. SkillEvaluator is open source; clone the nvidia/skills repo and run Tier 3 evaluation against your own agent harness before shipping any skill to production.",
+          "take": "Agent skill quality now has a scored baseline; guesswork about context value is displaced.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/evaluating-ai-agent-skill-performance-with-nvidia-skillevaluator/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_d0809ad2c5d1615f",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's open tool proves which agent skills actually help, not just claim to",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA's open tool proves which agent skills actually help, not just claim to",
+                "source_span": "NVIDIA built an open evaluation layer for agent skills. NVIDIA SkillEvaluator is an open source tool for measuring how skills affect agent performance through static checks and real-world task runs with and without each skill.",
+                "note": "The headline accurately characterises SkillEvaluator as NVIDIA's open tool that empirically measures skill impact rather than relying on claims."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Without structured context, agents running NVIDIA tools scored 39-46 out of 100 on correctness and effectiveness.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Without structured context, agents running NVIDIA tools scored 39-46 out of 100 on correctness and effectiveness.",
+                "source_span": "Average baseline scores ranged from 39 to 46 out of 100 across Correctness, Discoverability, Effectiveness, and Efficiency, indicating substantial room for improvement.",
+                "note": "The 39-46 range is accurate; 'structured context' is a fair plain-English paraphrase of 'without the relevant skill installed'; the body narrows to correctness and effectiveness which the source confirms are among those dimensions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Adding verified skills lifted those averages to 87 and 78 respectively",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Adding verified skills lifted those averages to 87 and 78 respectively",
+                "source_span": "On Correctness and Effectiveness—the two dimensions measured consistently in both conditions—mean scores rose from 46 to 87 and from 39 to 78",
+                "note": "The with-skill scores of 87 (Correctness) and 78 (Effectiveness) match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a gain of roughly 40 points",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a gain of roughly 40 points",
+                "source_span": "gains of 41 and 39 points",
+                "note": "'Roughly 40 points' is a legitimate rounding of the source's 41 and 39 points."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SkillEvaluator is open source",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "SkillEvaluator is open source",
+                "source_span": "NVIDIA SkillEvaluator is an open source tool",
+                "note": "Directly confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "clone the nvidia/skills repo and run Tier 3 evaluation against your own agent harness before shipping any skill to production",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "clone the nvidia/skills repo and run Tier 3 evaluation against your own agent harness before shipping any skill to production",
+                "source_span": "The catalog is evaluated continuously, so current numbers remain available in benchmarks.json in the nvidia/skills repository... Tier 3—Live evaluation: Runs a live evaluation with an agent against generated tasks... Before a skill is published, it goes through three tiers of evaluation.",
+                "note": "The nvidia/skills repo and Tier 3 evaluation are confirmed; the call-to-action framing is editorial but the factual elements (repo name, Tier 3) are accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent skill quality now has a scored baseline; guesswork about context value is displaced.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent skill quality now has a scored baseline; guesswork about context value is displaced.",
+                "source_span": "To measure whether these skills improve agent trajectories and outputs, NVIDIA built an open evaluation layer for agent skills... Skill Lift is the with-skill score minus the without-skill score, measured in points.",
+                "note": "The take's factual core—that a scored baseline now exists for agent skill quality—is confirmed by the source; the displacement of guesswork is editorial framing consistent with the source's empirical methodology."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_b2f7b72076c780d8",
+          "headline": "Databricks' live agent competition reveals enterprise reasoning is still far from solved",
+          "summary": "Databricks ran 11 academic teams against a freshly released enterprise document corpus, preventing memorisation. Stanford won with 63.3% accuracy, beating the frontier agent baseline by 35 points; 18.8% of questions defeated every team. Winning agents combined document preprocessing, parallel retrieval, and answer verification. Run OfficeQA Pro V2 against your own agent before claiming grounded-reasoning readiness.",
+          "take": "Enterprise document reasoning now has a live benchmark ceiling: 63.3% at best, 18.8% unsolvable.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.databricks.com/blog/evaluating-ai-agents-live-grounded-reasoning-cup"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b2f7b72076c780d8",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks' live agent competition reveals enterprise reasoning is still far from solved",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Databricks' live agent competition reveals enterprise reasoning is still far from solved",
+                "source_span": "grounded reasoning over enterprise-style document corpora has improved since we released the OfficeQA benchmark 7 months ago, but it is still far from solved",
+                "note": "Source directly states enterprise grounded reasoning is still far from solved, matching the headline's claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks ran 11 academic teams against a freshly released enterprise document corpus",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Databricks ran 11 academic teams against a freshly released enterprise document corpus",
+                "source_span": "The competition brought together 11 top academic teams from across the U.S. and Canada... On the day of the competition, teams were then tasked with applying their agents in real time on a new, freshly released benchmark.",
+                "note": "Source confirms 11 academic teams and a freshly released corpus on competition day."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks ran 11 academic teams against a freshly released enterprise document corpus, preventing memorisation",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "preventing memorisation",
+                "source_span": "By testing agents on a newly released corpus under live competition conditions, the Grounded Reasoning Cup was designed to help answer one of the hardest questions in AI evaluation: how well do performance improvements on a benchmark generalize to similar, real-world tasks?",
+                "note": "Using a newly released corpus on competition day is a legitimate paraphrase of preventing memorisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Stanford won with 63.3% accuracy",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Stanford won with 63.3% accuracy",
+                "source_span": "Stanford won with a system that achieved 63.3% accuracy",
+                "note": "Exact figure and winner match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Stanford beat the frontier agent baseline by 35 points",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "beating the frontier agent baseline by 35 points",
+                "source_span": "beating out the average team by approximately +22 points, and the average frontier agent offline baseline by approximately +35 points",
+                "note": "Rounding 'approximately +35 points' to '35 points' is acceptable house-style compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "18.8% of questions defeated every team",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "18.8% of questions defeated every team",
+                "source_span": "18.8% of questions went unsolved by every team",
+                "note": "Paraphrase of 'went unsolved by every team' as 'defeated every team' is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Winning agents combined document preprocessing, parallel retrieval, and answer verification",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Winning agents combined document preprocessing, parallel retrieval, and answer verification",
+                "source_span": "Strong systems tended to combine careful document preprocessing, targeted retrieval, structured tool use, and answer verification steps.",
+                "note": "The summary compresses the list; 'parallel retrieval' is a reasonable paraphrase of 'targeted retrieval' given the parallel-agents strategy described, and the core elements match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Run OfficeQA Pro V2 against your own agent before claiming grounded-reasoning readiness",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Run OfficeQA Pro V2 against your own agent before claiming grounded-reasoning readiness",
+                "source_span": "On competition day, they were challenged to apply those systems in real time to a newly released grounded-reasoning benchmark, OfficeQA Pro V2",
+                "note": "OfficeQA Pro V2 is named in the source as the competition benchmark; the call-to-action references it correctly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Enterprise document reasoning now has a live benchmark ceiling: 63.3% at best, 18.8% unsolvable",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Enterprise document reasoning now has a live benchmark ceiling: 63.3% at best, 18.8% unsolvable",
+                "source_span": "Stanford won with a system that achieved 63.3% accuracy... 18.8% of questions went unsolved by every team",
+                "note": "Both figures are confirmed by the source; framing them as a 'benchmark ceiling' is a supported editorial compression of the competition results."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Today's practical releases share a verification logic: each tool graduates a capability that previously required guesswork into something scored, measured, or production-stamped. The decision-relevant implication is that 'good enough' judgements made before this week now have a numbered baseline to argue against."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_99af42439309057d",
+          "headline": "Hidden Unicode in files hijacks DeepSeek's agent one time in four",
+          "summary": "Tencent's AI-Infra-Guard team ran 14,560 controlled injections against DeepSeek Harness across 16 content channels. Hidden Unicode characters in files succeeded 25.5% of the time; fake-completion text attacks landed at 17%. Code is public on GitHub. If you're deploying DeepSeek Harness in any agentic pipeline that ingests external files, gate untrusted content before sensitive tool calls.",
+          "take": "Open-weight agent frameworks now carry a measured injection surface, not a theoretical one.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://huggingface.co/papers/2608.16393"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_99af42439309057d",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Hidden Unicode in files hijacks DeepSeek's agent one time in four",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Hidden Unicode in files hijacks DeepSeek's agent one time in four",
+                "source_span": "25.5% under \\JudgeR{} for hidden Unicode in file mode",
+                "note": "25.5% rounds to 'one time in four' (one-in-four = 25%), a legitimate approximation; the mechanism and target match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Tencent's AI-Infra-Guard team ran 14,560 controlled injections against DeepSeek Harness",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Tencent's AI-Infra-Guard team ran 14,560 controlled injections against DeepSeek Harness",
+                "source_span": "using AI-Infra-Guard (A.I.G) to construct tests... The study covers 14,560 controlled executions",
+                "note": "Both the tool name and the count match the source exactly; attributing it to Tencent is consistent with the GitHub URL (Tencent/AI-Infra-Guard)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "across 16 content channels",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "across 16 content channels",
+                "source_span": "16 indirect-content channels",
+                "note": "Direct match; 'content channels' is a fair paraphrase of 'indirect-content channels'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hidden Unicode characters in files succeeded 25.5% of the time",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Hidden Unicode characters in files succeeded 25.5% of the time",
+                "source_span": "25.5% under \\JudgeR{} for hidden Unicode in file mode",
+                "note": "Figure and attack type match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "fake-completion text attacks landed at 17%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "fake-completion text attacks landed at 17%",
+                "source_span": "17.0% under \\JudgeL{} for fake-completion attack in text mode",
+                "note": "17.0% rounds to 17%; attack type and mode match; rounding is house-style acceptable."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Code is public on GitHub",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Code is public on GitHub",
+                "source_span": "Our code is available at https://github.com/Tencent/AI-Infra-Guard/tree/main/Research/deepseek-harness-security-assessment",
+                "note": "Source explicitly provides a public GitHub URL for the code."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Open-weight agent frameworks now carry a measured injection surface, not a theoretical one.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Open-weight agent frameworks now carry a measured injection surface, not a theoretical one.",
+                "source_span": "",
+                "note": "The source does not describe DeepSeek Harness as 'open-weight'; this characterisation is absent from the excerpt and cannot be confirmed or denied from it."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each item this week arrives with a measured attack rate or a documented bypass path.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Each item this week arrives with a measured attack rate or a documented bypass path rather than a theoretical warning",
+                "source_span": "The strongest observed attack success rates are 17.0% under for fake-completion attack in text mode, 25.5% under for hidden Unicode in file mode, and 16.0% under for the skills channel in file mode.",
+                "note": "synthesis: The DeepSeek source provides measured attack rates and the Copilot source documents a concrete bypass path (?autorun=1 parameter), supporting the claim that empirical attack data is present rather than theoretical warnings."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Deployment-stage security gaps in agentic and enterprise AI systems are now empirically catalogued.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "deployment-stage security gaps in agentic and enterprise AI systems are now empirically catalogued, not speculated",
+                "source_span": "The study covers 14,560 controlled executions over 16 indirect-content channels, text and file carrier modes, 35 payload objectives, one unmodified baseline, and 12 attack methods.",
+                "note": "synthesis: Both sources provide empirical, documented findings (controlled executions with measured success rates; a discovered and mitigated bypass in Microsoft 365 Copilot), supporting the characterisation of empirical cataloguing rather than speculation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "These stories sit in Currents because responses remain partial.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "These stories sit in Currents because responses remain partial.",
+                "source_span": "",
+                "note": "synthesis: 'Currents' is a named newsletter section not mentioned anywhere in the source excerpts, making this claim unverifiable from the provided source material."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_e74de53083ff80c5",
+          "headline": "A market-making model tackles how quotes leak inventory to rivals",
+          "summary": "Standard market-making models treat adverse selection and price reading as separate, stylised problems. A Risk.net Cutting Edge paper by Barzykin, Bergault, Guéant, and Lemmel models both together, capturing how a market maker's own quotes betray inventory position. Bring this framing to your next quoting-strategy design review.",
+          "take": "Market-making models that ignored price-reading risk now have a practitioner-grade alternative.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.risk.net/cutting-edge/7964011/optimal-quoting-under-adverse-selection-and-price-reading"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e74de53083ff80c5",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A market-making model tackles how quotes leak inventory to rivals",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A market-making model tackles how quotes leak inventory to rivals",
+                "source_span": "price reading (where the market maker's quotes reveal their inventory)",
+                "note": "The headline paraphrases 'price reading' as quotes leaking inventory to rivals; the source confirms the mechanism, and 'rivals' is a reasonable plain-English rendering of the informed-trader context."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Standard market-making models treat adverse selection and price reading as separate, stylised problems.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Standard market-making models treat adverse selection and price reading as separate, stylised problems.",
+                "source_span": "two critical risks in market making that are seldom addressed beyond stylised models: adverse selection (arising from informed traders) and price reading",
+                "note": "The source confirms both risks are seldom addressed beyond stylised models, supporting the characterisation of them as separate stylised problems."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A Risk.net Cutting Edge paper by Barzykin, Bergault, Guéant, and Lemmel models both together.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A Risk.net Cutting Edge paper by Barzykin, Bergault, Guéant, and Lemmel models both together",
+                "source_span": "Alexander Barzykin, Philippe Bergault, Olivier Guéant and Malo Lemmel tackle two critical risks in market making",
+                "note": "The source confirms all four authors and the Cutting Edge context; 'models both together' accurately paraphrases 'tackle two critical risks'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The paper captures how a market maker's own quotes betray inventory position.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "capturing how a market maker's own quotes betray inventory position",
+                "source_span": "price reading (where the market maker's quotes reveal their inventory)",
+                "note": "'Betray inventory position' is a close paraphrase of 'quotes reveal their inventory'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Market-making models that ignored price-reading risk now have a practitioner-grade alternative.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Market-making models that ignored price-reading risk now have a practitioner-grade alternative.",
+                "source_span": "two critical risks in market making that are seldom addressed beyond stylised models: adverse selection (arising from informed traders) and price reading. Practitioners are well acquainted with these risks",
+                "note": "The source confirms price-reading risk was previously unaddressed beyond stylised models and that practitioners face it, supporting the take's claim of a new practitioner-grade alternative."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_30c5d3632702106a",
+          "headline": "Microsoft Copilot disclosed its own security bypass when researchers asked",
+          "summary": "Varonis researchers bypassed Microsoft 365 Copilot's user-consent guardrail by asking Copilot how it worked. The model disclosed ?autorun=1, an undocumented parameter that silently fired a credential-theft prompt on link-click. Microsoft patched the injection vector in February and shipped broader fixes Tuesday. Confirm the Tuesday patch is live before Copilot touches any credential-bearing workflow.",
+          "take": "Enterprise Copilot deployments now carry a documented self-disclosure attack path, not a theoretical one.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arstechnica.com/security/2026/08/microsoft-copilot-reveals-secret-input-that-allowed-it-to-be-hacked/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_30c5d3632702106a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Microsoft Copilot disclosed its own security bypass when researchers asked",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Microsoft Copilot disclosed its own security bypass when researchers asked",
+                "source_span": "Rather than employing reverse engineering or other traditional vulnerability-hunting methods, they asked Copilot. The LLM assistant readily complied.",
+                "note": "The source confirms Copilot disclosed the bypass mechanism when researchers asked it questions, supporting the headline's framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Varonis researchers bypassed Microsoft 365 Copilot's user-consent guardrail by asking Copilot how it worked.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Varonis researchers bypassed Microsoft 365 Copilot's user-consent guardrail by asking Copilot how it worked.",
+                "source_span": "Researchers at security firm Varonis knew they wanted to create an exploit that would exfiltrate user data when a user did nothing more than click on a link... the researchers peppered Copilot with questions about the guardrails that required user confirmation",
+                "note": "Source confirms Varonis researchers questioned Copilot about its guardrails to discover the bypass."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The model disclosed ?autorun=1, an undocumented parameter",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The model disclosed ?autorun=1, an undocumented parameter",
+                "source_span": "Eventually, Copilot provided a stunning Microsoft trade secret—an undocumented prompt parameter that completely bypassed the requirement for user consent... The parameter was the string ?autorun=1.",
+                "note": "Source explicitly confirms ?autorun=1 was the undocumented parameter Copilot disclosed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "?autorun=1 silently fired a credential-theft prompt on link-click",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "silently fired a credential-theft prompt on link-click",
+                "source_span": "the researchers' prompt silently fired the moment the target clicked on the malicious URL",
+                "note": "Source confirms the prompt fired silently on link-click; 'credential-theft' is a supported paraphrase of exfiltrating user passwords and sensitive data."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Microsoft patched the injection vector in February",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Microsoft patched the injection vector in February",
+                "source_span": "Microsoft silently mitigated the vulnerability in February, three months after Varonis reported it, by no longer allowing ?q= to inject text into the chatbot input.",
+                "note": "Source confirms Microsoft mitigated the injection vector in February."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Microsoft shipped broader fixes Tuesday",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "shipped broader fixes Tuesday",
+                "source_span": "Microsoft introduced more comprehensive fixes on Tuesday.",
+                "note": "Source confirms more comprehensive fixes were introduced on Tuesday."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Enterprise Copilot deployments now carry a documented self-disclosure attack path, not a theoretical one.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Enterprise Copilot deployments now carry a documented self-disclosure attack path, not a theoretical one.",
+                "source_span": "It's not every day that attackers can force a frontier AI model to cough up user passwords and other sensitive data without user confirmation. That's exactly what researchers recently did to Microsoft 365 Copilot for enterprise.",
+                "note": "The source confirms the attack was demonstrated in practice against enterprise Copilot, supporting the claim that the attack path is documented and not merely theoretical."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Researchers asked Microsoft 365 Copilot how it worked.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Researchers asked Microsoft 365 Copilot how it worked",
+                "source_span": "the researchers peppered Copilot with questions about the guardrails that required user confirmation before the assistant could execute powerful commands.",
+                "note": "digest: The source confirms researchers questioned Copilot about its internal workings; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Copilot revealed an undocumented parameter.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it revealed an undocumented parameter",
+                "source_span": "Copilot provided a stunning Microsoft trade secret—an undocumented prompt parameter that completely bypassed the requirement for user consent.",
+                "note": "digest: Source explicitly states Copilot disclosed an undocumented parameter."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The undocumented parameter enabled silent credential theft.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "enabling silent credential theft",
+                "source_span": "attackers can force a frontier AI model to cough up user passwords and other sensitive data without user confirmation... the researchers' prompt silently fired the moment the target clicked on the malicious URL.",
+                "note": "digest: Source confirms the parameter enabled silent exfiltration of passwords/sensitive data; 'credential theft' is a supported paraphrase of stealing passwords silently."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Each item this week arrives with a measured attack rate or a documented bypass path rather than a theoretical warning, which shifts the aggregate signal: deployment-stage security gaps in agentic and enterprise AI systems are now empirically catalogued, not speculated. These stories sit in Currents because responses remain partial."
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Rubric quality drives grading accuracy.",
+      "sentence": "Across 3,456 exam answers, answer identity explained 95.6% of score variance; judge model choice explained just 0.2%.",
+      "story_ids": [
+        "c_8c49281f47924a2f"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Enterprise AI spend up twentyfold.",
+      "sentence": "Glean's automatic routing delivers tasks at $0.45 against $1.84 for a frontier alternative, a fourfold cost reduction.",
+      "story_ids": [
+        "c_273003411d958f94"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "API upgrades hide item regressions.",
+      "sentence": "Aggregate gains of 7.3 points masked 8.3% of items reliably degrading across three successive GPT API upgrades.",
+      "story_ids": [
+        "c_5f5780e8d4210264"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Copilot disclosed its own bypass.",
+      "sentence": "Researchers asked Microsoft 365 Copilot how it worked; it revealed an undocumented parameter enabling silent credential theft.",
+      "story_ids": [
+        "c_30c5d3632702106a"
+      ]
+    }
+  ],
+  "generated_at": "2026-08-19T21:27:45.224565Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 5, currents: 3"
+}
