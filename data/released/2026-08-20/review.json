@@ -1,0 +1,218 @@
+{
+  "schema_version": 3,
+  "generated_at": "2026-08-19T21:32:46.267425Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking reputational flags on the quant-agent story; factual error on edge-device models; Currents take and close shape failures throughout.",
+  "findings": [
+    {
+      "schema_version": 1,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e76170e28ead64e2",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "They run in llama.cpp on a Raspberry Pi or Android phone.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as contradicted: the source specifies a Samsung Galaxy S26 Ultra (not a generic Android phone) and Raspberry Pi 5 (not a generic Raspberry Pi). Rewrite to: 'They run in llama.cpp on a Raspberry Pi 5 or Samsung Galaxy S26 Ultra.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c784fd61d07bcac7",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Quantitative researchers' hypothesis loop now has an autonomous agent challenger, not just a tool.",
+      "fix_kind": "human",
+      "instruction": "The take frames autonomous agents as a direct challenger to quantitative researchers' roles. The source is a single arXiv preprint reporting backtested Sharpe ratios on US equities. A reader could interpret this as investment-relevant guidance about the viability of autonomous quant agents displacing human researchers. Arman should confirm the source's scope and hedging before this framing ships; if the preprint is backtested-only with standard caveats, soften to describe what the system demonstrated rather than positioning it as a workforce challenger."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c784fd61d07bcac7",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "The model system reached a Sharpe of up to +2.50 on US equities, positive every year from 2021 to 2025.",
+      "fix_kind": "text_edit",
+      "instruction": "Backtested Sharpe ratios on US equities stated as bare fact, without any hedge, read as investment-relevant performance claims. Add a qualifier: 'In backtested results, the model system reached a Sharpe of up to +2.50 on US equities, positive every year from 2021 to 2025.' This is the minimum fix; Arman should also confirm the source does not present live trading results."
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Glean's automatic routing delivers tasks at $0.45 against $1.84 for a frontier alternative, a fourfold cost reduction.",
+      "fix_kind": "text_edit",
+      "instruction": "The digest sentence restates the story's take ('Automatic model routing now cuts per-task AI spend fourfold') almost verbatim. The digest should compress the story's body content, not echo the take. Rewrite to anchor on the body's enterprise-spend framing: e.g., 'Enterprise per-user AI spend has risen 10–20× in a year, pushing Glean and peers toward automatic routing to contain costs.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_273003411d958f94",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "If you're renegotiating a frontier model contract, what's your routing baseline?",
+      "fix_kind": "text_edit",
+      "instruction": "The closing strategic question is anchored to a concrete decision ('renegotiating a frontier model contract') which is in-voice, but 'what's your routing baseline?' is close to a prescription dressed as a question — it implies the reader should have a routing baseline rather than surfacing a genuine strategic tension. Sharpen to a question that exposes the decision fork: e.g., 'If you're renegotiating a frontier model contract, does your routing data yet justify a tiered commitment?'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e74de53083ff80c5",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Bring this framing to your next quoting-strategy design review.",
+      "fix_kind": "text_edit",
+      "instruction": "Currents bodies must close on a presence-form maturity signal (what exists and what it is worth today), not an imperative action. Imperatives belong in Hands-On closes. Rewrite the final sentence to characterise the paper's current standing: e.g., 'The paper is published in Risk.net Cutting Edge and is available to practitioners now, though adoption in live quoting systems has not yet been reported.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e74de53083ff80c5",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Market-making models that ignored price-reading risk now have a practitioner-grade alternative.",
+      "fix_kind": "text_edit",
+      "instruction": "Currents takes must be two-sided (calibrated stake). This take states only the upside — a new model exists — without the countervailing condition (e.g., adoption friction, data requirements, or the gap between academic publication and live deployment). Rewrite to include both sides: e.g., 'A practitioner-grade joint model for adverse selection and price-reading now exists in print, though live adoption depends on quoting infrastructure that most desks have not yet instrumented.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_99af42439309057d",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Open-weight agent frameworks now carry a measured injection surface, not a theoretical one.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares a syntactic frame ('X now carries a Y, not a Z one') with the Copilot story's take ('Enterprise Copilot deployments now carry a documented self-disclosure attack path, not a theoretical one'). Two takes in the same issue sharing the same scaffold is a minor frame-collision. Rewrite one of them; suggest revising this one to: 'DeepSeek Harness injection rates are now measured at channel level, giving defenders a ranked surface to gate rather than a generic warning.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_30c5d3632702106a",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Enterprise Copilot deployments now carry a documented self-disclosure attack path, not a theoretical one.",
+      "fix_kind": "text_edit",
+      "instruction": "Filed as the later story in the frame-collision pair (see c_99af42439309057d finding). If the DeepSeek take is rewritten, this one may stand; if not, rewrite this one instead. Suggested alternative: 'Microsoft 365 Copilot's patched self-disclosure vector is now publicly documented, shifting enterprise risk posture from speculation to confirmed patch-verification.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_b2f7b72076c780d8",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Enterprise document reasoning now has a live benchmark ceiling: 63.3% at best, 18.8% unsolvable.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's two headline numbers ('Stanford won with 63.3% accuracy' and '18.8% of questions defeated every team') without adding the publication's position on what that ceiling means for deployment decisions. Rewrite to add the editorial stance: e.g., 'Enterprise document reasoning has a measured ceiling of 63.3%, low enough that grounded-reasoning readiness claims now require a live benchmark, not a demo.'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_0777a84f532a2c0e",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Map your agents' write-tier tools before requesting access.",
+      "fix_kind": "text_edit",
+      "instruction": "Big Picture closes must end on a strategic question anchored to a specific role, decision, or constraint in the reader's org — not an imperative. Rewrite: e.g., 'When your next agent deployment touches write-tier tools, does your governance layer intercept at the call level or only at the permission-grant stage?'"
+    },
+    {
+      "schema_version": 1,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "The closures are arriving simultaneously, which means the architectural decisions firms deferred are now overdue.",
+      "fix_kind": "carry_forward",
+      "instruction": "The prior issue (2026-08-18) synthesis used a similar 'gap between what agents do and what governance assumes' framing; the 2026-08-19 synthesis used 'assumption to instrument' framing. Today's 'closures arriving simultaneously / decisions now overdue' is a third consecutive issue where the Big Picture synthesis frames a convergence moment as urgent. Monitor: if tomorrow's synthesis again declares deferred decisions overdue, flag as register collapse."
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "a1755988e203d02899c303fc26dfe7d0b4f2830fca1128e796d6cbb5b1071caa",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.)"
+}

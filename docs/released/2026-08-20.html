@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 43 &middot; 20 August 2026</title>
+<meta name="description" content="A rubric matters more than model intelligence for grading open answers. Issue No. 43 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 43 &middot; 20 Aug &middot; 4 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>Rubric quality drives grading accuracy.</strong> <span>Across 3,456 exam answers, answer identity explained 95.6% of score variance; judge model choice explained just 0.2%.</span></p>
+    <p><strong>Enterprise AI spend up twentyfold.</strong> <span>Glean&#39;s automatic routing delivers tasks at $0.45 against $1.84 for a frontier alternative, a fourfold cost reduction.</span></p>
+    <p><strong>API upgrades hide item regressions.</strong> <span>Aggregate gains of 7.3 points masked 8.3% of items reliably degrading across three successive GPT API upgrades.</span></p>
+    <p><strong>Copilot disclosed its own bypass.</strong> <span>Researchers asked Microsoft 365 Copilot how it worked; it revealed an undocumented parameter enabling silent credential theft.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>A rubric matters more than model intelligence for grading open answers</h1>
+  <p class="takeaway">Eval grading cost now depends on rubric quality, not judge model tier.</p>
+  <p class="dek">An arXiv preprint tested six small-model configurations grading 3,456 open exam answers against explicit rubrics. Answer identity explained 95.6% of score variance; judge identity explained just 0.2%. Frontier judges added as a check were no more reliable. Extract rubrics once with a frontier model at ingestion, then grade everything with a cheaper one.</p>
+  <div class="story-meta">
+    <a class="src" href="https://arxiv.org/abs/2608.17938" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Four separate vendors and researchers this week each closed a gap that had kept AI deployment either too expensive, too exposed, or too human-dependent to scale in regulated settings. The closures are arriving simultaneously, which means the architectural decisions firms deferred are now overdue.</p>
+  </div>
+  <article class="measure stack">
+    <h3>OpenAI lets regulated firms use frontier models without storing their data</h3>
+    <p class="takeaway">Regulated firms&#39; data-residency objection to frontier APIs now has a named architectural answer, not a workaround.</p>
+    <p class="dek">OpenAI now offers Zero Data Retention on its frontier API, meaning inputs and outputs are never stored, and previews Private Safety Processing, which runs safety checks inside an isolated environment. For compliance teams blocked by data-residency rules, this removes the architectural workaround of self-hosting. When your next procurement review asks whether frontier models are viable, is data-residency still your veto?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://openai.com/index/offering-zero-data-retention-for-frontier-models" target="_blank" rel="noreferrer">openai.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Frontier model costs are pushing enterprises toward automatic routing</h3>
+    <p class="takeaway">Automatic model routing now cuts per-task AI spend fourfold, where single-model defaults held before.</p>
+    <p class="dek">Glean CEO Arvind Jain says enterprise per-user AI spend has risen 10 to 20 times in a year. Glean&#39;s automatic routing claims $0.45 per task against $1.84 for Claude Code. Open-weight models, negligible last year, are now core to most enterprise strategies. If you&#39;re renegotiating a frontier model contract, what&#39;s your routing baseline?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://www.latent.space/p/glean-model-routing" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Cloudflare adds a write-action gatekeeper for AI agents using external tools</h3>
+    <p class="takeaway">Agent write-access governance shifts from per-server custom logic to a shared interception layer.</p>
+    <p class="dek">AI agents with write access to GitHub, Jira, or internal APIs have operated without a shared policy layer. Cloudflare&#39;s WriteGuard intercepts every tool call, assigns a risk tier from read-only to critical, and logs the outcome with user and session context. Currently private beta. Map your agents&#39; write-tier tools before requesting access.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.infoq.com/news/2026/08/cloudflare-writeguard-mcp-safety/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Self-improving agents discover quant trading factors without human researchers</h3>
+    <p class="takeaway">Quantitative researchers&#39; hypothesis loop now has an autonomous agent challenger, not just a tool.</p>
+    <p class="dek">AQuA, an arXiv preprint, runs two separate agent pipelines: one for factor discovery, one for model development; each retains validated evidence to guide its next proposals. The model system reached a Sharpe of up to +2.50 on US equities, positive every year from 2021 to 2025. When agents close the research loop autonomously, what does your quant team still own?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2608.12841" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Today&#39;s practical releases share a verification logic: each tool graduates a capability that previously required guesswork into something scored, measured, or production-stamped. The decision-relevant implication is that &#39;good enough&#39; judgements made before this week now have a numbered baseline to argue against.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Anthropic&#39;s Python SDK graduates file storage and skills to production-ready</h3>
+    <p class="takeaway">Agentic file storage graduates from beta to production-ready, with browser-use toolsets added.</p>
+    <p class="dek">Anthropic&#39;s Python SDK v0.124.0 graduates the Files and Skills APIs from beta to generally available, and adds computer-use and browser-use toolsets. These APIs let agents persist files and reuse learned capabilities across sessions. Install v0.124.0 and wire the Skills API into your next agentic workflow before relying on beta-era workarounds.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/anthropics/anthropic-sdk-python/releases/tag/v0.124.0" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Liquid AI&#39;s tiny models lose almost nothing when shrunk for edge devices</h3>
+    <p class="takeaway">Quantised edge models used to mean a real accuracy cut; Liquid AI&#39;s new checkpoints recover 97% of it.</p>
+    <p class="dek">Liquid AI&#39;s LFM2.5 models (230M to 2.6B) now ship as quantisation-aware distilled GGUFs on Hugging Face, recovering 97% of accuracy lost in standard quantisation. They run in llama.cpp on a Raspberry Pi or Android phone. Drop the QAD GGUF into your next edge inference build; the standard post-training numbers are the comparison to beat.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/LiquidAI/qad" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Aggregate benchmark scores hide item-level regressions during model upgrades</h3>
+    <p class="takeaway">Migration sign-off built on aggregate scores now misses bidirectional item-level change.</p>
+    <p class="dek">An arXiv preprint tested three successive GPT API upgrades across 900 benchmark items, queried 50 times each. Aggregate gains of up to 7.3 percentage points coexisted with up to 8.3% reliably regressed items. Response-level data are public. Before your next API migration sign-off, run item-level regression checks, not just headline scores.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://arxiv.org/abs/2608.17719" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>NVIDIA&#39;s open tool proves which agent skills actually help, not just claim to</h3>
+    <p class="takeaway">Agent skill quality now has a scored baseline; guesswork about context value is displaced.</p>
+    <p class="dek">Without structured context, agents running NVIDIA tools scored 39-46 out of 100 on correctness and effectiveness. Adding verified skills lifted those averages to 87 and 78 respectively, a gain of roughly 40 points. SkillEvaluator is open source; clone the nvidia/skills repo and run Tier 3 evaluation against your own agent harness before shipping any skill to production.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://developer.nvidia.com/blog/evaluating-ai-agent-skill-performance-with-nvidia-skillevaluator/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Databricks&#39; live agent competition reveals enterprise reasoning is still far from solved</h3>
+    <p class="takeaway">Enterprise document reasoning now has a live benchmark ceiling: 63.3% at best, 18.8% unsolvable.</p>
+    <p class="dek">Databricks ran 11 academic teams against a freshly released enterprise document corpus, preventing memorisation. Stanford won with 63.3% accuracy, beating the frontier agent baseline by 35 points; 18.8% of questions defeated every team. Winning agents combined document preprocessing, parallel retrieval, and answer verification. Run OfficeQA Pro V2 against your own agent before claiming grounded-reasoning readiness.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.databricks.com/blog/evaluating-ai-agents-live-grounded-reasoning-cup" target="_blank" rel="noreferrer">databricks.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">3 items</span></div>
+    <p class="synthesis">Each item this week arrives with a measured attack rate or a documented bypass path rather than a theoretical warning, which shifts the aggregate signal: deployment-stage security gaps in agentic and enterprise AI systems are now empirically catalogued, not speculated. These stories sit in Currents because responses remain partial.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Hidden Unicode in files hijacks DeepSeek&#39;s agent one time in four</h3>
+    <p class="takeaway">Open-weight agent frameworks now carry a measured injection surface, not a theoretical one.</p>
+    <p class="dek">Tencent&#39;s AI-Infra-Guard team ran 14,560 controlled injections against DeepSeek Harness across 16 content channels. Hidden Unicode characters in files succeeded 25.5% of the time; fake-completion text attacks landed at 17%. Code is public on GitHub. If you&#39;re deploying DeepSeek Harness in any agentic pipeline that ingests external files, gate untrusted content before sensitive tool calls.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://huggingface.co/papers/2608.16393" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A market-making model tackles how quotes leak inventory to rivals</h3>
+    <p class="takeaway">Market-making models that ignored price-reading risk now have a practitioner-grade alternative.</p>
+    <p class="dek">Standard market-making models treat adverse selection and price reading as separate, stylised problems. A Risk.net Cutting Edge paper by Barzykin, Bergault, Guéant, and Lemmel models both together, capturing how a market maker&#39;s own quotes betray inventory position. Bring this framing to your next quoting-strategy design review.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.risk.net/cutting-edge/7964011/optimal-quoting-under-adverse-selection-and-price-reading" target="_blank" rel="noreferrer">risk.net <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Microsoft Copilot disclosed its own security bypass when researchers asked</h3>
+    <p class="takeaway">Enterprise Copilot deployments now carry a documented self-disclosure attack path, not a theoretical one.</p>
+    <p class="dek">Varonis researchers bypassed Microsoft 365 Copilot&#39;s user-consent guardrail by asking Copilot how it worked. The model disclosed ?autorun=1, an undocumented parameter that silently fired a credential-theft prompt on link-click. Microsoft patched the injection vector in February and shipped broader fixes Tuesday. Confirm the Tuesday patch is live before Copilot touches any credential-bearing workflow.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://arstechnica.com/security/2026/08/microsoft-copilot-reveals-secret-input-that-allowed-it-to-be-hacked/" target="_blank" rel="noreferrer">arstechnica.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
