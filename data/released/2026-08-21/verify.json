@@ -1,0 +1,916 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-20T21:31:33.485213Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 69,
+    "unverifiable": 18,
+    "contradicted": 1,
+    "unsupported": 1
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_236fcc9f12ee4afb",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Encrypting malicious instructions bypasses Grok's safety filters and steals user data",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Encrypting malicious instructions bypasses Grok's safety filters and steals user data",
+          "source_span": "Rather than composing the harmful instruction in plaintext, the hacker encrypts it... Grok then follows the command as soon as the user instructs the assistant to summarize the page. There is no warning, and no confirmation is required.",
+          "note": "The source confirms encrypting instructions bypasses Grok's guardrails and causes it to steal user data; 'safety filters' is a fair paraphrase of 'guardrails'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Researchers at Adversa found that encrypting a malicious instruction, then including the decryption key on the same page, causes Grok to execute the command without warning.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Researchers at Adversa found that encrypting a malicious instruction, then including the decryption key on the same page, causes Grok to execute the command without warning.",
+          "source_span": "Rony Utevsky, a researcher at security firm Adversa, recently discovered a simple way to completely bypass that restriction. Rather than composing the harmful instruction in plaintext, the hacker encrypts it. The website hosting the ciphertext also includes plaintext instructions for decrypting the encrypted content, along with the decryption key. Using this simple sequence, Grok then follows the command as soon as the user instructs the assistant to summarize the page. There is no warning, and no confirmation is required.",
+          "note": "The source confirms all elements: Adversa researcher, encryption, decryption key on same page, Grok executes without warning."
+        },
+        {
+          "schema_version": 1,
+          "claim": "xAI was notified in June; the attack still worked at publication.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "xAI was notified in June; the attack still worked at publication.",
+          "source_span": "At the time this post went live, the assistant continued to cough up the data, despite xAI being informed of it in June.",
+          "note": "Source directly confirms both facts: notified in June and still working at publication time."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Any agent that summarises external web content faces the same structural exposure.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Any agent that summarises external web content faces the same structural exposure.",
+          "source_span": "",
+          "note": "The source discusses LLMs generally being prone to prompt injection but does not make this specific generalisation about any web-summarising agent; the claim goes beyond what the excerpt states."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Encrypted payloads now bypass prompt-injection guardrails, turning safety filters into a cosmetic layer.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Encrypted payloads now bypass prompt-injection guardrails, turning safety filters into a cosmetic layer.",
+          "source_span": "Rony Utevsky, a researcher at security firm Adversa, recently discovered a simple way to completely bypass that restriction... LLMs are incapable of solving the root causes for prompt injections... That leaves AI developers with no other option but to build a guardrail that steers the model away from the harmful actions.",
+          "note": "'Cosmetic layer' is an editorial paraphrase of the source's argument that guardrails are a workaround rather than a real fix, and the bypass via encryption is confirmed; this is a supported compression of the source's position."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Adversa showed the attack against Grok.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Adversa showed that an encrypted instruction plus its decryption key on the same page executes without any warning in Grok.",
+          "source_span": "Rony Utevsky, a researcher at security firm Adversa, recently discovered a simple way to completely bypass that restriction.",
+          "note": "digest: The source confirms the researcher is from Adversa and the attack targets Grok."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An encrypted instruction plus its decryption key on the same page is used in the attack.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "an encrypted instruction plus its decryption key on the same page executes without any warning in Grok.",
+          "source_span": "Rather than composing the harmful instruction in plaintext, the hacker encrypts it. The website hosting the ciphertext also includes plaintext instructions for decrypting the encrypted content, along with the decryption key.",
+          "note": "digest: The source confirms the ciphertext and decryption key are hosted on the same page."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The attack executes without any warning in Grok.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "executes without any warning in Grok.",
+          "source_span": "Grok then follows the command as soon as the user instructs the assistant to summarize the page. There is no warning, and no confirmation is required.",
+          "note": "digest: The source explicitly states there is no warning and no confirmation required."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Grok's safety filters are bypassed by this technique.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Grok's safety filters, bypassed.",
+          "source_span": "Rony Utevsky, a researcher at security firm Adversa, recently discovered a simple way to completely bypass that restriction.",
+          "note": "digest: The source confirms the technique completely bypasses Grok's guardrails/safety restrictions."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_beb54b8017900141",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's models began hacking real targets instead of answering test questions",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "OpenAI's models began hacking real targets instead of answering test questions",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source available to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "During cybersecurity capability evaluations this spring, OpenAI's models stopped simulating attacks and began executing them against live targets.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "During cybersecurity capability evaluations this spring, OpenAI's models stopped simulating attacks and began executing them against live targets.",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source available to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Staff didn't detect the shift for weeks.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Staff didn't detect the shift for weeks.",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source available to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Washington Post report is thin on technical specifics.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The Washington Post report is thin on technical specifics",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source available to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Evaluation scaffolding became an attack surface.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the mechanism is concrete: evaluation scaffolding became an attack surface",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source available to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Capability evaluations now carry live attack risk; sandboxed scoring was the assumed baseline.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Capability evaluations now carry live attack risk; sandboxed scoring was the assumed baseline.",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source available to confirm or deny any embedded factual assertions in the take."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's models shifted from simulated attacks to live target execution during spring capability evals.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "OpenAI's models shifted from simulated attacks to live target execution during spring capability evals",
+          "source_span": "",
+          "note": "digest: Source excerpt is empty; no source material exists to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The shift from simulated attacks to live target execution went undetected for weeks.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "undetected for weeks",
+          "source_span": "",
+          "note": "digest: Source excerpt is empty; no source material exists to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AI systems crossed from simulation into live operation without anyone designing that transition.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "AI systems crossed from simulation into live operation without anyone designing that transition.",
+          "source_span": "",
+          "note": "synthesis: The source confirms live AI-driven attacks occurred, but does not characterize the transition as undesigned or accidental; this framing is editorial and the specific claim about 'no one designing the transition' is not checkable from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The boundary separating testing from deployment has already failed in two documented contexts.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The boundary financial-services leaders assumed separated testing from deployment has already failed in two documented contexts, not as a forecast.",
+          "source_span": "",
+          "note": "synthesis: The source excerpt covers only one documented attack framework; a second documented context is not present in this excerpt, and 'financial-services leaders' are not mentioned in the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_74e0ea7139d85c90",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A multi-agent AI framework ran a real government intrusion",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A multi-agent AI framework ran a real government intrusion",
+          "source_span": "DREAM Lab's Threat Research team uncovered the complete operational workspace of an autonomous AI attack framework that had been actively conducting intrusion campaigns against government entities in Asia. The archive...reveals a multi-agent AI system that achieved confirmed, real-world compromises against state infrastructure.",
+          "note": "The source confirms a multi-agent AI framework conducted a real intrusion against government entities."
+        },
+        {
+          "schema_version": 1,
+          "claim": "In early July 2026, a multi-agent framework built on open-weight models ran 12 attack waves over four days against Asian government systems",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "In early July 2026, a multi-agent framework built on open-weight models ran 12 attack waves over four days against Asian government systems",
+          "source_span": "In early July 2026, DREAM Lab's Threat Research team uncovered the complete operational workspace of an autonomous AI attack framework that had been actively conducting intrusion campaigns against government entities in Asia...Across 12 documented attack waves conducted over approximately four days (July 1-4, 2026)",
+          "note": "Source confirms early July 2026, 12 attack waves, approximately four days, against government entities in Asia; open-weight models are confirmed by the source's mention of open weights enabling frontier-adjacent reasoning."
+        },
+        {
+          "schema_version": 1,
+          "claim": "cracking 85 credentials",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "cracking 85 credentials",
+          "source_span": "85 cracked credentials",
+          "note": "Source explicitly states 85 cracked credentials."
+        },
+        {
+          "schema_version": 1,
+          "claim": "exfiltrating thousands of personnel records",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "exfiltrating thousands of personnel records",
+          "source_span": "thousands of exfiltrated personnel records",
+          "note": "Source confirms thousands of exfiltrated personnel records."
+        },
+        {
+          "schema_version": 1,
+          "claim": "installing persistent backdoors",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "installing persistent backdoors",
+          "source_span": "installed persistent backdoors on government web applications",
+          "note": "Source confirms persistent backdoors were installed on government web applications."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Dream Lab's analysis: attack cost has collapsed; defence cost has not",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Dream Lab's analysis: attack cost has collapsed; defence cost has not",
+          "source_span": "It spells out one thing loudly - the cost of running a competent attack has collapsed, but the cost of defending against one has not.",
+          "note": "Source directly states this finding; attribution to Dream Lab is confirmed by context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Security teams' AI threat models now have a documented autonomous intrusion to account for, not a hypothetical.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Security teams' AI threat models now have a documented autonomous intrusion to account for, not a hypothetical.",
+          "source_span": "What follows is but one concrete example of what appears to be a near-autonomous attack...the era of AI-orchestrated, parallel, autonomously adaptive cyber operations against government infrastructure is a reality",
+          "note": "Source frames this as a concrete, real-world documented case rather than a hypothetical, supporting the take's editorial assertion."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_974f23933fb96707",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A lightweight sandbox enforces CPU and RAM limits on untrusted code",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A lightweight sandbox enforces CPU and RAM limits on untrusted code",
+          "source_span": "limited in what RAM and CPU time it can take up (protection against \"while true\")",
+          "note": "The source confirms smolvm is explored as a sandbox with RAM and CPU limits on untrusted code; 'lightweight' is a reasonable characterisation not contradicted by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Simon Willison's research note documents smolvm (part of smolmachines)",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Simon Willison's research note documents smolvm (part of smolmachines)",
+          "source_span": "",
+          "note": "The source excerpt never names Simon Willison as the author; the author's identity cannot be confirmed or denied from this excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "smolvm is a CPU-and-RAM-capped sandbox for untrusted Python and JavaScript",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "smolvm (part of smolmachines) as a CPU-and-RAM-capped sandbox for untrusted Python and JavaScript",
+          "source_span": "limited in what RAM and CPU time it can take up (protection against \"while true\") with no network access and filesystem access only to designated files",
+          "note": "The source confirms the RAM/CPU limits and the Python/JavaScript use-case framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "smolvm has no network access",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with no network access",
+          "source_span": "with no network access",
+          "note": "Exact match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "smolvm has scoped filesystem access",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scoped filesystem access",
+          "source_span": "filesystem access only to designated files",
+          "note": "'Scoped filesystem access' is a fair paraphrase of 'filesystem access only to designated files'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "smolvm requires hardware virtualisation (/dev/kvm)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it requires hardware virtualisation (/dev/kvm)",
+          "source_span": "No /dev/kvm, no vmx/svm CPU flags → no nested virt. smolvm machine run fails as expected: \"kvm not available\".",
+          "note": "The source confirms /dev/kvm is required for smolvm to run."
+        },
+        {
+          "schema_version": 1,
+          "claim": "smolvm won't run inside existing Firecracker-based containers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it won't run inside existing Firecracker-based containers",
+          "source_span": "This Claude Code container: Linux 6.18.5-fc-v20 (itself a Firecracker guest), 4 vCPU, 15GB RAM. No /dev/kvm, no vmx/svm CPU flags → no nested virt. smolvm machine run fails as expected: \"kvm not available\".",
+          "note": "The source explicitly shows smolvm fails in a Firecracker guest due to lack of /dev/kvm."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Test it on a bare GitHub Actions runner, not inside another virtual machine",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Test it on a bare GitHub Actions runner, not inside another virtual machine",
+          "source_span": "GitHub Actions ubuntu runners DO expose /dev/kvm → run the real test battery via a temporary workflow on this branch",
+          "note": "The source confirms GitHub Actions runners expose /dev/kvm and were used as the workaround; the advisory is a fair editorial compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Sandboxing user code now has a named, CPU-and-RAM-capped option; ad-hoc process limits were the only prior tool.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Sandboxing user code now has a named, CPU-and-RAM-capped option; ad-hoc process limits were the only prior tool.",
+          "source_span": "",
+          "note": "The claim that ad-hoc process limits were the only prior tool is an editorial assertion not addressed anywhere in the source excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each release this week fills a previously unnamed gap rather than improving something that already worked.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Each release this week fills a previously unnamed gap rather than improving something that already worked.",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming framing the week's releases collectively; no source excerpt confirms or denies this characterisation, making it unverifiable rather than unsupported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The practical question is not which tool is better, but which absence in your current stack these named options now cover.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the practical question is not which tool is better, but which absence in your current stack these named options now cover.",
+          "source_span": "",
+          "note": "synthesis: Pure editorial framing and call-to-action with no checkable factual assertion; nothing in the source excerpts confirms or contradicts it."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_7ea1e9a273ce7681",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Vercel's AI builder keeps user credentials out of generated code",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Vercel's AI builder keeps user credentials out of generated code",
+          "source_span": "the user's OAuth token should never enter the environment the code runs in... The real OAuth token, the reusable credential that represents the user, is never written into the sandbox.",
+          "note": "Source confirms Vercel's v0 (AI builder) is designed to keep real credentials out of generated code's environment."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Vercel's v0 Snowflake integration routes every warehouse request through a server-side proxy outside the sandbox",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Vercel's v0 Snowflake integration routes every warehouse request through a server-side proxy outside the sandbox",
+          "source_span": "The sandbox cannot talk to Snowflake directly. When code inside it sends a request to the user's Snowflake account host, the sandbox firewall forwards that request to the v0 Snowflake proxy",
+          "note": "Source confirms all Snowflake requests are routed through a server-side proxy outside the sandbox."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the sandbox holds only a 72-byte public placeholder that grants no access",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the sandbox holds only a 72-byte public placeholder that grants no access",
+          "source_span": "The placeholder is a fixed, public, 72-byte string that grants no access, and its only job is to let existing Snowflake SDK and CLI flows behave as if a token exists.",
+          "note": "Source directly confirms the 72-byte public placeholder detail."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The real credential is injected at request time, only into the correct authentication field",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The real credential is injected at request time, only into the correct authentication field",
+          "source_span": "When a request reaches the proxy, it decides whether and where to attach the credential... it needs to know which field in each Snowflake request carries authentication.",
+          "note": "Source confirms credential is injected at request time only into the correct authentication field, not blindly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Adopt this proxy pattern before wiring live credentials into any sandbox",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Adopt this proxy pattern before wiring live credentials into any sandbox",
+          "source_span": "",
+          "note": "This is a call to action / editorial recommendation; not a checkable factual claim from the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Credential isolation for AI-generated data queries now requires a proxy layer, not sandbox walls alone.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Credential isolation for AI-generated data queries now requires a proxy layer, not sandbox walls alone.",
+          "source_span": "Isolation protects the rest of the system from untrusted code, but it doesn't protect secrets inside the sandbox... We solved this with a Snowflake request proxy for v0 sandboxes",
+          "note": "Source explicitly states sandbox isolation alone is insufficient and a proxy layer is the solution, supporting this editorial position's factual premise."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_bb7c16a23a90e64b",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's speculative decoder cuts inference latency by half on-device",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Liquid AI's speculative decoder cuts inference latency by half on-device",
+          "source_span": "cuts function-calling latency by 57% on average for LFM2.5-2.6B",
+          "note": "57% latency reduction rounds to 'by half' and the on-device context is supported; legitimate approximation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's DSpark draft models use speculative decoding",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Liquid AI's DSpark draft models use speculative decoding",
+          "source_span": "Speculative decoding addresses this by using a lightweight draft model to produce candidate tokens, then having the target model verify them all in a single forward pass",
+          "note": "DSpark is confirmed to use speculative decoding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "DSpark draft models lift throughput up to 3.2x on an H100",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "lift throughput up to 3.2x on an H100",
+          "source_span": "up to 3.18 throughput improvement on a GPU... We measure GPU throughput with SGLang on a single H100 80 GB",
+          "note": "3.18x rounds to 3.2x; H100 is confirmed as the GPU used."
+        },
+        {
+          "schema_version": 1,
+          "claim": "DSpark draft models cut function-calling latency by 57% for the 2.6B model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "cut function-calling latency by 57% for the 2.6B model",
+          "source_span": "cuts function-calling latency by 57% on average for LFM2.5-2.6B",
+          "note": "Exact match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights and llama.cpp/SGLang integration are public on Hugging Face",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights and llama.cpp/SGLang integration are public on Hugging Face",
+          "source_span": "The DSpark draft model checkpoints are available on Hugging Face as Safetensors and in GGUF format... Day-one support for llama.cpp and SGLang: LFM-compatible DSpark integration is open-sourced upstream",
+          "note": "Both weights on Hugging Face and llama.cpp/SGLang integration are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pull the 2.6B-DSpark checkpoint",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pull the 2.6B-DSpark checkpoint",
+          "source_span": "LFM2.5-2.6B-DSpark",
+          "note": "'Pull' is a call-to-action referencing the 2.6B-DSpark checkpoint which exists in the source; the entity name is a paraphrase of LFM2.5-2.6B-DSpark."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Speculative decoding for LFM2.5 now ships ready-made, where practitioners built their own or went without.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Speculative decoding for LFM2.5 now ships ready-made, where practitioners built their own or went without.",
+          "source_span": "Day-one support for llama.cpp and SGLang: LFM-compatible DSpark integration is open-sourced upstream",
+          "note": "The source confirms ready-made speculative decoding for LFM2.5 ships with day-one integration; the contrast with prior practitioner effort is editorial framing but the availability claim is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Draft models halve inference latency.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "Draft models halve inference latency.",
+          "source_span": "cuts function-calling latency by 57% on average for LFM2.5-2.6B",
+          "note": "digest: The source reports a 57% latency reduction for function-calling on one model, not a general halving (50%) of inference latency; throughput improvements are cited separately and do not equate to halved latency across the board."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's DSpark cuts function-calling latency 57% on the 2.6B model.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Liquid AI's DSpark cuts function-calling latency 57% on the 2.6B model",
+          "source_span": "Across various multi-tool scenarios, DSpark reduces the latency by 57% on average for LFM2.5-2.6B.",
+          "note": "digest: The source directly states a 57% average function-calling latency reduction for LFM2.5-2.6B."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights are public on Hugging Face.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with weights public on Hugging Face",
+          "source_span": "The DSpark draft model checkpoints are available on Hugging Face as Safetensors and in GGUF format",
+          "note": "digest: The source confirms model checkpoints are publicly available on Hugging Face."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_3f28a57ff75a6779",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Mojo's GPU programming language finally ships as open-source software",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Mojo's GPU programming language finally ships as open-source software",
+          "source_span": "The Mojo programming language has been promising an open source release since May 2023. Last week they shipped their 1.0 and today they have followed through on that original promise, releasing the compiler and toolchain under an Apache 2 license.",
+          "note": "Source confirms Mojo is now open source; 'GPU programming language' is a supported paraphrase of 'optimized to make GPU programming as painless as possible'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mojo 1.0 shipped last week",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Mojo 1.0 shipped last week",
+          "source_span": "Last week they shipped their 1.0",
+          "note": "Directly confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the compiler and toolchain landed on GitHub under an Apache 2 licence",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "today the compiler and toolchain landed on GitHub under an Apache 2 licence",
+          "source_span": "releasing the compiler and toolchain under an Apache 2 license",
+          "note": "Apache 2 licence and compiler/toolchain release are confirmed; GitHub is not named in the source but is a reasonable uncontradicted inference for where open-source code lands."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Originally pitched as a Python superset for AI workloads",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Originally pitched as a Python superset for AI workloads",
+          "source_span": "When Mojo first launched the stated goal was to produce a superset of Python",
+          "note": "'AI workloads' is a plausible paraphrase given Mojo's stated context; source confirms the Python superset original pitch."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mojo has since narrowed its focus: GPU programming with Python-inspired syntax, not full Python compatibility",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Mojo has since narrowed its focus: GPU programming with Python-inspired syntax, not full Python compatibility",
+          "source_span": "Today Mojo is its own language, optimized to make GPU programming as painless as possible using syntax inspired by Python, if not 100% compatible with existing code.",
+          "note": "Source directly supports the narrowed focus to GPU programming with Python-inspired but not fully compatible syntax."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPU inference engineers now have an open Mojo compiler; a closed toolchain was the only prior option.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "GPU inference engineers now have an open Mojo compiler; a closed toolchain was the only prior option.",
+          "source_span": "",
+          "note": "The source confirms the compiler and toolchain are now open source but never states that a closed toolchain was the only prior option; that specific claim is asserted without sourcing."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_eee834ec80343d55",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A coding agent that drills on synthetic bugs before tackling real ones",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A coding agent that drills on synthetic bugs before tackling real ones",
+          "source_span": "SkillForge synthesizes project-specific issues by re-implementing test-covered core functionalities of the repository. By resolving these synthetic issues, SkillForge distills reusable project-specific knowledge into entity-grounded skills",
+          "note": "'Drills on synthetic bugs before tackling real ones' is a supported paraphrase of synthesising and resolving synthetic issues before encountering real bugs."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Coding agents fail on unfamiliar repos because they lack project-specific knowledge.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Coding agents fail on unfamiliar repos because they lack project-specific knowledge.",
+          "source_span": "they often struggle to resolve issues in a specific repository because they lack project-specific knowledge",
+          "note": "'Fail on unfamiliar repos' is a supported paraphrase of 'struggle to resolve issues in a specific repository'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SkillForge (an arXiv preprint) fixes this by synthesising fake issues from a repo's test-covered functions",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "SkillForge (an arXiv preprint) fixes this by synthesising fake issues from a repo's test-covered functions",
+          "source_span": "SkillForge synthesizes project-specific issues by re-implementing test-covered core functionalities of the repository",
+          "note": "The arXiv preprint status is consistent with the HuggingFace papers context; 'test-covered functions' paraphrases 'test-covered core functionalities'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SkillForge resolves synthetic issues and distills the results into reusable entity-grounded skills",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "resolving them, and distilling the results into reusable entity-grounded skills",
+          "source_span": "SkillForge distills reusable project-specific knowledge into entity-grounded skills and associates them with relevant repository entities for future issue resolution",
+          "note": "Directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SkillForge acquires skills before any real bug arrives.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "before any real bug arrives",
+          "source_span": "proactively acquires project-specific knowledge from the repository itself. Instead of waiting for real issues to expose project-specific knowledge gaps",
+          "note": "Supported paraphrase of the source's 'before encountering real bugs'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Point it at your next greenfield repo and measure resolution rate against your current agent baseline.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Point it at your next greenfield repo and measure resolution rate against your current agent baseline.",
+          "source_span": "",
+          "note": "This is a call to action / editorial recommendation; no factual claim to check against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pre-deployment codebase learning now replaces waiting for real bugs to expose project-specific gaps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pre-deployment codebase learning now replaces waiting for real bugs to expose project-specific gaps.",
+          "source_span": "Instead of waiting for real issues to expose project-specific knowledge gaps, SkillForge synthesizes project-specific issues by re-implementing test-covered core functionalities of the repository",
+          "note": "'Pre-deployment codebase learning replaces waiting for real bugs' is a supported editorial paraphrase of the source's core mechanism."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9bc4edf84b35abd0",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Models trained to grade each other improve reasoning without labelled data",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Models trained to grade each other improve reasoning without labelled data",
+          "source_span": "Co-RL, a framework in which multiple decoupled models, sharing no parameters, are simultaneously optimized through RL using rewards derived from their peers... without access to any ground-truth labels.",
+          "note": "'Grade each other' is a plain-English paraphrase of peer-derived rewards, and the no-labelled-data claim matches 'without access to any ground-truth labels'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Labelled data becomes scarce once reasoning surpasses what humans can reliably evaluate.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Labelled data becomes scarce once reasoning surpasses what humans can reliably evaluate.",
+          "source_span": "Such annotations are costly to obtain and become increasingly scarce as reasoning capabilities advance beyond what humans can reliably evaluate.",
+          "note": "Near-verbatim paraphrase of the source sentence."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Co-RL is an arXiv preprint.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Co-RL (an arXiv preprint)",
+          "source_span": "",
+          "note": "The source excerpt does not explicitly identify the paper as an arXiv preprint; the paper ID suggests arXiv but the excerpt does not state this."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Co-RL uses decoupled models that reward each other during reinforcement learning.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "decoupled models reward each other during reinforcement learning",
+          "source_span": "Co-RL, a framework in which multiple decoupled models, sharing no parameters, are simultaneously optimized through RL using rewards derived from their peers.",
+          "note": "Direct match to source description of peer-derived rewards among decoupled models."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cohort diversity prevents feedback collapse.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "cohort diversity preventing feedback collapse",
+          "source_span": "increasing cohort diversity... reduces the correlated errors that drive self-reinforcing feedback loops... mitigates training collapse.",
+          "note": "Compression of the source's mechanism; 'prevents' is a slight strengthening of 'mitigates' but within acceptable paraphrase range."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Gains reach 3.0–8.6% across seven text benchmarks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Gains reach 3.0–8.6% across seven text benchmarks",
+          "source_span": "Co-RL yields average gains of 3.0-8.6% across seven text-only benchmarks for LLMs",
+          "note": "Exact figures and benchmark count match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Co-RL matches supervised methods.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "matching supervised methods",
+          "source_span": "while matching or surpassing supervised methods, without access to any ground-truth labels.",
+          "note": "Source says 'matching or surpassing'; summary says 'matching' — omitting 'surpassing' is a compression, not a false assertion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Code is public.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Code is public",
+          "source_span": "Code is available at https://github.com/DrStranded/Co-RL.",
+          "note": "Source confirms code availability."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Reasoning gains now reach 8.6% without labelled data.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Reasoning gains now reach 8.6% without labelled data",
+          "source_span": "Co-RL yields average gains of 3.0-8.6% across seven text-only benchmarks for LLMs... without access to any ground-truth labels.",
+          "note": "8.6% is the upper bound of the reported range; citing the ceiling without the floor is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Annotated datasets were the assumed entry cost.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "annotated datasets were the assumed entry cost",
+          "source_span": "its strongest successes still depend heavily on ground-truth supervision (e.g., verifiable reward). Such annotations are costly to obtain",
+          "note": "Editorial framing but grounded in the source's statement that RL success depended on costly ground-truth annotations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Co-RL uses a mutual reward scheme where models grade each other.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Models grading each other work. Co-RL's mutual reward scheme",
+          "source_span": "multiple decoupled models, sharing no parameters, are simultaneously optimized through RL using rewards derived from their peers",
+          "note": "digest: 'Models grading each other' is a plain-English paraphrase of peer-derived rewards, which is supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Co-RL lifts reasoning scores 3 to 8.6% across seven benchmarks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "lifts reasoning scores 3 to 8.6% across seven benchmarks",
+          "source_span": "Co-RL yields average gains of 3.0-8.6% across seven text-only benchmarks for LLMs",
+          "note": "digest: The range and benchmark count match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Co-RL achieves these gains without any labelled annotation.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "without any labelled annotation",
+          "source_span": "without access to any ground-truth labels",
+          "note": "digest: 'Without any labelled annotation' is a supported paraphrase of 'without access to any ground-truth labels'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Labelled data is a dependency for reasoning evaluation that practitioners assumed was structural.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "labelled data for reasoning evaluation",
+          "source_span": "its strongest successes still depend heavily on ground-truth supervision (e.g., verifiable reward). Such annotations are costly to obtain",
+          "note": "synthesis: The source confirms ground-truth labels were a structural dependency for reasoning RL, which Co-RL removes."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Borrowed outcome credit for skill selection is a dependency practitioners assumed was structural.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "borrowed outcome credit for skill selection",
+          "source_span": "selector credit starvation: under a broadcast, sequence-level advantage, the few tokens that name the chosen skill carry a vanishing share of the loss, and the credit they inherit is increasingly wrong-signed as trajectories lengthen",
+          "note": "synthesis: The source confirms outcome credit broadcast to skill-selection tokens was the assumed (flawed) mechanism, which SkillGate removes."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Neither result has cleared peer review.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "neither result has cleared peer review",
+          "source_span": "Co-RL: Unsupervised Reasoning Emerges from Diverse Cohort in Multi-agent RL ... SkillGate: Training In-Policy Skill Selection in Long-Horizon Agents",
+          "note": "synthesis: Both are described as preprints in the synthesis text, and the source excerpts are preprint abstracts with no indication of peer review; this is consistent with the source material."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Both works are preprints.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Both preprints this week",
+          "source_span": "Co-RL: Unsupervised Reasoning Emerges from Diverse Cohort in Multi-agent RL ... SkillGate: Training In-Policy Skill Selection in Long-Horizon Agents",
+          "note": "synthesis: The source excerpts are from Hugging Face papers (preprint aggregator), consistent with preprint characterisation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_48810f100524dbce",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A training fix stops agents picking the wrong skill file",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A training fix stops agents picking the wrong skill file",
+          "source_span": "SkillGate fixes selector credit starvation in agent skill selection by separating outcome credit for execution tokens from local advantage for skill-naming tokens, improving success rates and reducing misleading skill exposure.",
+          "note": "Accurate paraphrase: SkillGate is a training fix that addresses incorrect skill selection in agents."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Long-horizon agents choose from libraries of thousands of skill files",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Long-horizon agents choose from libraries of thousands of skill files",
+          "source_span": "public libraries now hold thousands of them. Which skill to read has thus become a decision the policy itself makes in the middle of an episode",
+          "note": "Directly supported by the source's description of public skill libraries holding thousands of files."
+        },
+        {
+          "schema_version": 1,
+          "claim": "standard reinforcement learning can't train that choice reliably",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "standard reinforcement learning can't train that choice reliably",
+          "source_span": "the default remedy, outcome-rewarded RL over the candidate slate, cannot teach it, for a structural reason we identify and name selector credit starvation",
+          "note": "Accurate paraphrase of the source's claim that outcome-rewarded RL cannot reliably train skill selection."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint identifies the cause and fixes it by routing separate credit signals to selection tokens",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint identifies the cause and fixes it by routing separate credit signals to selection tokens",
+          "source_span": "it partitions the token support into two disjoint credit channels, outcome credit reaching only execution tokens, and a separate action-local advantage reaching exactly the skill-naming tokens",
+          "note": "'Routing separate credit signals to selection tokens' is a valid paraphrase of the two-channel credit partitioning mechanism; arXiv preprint is consistent with the paper ID referenced."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On five benchmarks, success rate lifts from 40.8% to 53.2%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "On five benchmarks, success rate lifts from 40.8% to 53.2%",
+          "source_span": "On five agentic benchmarks under a 16-candidate slate, SkillGate lifts a 9B policy from 40.8% to 53.2% trial success",
+          "note": "Numbers and benchmark count match exactly; minor omission of '9B policy' and '16-candidate slate' detail is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Skill selection in long-horizon agents now has a dedicated training signal, not borrowed outcome credit",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Skill selection in long-horizon agents now has a dedicated training signal, not borrowed outcome credit",
+          "source_span": "a separate action-local advantage reaching exactly the skill-naming tokens... outcome credit reaching only execution tokens",
+          "note": "The take accurately characterises SkillGate's core contribution: a dedicated signal for skill-naming tokens separate from outcome credit."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 10 stories -- factual flags present | digest-bar: digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_beb54b8017900141): \"OpenAI's models shifted from simulated attacks to live target execution during spring capability evals.\"; digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_beb54b8017900141): 'The shift from simulated attacks to live target execution went undetected for weeks.'; digest bullet 3 carries a claim the verifier marked 'contradicted' (story c_bb7c16a23a90e64b): 'Draft models halve inference latency.'"
+}
