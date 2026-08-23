@@ -1,0 +1,725 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-23T21:24:10.030331Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 60,
+    "unverifiable": 7,
+    "contradicted": 2
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_980cbbbe173aefd0",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Long-context inference gets 30x faster by skipping most attention calculations",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Long-context inference gets 30x faster by skipping most attention calculations",
+          "source_span": "in FP8, still achieves a 30.49x speedup against an FA3/4-aligned dense baseline",
+          "note": "30.49x rounds to 30x; skipping attention calculations is a fair paraphrase of block-sparse attention; supported as rounding and paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Processing a 128,000-token context through a language model is expensive because every token attends to every other.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Processing a 128,000-token context through a language model is expensive because every token attends to every other.",
+          "source_span": "the quadratic complexity of attention remains a critical bottleneck, particularly during the compute-intensive prefilling phase",
+          "note": "The quadratic complexity of attention (every token attending to every other) at long context is accurately paraphrased."
+        },
+        {
+          "schema_version": 1,
+          "claim": "FlashPrefill V2 is an arXiv preprint.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "FlashPrefill V2, an arXiv preprint",
+          "source_span": "FlashPrefill V2: Block-Sparse Prefill Attention for Long-Context LLM Serving",
+          "note": "The source is presented on Hugging Face papers with an arXiv-style paper ID (2608.19758), consistent with being an arXiv preprint; the source does not contradict this."
+        },
+        {
+          "schema_version": 1,
+          "claim": "FlashPrefill V2 skips most of those calculations using block-sparse patterns.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "skips most of those calculations using block-sparse patterns",
+          "source_span": "FlashPrefill V2: Block-Sparse Prefill Attention for Long-Context LLM Serving",
+          "note": "Block-sparse prefill attention is the named mechanism; 'skipping most calculations' is a fair plain-English paraphrase of sparse attention."
+        },
+        {
+          "schema_version": 1,
+          "claim": "FlashPrefill V2 achieves a 30x speedup over a dense baseline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "achieving a 30x speedup over a dense baseline",
+          "source_span": "in FP8, still achieves a 30.49x speedup against an FA3/4-aligned dense baseline",
+          "note": "30.49x rounds to 30x; dense baseline correctly identified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "FlashPrefill V2 achieves the speedup on NVIDIA H20 hardware.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "on NVIDIA H20 hardware",
+          "source_span": "Extensive evaluations on NVIDIA H20 GPUs---among the most widely deployed inference accelerators",
+          "note": "Source explicitly names NVIDIA H20 GPUs."
+        },
+        {
+          "schema_version": 1,
+          "claim": "FlashPrefill V2 integrates with SGLang today.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "It integrates with SGLang today.",
+          "source_span": "FlashPrefill V2 natively supports paged KV cache and continuous batching, allowing integration as an attention backend in modern inference frameworks such as SGLang.",
+          "note": "Source confirms SGLang integration; 'today' is a reasonable present-tense reading of the paper's stated capability."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Long-context serving costs were set by dense attention; sparse block selection now cuts that by 30x.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Long-context serving costs were set by dense attention; sparse block selection now cuts that by 30x.",
+          "source_span": "in FP8, still achieves a 30.49x speedup against an FA3/4-aligned dense baseline",
+          "note": "30x is a valid rounding of 30.49x; dense attention as the baseline cost and sparse block selection as the mechanism are both confirmed by the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_1a872c3772188d30",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's agent architecture scores perfectly on a hard general-reasoning benchmark",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "NVIDIA's agent architecture scores perfectly on a hard general-reasoning benchmark",
+          "source_span": "AVO achieved a 100.00 RHAE score across all 25 environments in the ARC-AGI-3 public set, completing all 183 levels.",
+          "note": "100.00 RHAE score across all environments is accurately described as scoring perfectly; ARC-AGI-3 is a legitimate general-reasoning benchmark per the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's Agentic Variation Operators (AVO) scored perfectly on ARC-AGI-3",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "NVIDIA's Agentic Variation Operators (AVO) scored perfectly on ARC-AGI-3",
+          "source_span": "AVO achieved a 100.00 RHAE score across all 25 environments in the ARC-AGI-3 public set, completing all 183 levels.",
+          "note": "100.00 RHAE score is accurately paraphrased as scoring perfectly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ARC-AGI-3 is a benchmark where agents must explore unknown environments without instructions or goals",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a benchmark where agents must explore unknown environments without instructions or goals",
+          "source_span": "An agent enters unfamiliar game-like environments without instructions, explicit rules, or a stated goal.",
+          "note": "The description accurately paraphrases the source's characterisation of ARC-AGI-3."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The same architecture ran a seven-day GPU-kernel optimisation loop",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The same architecture ran a seven-day GPU-kernel optimisation loop",
+          "source_span": "AVO operated continuously for seven days, explored more than 500 optimization directions, and produced 40 committed kernel versions.",
+          "note": "Source confirms the seven-day GPU-kernel optimization run using the same AVO architecture."
+        },
+        {
+          "schema_version": 1,
+          "claim": "outperforming established libraries by up to 10.5%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "outperforming established libraries by up to 10.5%",
+          "source_span": "the resulting multihead attention kernels outperformed cuDNN by up to 3.5% and FlashAttention-4 by up to 10.5% across the evaluated configurations.",
+          "note": "The 10.5% figure is accurate; generalising cuDNN and FlashAttention-4 as 'established libraries' is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent harness design now sets the benchmark ceiling, where model choice set it before.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent harness design now sets the benchmark ceiling, where model choice set it before.",
+          "source_span": "evaluating a model is not the same as evaluating an agent. Model capability matters enormously, but the surrounding system determines how effectively that capability can be converted into sustained autonomous progress.",
+          "note": "The take is an editorial compression of the source's explicit argument that the agent harness (surrounding system) now determines performance outcomes, not model capability alone."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Every story today locates the same authority problem in a different layer: harness design, compliance graphs, infrastructure enforcement, and orchestration logic each turn out to hold a ceiling that practitioners assumed sat elsewhere.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Every story today locates the same authority problem in a different layer: harness design, compliance graphs, infrastructure enforcement, and orchestration logic each turn out to hold a ceiling that practitioners assumed sat elsewhere.",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming synthesizing across stories; while the sources discuss harness design, compliance graphs (PolicyGuide), and infrastructure enforcement (NVIDIA security), the framing of a shared 'authority problem' and 'ceiling' is an editorial judgment not checkable against any single source span."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent governance now requires a layered audit, not a single control point.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the strategic implication is that agent governance now requires a layered audit, not a single control point.",
+          "source_span": "",
+          "note": "synthesis: This is an editorial strategic implication drawn across stories; no source explicitly states that agent governance requires a 'layered audit' as a strategic conclusion."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_b95f01677aa76e28",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Customer-service agents now need workflow-level compliance, not just action blocks",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Customer-service agents now need workflow-level compliance, not just action blocks",
+          "source_span": "action-local checks do not guide an agent through a multi-step procedure... PolicyGuide instead compiles each domain policy into a workflow graph and invokes a proactive verifier at user-turn boundaries.",
+          "note": "The source supports the contrast between action-local checks and workflow-level guidance, making this a supported paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Single-action guardrails catch forbidden moves but miss omitted steps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Single-action guardrails catch forbidden moves but miss omitted steps.",
+          "source_span": "Compliance failures arise from either forbidden actions, such as granting an ineligible change, or omitted procedural requirements, such as identification or confirmation. Runtime safeguards can intervene on risky actions, but action-local checks do not guide an agent through a multi-step procedure.",
+          "note": "The source explicitly states action-local checks miss omitted procedural requirements, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PolicyGuide (an arXiv preprint) compiles policy into a workflow graph",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "PolicyGuide (an arXiv preprint) compiles policy into a workflow graph",
+          "source_span": "PolicyGuide instead compiles each domain policy into a workflow graph",
+          "note": "Directly supported; arXiv preprint is a reasonable characterisation of the source context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PolicyGuide runs a verifier at each user turn",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "runs a verifier at each user turn",
+          "source_span": "invokes a proactive verifier at user-turn boundaries",
+          "note": "'Each user turn' is a supported paraphrase of 'user-turn boundaries'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "compliance scores rose from 0.42 to 0.62",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "compliance scores rose from 0.42 to 0.62",
+          "source_span": "PolicyGuide raises mean Pass^4 from 0.42 to 0.62",
+          "note": "Numbers match exactly; 'compliance scores' is a supported plain-English paraphrase of 'mean Pass^4'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "compliance scores rose from 0.42 to 0.62 across airline, retail, and telecom scenarios",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across airline, retail, and telecom scenarios",
+          "source_span": "Across the τ^2-bench airline, retail, and telecom domains",
+          "note": "The three domains match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Customer-service agent deployments now require workflow-wide policy checks, where single-action guardrails were the standard.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Customer-service agent deployments now require workflow-wide policy checks, where single-action guardrails were the standard.",
+          "source_span": "Runtime safeguards can intervene on risky actions, but action-local checks do not guide an agent through a multi-step procedure.",
+          "note": "The take's factual assertion that action-local/single-action guardrails were the prior standard is supported by the source's framing of the problem."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_919cd936b346ccf0",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA maps where security must live in an agent stack",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "NVIDIA maps where security must live in an agent stack",
+          "source_span": "AI safety and security teams at NVIDIA offer their perspective on the emerging agent stack—including the role of each layer and where security should live.",
+          "note": "The source confirms NVIDIA's security teams are mapping where security should live in the agent stack."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's security team draws a line most stacks blur: harnesses guide what an agent tries; infrastructure determines what it can do.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "harnesses guide what an agent tries; infrastructure determines what it can do",
+          "source_span": "The harness guides what an agent tries. The infrastructure controls what an agent can do. Both are necessary; only one is authoritative.",
+          "note": "The source explicitly states this distinction in nearly identical language."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Three named gaps — unclear boundaries, excessive credentials, untrusted data as control — let agents exceed scope.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "Three named gaps — unclear boundaries, excessive credentials, untrusted data as control — let agents exceed scope.",
+          "source_span": "- Unclear boundaries. Rules are split across prompts, models, agents, harnesses, runtimes, and infrastructure, so the authoritative version is hard to find. - Excessive access. The agent receives standing, often long-lived credentials or permissions beyond what the current task needs. - Untrusted data as control. Documents, messages, tool results, and memory can redirect action without being authorized as instructions. - Uncontrolled external ...",
+          "note": "The source lists at least four gaps (the excerpt is cut off with 'Uncontrolled external...'), so the summary's claim of exactly three named gaps is contradicted by the source showing a fourth gap exists; also 'excessive credentials' paraphrases 'excessive access' which is acceptable, but the count of three is wrong."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Does your runtime enforce policy before the harness loads, or can the agent simply decline the control?",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "can the agent simply decline the control?",
+          "source_span": "A control that the agent can decline to invoke is not an effective security control.",
+          "note": "The rhetorical question paraphrases the source's point that a declinable control is not effective; this is editorial framing grounded in a source fact."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Infrastructure enforcement now sets the agent's authority ceiling; harness logic set it before.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Infrastructure enforcement now sets the agent's authority ceiling; harness logic set it before.",
+          "source_span": "Final authority belongs to the environment in which the agent runs in. That environment holds identity, enforces policy, contains failures, records what happened, and reaches the same authorization decision every time... The harness guides what an agent tries. The infrastructure controls what an agent can do. Both are necessary; only one is authoritative.",
+          "note": "The take accurately captures the source's argument that infrastructure is the authoritative control layer, with the harness being a behavioral (non-authoritative) guide."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_2b07f16d49ec3363",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "LinkedIn's production code review runs multiple competing AI agents to cut noise",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "LinkedIn's production code review runs multiple competing AI agents to cut noise",
+          "source_span": "LinkedIn's platform addresses each of these limitations through multiple independent AI reviewers that use distinct models and reasoning approaches",
+          "note": "'Competing' is a reasonable paraphrase of independent cross-validating agents, and 'cut noise' matches the source's 'maximizing signal-to-noise' goal."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LinkedIn replaced a single AI reviewer with multiple independent agents on distinct models",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "LinkedIn replaced a single AI reviewer with multiple independent agents on distinct models",
+          "source_span": "multiple independent AI reviewers that use distinct models and reasoning approaches",
+          "note": "The source confirms multiple independent agents on distinct models; 'replaced a single' is a fair paraphrase of the structural limitation described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "convergence across agents signals high confidence",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "convergence across agents signals high confidence",
+          "source_span": "when multiple agents independently identify the same issue, LinkedIn treats that convergence as strong evidence",
+          "note": "'High confidence' is a supported paraphrase of 'strong evidence'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "divergence triggers separate verification",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "divergence triggers separate verification",
+          "source_span": "Unique findings, however, aren't automatically discarded but verified separately.",
+          "note": "Direct match to source language about separate verification of unique findings."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Across 5,230 sampled comments, 63.9% of suggestions were accepted by developers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Across 5,230 sampled comments, 63.9% of suggestions were accepted by developers",
+          "source_span": "The evaluation covered 5,230 sampled review comments across 1,727 PRs and found that 90.1% could be evaluated with high confidence based on the merged code. Overall, 63.9% of suggestions were accepted",
+          "note": "Both figures (5,230 and 63.9%) match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Engineering leads at scale now own an agent-orchestration problem, not a model-selection one.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Engineering leads at scale now own an agent-orchestration problem, not a model-selection one.",
+          "source_span": "",
+          "note": "This is an editorial position; the source describes orchestration architecture but does not frame the problem in these terms, making the claim unverifiable from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_8387548ab2bd81be",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Retrieved memories can trap language models into wrong reasoning",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Retrieved memories can trap language models into wrong reasoning",
+          "source_span": "Retrieved memories can induce reasoning errors and belief distortions in large language models",
+          "note": "The headline is a plain-English paraphrase of the abstract's opening claim about reasoning errors and belief distortions."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint introduces MemTrapBench",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint introduces MemTrapBench",
+          "source_span": "we introduce MemTrapBench",
+          "note": "The source is an arXiv abstract and explicitly introduces MemTrapBench."
+        },
+        {
+          "schema_version": 1,
+          "claim": "MemTrapBench covers two failure modes: Reasoning Fixation and Belief Distortion",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a benchmark covering two failure modes where retrieved memories hurt rather than help: Reasoning Fixation and Belief Distortion",
+          "source_span": "MemTrapBench, which covers two forms of cognitive traps: Reasoning Fixation and Belief Distortion",
+          "note": "Exact match to source on both the count and the named failure modes."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Experiments span five memory frameworks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Across five memory frameworks",
+          "source_span": "Experiments across two model families and five representative memory frameworks",
+          "note": "The source confirms five memory frameworks; the body omits 'two model families' but does not contradict it."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Every tested strategy underperformed the no-memory baseline",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "every tested strategy underperformed the no-memory baseline",
+          "source_span": "all evaluated memory strategies underperform the no-memory setting",
+          "note": "Direct paraphrase of the source's finding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The strongest strategy dropped more than 10%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with the strongest dropping more than 10%",
+          "source_span": "with even the strongest methods suffering drops of more than 10%",
+          "note": "Near-verbatim match to the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AdaptiveMem is the named mitigation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "AdaptiveMem is the named mitigation",
+          "source_span": "we propose AdaptiveMem, a simple yet effective inference-time method that instructs LLMs to avoid memory traps",
+          "note": "Source confirms AdaptiveMem as the proposed mitigation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Run MemTrapBench against your memory stack; if you score below baseline, AdaptiveMem is the named mitigation",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Run MemTrapBench against your memory stack; if you score below baseline, AdaptiveMem is the named mitigation",
+          "source_span": "",
+          "note": "The call-to-action framing ('run against your stack') is editorial and not checkable from the source; the AdaptiveMem fact is separately verified above."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Correct retrieval was the assumed ceiling for memory quality; it is now the floor of a harder problem.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Correct retrieval was the assumed ceiling for memory quality; it is now the floor of a harder problem.",
+          "source_span": "existing memory benchmarks mainly evaluate whether information is correctly extracted, stored, and retrieved, while largely overlooking how retrieved memories reshape model reasoning and affect performance on the current task",
+          "note": "The take is editorial framing but accurately reflects the source's argument that correct retrieval is insufficient and a harder problem exists."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Three releases today each expose a hidden cost that the default workflow conceals.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Three releases today each expose a hidden cost that the default workflow conceals",
+          "source_span": "",
+          "note": "synthesis: The source covers exactly three stories (MemTrapBench/AdaptiveMem, HEIR, Kitesurf); 'three releases' is a supported count and 'hidden cost' is editorial framing of real findings in each."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Retrieved context misleads (is a hidden cost).",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "retrieved context that misleads",
+          "source_span": "even faithfully recorded and semantically relevant memories can distort model reasoning or beliefs and degrade current task performance",
+          "note": "synthesis: Source explicitly states retrieved memories can distort reasoning and degrade performance, supporting 'retrieved context that misleads'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Encrypted inference runs slowly (is a hidden cost).",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "encrypted inference that runs slowly",
+          "source_span": "One concern raised by several Hacker News readers is performance... a 64 bit equality operation takes 80ms, addition and subtraction 100ms, division as much as 8 seconds",
+          "note": "synthesis: Source extensively discusses performance overhead of homomorphic encryption, supporting the claim that encrypted inference runs slowly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Browser agents overprovision compute (is a hidden cost).",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "browser agents that overprovision compute",
+          "source_span": "Browser engines like Chromium were built for humans, not agents, and they come with overhead that AI models simply do not need. They consume so much memory and compute that providing every agent with its own instance is prohibitively expensive",
+          "note": "synthesis: Source directly states full browsers overprovision memory and compute for AI agents, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The practical question this week is whether your pipeline's assumed baseline is actually the problem.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The practical question this week is whether your pipeline's assumed baseline is actually the problem.",
+          "source_span": "",
+          "note": "synthesis: This is editorial framing/synthesis with no checkable factual assertion; it is a pattern-naming conclusion rather than a verifiable fact."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_163ea0b981477631",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google open-sources a compiler that runs AI models on encrypted data",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Google open-sources a compiler that runs AI models on encrypted data",
+          "source_span": "Google is introducing HEIR (Homomorphic Encryption Intermediate Representation), an open-source compiler and development toolchain designed to make encrypted computation easier to deploy. In particular, HEIR can compile pre-trained AI models built for conventional, unencrypted inputs so they can instead operate on encrypted data.",
+          "note": "Source confirms Google is open-sourcing HEIR, a compiler that runs AI models on encrypted data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google's HEIR compiler adapts existing PyTorch models to run on homomorphic-encrypted inputs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google's HEIR compiler adapts existing PyTorch models to run on homomorphic-encrypted inputs",
+          "source_span": "Google provides a set of demos showcasing how pre-trained PyTorch models can be compiled to FHE.",
+          "note": "Source confirms HEIR adapts pre-trained PyTorch models for homomorphic encryption execution."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the server never sees raw data",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "so the server never sees raw data",
+          "source_span": "Servers can process ciphertexts and return encrypted results without exposing any underlying information.",
+          "note": "Source confirms servers process only encrypted data and never see raw underlying information."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The toolchain is open-source with demos included",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The toolchain is open-source with demos included",
+          "source_span": "HEIR is an open-source compiler toolchain and development platform for HE... Google provides a set of demos showcasing how pre-trained PyTorch models can be compiled to FHE.",
+          "note": "Source confirms HEIR is open-source and includes demos."
+        },
+        {
+          "schema_version": 1,
+          "claim": "addition costs ~100ms per operation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "addition costs ~100ms per operation",
+          "source_span": "dhx provided some concrete figures, noting that a 64 bit equality operation takes 80ms, addition and subtraction 100ms, division as much as 8 seconds.",
+          "note": "Source confirms addition costs 100ms per operation; summary accurately reflects this figure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google ships benchmarking code but no language-model figures",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google ships benchmarking code but no language-model figures",
+          "source_span": "While Google includes benchmarking code in HEIR's repo, it has not provided any figures about its relative speed when applied to LLMs.",
+          "note": "Source directly confirms Google includes benchmarking code but has not provided LLM speed figures."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pull the repo and run HEIR against your smallest production classifier before committing to the architecture",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Pull the repo and run HEIR against your smallest production classifier before committing to the architecture",
+          "source_span": "",
+          "note": "This is a call to action / editorial recommendation; no factual claim to verify against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Encrypted-data inference shifts from research curiosity to a compiler you can clone today.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Encrypted-data inference shifts from research curiosity to a compiler you can clone today.",
+          "source_span": "Google is introducing HEIR (Homomorphic Encryption Intermediate Representation), an open-source compiler and development toolchain designed to make encrypted computation easier to deploy.",
+          "note": "The factual kernel — that HEIR is a publicly available, clonable open-source compiler for encrypted inference — is supported by the source; the 'research curiosity' framing is editorial but not contradicted."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_5fea8171c422f28b",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Cloudflare's agent browser skips Chromium's overhead to cut browser-use costs",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Cloudflare's agent browser skips Chromium's overhead to cut browser-use costs",
+          "source_span": "Browser engines like Chromium were built for humans, not agents, and they come with overhead that AI models simply do not need. They consume so much memory and compute that providing every agent with its own instance is prohibitively expensive",
+          "note": "The source confirms Kitesurf avoids Chromium's overhead for cost reasons; 'browser-use' is a paraphrase of agent browser use, not a named product contradiction."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Full Chromium browsers were built for humans",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Full Chromium browsers were built for humans",
+          "source_span": "Browser engines like Chromium were built for humans, not agents",
+          "note": "Direct paraphrase of the source quote."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cloudflare's Kitesurf runs browser components in isolated WebAssembly/Rust environments on Workers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cloudflare's Kitesurf runs browser components in isolated WebAssembly/Rust environments on Workers",
+          "source_span": "Kitesurf runs browser components in isolated WebAssembly/Rust environments on Cloudflare Workers",
+          "note": "Near-verbatim match with the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Kitesurf supports Playwright and Puppeteer with lower resource overhead",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "supporting Playwright and Puppeteer with lower resource overhead",
+          "source_span": "allowing tools such as Playwright and Puppeteer to drive it with lower resource overhead than a full Chromium browser",
+          "note": "Accurate paraphrase of the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each page gets its own sandboxed worker",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Each page gets its own sandboxed worker",
+          "source_span": "Kitesurf runs each page or out-of-process iframe (OOPIF) in a long-lived Dynamic Worker, isolated with its own JavaScript environment and DOM",
+          "note": "Legitimate compression; 'sandboxed worker' accurately captures the isolation described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cloudflare says open-sourcing is planned",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cloudflare says open-sourcing is planned",
+          "source_span": "Cloudflare says it plans to open source the project soon, but there is no code available yet",
+          "note": "Accurate summary; the body omits the 'no code yet' caveat but does not assert code is available."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Browser-use agent costs now scale with task count, not with a full Chromium instance per session",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Browser-use agent costs now scale with task count, not with a full Chromium instance per session",
+          "source_span": "Think of Kitesurf as an ephemeral, fully-isolated, stateless engine designed to exist only for the duration of a task, that scales well for bursty, AI-driven workloads.",
+          "note": "The take's editorial framing of per-task scaling vs. per-Chromium-instance cost is grounded in the source's description of Kitesurf as task-scoped and scalable."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_16f576a184df4a94",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Ora's live benchmarks show 99% of websites block AI agents mid-task",
+          "verdict": "contradicted",
+          "location": "headline",
+          "summary_span": "Ora's live benchmarks show 99% of websites block AI agents mid-task",
+          "source_span": "by Ora's estimate, 99% of the web isn't agent-ready",
+          "note": "The source says 99% of the web isn't agent-ready (not agent-ready), not specifically that sites 'block AI agents mid-task'; more importantly, the 99% figure is Ora's own estimate/self-reported metric, not an independently validated benchmark finding — but the bigger divergence is 'block mid-task' vs the broader 'not agent-ready' framing. However, the more serious issue is that the source frames this as Ora's own estimate, while the headline presents it as an objective benchmark result."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ora spawns agents against live customer sites with instructions to sign up, integrate, and pay.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ora spawns agents against live customer sites with instructions to sign up, integrate, and pay.",
+          "source_span": "Ora sends agents onto live websites with instructions to sign up for a product, integrate with it, and pay for it.",
+          "note": "Direct paraphrase of the source, accurately capturing the three tasks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "By Ora's own measure, 99% of the web isn't agent-ready.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "By Ora's own measure, 99% of the web isn't agent-ready.",
+          "source_span": "by Ora's estimate, 99% of the web isn't agent-ready",
+          "note": "The body correctly attributes the figure to Ora's own estimate, matching the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Testing covers Claude Code, ChatGPT, Gemini, and others.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Testing covers Claude Code, ChatGPT, Gemini, and others",
+          "source_span": "Ora's lineup covers the agents customers use most: Claude Code, ChatGPT, Gemini, Hermes, OpenClaw, and eve, Vercel's agent framework.",
+          "note": "'And others' is a valid compression of the full list; the named agents are accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "One benchmark run surfaced a caching fix that cut total costs roughly 15%.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "one benchmark run surfaced a caching fix that cut total costs roughly 15%",
+          "source_span": "One run surfaced a prompt-caching issue, the eve team shipped a fix, and Ora's next round of results measured roughly 15% lower total cost.",
+          "note": "'Caching fix' is an accurate compression of 'prompt-caching issue fix'; 'roughly 15%' matches the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Product teams shipping agentic workflows now inherit a web-readiness audit, not just a model choice.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Product teams shipping agentic workflows now inherit a web-readiness audit, not just a model choice.",
+          "source_span": "",
+          "note": "This is an editorial position; while it reflects the article's theme, it is a judgment call with no specific checkable factual assertion in the source."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": true
+    }
+  ],
+  "note": "verified 9 stories -- factual flags present"
+}
