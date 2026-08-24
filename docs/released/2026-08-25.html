@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 46 &middot; 25 August 2026</title>
+<meta name="description" content="Every coding agent tested writes vulnerable code, even when it works. Issue No. 46 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 46 &middot; 25 Aug &middot; 3 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>Coding agents ship insecure work.</strong> <span>Across 12 agent configurations, 57% of tasks passed correctness checks but only 11.8% of those solutions were secure.</span></p>
+    <p><strong>Microsoft enforces governance at runtime.</strong> <span>Nine governance domains now require live telemetry proof via an open-source toolkit, not signed-off documentation.</span></p>
+    <p><strong>DoorDash filters before the model.</strong> <span>A fast classifier screens obvious cases under 100 milliseconds, sending only 10% of 4 million daily messages to a costly language model.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>Every coding agent tested writes vulnerable code, even when it works</h1>
+  <p class="takeaway">Functional correctness was the security proxy for agent-generated code; it is not.</p>
+  <p class="dek">An arXiv preprint tested 12 coding agent configurations on 186 real-world tasks. The sharpest gap: SWE-Agent with Claude 4 Sonnet solved 57% of tasks correctly, but only 11.8% of those solutions were secure. Adding vulnerability hints to prompts didn&#39;t close the gap. Benchmark and dataset are public; run it before shipping agent-written code to production.</p>
+  <div class="story-meta">
+    <a class="src" href="https://arxiv.org/abs/2512.03262" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">What runs through today&#39;s stories is a single demand arriving simultaneously at four different layers: proof that the system behaved correctly, not assurance that it was designed to. Governance, deployment trust, infrastructure benchmarks, and retrieval design are all being rewritten around the same audit obligation.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Microsoft shifts AI governance from written policy to live runtime enforcement</h3>
+    <p class="takeaway">AI governance sign-off now requires runtime proof, not a documented policy alone.</p>
+    <p class="dek">Microsoft&#39;s published architecture names nine governance domains and four functions: policy, control, visibility, and proof. The Agent Governance Toolkit (open-source) and AI Gateway enforce rules at runtime, not at sign-off. When your regulator asks for audit evidence, can your current AI stack produce it from live telemetry, or only from documentation?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://www.infoq.com/news/2026/08/microsoft-ai-governance/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Roblox ships agents to production by solving trust, not just code generation</h3>
+    <p class="takeaway">Autonomous deployment stalls at trust, not generation; Roblox now treats that as an infrastructure problem.</p>
+    <p class="dek">Roblox&#39;s &#39;Prompt to Prod&#39; programme targets the gap between generating code and trusting it enough to deploy without human review. The approach: security sandboxes for live agent workflows, code-review exemplars to encode institutional knowledge, and productivity metrics rebuilt around feature velocity. When does your pipeline cross from assisted coding to autonomous deployment?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.infoq.com/presentations/autonomous-ai-software-development-roblox/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>NVIDIA claims 30x more agentic throughput per watt on new hardware</h3>
+    <p class="takeaway">Infrastructure procurement decisions now hinge on tokens per watt, not raw compute headroom.</p>
+    <p class="dek">Agentic workloads now consume 15 times the tokens of ordinary chat, per OpenRouter data, making power efficiency the real infrastructure constraint. NVIDIA&#39;s own AgentX benchmark, vendor-run and pending SemiAnalysis review, shows Vera Rubin NVL72 at 30x the throughput-per-megawatt of current Blackwell. When does your power budget, not your token budget, become the binding constraint in your next data-centre contract?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://developer.nvidia.com/blog/nvidia-vera-rubin-and-blackwell-set-a-new-standard-for-agentic-ai-performance-per-watt/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>In regulated finance, auditability beats accuracy as the retrieval bar</h3>
+    <p class="takeaway">FP&amp;A retrieval systems now face an auditability bar, not just an accuracy one.</p>
+    <p class="dek">An arXiv preprint argues that search-augmented generation for financial planning should be judged on audit trails, not just correct answers. On FinanceBench&#39;s 145 questions, the ontology-grounded KDAF framework matched simpler retrieval on accuracy but led on citation traceability (F1 0.515 vs 0.463 for keyword search). Which auditability standard does your FP&amp;A vendor actually meet?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2608.20661" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Today&#39;s practical wins each move a cost boundary by changing where a decision gets made, not what model makes it. Routing, resumption, interception, orchestration, and prompt framing all shift the same lever: defer the expensive call until cheaper options are exhausted.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Ollama fixes the caching bug that wasted 46k tokens on agent retries</h3>
+    <p class="takeaway">Ollama agent pipelines now resume cancelled prefills reliably, not restart from scratch.</p>
+    <p class="dek">Ollama v0.33.0 fixes prefill restore points so a cancelled prefill resumes where it stopped; previously, a near-complete 46,000-token request restarted from zero. Claude Desktop gains per-model toggles from the menu bar. Already on v0.32? Upgrade now; the restore-point fix alone justifies it for any agent loop handling long contexts.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/ollama/ollama/releases/tag/v0.33.0-rc2" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>DoorDash routes only 10% of messages to costly AI, cutting moderation bills</h3>
+    <p class="takeaway">Content moderation at scale is now a routing problem, not a model-quality one.</p>
+    <p class="dek">Calling an AI language model 4 million times a day was too slow and too expensive. DoorDash&#39;s SafeChat filters obvious cases with a fast in-house classifier (under 100 milliseconds), then sends only the ambiguous remainder to a language model for multi-axis scoring. Map your message volume against that single-digit unsafe-rate finding before choosing your moderation stack.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.infoq.com/presentations/doordash-llm-ai-moderation-platform/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A planning skill for coding agents splits fog-of-war into parallel threads</h3>
+    <p class="takeaway">Greenfield agent planning now has an orchestration layer; ad-hoc context juggling was the only option before.</p>
+    <p class="dek">The /wayfinder skill, from Matt Pocock&#39;s &#34;AI Skills for Real Engineers&#34; project (220,000 GitHub stars), tackles greenfield planning by spawning parallel agent threads: research, prototyping, and grilling sessions. Each thread gets a map (shared context) and a ticket (specific task). Pull the skill; run it against your next underspecified project.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.latent.space/p/wayfinder-skill" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Kernel hooks intercept AI agent traffic in Kubernetes without a code change</h3>
+    <p class="takeaway">AI gateway controls previously meant application changes; kernel-level hooks now intercept traffic transparently.</p>
+    <p class="dek">Dan Finneran&#39;s conference talk (Cisco/Isovalent) demonstrates kernel-level socket hooks intercepting AI API calls inside Kubernetes clusters, enabling prompt filtering, model swapping, and token limits without modifying source code or restarting containers. It&#39;s a proof-of-concept tied to an active Kubernetes working group. Raise it at your next agent-infrastructure design review before specifying a gateway layer.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.infoq.com/presentations/ebpf-ai-gateway-kubernetes-security/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Prompt wording alone shifts coding-agent cost without changing the task</h3>
+    <p class="takeaway">Token count was the efficiency proxy for coding agents; prompt wording and harness now set the real cost.</p>
+    <p class="dek">An arXiv preprint (arXiv:2608.01347) shows that prompt wording shifts reasoning and verification behaviour without changing the task, and that effort-control gains measured under one harness evaporate when the harness changes. The real efficiency metric is cost per successful task, not token count. Rerun your effort-control settings; the gains you measured under one harness won&#39;t transfer.</p>
+    <div class="story-meta"><span class="tag">read</span>
+      <a class="src" href="https://arxiv.org/abs/2608.01347" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">1 item</span></div>
+  </div>
+  <article class="measure stack">
+    <h3>A hybrid detector catches AI-generated fake reviews that fooled earlier systems</h3>
+    <p class="takeaway">Recommendation fraud now arrives as coordinated AI-generated profiles, not detectable by text or graph signals alone.</p>
+    <p class="dek">Language model agents can now generate fake reviews, ratings, and user profiles at scale, defeating detectors that look at text or graph structure alone. TH-GNN, an arXiv preprint, combines both signals with timing patterns and reaches an F1 score of 0.87 across five attack types. Raise it at your next fraud-detection architecture review.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2608.20376" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
