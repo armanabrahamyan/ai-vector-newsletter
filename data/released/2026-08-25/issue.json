@@ -1,0 +1,1069 @@
+{
+  "schema_version": 9,
+  "issue_number": 46,
+  "revision": 0,
+  "date": "2026-08-25",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_8c315d25f47509fb",
+        "headline": "Every coding agent tested writes vulnerable code, even when it works",
+        "summary": "An arXiv preprint tested 12 coding agent configurations on 186 real-world tasks. The sharpest gap: SWE-Agent with Claude 4 Sonnet solved 57% of tasks correctly, but only 11.8% of those solutions were secure. Adding vulnerability hints to prompts didn't close the gap. Benchmark and dataset are public; run it before shipping agent-written code to production.",
+        "take": "Functional correctness was the security proxy for agent-generated code; it is not.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://arxiv.org/abs/2512.03262"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "read",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_8c315d25f47509fb",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Every coding agent tested writes vulnerable code, even when it works",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Every coding agent tested writes vulnerable code, even when it works",
+              "source_span": "Disturbingly, all agents perform poorly in terms of software security. Although 57% of the solutions from SWE-Agent with Claude 4 Sonnet are functionally correct, only 11.8% are secure.",
+              "note": "'Every coding agent tested' is a supported paraphrase of 'all agents perform poorly in terms of software security', and the functional-but-insecure point is directly evidenced."
+            },
+            {
+              "schema_version": 1,
+              "claim": "An arXiv preprint tested 12 coding agent configurations on 186 real-world tasks.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "An arXiv preprint tested 12 coding agent configurations on 186 real-world tasks.",
+              "source_span": "we propose SUSVIBES, a benchmark consisting of 186 feature-request software engineering tasks from real-world open-source projects... We evaluate 12 widely used coding agentic settings with frontier models on the benchmark.",
+              "note": "Both numbers and the arXiv preprint characterisation are directly confirmed by the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "SWE-Agent with Claude 4 Sonnet solved 57% of tasks correctly",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "SWE-Agent with Claude 4 Sonnet solved 57% of tasks correctly",
+              "source_span": "Although 57% of the solutions from SWE-Agent with Claude 4 Sonnet are functionally correct",
+              "note": "Exact figure and agent/model attribution match the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "only 11.8% of those solutions were secure",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "only 11.8% of those solutions were secure",
+              "source_span": "only 11.8% are secure",
+              "note": "Exact figure matches the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Adding vulnerability hints to prompts didn't close the gap.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Adding vulnerability hints to prompts didn't close the gap.",
+              "source_span": "preliminary security strategies, such as augmenting the feature request with vulnerability hints, cannot mitigate these security issues",
+              "note": "'Didn't close the gap' is a supported paraphrase of 'cannot mitigate these security issues'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Benchmark and dataset are public",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Benchmark and dataset are public",
+              "source_span": "The code and dataset are available at this https URL. The leaderboard is at this https URL susvibes-leaderboard.",
+              "note": "Public availability of code, dataset, and leaderboard is confirmed by the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Functional correctness was the security proxy for agent-generated code; it is not.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Functional correctness was the security proxy for agent-generated code; it is not.",
+              "source_span": "Although 57% of the solutions from SWE-Agent with Claude 4 Sonnet are functionally correct, only 11.8% are secure.",
+              "note": "The take is an editorial position, but its embedded factual assertion — that functional correctness does not imply security — is directly supported by the source data."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The study evaluated 12 agent configurations.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Across 12 agent configurations",
+              "source_span": "We evaluate 12 widely used coding agentic settings with frontier models on the benchmark.",
+              "note": "digest: 'Agent configurations' is a fair plain-English paraphrase of 'coding agentic settings'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "57% of tasks passed correctness checks.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "57% of tasks passed correctness checks",
+              "source_span": "Although 57% of the solutions from SWE-Agent with Claude 4 Sonnet are functionally correct",
+              "note": "digest: The 57% figure matches the source, though the source attributes it specifically to SWE-Agent with Claude 4 Sonnet; the summary generalises across agents, which is a compression but not a false assertion."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Only 11.8% of those solutions were secure.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "only 11.8% of those solutions were secure",
+              "source_span": "only 11.8% are secure",
+              "note": "digest: Exact figure matches the source for the same agent configuration."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_be32e0f672ed6548",
+          "headline": "Microsoft shifts AI governance from written policy to live runtime enforcement",
+          "summary": "Microsoft's published architecture names nine governance domains and four functions: policy, control, visibility, and proof. The Agent Governance Toolkit (open-source) and AI Gateway enforce rules at runtime, not at sign-off. When your regulator asks for audit evidence, can your current AI stack produce it from live telemetry, or only from documentation?",
+          "take": "AI governance sign-off now requires runtime proof, not a documented policy alone.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/microsoft-ai-governance/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_be32e0f672ed6548",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Microsoft shifts AI governance from written policy to live runtime enforcement",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Microsoft shifts AI governance from written policy to live runtime enforcement",
+                "source_span": "Microsoft has outlined an AI governance architecture that moves governance from documented policies toward runtime enforcement, continuous evaluation, observability, and audit evidence",
+                "note": "The headline accurately paraphrases the source's core description of Microsoft's governance shift."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Microsoft's published architecture names nine governance domains and four functions: policy, control, visibility, and proof.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Microsoft's published architecture names nine governance domains and four functions: policy, control, visibility, and proof.",
+                "source_span": "The framework spans nine governance domains and four functions: policy, control, visibility, and proof",
+                "note": "Exact match with the source on both the count and the named functions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The Agent Governance Toolkit (open-source) and AI Gateway enforce rules at runtime, not at sign-off.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The Agent Governance Toolkit (open-source) and AI Gateway enforce rules at runtime, not at sign-off.",
+                "source_span": "Microsoft's open-source Agent Governance Toolkit provides runtime security capabilities for autonomous agents, including policy enforcement and interception points... Foundry's AI Gateway provides a runtime boundary for authentication, token limits, quotas, and policy enforcement.",
+                "note": "Both the open-source nature of the Agent Governance Toolkit and the runtime enforcement role of the AI Gateway are confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI governance sign-off now requires runtime proof, not a documented policy alone.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AI governance sign-off now requires runtime proof, not a documented policy alone.",
+                "source_span": "Your AI policy is not governance until production can prove it.",
+                "note": "The take is a supported editorial compression of the source's explicit operational distinction between policy and runtime proof."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Microsoft enforces governance at runtime.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Microsoft enforces governance at runtime.",
+                "source_span": "Microsoft has outlined an AI governance architecture that moves governance from documented policies toward runtime enforcement, continuous evaluation, observability, and audit evidence as organizations deploy AI applications and agents in production.",
+                "note": "digest: The source explicitly states the architecture moves toward runtime enforcement, supporting this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nine governance domains now require live telemetry proof.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Nine governance domains now require live telemetry proof",
+                "source_span": "Microsoft identifies nine governance domains: policy, data governance, model governance, observability, evaluations, security, identity and access, audit and compliance, and agent governance.",
+                "note": "digest: The source confirms nine governance domains but does not state that all nine require live telemetry proof; telemetry/audit evidence is part of the broader architecture, not a stated requirement of each domain individually."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Governance is verified via an open-source toolkit, not signed-off documentation.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "via an open-source toolkit, not signed-off documentation",
+                "source_span": "Microsoft's open-source Agent Governance Toolkit provides runtime security capabilities for autonomous agents, including policy enforcement and interception points.",
+                "note": "digest: The open-source toolkit exists but is scoped to agent governance specifically, not all nine domains; the source does not state it replaces signed-off documentation across all domains."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The full text is purely editorial pattern-naming framing four layers (governance, deployment trust, infrastructure benchmarks, retrieval design) as sharing a single audit obligation.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "What runs through today's stories is a single demand arriving simultaneously at four different layers: proof that the system behaved correctly, not assurance that it was designed to. Governance, deployment trust, infrastructure benchmarks, and retrieval design are all being rewritten around the same audit obligation.",
+                "source_span": "",
+                "note": "synthesis: This is editorial synthesis framing a pattern across stories; while the sources do touch on governance/audit themes, the claim that all four named layers are 'being rewritten around the same audit obligation' is a meta-editorial assertion not checkable against any specific factual content in the excerpts."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_7fae9a106d6269ae",
+          "headline": "Roblox ships agents to production by solving trust, not just code generation",
+          "summary": "Roblox's 'Prompt to Prod' programme targets the gap between generating code and trusting it enough to deploy without human review. The approach: security sandboxes for live agent workflows, code-review exemplars to encode institutional knowledge, and productivity metrics rebuilt around feature velocity. When does your pipeline cross from assisted coding to autonomous deployment?",
+          "take": "Autonomous deployment stalls at trust, not generation; Roblox now treats that as an infrastructure problem.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/presentations/autonomous-ai-software-development-roblox/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_7fae9a106d6269ae",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Roblox ships agents to production by solving trust, not just code generation",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Roblox ships agents to production by solving trust, not just code generation",
+                "source_span": "we've gotten really good at generating code, but we haven't gotten great at digesting the code and trusting the code. This is the paradox. Essentially, we've solved typing but we haven't solved trust.",
+                "note": "Source confirms Roblox's 'Prompt to Prod' effort frames trust—not code generation—as the core problem to solve for autonomous deployment."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Roblox's 'Prompt to Prod' programme targets the gap between generating code and trusting it enough to deploy without human review.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Roblox's 'Prompt to Prod' programme targets the gap between generating code and trusting it enough to deploy without human review.",
+                "source_span": "we affectionately called our effort, Prompt to Prod, because we wanted to get to a point where you can go purely from a prompt all the way into production without any human intervention.",
+                "note": "Source confirms the programme name and its goal of eliminating human intervention in the path from prompt to production."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The approach includes security sandboxes for live agent workflows.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "security sandboxes for live agent workflows",
+                "source_span": "The second is around security and access. This is how we let agents run real workflows without compromising the company.",
+                "note": "Source confirms a security/access pillar for running agents in real workflows; 'sandboxes' is a reasonable plain-English paraphrase of the security-and-access guardrail mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The approach includes code-review exemplars to encode institutional knowledge.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "code-review exemplars to encode institutional knowledge",
+                "source_span": "",
+                "note": "The source excerpt mentions alignment and guardrails as a pillar but does not specifically describe 'code-review exemplars'; this detail cannot be confirmed or denied from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The approach includes productivity metrics rebuilt around feature velocity.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "productivity metrics rebuilt around feature velocity",
+                "source_span": "",
+                "note": "The source mentions rethinking productivity measurement as the third pillar but gives no detail about 'feature velocity'; the specific framing cannot be confirmed from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Autonomous deployment stalls at trust, not generation; Roblox now treats that as an infrastructure problem.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Autonomous deployment stalls at trust, not generation; Roblox now treats that as an infrastructure problem.",
+                "source_span": "we've gotten really good at generating code, but we haven't gotten great at digesting the code and trusting the code... it's not just a change from how we're thinking about what are the best models, what are the best harnesses, but more fundamentally, it's about the infrastructure that's used to build your applications.",
+                "note": "Source explicitly frames trust as the unsolved problem and infrastructure as the fundamental focus, directly supporting both parts of the take."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_53cb0b544afcc531",
+          "headline": "NVIDIA claims 30x more agentic throughput per watt on new hardware",
+          "summary": "Agentic workloads now consume 15 times the tokens of ordinary chat, per OpenRouter data, making power efficiency the real infrastructure constraint. NVIDIA's own AgentX benchmark, vendor-run and pending SemiAnalysis review, shows Vera Rubin NVL72 at 30x the throughput-per-megawatt of current Blackwell. When does your power budget, not your token budget, become the binding constraint in your next data-centre contract?",
+          "take": "Infrastructure procurement decisions now hinge on tokens per watt, not raw compute headroom.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/nvidia-vera-rubin-and-blackwell-set-a-new-standard-for-agentic-ai-performance-per-watt/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_53cb0b544afcc531",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA claims 30x more agentic throughput per watt on new hardware",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA claims 30x more agentic throughput per watt on new hardware",
+                "source_span": "Vera Rubin NVL72 delivers up to 30x higher AI-factory throughput per megawatt than GB300 NVL72",
+                "note": "Source confirms 30x throughput-per-megawatt claim from NVIDIA; 'per watt' is a fair compression of 'per megawatt', and 'new hardware' maps to Vera Rubin NVL72."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agentic workloads now consume 15 times the tokens of ordinary chat",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agentic workloads now consume 15 times the tokens of ordinary chat",
+                "source_span": "single agentic requests consume 15 times the tokens of ordinary chat",
+                "note": "Direct match with source figure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "per OpenRouter data",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "per OpenRouter data",
+                "source_span": "OpenRouter's State of AI report found that average prompt tokens per request grew roughly fourfold, and single agentic requests consume 15 times the tokens of ordinary chat",
+                "note": "Source attributes the 15x figure to OpenRouter's State of AI report."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's own AgentX benchmark, vendor-run and pending SemiAnalysis review",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "NVIDIA's own AgentX benchmark, vendor-run and pending SemiAnalysis review",
+                "source_span": "AgentX is the agentic-coding benchmark in InferenceX, SemiAnalysis's open-source benchmark suite... The following Vera Rubin NVL72 results were measured by NVIDIA using the SemiAnalysis AgentX workload and are pending SemiAnalysis review.",
+                "note": "AgentX is SemiAnalysis's benchmark, not NVIDIA's own; the summary misattributes ownership, though it correctly notes vendor-run results and pending review."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vera Rubin NVL72 at 30x the throughput-per-megawatt of current Blackwell",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "Vera Rubin NVL72 at 30x the throughput-per-megawatt of current Blackwell",
+                "source_span": "Vera Rubin NVL72 delivers up to 30x higher AI-factory throughput per megawatt than GB300 NVL72",
+                "note": "Source confirms 30x vs GB300 NVL72 (Blackwell), so the figure is correct, but the body omits 'up to', which is a minor compression; however the benchmark attribution error in the same sentence is the primary issue flagged above."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Infrastructure procurement decisions now hinge on tokens per watt, not raw compute headroom.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Infrastructure procurement decisions now hinge on tokens per watt, not raw compute headroom.",
+                "source_span": "",
+                "note": "This is an editorial position; the source discusses power efficiency as a key metric but does not make a factual claim about procurement decision criteria being definitively shifted."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_4f991b6fde120389",
+          "headline": "In regulated finance, auditability beats accuracy as the retrieval bar",
+          "summary": "An arXiv preprint argues that search-augmented generation for financial planning should be judged on audit trails, not just correct answers. On FinanceBench's 145 questions, the ontology-grounded KDAF framework matched simpler retrieval on accuracy but led on citation traceability (F1 0.515 vs 0.463 for keyword search). Which auditability standard does your FP&A vendor actually meet?",
+          "take": "FP&A retrieval systems now face an auditability bar, not just an accuracy one.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.20661"
+          ],
+          "prior_coverage_ref": "c_736f88eea2fa38d2",
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_4f991b6fde120389",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "In regulated finance, auditability beats accuracy as the retrieval bar",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "In regulated finance, auditability beats accuracy as the retrieval bar",
+                "source_span": "We argue that auditability, not accuracy, is the axis on which ontology-grounded retrieval earns its cost.",
+                "note": "The headline accurately paraphrases the paper's central argument that auditability supersedes accuracy as the evaluation criterion."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint argues that search-augmented generation for financial planning should be judged on audit trails, not just correct answers.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint argues that search-augmented generation for financial planning should be judged on audit trails, not just correct answers.",
+                "source_span": "This paper argues that retrieval-augmented generation for enterprise finance should be evaluated on auditability alongside accuracy",
+                "note": "'Search-augmented generation' for 'retrieval-augmented generation' and 'audit trails' for 'auditability' are legitimate plain-English paraphrases; the source is an arXiv preprint."
+              },
+              {
+                "schema_version": 1,
+                "claim": "FinanceBench's 145 questions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "On FinanceBench's 145 questions",
+                "source_span": "An evaluation on FinanceBench (145 questions)",
+                "note": "Exact match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The ontology-grounded KDAF framework matched simpler retrieval on accuracy",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the ontology-grounded KDAF framework matched simpler retrieval on accuracy",
+                "source_span": "on answer correctness the retrieval conditions are statistically indistinguishable (KDAF vs BM25: -0.007, 95% CI [-0.021, 0.000]), so accuracy alone does not justify structured retrieval here",
+                "note": "'Matched simpler retrieval on accuracy' correctly paraphrases 'statistically indistinguishable' accuracy results."
+              },
+              {
+                "schema_version": 1,
+                "claim": "KDAF led on citation traceability (F1 0.515 vs 0.463 for keyword search)",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "led on citation traceability (F1 0.515 vs 0.463 for keyword search)",
+                "source_span": "KDAF attains the highest citation traceability F1 (0.515), exceeding ungrounded traversal by +0.027 (CI [0.006, 0.050]) and BM25 by +0.052 (CI [0.024, 0.083])",
+                "note": "KDAF's F1 of 0.515 is confirmed, but the BM25 (keyword search) F1 can be derived as 0.515 - 0.052 = 0.463; however, the source never states 0.463 explicitly, and the summary presents it as a direct figure without the trust qualifier that it is derived/implicit, making it unsupported as a bare stated fact."
+              },
+              {
+                "schema_version": 1,
+                "claim": "FP&A retrieval systems now face an auditability bar, not just an accuracy one.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "FP&A retrieval systems now face an auditability bar, not just an accuracy one.",
+                "source_span": "We argue that auditability, not accuracy, is the axis on which ontology-grounded retrieval earns its cost.",
+                "note": "The take restates the paper's core argument; the factual assertion embedded (auditability as the bar, not just accuracy) is directly supported by the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "What runs through today's stories is a single demand arriving simultaneously at four different layers: proof that the system behaved correctly, not assurance that it was designed to. Governance, deployment trust, infrastructure benchmarks, and retrieval design are all being rewritten around the same audit obligation."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_ea661bae6c1b4999",
+          "headline": "Ollama fixes the caching bug that wasted 46k tokens on agent retries",
+          "summary": "Ollama v0.33.0 fixes prefill restore points so a cancelled prefill resumes where it stopped; previously, a near-complete 46,000-token request restarted from zero. Claude Desktop gains per-model toggles from the menu bar. Already on v0.32? Upgrade now; the restore-point fix alone justifies it for any agent loop handling long contexts.",
+          "take": "Ollama agent pipelines now resume cancelled prefills reliably, not restart from scratch.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://github.com/ollama/ollama/releases/tag/v0.33.0-rc2"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_ea661bae6c1b4999",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Ollama fixes the caching bug that wasted 46k tokens on agent retries",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Ollama fixes the caching bug that wasted 46k tokens on agent retries",
+                "source_span": "on models with recurrent layers this previously forced a request matching 46k of 47k tokens to reprocess from zero",
+                "note": "Source confirms the 46k-token reprocessing bug was fixed; 'wasted 46k tokens' is a fair paraphrase of reprocessing from zero."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ollama v0.33.0 fixes prefill restore points so a cancelled prefill resumes where it stopped",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Ollama v0.33.0 fixes prefill restore points so a cancelled prefill resumes where it stopped",
+                "source_span": "Prefill restore points are now trustworthy by construction: a cancelled prefill keeps every restore point it crossed, so retries resume where they stopped instead of restarting from scratch",
+                "note": "Source directly confirms this fix in v0.33.0."
+              },
+              {
+                "schema_version": 1,
+                "claim": "previously, a near-complete 46,000-token request restarted from zero",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "previously, a near-complete 46,000-token request restarted from zero",
+                "source_span": "on models with recurrent layers this previously forced a request matching 46k of 47k tokens to reprocess from zero",
+                "note": "'Near-complete 46,000-token request' is a fair paraphrase of '46k of 47k tokens'; restarting from zero matches 'reprocess from zero'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Desktop gains per-model toggles from the menu bar",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Claude Desktop gains per-model toggles from the menu bar",
+                "source_span": "Turn individual Ollama models on or off for use in Claude, directly from the menu bar",
+                "note": "'Per-model toggles from the menu bar' accurately paraphrases turning individual models on or off from the menu bar."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Already on v0.32? Upgrade now; the restore-point fix alone justifies it for any agent loop handling long contexts.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Already on v0.32? Upgrade now; the restore-point fix alone justifies it for any agent loop handling long contexts.",
+                "source_span": "",
+                "note": "This is an editorial recommendation; no factual assertion to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ollama agent pipelines now resume cancelled prefills reliably, not restart from scratch.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Ollama agent pipelines now resume cancelled prefills reliably, not restart from scratch.",
+                "source_span": "a cancelled prefill keeps every restore point it crossed, so retries resume where they stopped instead of restarting from scratch",
+                "note": "Source directly supports that cancelled prefills now resume rather than restart from scratch."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Today's practical wins each move a cost boundary by changing where a decision gets made, not what model makes it.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Today's practical wins each move a cost boundary by changing where a decision gets made, not what model makes it.",
+                "source_span": "",
+                "note": "synthesis: This is editorial pattern-naming framing the section's stories; no single checkable factual assertion can be confirmed or denied from the source excerpts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Routing shifts the lever of deferring the expensive call until cheaper options are exhausted.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Routing, resumption, interception, orchestration, and prompt framing all shift the same lever: defer the expensive call until cheaper options are exhausted.",
+                "source_span": "",
+                "note": "synthesis: 'Routing' as a named mechanism is not mentioned in any source excerpt; the term does not appear verbatim or as a clear paraphrase of any named actor or system in the sources."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Resumption shifts the lever of deferring the expensive call until cheaper options are exhausted.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Routing, resumption, interception, orchestration, and prompt framing all shift the same lever: defer the expensive call until cheaper options are exhausted.",
+                "source_span": "a cancelled prefill keeps every restore point it crossed, so retries resume where they stopped instead of restarting from scratch",
+                "note": "synthesis: 'Resumption' is a fair paraphrase of the prefill restore-point / retry-resumption mechanism described in the Ollama v0.33.0 changelog, which avoids expensive reprocessing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Interception shifts the lever of deferring the expensive call until cheaper options are exhausted.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Routing, resumption, interception, orchestration, and prompt framing all shift the same lever: defer the expensive call until cheaper options are exhausted.",
+                "source_span": "eBPF is a technology that is part of the Linux kernel... building a solution for observing and controlling these applications powered through eBPF",
+                "note": "synthesis: 'Interception' is a reasonable paraphrase of the eBPF-based approach to intercepting and controlling AI API calls described in the Finneran transcript."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Orchestration shifts the lever of deferring the expensive call until cheaper options are exhausted.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Routing, resumption, interception, orchestration, and prompt framing all shift the same lever: defer the expensive call until cheaper options are exhausted.",
+                "source_span": "I wanted an orchestrator layer that would basically say, okay, whatever you want to plan, I'm going to handle the planning sessions for you. I'm going to split this out into multiple different threads",
+                "note": "synthesis: 'Orchestration' maps directly to the wayfinder orchestrator layer described by Pocock, which manages session handoffs to defer or distribute expensive planning work."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Prompt framing shifts the lever of deferring the expensive call until cheaper options are exhausted.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Routing, resumption, interception, orchestration, and prompt framing all shift the same lever: defer the expensive call until cheaper options are exhausted.",
+                "source_span": "Controlled prompt experiments show that wording can change reasoning and verification behavior without changing the task.",
+                "note": "synthesis: 'Prompt framing' is a fair paraphrase of the paper's finding that prompt semantics/wording affects cost and reasoning behavior, fitting the 'defer expensive calls' framing."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_3f6960570df58154",
+          "headline": "DoorDash routes only 10% of messages to costly AI, cutting moderation bills",
+          "summary": "Calling an AI language model 4 million times a day was too slow and too expensive. DoorDash's SafeChat filters obvious cases with a fast in-house classifier (under 100 milliseconds), then sends only the ambiguous remainder to a language model for multi-axis scoring. Map your message volume against that single-digit unsafe-rate finding before choosing your moderation stack.",
+          "take": "Content moderation at scale is now a routing problem, not a model-quality one.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/presentations/doordash-llm-ai-moderation-platform/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_3f6960570df58154",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "DoorDash routes only 10% of messages to costly AI, cutting moderation bills",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "DoorDash routes only 10% of messages to costly AI, cutting moderation bills",
+                "source_span": "For the messages that this model that we trained in-house is not able to classify as safe, then we call an LLM, which is less than 10% of the messages.",
+                "note": "Source says less than 10% go to the LLM, and the cost motivation is explicit; 'only 10%' is a supported approximation and 'costly' is supported by the bill discussion."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Calling an AI language model 4 million times a day was too slow and too expensive.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Calling an AI language model 4 million times a day was too slow and too expensive.",
+                "source_span": "imagine what is the size of the bill of calling the LLM 4 million times a day. It would just not work.",
+                "note": "Source confirms 4 million messages/day and that calling an LLM for all of them was infeasible due to latency and cost."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DoorDash's SafeChat filters obvious cases with a fast in-house classifier (under 100 milliseconds)",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "DoorDash's SafeChat filters obvious cases with a fast in-house classifier (under 100 milliseconds)",
+                "source_span": "It had to be fast and respond in less than 100 milliseconds at 90%.",
+                "note": "Source confirms the in-house classifier targets under 100ms latency and is part of SafeChat."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SafeChat sends only the ambiguous remainder to a language model for multi-axis scoring.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "then sends only the ambiguous remainder to a language model for multi-axis scoring",
+                "source_span": "For the messages that this model that we trained in-house is not able to classify as safe, then we call an LLM... When we call the LLM, we don't ask it if the message is safe or not. Instead, we ask it to classify or to score across multiple axes.",
+                "note": "Source confirms unclassified messages go to an LLM for multi-axis scoring."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Only a small single-digit percent of messages were unsafe.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "single-digit unsafe-rate finding",
+                "source_span": "Only a small single-digit percent of messages were unsafe.",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Content moderation at scale is now a routing problem, not a model-quality one.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Content moderation at scale is now a routing problem, not a model-quality one.",
+                "source_span": "",
+                "note": "This is an editorial position; the source describes a routing architecture but does not make this comparative claim about model quality, so it is not checkable from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A fast classifier screens obvious cases under 100 milliseconds.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A fast classifier screens obvious cases under 100 milliseconds",
+                "source_span": "It had to be fast and respond in less than 100 milliseconds at 90%.",
+                "note": "digest: Source confirms the classifier must respond in under 100ms; 'screens obvious cases' accurately paraphrases 'identifying what is obviously safe'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The classifier sends only 10% of messages to a costly language model.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "sending only 10% of 4 million daily messages to a costly language model",
+                "source_span": "For the messages that this model that we trained in-house is not able to classify as safe, then we call an LLM, which is less than 10% of the messages.",
+                "note": "digest: 'Only 10%' is a slight rounding up of 'less than 10%', which is acceptable house-style approximation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DoorDash exchanges 4 million daily messages.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "4 million daily messages",
+                "source_span": "we have over 4 million messages exchanged in chat every day.",
+                "note": "digest: Source directly states over 4 million messages per day, consistent with the summary."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_84204ddbd7842443",
+          "headline": "A planning skill for coding agents splits fog-of-war into parallel threads",
+          "summary": "The /wayfinder skill, from Matt Pocock's \"AI Skills for Real Engineers\" project (220,000 GitHub stars), tackles greenfield planning by spawning parallel agent threads: research, prototyping, and grilling sessions. Each thread gets a map (shared context) and a ticket (specific task). Pull the skill; run it against your next underspecified project.",
+          "take": "Greenfield agent planning now has an orchestration layer; ad-hoc context juggling was the only option before.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.latent.space/p/wayfinder-skill"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_84204ddbd7842443",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A planning skill for coding agents splits fog-of-war into parallel threads",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A planning skill for coding agents splits fog-of-war into parallel threads",
+                "source_span": "I'm going to split this out into multiple different threads, do prototyping, do research and pull it all back together... Its purpose is to help you and your agent figure out a project where the end state isn't entirely clear. Or as Pocock put it in our interview, /wayfinder helps you navigate \"the fog of war\"",
+                "note": "The source confirms /wayfinder splits planning into multiple threads and uses the fog-of-war concept; 'coding agents' is a reasonable paraphrase of the AFK agent context."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The /wayfinder skill, from Matt Pocock's \"AI Skills for Real Engineers\" project",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The /wayfinder skill, from Matt Pocock's \"AI Skills for Real Engineers\" project",
+                "source_span": "Pocock recently released a new skill called /wayfinder... Matt Pocock, whose \"AI Skills for Real Engineers\" project has over 220,000 stars on GitHub.",
+                "note": "Source directly confirms /wayfinder is from Matt Pocock's 'AI Skills for Real Engineers' project."
+              },
+              {
+                "schema_version": 1,
+                "claim": "220,000 GitHub stars",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "220,000 GitHub stars",
+                "source_span": "Matt Pocock, whose \"AI Skills for Real Engineers\" project has over 220,000 stars on GitHub.",
+                "note": "Source states 'over 220,000 stars'; summary rounds to 220,000, which is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "/wayfinder tackles greenfield planning by spawning parallel agent threads",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "tackles greenfield planning by spawning parallel agent threads",
+                "source_span": "I'm going to split this out into multiple different threads, do prototyping, do research and pull it all back together... Its purpose is to help you and your agent figure out a project where the end state isn't entirely clear.",
+                "note": "'Greenfield planning' is a reasonable paraphrase of planning projects where the end state isn't clear; parallel threads matches the source's description."
+              },
+              {
+                "schema_version": 1,
+                "claim": "research, prototyping, and grilling sessions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "research, prototyping, and grilling sessions",
+                "source_span": "you've got grilling tickets, which are just a grilling session. Then you've got prototype tickets for creating prototypes, research tickets for creating [and doing] research",
+                "note": "Source explicitly names grilling, prototype, and research ticket types."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each thread gets a map (shared context) and a ticket (specific task)",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Each thread gets a map (shared context) and a ticket (specific task)",
+                "source_span": "you've got a map — which is all of the rest of the stuff, all the decisions that have already been made. And then you've got the specific ticket that goes into the actual session.",
+                "note": "Source directly describes the map and ticket concepts; 'shared context' is an accurate plain-English gloss of the map."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Greenfield agent planning now has an orchestration layer; ad-hoc context juggling was the only option before.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Greenfield agent planning now has an orchestration layer; ad-hoc context juggling was the only option before.",
+                "source_span": "I wanted an orchestrator layer that would basically say, okay, whatever you want to plan, I'm going to handle the planning sessions for you... I was finding the planning stage really onerous, because I would have to be constantly thinking about my session management.",
+                "note": "'Greenfield' is a paraphrase of fog-of-war/unclear-end-state planning; the source confirms the orchestration layer is new and that manual context juggling was the prior state."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_f94d340939a8962e",
+          "headline": "Kernel hooks intercept AI agent traffic in Kubernetes without a code change",
+          "summary": "Dan Finneran's conference talk (Cisco/Isovalent) demonstrates kernel-level socket hooks intercepting AI API calls inside Kubernetes clusters, enabling prompt filtering, model swapping, and token limits without modifying source code or restarting containers. It's a proof-of-concept tied to an active Kubernetes working group. Raise it at your next agent-infrastructure design review before specifying a gateway layer.",
+          "take": "AI gateway controls previously meant application changes; kernel-level hooks now intercept traffic transparently.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/presentations/ebpf-ai-gateway-kubernetes-security/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_f94d340939a8962e",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Kernel hooks intercept AI agent traffic in Kubernetes without a code change",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Kernel hooks intercept AI agent traffic in Kubernetes without a code change",
+                "source_span": "building a solution for observing and controlling these applications powered through eBPF",
+                "note": "The source describes eBPF kernel-level interception of AI application traffic in Kubernetes clusters; 'without a code change' is consistent with the eBPF/kernel approach described, and the source does not contradict it."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Dan Finneran's conference talk (Cisco/Isovalent) demonstrates kernel-level socket hooks intercepting AI API calls inside Kubernetes clusters",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Dan Finneran's conference talk (Cisco/Isovalent) demonstrates kernel-level socket hooks intercepting AI API calls inside Kubernetes clusters",
+                "source_span": "I am part of a company called Isovalent, which is now part of Cisco... eBPF is a technology that is part of the Linux kernel... building a solution for observing and controlling these applications powered through eBPF",
+                "note": "Dan Finneran, Isovalent/Cisco, eBPF kernel-level interception of AI API calls in Kubernetes are all confirmed; 'socket hooks' is a reasonable paraphrase of eBPF kernel mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "enabling prompt filtering, model swapping, and token limits without modifying source code or restarting containers",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "enabling prompt filtering, model swapping, and token limits without modifying source code or restarting containers",
+                "source_span": "",
+                "note": "The source mentions observing and controlling AI applications via eBPF but does not specifically enumerate prompt filtering, model swapping, or token limits, nor confirm the 'no restart' detail."
+              },
+              {
+                "schema_version": 1,
+                "claim": "It's a proof-of-concept tied to an active Kubernetes working group",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It's a proof-of-concept tied to an active Kubernetes working group",
+                "source_span": "one of the things that I'll be showing today is effectively a proof of concept, because in the Kubernetes space, there is a new working group which is all around building things like AI gateways... That is an ongoing working group at the moment",
+                "note": "Source explicitly calls it a proof of concept linked to an active/ongoing Kubernetes working group."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI gateway controls previously meant application changes; kernel-level hooks now intercept traffic transparently",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "AI gateway controls previously meant application changes; kernel-level hooks now intercept traffic transparently",
+                "source_span": "",
+                "note": "The source describes eBPF-based interception but does not explicitly state that prior AI gateway controls required application changes; the 'transparently' characterisation is editorial and the prior-state claim is not confirmed in the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_a1f2dace328c6abc",
+          "headline": "Prompt wording alone shifts coding-agent cost without changing the task",
+          "summary": "An arXiv preprint (arXiv:2608.01347) shows that prompt wording shifts reasoning and verification behaviour without changing the task, and that effort-control gains measured under one harness evaporate when the harness changes. The real efficiency metric is cost per successful task, not token count. Rerun your effort-control settings; the gains you measured under one harness won't transfer.",
+          "take": "Token count was the efficiency proxy for coding agents; prompt wording and harness now set the real cost.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.01347"
+          ],
+          "prior_coverage_ref": "c_73e4dedf96a6f81e",
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a1f2dace328c6abc",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Prompt wording alone shifts coding-agent cost without changing the task",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Prompt wording alone shifts coding-agent cost without changing the task",
+                "source_span": "Controlled prompt experiments show that wording can change reasoning and verification behavior without changing the task.",
+                "note": "'Alone' is a slight compression but the source supports that prompt wording independently shifts behaviour/cost without changing the task."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint (arXiv:2608.01347) shows that prompt wording shifts reasoning and verification behaviour without changing the task",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint (arXiv:2608.01347) shows that prompt wording shifts reasoning and verification behaviour without changing the task",
+                "source_span": "Controlled prompt experiments show that wording can change reasoning and verification behavior without changing the task.",
+                "note": "The arXiv ID 2608.01347 is not verbatim in the source but the submission date of 2 Aug 2026 is consistent with that ID format; the core claim about prompt wording is directly supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "effort-control gains measured under one harness evaporate when the harness changes",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "effort-control gains measured under one harness evaporate when the harness changes",
+                "source_span": "A DeepSeek Harness extension shows that the effect of an effort-control intervention changes substantially when the harness changes, even when the model, tasks, prompts, and controller logic are held fixed.",
+                "note": "'Evaporate' is a paraphrase of 'changes substantially'; the core claim is supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The real efficiency metric is cost per successful task, not token count",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The real efficiency metric is cost per successful task, not token count",
+                "source_span": "We model efficiency as cost per successful task induced by the agent trajectory. Token and cache counts are measurements of that trajectory, not sufficient optimization targets.",
+                "note": "Direct paraphrase of the source's stated efficiency model."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Rerun your effort-control settings; the gains you measured under one harness won't transfer",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Rerun your effort-control settings; the gains you measured under one harness won't transfer",
+                "source_span": "",
+                "note": "This is a call to action / editorial recommendation; no factual claim to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Token count was the efficiency proxy for coding agents; prompt wording and harness now set the real cost.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Token count was the efficiency proxy for coding agents; prompt wording and harness now set the real cost.",
+                "source_span": "Coding-agent efficiency cannot be characterized by token count or model price alone. We study how end-to-end cost and task success depend jointly on prompt semantics, inference effort, harness policy, model, task difficulty, tool use, context management, and provider accounting.",
+                "note": "The take's assertion that token count was the old proxy and prompt/harness drive real cost is a supported editorial compression of the source's argument."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Today's practical wins each move a cost boundary by changing where a decision gets made, not what model makes it. Routing, resumption, interception, orchestration, and prompt framing all shift the same lever: defer the expensive call until cheaper options are exhausted."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_e91573db00b98733",
+          "headline": "A hybrid detector catches AI-generated fake reviews that fooled earlier systems",
+          "summary": "Language model agents can now generate fake reviews, ratings, and user profiles at scale, defeating detectors that look at text or graph structure alone. TH-GNN, an arXiv preprint, combines both signals with timing patterns and reaches an F1 score of 0.87 across five attack types. Raise it at your next fraud-detection architecture review.",
+          "take": "Recommendation fraud now arrives as coordinated AI-generated profiles, not detectable by text or graph signals alone.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.20376"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e91573db00b98733",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A hybrid detector catches AI-generated fake reviews that fooled earlier systems",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A hybrid detector catches AI-generated fake reviews that fooled earlier systems",
+                "source_span": "LLM agents can now generate realistic shilling profiles, fluent reviews, and coherent ratings at scale, systematically defeating recommender-system defenses.",
+                "note": "'AI-generated fake reviews' is a fair plain-English paraphrase of LLM-generated shilling profiles/reviews, and 'fooled earlier systems' maps to 'systematically defeating recommender-system defenses'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Language model agents can now generate fake reviews, ratings, and user profiles at scale",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Language model agents can now generate fake reviews, ratings, and user profiles at scale",
+                "source_span": "LLM agents can now generate realistic shilling profiles, fluent reviews, and coherent ratings at scale",
+                "note": "Direct paraphrase of the source; 'user profiles' maps to 'shilling profiles', 'fake reviews' to 'fluent reviews', 'ratings' matches exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Language model agents defeat detectors that look at text or graph structure alone",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "defeating detectors that look at text or graph structure alone",
+                "source_span": "Text-only detectors that flag semantic drift in review embeddings are blind to graph structure and temporal coordination, while graph-only detectors that exploit neighborhood anomalies cannot reason over review semantics or the cross-modal inconsistencies produced by LLM-generated content.",
+                "note": "The body's compression accurately captures that text-only and graph-only detectors each fail against LLM-generated attacks."
+              },
+              {
+                "schema_version": 1,
+                "claim": "TH-GNN is an arXiv preprint",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "TH-GNN, an arXiv preprint",
+                "source_span": "[Submitted on 24 Jun 2026]",
+                "note": "The source is clearly an arXiv submission, confirming preprint status."
+              },
+              {
+                "schema_version": 1,
+                "claim": "TH-GNN combines both signals with timing patterns",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "combines both signals with timing patterns",
+                "source_span": "a GRU operating over log inter-arrival times captures temporal burstiness",
+                "note": "'Timing patterns' is a fair plain-English paraphrase of temporal encodings and GRU over inter-arrival times."
+              },
+              {
+                "schema_version": 1,
+                "claim": "TH-GNN reaches an F1 score of 0.87 across five attack types",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reaches an F1 score of 0.87 across five attack types",
+                "source_span": "Evaluated across five attack families and four benchmark datasets, TH-GNN achieves a grand-mean F1 score of 0.870",
+                "note": "0.87 is a correct rounding of 0.870; 'five attack types' maps to 'five attack families'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Recommendation fraud now arrives as coordinated AI-generated profiles, not detectable by text or graph signals alone.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Recommendation fraud now arrives as coordinated AI-generated profiles, not detectable by text or graph signals alone.",
+                "source_span": "LLM agents can now generate realistic shilling profiles, fluent reviews, and coherent ratings at scale, systematically defeating recommender-system defenses. Text-only detectors...are blind to graph structure and temporal coordination, while graph-only detectors...cannot reason over review semantics.",
+                "note": "'Coordinated AI-generated profiles' maps to LLM-generated shilling profiles with temporal coordination; 'not detectable by text or graph signals alone' accurately reflects the source's description of each detector type's blind spots."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": null
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Coding agents ship insecure work.",
+      "sentence": "Across 12 agent configurations, 57% of tasks passed correctness checks but only 11.8% of those solutions were secure.",
+      "story_ids": [
+        "c_8c315d25f47509fb"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Microsoft enforces governance at runtime.",
+      "sentence": "Nine governance domains now require live telemetry proof via an open-source toolkit, not signed-off documentation.",
+      "story_ids": [
+        "c_be32e0f672ed6548"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "DoorDash filters before the model.",
+      "sentence": "A fast classifier screens obvious cases under 100 milliseconds, sending only 10% of 4 million daily messages to a costly language model.",
+      "story_ids": [
+        "c_3f6960570df58154"
+      ]
+    }
+  ],
+  "generated_at": "2026-08-24T21:23:56.620594Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: amber -- currents: 1 (tier pool exhausted)"
+}
