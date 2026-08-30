@@ -2007,3 +2007,238 @@ class TestDigestAndSynthesisInReviewSurface:
         )
         assert "## The 30-second read" in markdown
         assert "bullet 1 -> digest_lead" in markdown
+
+
+# ---------------------------------------------------------------------------
+# Echo grouping -- one defect counts once (2026-08-29).
+# ---------------------------------------------------------------------------
+
+_BP_TAKE_TEXT = "Model-risk sign-off now covers agent plans, not just outputs."
+"""The Big Picture story's take in ``_payload_with_takes``."""
+
+
+def _factual(
+    field: str, quote: str, severity: str = "major", **overrides: Any
+) -> dict[str, Any]:
+    """A factual_grounding finding on the Big Picture story (id 1)."""
+    return _finding(
+        field=field, quote=quote, severity=severity,
+        criterion="factual_grounding",
+        instruction="Match the source's figure.", **overrides,
+    )
+
+
+class TestEchoGrouping:
+    """Ten reviews (2026-08-11 .. 2026-08-25) filed single mistakes three
+    and four times -- once per field the wrong number appeared in, once per
+    criterion that objected to one sentence -- and the "three majors"
+    red rule fired on one defect. These tests pin the fold."""
+
+    def _group(self, findings: list[dict[str, Any]]) -> list[Any]:
+        from src.review import _resolve_and_filter_findings, group_echoes
+
+        issue = _payload_with_digest_and_synthesis()
+        kept, dropped, malformed = _resolve_and_filter_findings(findings, issue)
+        assert not dropped and malformed == 0, "fixture findings must resolve"
+        return group_echoes(kept, issue)
+
+    def test_same_span_under_two_criteria_is_one_defect(self) -> None:
+        """Two rules objecting to one sentence are one fix."""
+        grouped = self._group([
+            _finding(quote="Summary for BP story one.", severity="major",
+                     criterion="closing_shape"),
+            _finding(quote="Summary for BP story one.", severity="major",
+                     criterion="section_intro"),
+        ])
+        assert [f.echo_of for f in grouped] == [None, "f001"]
+
+    def test_factual_error_across_fields_of_one_story_counts_once(
+        self,
+    ) -> None:
+        """The ICML case: the same wrong figure in headline, summary and
+        take. Three findings, one mistake -- and the one that counts is
+        the most severe, wherever it was filed."""
+        grouped = self._group([
+            _factual("summary", "Summary for BP story one.", "major"),
+            _factual("headline", "BP story one", "blocking"),
+            _factual("take", _BP_TAKE_TEXT, "major"),
+        ])
+        counted = [f for f in grouped if f.counted]
+        assert [f.finding_id for f in counted] == ["f002"]
+        assert counted[0].severity == "blocking"
+        assert {f.echo_of for f in grouped if not f.counted} == {"f002"}
+
+    def test_tie_on_severity_counts_the_earliest(self) -> None:
+        grouped = self._group([
+            _factual("summary", "Summary for BP story one."),
+            _factual("headline", "BP story one"),
+        ])
+        assert [f.echo_of for f in grouped] == [None, "f001"]
+
+    def test_digest_bullet_citing_one_story_joins_that_story(self) -> None:
+        """Bullet 1 cites story 1 alone, so a factual finding on it is the
+        story's defect seen in the skim block."""
+        grouped = self._group([
+            _factual("summary", "Summary for BP story one."),
+            _digest_finding(
+                index=1, field="digest_sentence", quote="Another sentence.",
+                criterion="factual_grounding",
+            ),
+        ])
+        assert [f.echo_of for f in grouped] == [None, "f001"]
+
+    def test_digest_bullet_citing_several_stories_stays_separate(
+        self,
+    ) -> None:
+        from src.review import _resolve_and_filter_findings, group_echoes
+
+        issue = _payload_with_digest_and_synthesis()
+        issue["digest"][1]["story_ids"] = [_story_id(1), _story_id(10)]
+        kept, _dropped, _malformed = _resolve_and_filter_findings([
+            _factual("summary", "Summary for BP story one."),
+            _digest_finding(
+                index=1, field="digest_sentence", quote="Another sentence.",
+                criterion="factual_grounding",
+            ),
+        ], issue)
+        grouped = group_echoes(kept, issue)
+        assert all(f.counted for f in grouped)
+
+    def test_different_stories_are_different_defects(self) -> None:
+        grouped = self._group([
+            _factual("summary", "Summary for BP story one."),
+            _factual("summary", "Summary for HO story one.",
+                     story_id=_story_id(10), section="hands_on"),
+        ])
+        assert all(f.counted for f in grouped)
+
+    def test_shape_findings_on_different_spans_do_not_fold(self) -> None:
+        """Only factual/reputational findings fold across fields. A
+        closing-shape complaint on the body and a take-shape complaint on
+        the take are two distinct defects on one story."""
+        grouped = self._group([
+            _finding(quote="Summary for BP story one.", severity="major",
+                     criterion="closing_shape"),
+            _finding(field="take", quote=_BP_TAKE_TEXT, severity="major",
+                     criterion="take_shape"),
+        ])
+        assert all(f.counted for f in grouped)
+
+    def test_grouping_is_transitive_across_the_two_rules(self) -> None:
+        """The NVIDIA case: two factual findings plus a trust-flag finding
+        quoting the same span. Rule (a) joins the trust flag to one
+        factual finding; rule (b) joins the two factual findings; all
+        three are one defect."""
+        grouped = self._group([
+            _factual("summary", "Summary for BP story one."),
+            _finding(quote="Summary for BP story one.", severity="major",
+                     criterion="trust_flags"),
+            _factual("headline", "BP story one"),
+        ])
+        assert [f.echo_of for f in grouped] == [None, "f001", "f001"]
+
+    def test_input_list_is_not_mutated(self) -> None:
+        from src.review import _resolve_and_filter_findings, group_echoes
+
+        issue = _payload_with_digest_and_synthesis()
+        kept, _d, _m = _resolve_and_filter_findings([
+            _factual("summary", "Summary for BP story one."),
+            _factual("headline", "BP story one"),
+        ], issue)
+        group_echoes(kept, issue)
+        assert all(f.echo_of is None for f in kept)
+
+
+class TestEchoesAndTheVerdict:
+    """The point of the fold: the threshold table sees one defect once."""
+
+    def _run(self, tmp_data_root: Path, findings: list[dict[str, Any]]) -> Any:
+        date = _dt.date(2026, 8, 29)
+        target = paths.staging_dir(date)
+        target.mkdir(parents=True)
+        payload = _payload_with_digest_and_synthesis()
+        payload["date"] = date.isoformat()
+        (target / "issue.json").write_text(json.dumps(payload))
+        with patch(
+            "src.review._call_review_llm",
+            return_value=_fake_response(findings),
+        ):
+            return run_review(date=date)
+
+    def test_one_error_filed_three_times_is_not_three_majors(
+        self, tmp_data_root: Path
+    ) -> None:
+        """Three majors is red under the ratified table. One mistake seen
+        in three fields must not be."""
+        artifact = self._run(tmp_data_root, [
+            _factual("summary", "Summary for BP story one."),
+            _factual("headline", "BP story one"),
+            _factual("take", _BP_TAKE_TEXT),
+        ])
+        assert artifact.verdict == "amber"
+        assert artifact.report is not None
+        assert artifact.report.severity_counts()["major"] == 1
+
+    def test_three_distinct_defects_still_go_red(
+        self, tmp_data_root: Path
+    ) -> None:
+        artifact = self._run(tmp_data_root, [
+            _factual("summary", "Summary for BP story one."),
+            _factual("summary", "Summary for HO story one.",
+                     story_id=_story_id(10), section="hands_on"),
+            _finding(quote="Summary for Currents story one.", severity="major",
+                     criterion="closing_shape", story_id=_story_id(20),
+                     section="currents"),
+        ])
+        assert artifact.verdict == "red"
+
+    def test_echoes_stay_in_review_json_for_the_reviser(
+        self, tmp_data_root: Path
+    ) -> None:
+        """Nothing is removed -- the reviser needs every location."""
+        from src.review import read_report
+
+        self._run(tmp_data_root, [
+            _factual("summary", "Summary for BP story one."),
+            _factual("headline", "BP story one"),
+        ])
+        report = read_report(_dt.date(2026, 8, 29))
+        assert report is not None
+        assert [f.finding_id for f in report.findings] == ["f001", "f002"]
+        assert report.findings[1].echo_of == "f001"
+        assert report.echo_count() == 1
+
+    def test_rendered_review_labels_echoes_and_counts_once(
+        self, tmp_data_root: Path
+    ) -> None:
+        artifact = self._run(tmp_data_root, [
+            _factual("summary", "Summary for BP story one."),
+            _factual("headline", "BP story one"),
+        ])
+        md = artifact.path.read_text()
+        assert "(1 major; 1 echo(es) not counted)" in md
+        assert "f002 -- factual_grounding** (text_edit) -- echo of f001, not counted" in md
+        assert "(f002, text_edit) (echo of f001)" in md
+        assert "findings_echoes: 1" in md
+        assert "findings_by_severity: blocking=0 major=1 minor=0 note=0" in md
+
+    def test_legacy_report_without_echo_of_counts_every_finding(self) -> None:
+        """Archived review.json files predate the field; every finding in
+        them counts, exactly as when they were written."""
+        from src.models import ReviewFinding, ReviewReport
+
+        raw = {
+            "finding_id": "f001",
+            "target": {"kind": "story", "story_id": _story_id(1),
+                       "section": "big_picture", "field": "summary"},
+            "criterion": "closing_shape", "severity": "major",
+            "quote": "x", "fix_kind": "text_edit", "instruction": "y",
+        }
+        finding = ReviewFinding.model_validate(raw)
+        assert finding.counted
+        report = ReviewReport(
+            generated_at=_dt.datetime(2026, 8, 1, tzinfo=_dt.timezone.utc),
+            computed_verdict="amber", findings=[finding],
+            prompt_version="v1.0",
+        )
+        assert report.severity_counts()["major"] == 1
