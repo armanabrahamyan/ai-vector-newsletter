@@ -2152,12 +2152,12 @@ class TestVoiceDiversityVersionBump:
     """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
     must move with it so the audit trail picks up the shift."""
 
-    def test_summarise_prompt_version_is_v0_23(self) -> None:
-        # v0.23 (2026-08-09): take v2 (the cold open) + section synthesis
-        # + the digest -- the layout-redesign generation wave. Audit tag:
-        # summarise-v0.23-2026-08-09.
+    def test_summarise_prompt_version_is_v0_23_1(self) -> None:
+        # v0.23.1 (2026-08-29): code-side closing-shape check + the
+        # one-sentence rewrite prompt. Audit tag:
+        # summarise-v0.23.1-2026-08-29.
         from src.summarise import SUMMARISE_PROMPT_VERSION
-        assert SUMMARISE_PROMPT_VERSION == "v0.23"
+        assert SUMMARISE_PROMPT_VERSION == "v0.23.1"
 
     def test_digest_prompt_version_is_v1_0(self) -> None:
         from src.summarise import DIGEST_PROMPT_VERSION
