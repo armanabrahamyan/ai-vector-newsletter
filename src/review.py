@@ -39,6 +39,20 @@ follow from the new shape:
    issue; a substring check ends that class of error outright -- No Token
    Wasted, since no prompt engineering can make a hallucinated quote match.
 
+4. **One defect counts once** (2026-08-29, code only; prompt bytes and
+   ``REVIEW_PROMPT_VERSION`` unchanged). The reviewer files a wrong number
+   at every place it appears -- headline, digest bullet, summary, take --
+   and files one sentence under two or three criteria. Over ten reviews
+   (2026-08-11 .. 2026-08-25) that turned single mistakes into three or
+   four blocking/major findings and tripped the "three majors" red rule on
+   its own. ``group_echoes`` now marks the repeats with ``echo_of`` (same
+   field + same quoted span under any criterion; or factual/reputational
+   findings anywhere on one story, a digest bullet citing exactly one story
+   included). Echoes stay in ``review.json`` and ``review.md`` -- the
+   reviser still needs every location -- but only counted findings reach
+   the threshold table. ``findings_echoes`` in the frontmatter records how
+   many were folded.
+
 Fail-closed contract (unchanged from Phase 1)
 ---------------------------------------------
 ``green | amber | red`` are editorial outcomes and are only ever reached by
@@ -745,14 +759,24 @@ def run_review(
     kept, dropped, malformed = _resolve_and_filter_findings(
         raw_findings, issue_payload,
     )
+    # One defect counts once: echoes stay in the report (the reviser needs
+    # every location) but carry ``echo_of`` and stay out of the tally.
+    kept = group_echoes(kept, issue_payload)
+    echoes = sum(1 for finding in kept if not finding.counted)
 
     counts = {severity: 0 for severity in _SEVERITIES}
     for finding in kept:
-        counts[finding.severity] += 1
+        if finding.counted:
+            counts[finding.severity] += 1
     verdict, verdict_reason = compute_verdict(counts, thresholds)
 
     one_line = _resolve_one_line(llm_summary, counts, verdict)
     note_parts = [f"verdict rule: {verdict_reason}"]
+    if echoes:
+        note_parts.append(
+            f"{echoes} echo(es) not counted: the same defect filed again "
+            "in another field or under another criterion"
+        )
     if dropped:
         note_parts.append(
             f"{len(dropped)} finding(s) dropped: quote not found verbatim "
@@ -827,6 +851,7 @@ def _findings_frontmatter(
         "findings_by_severity": " ".join(
             f"{severity}={counts[severity]}" for severity in _SEVERITIES
         ),
+        "findings_echoes": report.echo_count(),
         "findings_dropped": len(report.dropped_findings),
         "thresholds_version": report.thresholds_version,
     }
@@ -1441,6 +1466,126 @@ def _resolve_and_filter_findings(
     return kept, dropped, malformed
 
 
+# ---------------------------------------------------------------------------
+# Echo grouping -- one defect counts once.
+# ---------------------------------------------------------------------------
+
+_ECHO_ACROSS_FIELDS_CRITERIA: frozenset[str] = frozenset(
+    {"factual_grounding", "reputational_liability"}
+)
+"""Criteria whose findings on ONE story are one defect wherever they land.
+A wrong number is written once and copied into the headline, the digest
+bullet, and the take; the reviewer files it at every location it sees
+it. Four findings, one mistake."""
+
+
+def group_echoes(
+    findings: list[ReviewFinding], issue_payload: dict[str, Any]
+) -> list[ReviewFinding]:
+    """Mark findings that are echoes of one defect so the verdict counts
+    the defect once.
+
+    Measured need (ten reviews, 2026-08-11 .. 2026-08-25): the ICML
+    "one in four / 2,200" error was filed as FOUR blocking findings
+    (headline, digest, summary, take); one Currents closing sentence drew
+    four findings under three criteria; one mis-attributed benchmark drew
+    three. The threshold table's "three majors is a draft that did not
+    come out right" rule was tripping on one mistake seen three times.
+
+    Two findings are the same defect when EITHER holds:
+
+      (a) same target field AND the same quoted span, whatever the
+          criterion -- two rules objecting to one sentence are one fix;
+      (b) both carry a criterion in ``_ECHO_ACROSS_FIELDS_CRITERIA`` and
+          sit on the SAME story, in any of its fields. A digest bullet
+          counts as sitting on a story when its ``story_ids`` names exactly
+          one; a bullet citing several stories stays its own defect.
+
+    "Same" is transitive: a factual finding on the summary, a trust-flag
+    finding quoting the same summary span, and a factual finding on the
+    headline are one group. In each group the finding that COUNTS is the
+    most severe one, earliest id on a tie; every other member gets
+    ``echo_of`` pointing at it. Nothing is removed: ``src/revise.py``
+    still needs each location to fix, and the rendered review still shows
+    each one, labelled.
+
+    Pure and deterministic -- No Token Wasted. Returns new model instances;
+    the input list is not mutated.
+    """
+    if len(findings) < 2:
+        return list(findings)
+
+    # Digest bullet index -> the single story it cites (None when several).
+    bullet_story: dict[int, str | None] = {}
+    digest = issue_payload.get("digest")
+    if isinstance(digest, list):
+        for i, bullet in enumerate(digest):
+            ids = bullet.get("story_ids") if isinstance(bullet, dict) else None
+            if isinstance(ids, list) and len(ids) == 1 and isinstance(ids[0], str):
+                bullet_story[i] = ids[0]
+            else:
+                bullet_story[i] = None
+
+    # Union-find over finding positions, keyed by the identity signals.
+    parent = list(range(len(findings)))
+
+    def _find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    def _union(i: int, j: int) -> None:
+        ri, rj = _find(i), _find(j)
+        if ri != rj:
+            parent[max(ri, rj)] = min(ri, rj)
+
+    first_by_key: dict[tuple[str, ...], int] = {}
+    for i, finding in enumerate(findings):
+        keys: list[tuple[str, ...]] = [
+            ("span", target_key(finding.target),
+             normalise_for_quote_match(finding.quote)),
+        ]
+        if finding.criterion in _ECHO_ACROSS_FIELDS_CRITERIA:
+            target = finding.target
+            story_id: str | None = None
+            if target.kind == "story":
+                story_id = target.story_id
+            elif target.kind == "digest" and target.digest_index is not None:
+                story_id = bullet_story.get(target.digest_index)
+            if story_id:
+                keys.append(("story", story_id))
+        for key in keys:
+            if key in first_by_key:
+                _union(i, first_by_key[key])
+            else:
+                first_by_key[key] = i
+
+    groups: dict[int, list[int]] = {}
+    for i in range(len(findings)):
+        groups.setdefault(_find(i), []).append(i)
+
+    rank = {severity: n for n, severity in enumerate(_SEVERITIES)}
+    out: list[ReviewFinding] = list(findings)
+    for members in groups.values():
+        if len(members) < 2:
+            continue
+        # Most severe wins; members are in emission order, so ``min`` on
+        # (rank, position) resolves a tie to the earliest id.
+        lead = min(members, key=lambda i: (rank[findings[i].severity], i))
+        lead_id = findings[lead].finding_id
+        for i in members:
+            if i == lead:
+                continue
+            out[i] = findings[i].model_copy(update={"echo_of": lead_id})
+            _LOG.info(
+                "review: finding %s (%s/%s) is an echo of %s -- not counted",
+                findings[i].finding_id, findings[i].criterion,
+                findings[i].severity, lead_id,
+            )
+    return out
+
+
 def _build_finding(finding_id: str, entry: dict[str, Any]) -> ReviewFinding:
     """Construct a ``ReviewFinding`` from one raw JSON entry.
 
@@ -1648,6 +1793,9 @@ def render_review_markdown(
         f"{counts[severity]} {severity}" for severity in _SEVERITIES
         if counts[severity]
     )
+    echoes = report.echo_count()
+    if echoes:
+        tally = f"{tally or 'no findings'}; {echoes} echo(es) not counted"
     lines.append(
         f"**Verdict**: {report.computed_verdict.upper()} "
         f"({tally or 'no findings'}). {report.one_line}"
@@ -1690,10 +1838,17 @@ def render_review_markdown(
         lines.append("- Ratify as-is.")
     else:
         order = {severity: i for i, severity in enumerate(_SEVERITIES)}
-        for finding in sorted(actionable, key=lambda f: order[f.severity]):
+        # Counted findings first, echoes after, each tier in severity
+        # order -- an echo is still a place to fix, just not a second
+        # defect, so it stays on the list with its parent named.
+        for finding in sorted(
+            actionable,
+            key=lambda f: (0 if f.counted else 1, order[f.severity]),
+        ):
+            echo = f" (echo of {finding.echo_of})" if finding.echo_of else ""
             lines.append(
                 f"- [{_SEVERITY_MARK[finding.severity]}] "
-                f"({finding.finding_id}, {finding.fix_kind}) "
+                f"({finding.finding_id}, {finding.fix_kind}){echo} "
                 f"{finding.instruction}"
             )
     lines.append("")
@@ -1738,9 +1893,12 @@ def _render_finding(
         )
     else:
         locator = f"{_SECTION_DISPLAY.get(target.section or '', target.section)} intro -> {target.field}"
+    echo = (
+        f" -- echo of {finding.echo_of}, not counted" if finding.echo_of else ""
+    )
     return [
         f"**[{_SEVERITY_MARK[finding.severity]}] {finding.finding_id} "
-        f"-- {finding.criterion}** ({finding.fix_kind})",
+        f"-- {finding.criterion}** ({finding.fix_kind}){echo}",
         f"- Target: {locator}",
         f"- Quote: \"{finding.quote}\"",
         f"- Fix: {finding.instruction}",

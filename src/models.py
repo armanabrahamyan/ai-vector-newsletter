@@ -2127,9 +2127,15 @@ class ReviewFinding(BaseModel):
     ``quote`` is mandatory -- a finding that cannot point at the text it
     objects to has no evidence, and the reviewer's two documented misfire
     classes (2026-07-04) were both findings about text that was not there.
+
+    Schema v2 (2026-08-29): added optional ``echo_of``. Code groups findings
+    that are the same defect seen in several places (the same wrong number
+    quoted from the headline, the summary, and the take) and points every
+    echo at the one finding that counts. v1 records parse unchanged
+    (``echo_of`` defaults to None, meaning "counted").
     """
 
-    schema_version: int = 1
+    schema_version: int = 2
     finding_id: Annotated[str, Field(pattern=_FINDING_ID_PATTERN)]
     """``f001``, ``f002``, ... Assigned BY CODE in emission order, not by the
     model: `RevisionChange.finding_ids` references these, and a duplicate id
@@ -2161,7 +2167,22 @@ class ReviewFinding(BaseModel):
     """What to do about it, in the imperative, specific enough that a
     reviser could act on it without re-reading the whole issue."""
 
+    echo_of: Annotated[
+        str | None, Field(default=None, pattern=_FINDING_ID_PATTERN)
+    ] = None
+    """When set, this finding is an ECHO of the finding with that id -- the
+    same defect, seen in another field or filed under a second criterion --
+    and does NOT count toward the verdict. Assigned by code
+    (`src/review.py` ``group_echoes``), never by the model. The echo stays
+    in the report because `src/revise.py` still needs every text location
+    to fix; only the tally ignores it."""
+
     model_config = ConfigDict(extra="forbid")
+
+    @property
+    def counted(self) -> bool:
+        """True when this finding feeds the verdict (it is not an echo)."""
+        return self.echo_of is None
 
 
 class ReviewReport(BaseModel):
@@ -2186,9 +2207,15 @@ class ReviewReport(BaseModel):
     Schema v3 (2026-08-09): same transitive-envelope rule for the
     ReviewTarget v2->v3 change (``kind="digest"`` + ``digest_index``,
     section-target ``field="synthesis"``). v1/v2 records parse unchanged.
+
+    Schema v4 (2026-08-29): envelope bump for ReviewFinding v1->v2
+    (``echo_of``). `severity_counts` now tallies COUNTED findings only --
+    an echo is the same defect seen twice, and the threshold table must
+    see it once. Older records carry no ``echo_of``, so every finding in
+    them counts, exactly as before.
     """
 
-    schema_version: int = 3
+    schema_version: int = 4
     generated_at: datetime
     """UTC timestamp when the review stage wrote this report."""
 
@@ -2272,14 +2299,21 @@ class ReviewReport(BaseModel):
         return self
 
     def severity_counts(self) -> dict[str, int]:
-        """Tally of ``findings`` by severity, every severity present with a
-        zero default. The verdict computation in `src/review.py` reads
-        exactly this, so the tally the artifact displays and the tally the
-        verdict came from are the same code path."""
+        """Tally of COUNTED ``findings`` by severity, every severity present
+        with a zero default. Echoes (``echo_of`` set) are skipped: they are
+        the same defect seen in another place, and one defect counts once.
+        The verdict computation in `src/review.py` reads exactly this, so
+        the tally the artifact displays and the tally the verdict came from
+        are the same code path."""
         counts = {"blocking": 0, "major": 0, "minor": 0, "note": 0}
         for finding in self.findings:
-            counts[finding.severity] += 1
+            if finding.counted:
+                counts[finding.severity] += 1
         return counts
+
+    def echo_count(self) -> int:
+        """How many ``findings`` are echoes (recorded, not counted)."""
+        return sum(1 for finding in self.findings if not finding.counted)
 
 
 # ---------------------------------------------------------------------------
