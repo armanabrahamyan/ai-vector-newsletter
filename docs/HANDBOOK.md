@@ -178,8 +178,9 @@ its own — that's why you can re-run subsets cheaply.
 - **What it does:** takes the findings the reviewer marked as fixable text edits and rewrites those fields — one LLM call per field, with a code-side validation gate on every replacement (no invented numerals, no dropped URLs, no runaway rewrites). Every proposal, application and refusal is logged with the full before/after text.
 - **Modes**, from `AIV_REVISE_MODE` or `aiv run --revise-mode`:
   - `shadow` (**default**) — one pass, proposals logged, `issue.json` untouched.
-  - `live` — up to **2 cycles** of [revise → re-verify the touched stories → render → review], stopping the moment the computed verdict stops improving (`red < amber < green`; equal is not improvement).
+  - `live` — up to **2 cycles** of [revise → re-verify the touched stories → render → review], stopping the moment the computed verdict stops improving (`red < amber < green`; equal is not improvement). The review you read afterwards is of the revised draft.
   - `off` — doesn't run, spends nothing. Same as `--no-revise`.
+- **On the release PR** the nightly run posts what the loop did as a comment: "Proposed revisions (shadow)" lists what it *would* have changed; "Revisions applied (live)" lists what it did, with every rejected replacement and the rule that refused it. To print the same thing locally: `python -m src.revise --render-comment --date <date>` (add `--released` after `aiv release`). See §18.7 for applying the proposals.
 - **Uses LLM.** Cost in live mode ≈ $0.05-0.15 per cycle, depending on how many fields were flagged. Time ≈ 30-90 s per cycle.
 - **It never rolls back.** If a cycle makes the issue worse, the loop stops — but the edit stays. The publish gate is the backstop: a degraded verdict holds the release and you look at it.
 - **When it goes wrong:** the run continues regardless. Look for `revise: [advisory-guard]` in the log — the loop failed and the pipeline carried on with the issue as it stood.
@@ -967,6 +968,49 @@ severity, say `only major` (or `--min-severity major`) in the comment:
 Levels: `note` (default, filters nothing) → `minor` → `major` →
 `blocking`. The floor is a deterministic pre-filter in code — findings
 below it never reach the LLM, so it also spends nothing on them.
+
+### 18.7 "The review is RED with text-edit fixes. Apply them."
+
+Most RED findings are `text_edit`: the reviewer quoted the sentence and
+wrote the replacement instruction. The reviser applies exactly those, one
+field at a time, behind the code-side validation gate (no invented
+numbers, no dropped links, no rewrite larger than 40% of the field). Three
+ways to run it, from least to most automatic:
+
+```
+# 1. On the open release PR, from anywhere -- no instruction needed
+/revise
+/revise only major          # skip the minor and note findings
+```
+
+The workflow applies the fixes to the branch, re-renders the page, pushes,
+and replies with the applied/rejected list. **The editor's review comment
+on the PR is not re-run** — it still describes the draft before the edit.
+Re-read the preview; if you want a fresh verdict, run it locally (below).
+
+```bash
+# 2. Locally, on a staged draft (before `aiv release`)
+aiv revise --date YYYY-MM-DD --live          # apply
+aiv review --date YYYY-MM-DD                 # fresh verdict on the revised draft
+python -m src.revise --render-comment --date YYYY-MM-DD   # what changed, as the PR would show it
+```
+
+```bash
+# 3. Every night, before the PR opens -- the loop does 1 + 2 itself, up to twice
+gh variable set AIV_REVISE_MODE --body live
+gh variable list      # confirm
+```
+
+With the variable at `live` the nightly run applies the fixes, re-verifies
+the touched stories, re-renders, and re-reviews, so the PR you wake up to
+carries the revised draft and a review of *that* draft. The merge is still
+yours; nothing about auto-publish changes (§18.3 governs that). Set it back
+to `shadow` (or delete it) to return to proposals-only.
+
+What the reviser will **not** do, in any mode: a finding marked
+`structural`, `sourcing`, or `human` (a story in the wrong section, a claim
+that needs a source, a reputational call) is never touched. Those stay for
+you.
 
 ---
 

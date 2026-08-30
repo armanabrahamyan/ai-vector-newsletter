@@ -254,80 +254,29 @@ jobs:
           git commit -m "chore(revise): apply /revise for ${DATE}"
           git push origin "HEAD:${{ steps.pr.outputs.head_ref }}"
 
-      # Summarise what was applied/rejected. revisions.jsonl's on-disk
-      # location in --live mode is not yet pinned down by the revise
-      # contract at time of writing; check both the staging path (the
-      # documented shadow location) and the released path (the more likely
-      # live-mode location, since this checkout only has data/released/
-      # committed) and use whichever exists.
+      # Summarise what was applied/rejected, from the LAST cycle in
+      # revisions.jsonl -- that is this run; earlier lines are prior cycles
+      # (the nightly pass). The renderer is src/revise.py's, shared with
+      # daily.yml, so the reply reads the file by the shape its writer
+      # emits. `--released` is where `aiv revise --released` wrote it; the
+      # staging path is the fallback for a hand-run on a full checkout.
+      # (The inline reader this replaced referenced an undefined name and
+      # failed AFTER the push, so every successful /revise was reported as
+      # a failure.)
       - name: Reply with revision summary
         env:
           REVISE_DATE: ${{ steps.when.outputs.date }}
         run: |
-          python <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          date = os.environ["REVISE_DATE"]
-          candidates = [
-              Path(f"data/released/{date}/revisions.jsonl"),
-              Path(f"data/staging/{date}/revisions.jsonl"),
-          ]
-          path = next((p for p in candidates if p.exists()), None)
-
-          lines = ["Applied `/revise` for **" + date + "**.", ""]
-          if path is None:
-              lines.append("No `revisions.jsonl` found -- unable to summarise "
-                            "individual field changes. Check the rendered diff "
-                            "in this commit directly.")
-          else:
-              # Each line is a RevisionCycle; its field-level results live in
-              # the "changes" array. Summarise the LAST cycle only -- that is
-              # this run; earlier lines are prior (e.g. nightly shadow) cycles.
-              cycles = []
-              for raw in path.read_text().splitlines():
-                  if not raw.strip():
-                      continue
-                  try:
-                      cycles.append(json.loads(raw))
-                  except json.JSONDecodeError:
-                      continue
-              last = cycles[-1] if cycles else {}
-              changes = last.get("changes") or []
-
-              def label(ch):
-                  t = ch.get("target") or {}
-                  where = t.get("story_id") or t.get("section") or "?"
-                  return f"`{where}` / `{t.get('field', '?')}`"
-
-              applied = [c for c in changes if c.get("status") == "applied"]
-              other = [c for c in changes if c.get("status") != "applied"]
-              lines.append(f"Mode: `{last.get('mode', '?')}`"
-                           + (f" · min-severity: `{last.get('min_severity')}`"
-                              if last.get("min_severity") else ""))
-              lines.append("")
-              if applied:
-                  lines.append(f"**Applied ({len(applied)}):**")
-                  for c in applied:
-                      lines.append(f"- {label(c)}")
-                  lines.append("")
-              if other:
-                  lines.append(f"**Not applied ({len(other)}):**")
-                  for c in other:
-                      reason = c.get("reject_reason") or c.get("status", "?")
-                      lines.append(f"- {label(c)} -- {reason}")
-                  lines.append("")
-              if not changes:
-                  lines.append(f"No field changes this run. Cycle note: "
-                               f"{last.get('note', 'none')}")
-                  lines.append("")
-              if not applied and not rejected:
-                  lines.append("`revisions.jsonl` was empty -- no fields were changed.")
-
-          lines.append("Pushed to this branch. Re-review the preview and merge/close as usual.")
-          Path("revise_summary.md").write_text("\n".join(lines) + "\n")
-          PY
+          {
+            echo "Applied \`/revise\` for **${REVISE_DATE}**."
+            echo
+            if ! python -m src.revise --render-comment --last-cycle --released --date "$REVISE_DATE" \
+               && ! python -m src.revise --render-comment --last-cycle --date "$REVISE_DATE"; then
+              echo "No \`revisions.jsonl\` found -- unable to summarise individual field changes. Check the rendered diff in this commit directly."
+              echo
+            fi
+            echo "Pushed to this branch. The editor's review comment above describes the draft BEFORE this edit; re-read the preview and merge/close as usual."
+          } > revise_summary.md
           gh pr comment "${{ github.event.issue.number }}" \
             --repo "${{ github.repository }}" --body-file revise_summary.md
 
