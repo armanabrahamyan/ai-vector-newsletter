@@ -1,6 +1,6 @@
 # AI Vector Newsletter
 
-[![Live](https://img.shields.io/badge/live-e6452f)](https://armanabrahamyan.github.io/ai-vector-newsletter/)
+[![Live](https://img.shields.io/badge/live-e6452f)](https://aivector.day/)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -13,7 +13,7 @@ Heavy on Agentic AI and Generative AI — what shifts how readers work today, wh
 > **Built to fork.** The architecture is domain-agnostic. Swap `config/sources.yaml`, retune `config/rubric.yaml`, edit the voice in the summarise prompt, and you have *your* daily newsletter — for AI in healthcare, fintech security, climate tech, internal eng updates, anything. The pipeline (fetch → cluster → rank → summarise → render), the staging/released archive model, the templates, and the agent team are all reusable as-is.
 
 **Author:** Arman Abrahamyan  
-**Live:** https://armanabrahamyan.github.io/ai-vector-newsletter/
+**Live:** https://aivector.day/
 
 ---
 
