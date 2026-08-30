@@ -77,6 +77,12 @@ from src.rank import (
 # helpers to a shared src/canonical_id.py module.
 from src.cluster import _extract_canonical_id_from_url
 from src import paths
+from src.closing_shape import (
+    SENTENCE_SPLIT_RE as _SENTENCE_SPLIT_RE,
+    closing_shape_defect,
+    extract_closing_sentence,
+    replace_closing_sentence,
+)
 from src.models import (
     Cluster,
     DigestBullet,
@@ -92,9 +98,30 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.23"
+SUMMARISE_PROMPT_VERSION = "v0.23.1"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.23-2026-08-09``. v0.23 (the 2026-08-09 layout redesign,
+``summarise-v0.23.1-2026-08-29``.
+v0.23.1 (2026-08-29, code-side closing-shape check): the reviewer filed
+the same closing-shape defect against nearly every August issue -- a
+Currents or Big Picture body ending on an instruction to the reader
+("Raise it at your next fraud-detection architecture review.") where the
+contract wants a maturity signal or a strategic question -- and five
+prompt revisions (v0.18 -> v0.22) never made the rule bind. The rule now
+binds in code, not prose: after a draft is accepted,
+``src.closing_shape.closing_shape_defect`` checks the body's last
+sentence against the section contract (Pulse: no question, no
+instruction; Big Picture: must end on a question; Currents: no
+instruction; Hands-On not checked). On a defect, ONE targeted LLM call
+rewrites ONLY that sentence (``_repair_closing_shape``; the prompt names
+the contract, the take, the offending sentence, and a word budget that
+keeps the body inside its 60-word cap), code splices it in and
+re-checks; at most two attempts, then the original body ships and the
+reviewer flags it as before. The detector is conservative on purpose --
+a missed defect costs a review finding, a false alarm costs a rewrite
+call and can make a good close worse. Kill switch:
+``AIV_CLOSING_SHAPE_REPAIR=0``. The story prompt itself is unchanged;
+the bump records the new rewrite prompt.
+v0.23 (the 2026-08-09 layout redesign,
 wave two -- take v2 + section synthesis + the digest; editor's voice
 contracts and Architect's v8 data contracts ratified in wave one):
   - TAKE v2 -- THE COLD OPEN. The take is no longer the italic last line;
@@ -2733,13 +2760,6 @@ lands first -- SummaryBlock is ``extra=\"forbid\"``, so passing an unknown
 field would otherwise fail EVERY block and kill the issue. Once the model
 change lands this constant is True and the seam is inert."""
 
-_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
-"""Sentence-boundary splitter for ``_extract_closing_sentence``. Splits
-after ., ! or ? followed by whitespace. Abbreviations with internal
-stops ("9 a.m. tomorrow") can over-split; acceptable here -- the output
-feeds a do-not-reuse list, never published prose."""
-
-
 def _extract_closing_sentence(summary: str) -> str:
     """Return the last sentence of a summary body (the close).
 
@@ -2748,13 +2768,177 @@ def _extract_closing_sentence(summary: str) -> str:
     currents summary is injected into the NEXT same-tier story's prompt
     so the model can actually vary against it -- close-variety is a
     cross-story property that per-story prompting cannot coordinate.
-    Empty / whitespace-only input returns "".
+    Empty / whitespace-only input returns "". The implementation lives in
+    ``src.closing_shape`` (v0.23.1) so the closing-shape detector and the
+    feed-forward share one sentence splitter.
     """
-    text = (summary or "").strip()
-    if not text:
-        return ""
-    parts = [p.strip() for p in _SENTENCE_SPLIT_RE.split(text) if p.strip()]
-    return parts[-1] if parts else text
+    return extract_closing_sentence(summary)
+
+
+_CLOSING_SHAPE_REPAIR_ATTEMPTS = 2
+"""Hard ceiling on rewrite calls per story for a closing-shape defect
+(v0.23.1). Two misses and the original body ships; the reviewer flags it
+exactly as it did before this mechanism existed. Never unbounded."""
+
+_CLOSING_SHAPE_REPAIR_MIN_WORDS = 8
+"""Floor on the word budget handed to the rewrite prompt, so a body that
+is already at the 60-word cap still gets a sentence, not a fragment."""
+
+_CLOSING_SHAPE_CONTRACT: dict[str, str] = {
+    "pulse": (
+        "The Pulse body ends on the DAY'S DIRECTION in plain editorial "
+        "prose -- a declarative statement of where things are heading. "
+        "NOT a question. NOT an instruction or prescription to the "
+        "reader. It must not restate the take."
+    ),
+    "big_picture": (
+        "The Big Picture body ends on a STRATEGIC QUESTION anchored to a "
+        "specific role, decision, or constraint in the reader's "
+        "organisation; the last character is a question mark. Anchored "
+        "second person is in voice (\"which one governs your "
+        "customer-facing deployment?\"). NOT a rhetorical question with "
+        "an obvious answer, NOT a prescription dressed as a question, "
+        "NOT an instruction."
+    ),
+    "currents": (
+        "The Currents body ends on a PRESENCE-FORM MATURITY SIGNAL: what "
+        "exists today and what it is worth (\"the harness is public and "
+        "the F1 figure covers five attack types on benchmark data\"). "
+        "NOT an instruction or prescription to the reader (\"raise it at "
+        "your next design review\" fails). NOT an absence inventory "
+        "(\"no code yet\"). It must not restate the take."
+    ),
+}
+"""The reviewer's ``closing_shape`` contract per section, in the words
+the rewrite prompt hands the model (v0.23.1). Hands-On is absent on
+purpose: its imperative close is the contract, and the detector does not
+check it."""
+
+
+def _closing_shape_repair_enabled() -> bool:
+    return os.getenv("AIV_CLOSING_SHAPE_REPAIR", "1").strip().lower() not in (
+        "0", "false", "no", "off",
+    )
+
+
+def _build_close_rewrite_prompt(
+    section: str, draft: _SummaryDraft, close: str, defect: str,
+    word_budget: int,
+) -> str:
+    """The targeted rewrite prompt: one sentence in, one sentence out."""
+    take_line = (
+        f'The story\'s take (rendered above the body; do NOT restate it): '
+        f'"{draft.take}"\n' if draft.take else ""
+    )
+    return (
+        "You are editing ONE sentence of an AI Vector story. Australian "
+        "English. Keep every fact; invent nothing.\n\n"
+        f"SECTION CONTRACT ({section}):\n{_CLOSING_SHAPE_CONTRACT[section]}\n\n"
+        f'Headline: "{draft.headline}"\n'
+        f"{take_line}"
+        f"Body:\n{draft.summary}\n\n"
+        f'The body\'s LAST sentence fails the contract -- it {defect}:\n'
+        f'"{close}"\n\n'
+        "Write a REPLACEMENT last sentence that satisfies the contract, "
+        "reads naturally after the sentence before it, and uses AT MOST "
+        f"{word_budget} words. Return ONLY the replacement sentence -- "
+        "no quotes, no label, no JSON, no commentary."
+    )
+
+
+_CLOSE_REWRITE_FENCE_RE = re.compile(r"^```[a-zA-Z]*\s*|\s*```$")
+
+
+def _parse_close_rewrite(raw: str) -> str | None:
+    """Reduce the model's reply to one sentence, or ``None`` when it
+    returned nothing usable (empty, or several lines of commentary)."""
+    text = _CLOSE_REWRITE_FENCE_RE.sub("", (raw or "").strip()).strip()
+    text = text.strip('"“”\'')
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if len(lines) != 1:
+        return None
+    sentence = lines[0]
+    if len(sentence.split()) < 3 or sentence[-1] not in ".?!":
+        return None
+    return sentence
+
+
+def _repair_closing_shape(
+    draft: _SummaryDraft, section: str, cluster_id: str, temperature: float,
+) -> _SummaryDraft:
+    """Code detects an off-contract close; the LLM rewrites only that
+    sentence; code splices and re-checks (v0.23.1, No Token Wasted).
+
+    Returns the draft with a repaired ``summary`` when a rewrite passes
+    the detector within ``_CLOSING_SHAPE_REPAIR_ATTEMPTS`` calls and stays
+    inside the body word cap; otherwise the ORIGINAL draft, unchanged, with
+    a WARNING -- an off-shape rewrite is no better than the off-shape
+    original and may have lost a fact, so the reviewer sees the sentence
+    the story prompt actually produced.
+    """
+    if not _closing_shape_repair_enabled():
+        return draft
+    defect = closing_shape_defect(section, draft.summary)
+    if defect is None:
+        return draft
+    close = extract_closing_sentence(draft.summary)
+    body_words = len(draft.summary.split())
+    close_words = len(close.split())
+    word_budget = max(
+        _CLOSING_SHAPE_REPAIR_MIN_WORDS,
+        _BODY_MAX_WORDS - (body_words - close_words),
+    )
+    _LOG.info(
+        "summarise: closing-shape defect for cluster_id=%s (%s): %s -- %r; "
+        "requesting a one-sentence rewrite (max %d attempts)",
+        cluster_id, section, defect, close, _CLOSING_SHAPE_REPAIR_ATTEMPTS,
+    )
+    prompt = _build_close_rewrite_prompt(
+        section, draft, close, defect, word_budget,
+    )
+    for attempt in range(1, _CLOSING_SHAPE_REPAIR_ATTEMPTS + 1):
+        try:
+            raw = _llm_call(prompt, temperature=temperature, max_tokens=200)
+        except Exception:  # noqa: BLE001
+            _LOG.warning(
+                "summarise: closing-shape rewrite call failed for "
+                "cluster_id=%s (attempt %d/%d)",
+                cluster_id, attempt, _CLOSING_SHAPE_REPAIR_ATTEMPTS,
+            )
+            continue
+        replacement = _parse_close_rewrite(raw)
+        if replacement is None:
+            _LOG.warning(
+                "summarise: closing-shape rewrite for cluster_id=%s did not "
+                "return one sentence (attempt %d/%d): %r",
+                cluster_id, attempt, _CLOSING_SHAPE_REPAIR_ATTEMPTS, raw,
+            )
+            continue
+        candidate = replace_closing_sentence(draft.summary, replacement)
+        still = closing_shape_defect(section, candidate)
+        over_cap = len(candidate.split()) > _BODY_MAX_WORDS
+        if still is None and not over_cap:
+            _LOG.info(
+                "summarise: closing-shape repaired for cluster_id=%s on "
+                "attempt %d: %r", cluster_id, attempt, replacement,
+            )
+            return _SummaryDraft(
+                headline=draft.headline, summary=candidate,
+                signal=draft.signal, take=draft.take,
+                take_route=draft.take_route,
+            )
+        _LOG.warning(
+            "summarise: closing-shape rewrite for cluster_id=%s rejected "
+            "(attempt %d/%d): %s -- %r",
+            cluster_id, attempt, _CLOSING_SHAPE_REPAIR_ATTEMPTS,
+            still or f"body over {_BODY_MAX_WORDS}-word cap", replacement,
+        )
+    _LOG.warning(
+        "summarise: closing-shape defect for cluster_id=%s NOT repaired "
+        "after %d attempts -- shipping the original body; review will "
+        "flag it", cluster_id, _CLOSING_SHAPE_REPAIR_ATTEMPTS,
+    )
+    return draft
 
 
 def _render_prior_closes_block(prior_closes: list[str]) -> str:
@@ -2857,6 +3041,9 @@ def _summarise_one(
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
     if draft is None:
         return None
+    draft = _repair_closing_shape(
+        draft, story.tier, cluster.cluster_id, temperature,
+    )
     if route_sink is not None and draft.take and draft.take_route:
         route_sink[cluster.cluster_id] = draft.take_route
 
@@ -2977,6 +3164,7 @@ def _resummarise_as_pulse(
     draft = _call_and_parse_summary(prompt, temperature, cluster.cluster_id)
     if draft is None:
         return None
+    draft = _repair_closing_shape(draft, "pulse", cluster.cluster_id, temperature)
     if route_sink is not None and draft.take and draft.take_route:
         route_sink[cluster.cluster_id] = draft.take_route
 
@@ -6250,7 +6438,7 @@ def _parse_cli_date(argv: list[str]) -> _dt.date | None:
     try:
         return _dt.date.fromisoformat(argv[1])
     except ValueError:
-        print(f"usage: python -m src.summarise [YYYY-MM-DD]", file=sys.stderr)
+        print("usage: python -m src.summarise [YYYY-MM-DD]", file=sys.stderr)
         raise SystemExit(2)
 
 

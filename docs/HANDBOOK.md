@@ -331,7 +331,16 @@ Inline env override — runs once, your `.env` is untouched.
 LLM_TIMEOUT_SECONDS=60         # per-call timeout
 LLM_TEMPERATURE_RANK=0.2       # low = stable rankings across re-runs
 LLM_TEMPERATURE_SUMMARISE=0.6  # higher = more voice texture
+AIV_CLOSING_SHAPE_REPAIR=1     # 0 = skip the closing-shape rewrite pass
 ```
+
+`AIV_CLOSING_SHAPE_REPAIR` (default on): after each story is written,
+code checks the body's last sentence against the section's closing-shape
+contract (Pulse: no question or instruction; Big Picture: ends on a
+question; Currents: no instruction). On a miss, one small LLM call
+rewrites only that sentence, at most twice per story; if both miss, the
+original ships and the review flags it. Set to `0` when you want to see
+exactly what the story prompt produced, or to save the extra calls.
 
 Rule of thumb: keep rank temperature low so your ranked.jsonl doesn't
 churn between re-runs. Summarise temperature can move with taste.
