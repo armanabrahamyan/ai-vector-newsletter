@@ -1642,6 +1642,184 @@ class TestCycleLog:
 
 
 # ---------------------------------------------------------------------------
+# PR-comment rendering of revisions.jsonl.
+# ---------------------------------------------------------------------------
+
+def _cycle(
+    changes: list[Any], *, mode: str = "shadow", number: int = 1,
+    note: str = "1 field(s) targeted",
+) -> Any:
+    from src.models import RevisionCycle
+
+    return RevisionCycle(
+        date=DATE, cycle=number, mode=mode, changes=changes,
+        generated_at=_dt.datetime(2026, 8, 2, tzinfo=_dt.timezone.utc),
+        prompt_version=REVISE_PROMPT_VERSION, note=note,
+    )
+
+
+def _write_cycles(path: Path, cycles: list[Any]) -> None:
+    lines: list[str] = []
+    for cycle in cycles:
+        revise_mod._append_cycle(path, lines, cycle)
+        lines = revise_mod._read_cycle_lines(path)
+
+
+class TestRevisionsComment:
+    """The release-PR comment is the only place the reviser's work is read
+    by a human on the day. Every nightly comment from 2026-08-13 to
+    2026-08-25 rendered as one `?` row with an empty diff, because the
+    workflow read each line of revisions.jsonl as a flat change while the
+    writer emits a RevisionCycle with a ``changes`` array. The renderer now
+    lives beside the writer; these tests pin the shape it reads."""
+
+    def _proposed(self, *, story_id: str = STORY_A) -> Any:
+        from src.models import RevisionChange
+
+        return RevisionChange(
+            target=ReviewTarget(kind="story", story_id=story_id, field="summary"),
+            finding_ids=["f001"], before=_BODY_A,
+            after=_BODY_A.replace("sustained load.", "load."),
+            recommendation="tighten", status="proposed",
+        )
+
+    def test_shadow_cycle_names_story_field_status_and_diff(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        _write_cycles(revisions_path(DATE), [_cycle([self._proposed()])])
+        body = revise_mod.render_revisions_comment(DATE)
+        assert body is not None
+        assert body.startswith("## Proposed revisions (shadow -- NOT applied)")
+        assert "**Latency drops on the fleet**" in body  # headline, not id
+        assert f"`story:{STORY_A}:summary` -- `proposed`" in body
+        assert f"- {_BODY_A}" in body
+        assert "+ " + _BODY_A.replace("sustained load.", "load.") in body
+
+    def test_regression_no_placeholder_rows(self, tmp_data_root: Path) -> None:
+        """The exact failure on PRs #53-#55: a cycle line rendered as
+        `### 1. `?` -- `?`` with an empty diff."""
+        _stage(tmp_data_root, [_finding()])
+        _write_cycles(revisions_path(DATE), [_cycle([self._proposed()])])
+        body = revise_mod.render_revisions_comment(DATE) or ""
+        assert "`?`" not in body
+        assert "- \n+ \n" not in body
+
+    def test_live_cycle_reports_applied_and_rejected(
+        self, tmp_data_root: Path,
+    ) -> None:
+        from src.models import RevisionChange
+
+        _stage(tmp_data_root, [_finding()])
+        applied = RevisionChange(
+            target=ReviewTarget(kind="story", story_id=STORY_A, field="headline"),
+            before="old headline", after="new headline",
+            recommendation="tighten it", status="applied",
+        )
+        rejected = RevisionChange(
+            target=ReviewTarget(kind="section", section="big_picture", field="intro_lead"),
+            before="Trust, but verify.", after="Trust, but verify. Really.",
+            recommendation="cut the cliche", status="rejected",
+            reject_reason="edit_distance_exceeded",
+        )
+        _write_cycles(
+            revisions_path(DATE), [_cycle([applied, rejected], mode="live")],
+        )
+        body = revise_mod.render_revisions_comment(DATE) or ""
+        assert body.startswith("## Revisions applied (live)")
+        assert f"`story:{STORY_A}:headline` -- `applied`" in body
+        assert (
+            "`section:big_picture:intro_lead` -- `rejected (edit_distance_exceeded)`"
+            in body
+        )
+
+    def test_refusal_cycle_says_so_in_words(self, tmp_data_root: Path) -> None:
+        """A refused cycle has no changes. It must read as "nothing to do,
+        because X", never as a broken comment."""
+        _stage(tmp_data_root, [_finding()])
+        _write_cycles(
+            revisions_path(DATE),
+            [_cycle([], mode="live", note="refused: review is stale")],
+        )
+        body = revise_mod.render_revisions_comment(DATE) or ""
+        assert body.startswith("## Revisions: nothing applied (live)")
+        assert "No field was changed in this cycle: refused: review is stale." in body
+
+    def test_missing_or_empty_file_renders_nothing(
+        self, tmp_data_root: Path,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        assert revise_mod.render_revisions_comment(DATE) is None
+        revisions_path(DATE).parent.mkdir(parents=True, exist_ok=True)
+        revisions_path(DATE).write_text("\n", encoding="utf-8")
+        assert revise_mod.render_revisions_comment(DATE) is None
+
+    def test_last_cycle_only_is_the_revise_reply(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """/revise appends to a file that already holds the nightly shadow
+        cycle; its reply is about the run it just made."""
+        from src.models import RevisionChange
+
+        _stage(tmp_data_root, [_finding()])
+        applied = RevisionChange(
+            target=ReviewTarget(kind="story", story_id=STORY_B, field="headline"),
+            before="old", after="new", recommendation="x", status="applied",
+        )
+        _write_cycles(revisions_path(DATE), [
+            _cycle([self._proposed()], mode="shadow", number=1),
+            _cycle([applied], mode="live", number=2),
+        ])
+        full = revise_mod.render_revisions_comment(DATE) or ""
+        last = revise_mod.render_revisions_comment(DATE, last_cycle_only=True) or ""
+        assert "### Cycle 1 (shadow)" in full and "### Cycle 2 (live)" in full
+        assert "### Cycle" not in last
+        assert STORY_A not in last and STORY_B in last
+
+    def test_tolerates_unknown_fields_and_garbage_lines(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """The comment must never fail a workflow step over a field the
+        model grew later or a line an older version wrote."""
+        _stage(tmp_data_root, [_finding()])
+        path = revisions_path(DATE)
+        _write_cycles(path, [_cycle([self._proposed()])])
+        raw = json.loads(path.read_text(encoding="utf-8").strip())
+        raw["future_field"] = {"anything": 1}
+        raw["changes"][0]["echo_of"] = "f000"
+        path.write_text(
+            "not json at all\n" + json.dumps(raw) + "\n", encoding="utf-8",
+        )
+        body = revise_mod.render_revisions_comment(DATE) or ""
+        assert f"`story:{STORY_A}:summary` -- `proposed`" in body
+
+    def test_cli_render_flag_prints_and_exits_zero(
+        self, tmp_data_root: Path, capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _stage(tmp_data_root, [_finding()])
+        _write_cycles(revisions_path(DATE), [_cycle([self._proposed()])])
+        monkeypatch.setattr(
+            "sys.argv",
+            ["revise", "--render-comment", "--date", DATE.isoformat()],
+        )
+        assert revise_mod._cli() == 0
+        assert "## Proposed revisions" in capsys.readouterr().out
+
+    def test_cli_render_flag_exits_three_when_nothing_to_render(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Exit 3, not 0 with empty output: daily.yml keys `has_comment`
+        on the exit code, and an empty comment must never be posted."""
+        _stage(tmp_data_root, [_finding()])
+        monkeypatch.setattr(
+            "sys.argv",
+            ["revise", "--render-comment", "--date", DATE.isoformat()],
+        )
+        assert revise_mod._cli() == 3
+
+
+# ---------------------------------------------------------------------------
 # Response cleaning.
 # ---------------------------------------------------------------------------
 

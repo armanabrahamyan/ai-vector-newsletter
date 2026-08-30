@@ -1892,6 +1892,191 @@ def _refuse(
 
 
 # ---------------------------------------------------------------------------
+# PR-comment rendering of revisions.jsonl.
+#
+# The release PR is where Arman reads what the reviser did (shadow: would
+# do). Each line of revisions.jsonl is a RevisionCycle whose field-level
+# results live in its `changes` array -- the renderer below is the ONE
+# reader of that shape for both workflows (daily.yml's post-run comment and
+# revise-command.yml's reply), so the on-disk contract and the comment can
+# only drift together. Until 2026-08-29 daily.yml carried its own inline
+# reader that treated each line as a flat change, which is why every
+# nightly comment rendered as a single `?` row with an empty diff.
+# ---------------------------------------------------------------------------
+
+_COMMENT_CHANGE_CAP = 20
+"""Most changes rendered into one PR comment. A day rarely targets more
+than a dozen fields; past the cap the comment points at the file."""
+
+
+def _load_cycles(path: Path) -> list[dict[str, Any]]:
+    """Every parseable cycle line as a plain dict, in file order.
+
+    Read leniently (dicts, not ``RevisionCycle``) so a field added to the
+    model later, or a line written by an older prompt version, still
+    renders instead of raising inside a workflow step."""
+    cycles: list[dict[str, Any]] = []
+    for line in _read_cycle_lines(path):
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            cycles.append(parsed)
+    return cycles
+
+
+def _headline_index(run_date: _dt.date, *, canonical: bool) -> dict[str, str]:
+    """``{story_id: headline}`` from the issue on disk, or ``{}`` when the
+    issue cannot be read. Naming the story beats a bare cluster id in a
+    comment read on a phone."""
+    try:
+        payload = json.loads(
+            paths.issue_path(run_date, canonical=canonical).read_text(
+                encoding="utf-8",
+            )
+        )
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict):
+        return {}
+    return {
+        story_id: str(block.get("headline") or "")
+        for story_id, block in _index_story_blocks(payload).items()
+    }
+
+
+def _change_label(change: dict[str, Any], headlines: dict[str, str]) -> str:
+    """``**headline** -- `story:<id>:<field>``` for a story target;
+    section / digest targets name the section or bullet instead."""
+    target = change.get("target") or {}
+    if not isinstance(target, dict):
+        target = {}
+    kind = str(target.get("kind") or "")
+    field_name = str(target.get("field") or "?")
+    story_id = target.get("story_id")
+    if kind == "story" and isinstance(story_id, str) and story_id:
+        name = headlines.get(story_id) or story_id
+        return f"**{name}** -- `story:{story_id}:{field_name}`"
+    if kind == "digest":
+        idx = target.get("digest_index")
+        return f"**The 30-second read, bullet {idx}** -- `digest:{idx}:{field_name}`"
+    section = str(target.get("section") or "?")
+    return f"**{section}** -- `section:{section}:{field_name}`"
+
+
+def render_revisions_comment(
+    run_date: _dt.date,
+    *,
+    canonical: bool = False,
+    last_cycle_only: bool = False,
+) -> str | None:
+    """Markdown for the release-PR comment describing ``revisions.jsonl``.
+
+    Returns ``None`` when there is no revisions file or it holds no
+    parseable cycle -- the caller posts nothing rather than an empty
+    comment. A cycle with no changes (the engine refused, or nothing was
+    actionable) is rendered as its ``note``, in words, so "the reviser had
+    nothing to do" and "the comment broke" never look alike.
+
+    ``last_cycle_only`` is what the ``/revise`` reply wants: the file
+    accumulates every invocation for the date (the nightly shadow pass,
+    then each ``/revise``), and that reply is about the run it just made.
+    """
+    cycles = _load_cycles(revisions_path(run_date, canonical=canonical))
+    if not cycles:
+        return None
+    if last_cycle_only:
+        cycles = cycles[-1:]
+    headlines = _headline_index(run_date, canonical=canonical)
+
+    all_changes = [
+        c for cycle in cycles
+        for c in (cycle.get("changes") or [])
+        if isinstance(c, dict)
+    ]
+    applied_any = any(c.get("status") == "applied" for c in all_changes)
+    live_any = any(cycle.get("mode") == "live" for cycle in cycles)
+
+    if applied_any:
+        parts = [
+            "## Revisions applied (live)",
+            "",
+            "The revise loop applied these text-edit fixes to the draft "
+            "before the review above was written, so the editor's review "
+            "comment describes the revised draft. Every replacement passed "
+            "the code-side validation gate; a `rejected` row is one the gate "
+            "refused, with the rule that refused it. Nothing else in the "
+            "issue was touched.",
+            "",
+        ]
+    elif live_any:
+        parts = [
+            "## Revisions: nothing applied (live)",
+            "",
+            "The revise loop ran in live mode and changed nothing -- the "
+            "reasons are below. The draft in this PR is exactly what the "
+            "pipeline wrote.",
+            "",
+        ]
+    else:
+        parts = [
+            "## Proposed revisions (shadow -- NOT applied)",
+            "",
+            "The revise loop ran in shadow mode, so nothing below was "
+            "applied: the draft in this PR is unchanged. To apply the "
+            "reviewer's text-edit fixes to this PR now, comment `/revise` "
+            "(add `only major` to limit it to major and blocking findings). "
+            "To have the nightly run apply them itself before the PR opens, "
+            "set the `AIV_REVISE_MODE` repository variable to `live`.",
+            "",
+        ]
+
+    rendered = 0
+    remainder = 0
+    for cycle in cycles:
+        number = cycle.get("cycle", "?")
+        mode = cycle.get("mode", "?")
+        note = str(cycle.get("note") or "").strip()
+        changes = [c for c in (cycle.get("changes") or []) if isinstance(c, dict)]
+        if len(cycles) > 1:
+            parts.append(f"### Cycle {number} ({mode})")
+            parts.append("")
+        if not changes:
+            parts.append(
+                f"No field was changed in this cycle: {note or 'no reason recorded'}."
+            )
+            parts.append("")
+            continue
+        for change in changes:
+            if rendered >= _COMMENT_CHANGE_CAP:
+                remainder += 1
+                continue
+            rendered += 1
+            status = str(change.get("status") or "?")
+            reason = change.get("reject_reason")
+            status_text = f"{status} ({reason})" if reason else status
+            parts.append(f"{_change_label(change, headlines)} -- `{status_text}`")
+            parts.append("")
+            parts.append("```diff")
+            parts.append(f"- {change.get('before', '')}")
+            parts.append(f"+ {change.get('after', '')}")
+            parts.append("```")
+            parts.append("")
+        if note and len(cycles) > 1:
+            parts.append(f"_{note}_")
+            parts.append("")
+    if remainder:
+        location = "released" if canonical else "staging"
+        parts.append(
+            f"_(+{remainder} more change(s) not shown -- see "
+            f"`data/{location}/{run_date.isoformat()}/revisions.jsonl`.)_"
+        )
+        parts.append("")
+    return "\n".join(parts).rstrip("\n") + "\n"
+
+
+# ---------------------------------------------------------------------------
 # CLI -- a typer-compatible command the Architect registers on `aiv`.
 #
 # REGISTRATION (src/run.py, alongside the other @app.command() functions --
@@ -2061,7 +2246,11 @@ def revise_command(
 
 def _cli() -> int:
     """``python -m src.revise --date YYYY-MM-DD [--live]`` for manual runs
-    before the command is registered on ``aiv``."""
+    before the command is registered on ``aiv``.
+
+    ``--render-comment`` is the workflows' entry point for the PR comment:
+    exit 0 with the markdown on stdout, 3 when there is nothing to render
+    (no revisions.jsonl, or no parseable cycle), 2 on a bad date."""
     import argparse
 
     parser = argparse.ArgumentParser(prog="python -m src.revise")
@@ -2079,7 +2268,32 @@ def _cli() -> int:
     parser.add_argument("--released", action="store_true",
                         help="Revise data/released/<date>/ instead of staging.")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--render-comment", action="store_true",
+        help=(
+            "Print the PR-comment markdown for this date's revisions.jsonl "
+            "and exit; no LLM call. --last-cycle limits it to the latest run."
+        ),
+    )
+    parser.add_argument("--last-cycle", action="store_true",
+                        help="With --render-comment: only the latest cycle.")
     args = parser.parse_args()
+    if args.render_comment:
+        try:
+            run_date = (
+                _dt.date.fromisoformat(args.date.strip()) if args.date
+                else _dt.date.today()
+            )
+        except ValueError:
+            print(f"--date must be YYYY-MM-DD; got {args.date!r}")
+            return 2
+        body = render_revisions_comment(
+            run_date, canonical=args.released, last_cycle_only=args.last_cycle,
+        )
+        if body is None:
+            return 3
+        print(body, end="")
+        return 0
     try:
         revise_command(
             date=args.date or None,
