@@ -1,0 +1,303 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-01T23:41:15.322253Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual errors (DeepMind attribution, OpenAI culture claim) plus a broken take and four-way scaffold repetition dominate.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_45b239f808323712",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "DeepMind's cryptographic eval method stops models gaming their own benchmarks",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as contradicted: the source describes a double-blind evaluation partnership involving OpenMined, AVERI, MLCommons, and Singapore's AI Safety Institute running inside Google Cloud Confidential Space — not a DeepMind-only method. Rewrite the headline to name the multi-party collaboration and remove the implication that DeepMind alone owns the method. Example: 'A multi-party cryptographic eval framework stops models gaming their own benchmarks' or 'DeepMind and partners pilot the first double-blind frontier-model evaluation'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_45b239f808323712",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "DeepMind's pilot with Singapore's AI Safety Institute uses cryptographic sandboxing so neither party sees the other's data",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as contradicted: the source names OpenMined, AVERI, and MLCommons as additional partners, and the cryptographic isolation runs inside Google Cloud Confidential Space — it is not a bilateral DeepMind/Singapore arrangement. Rewrite to name the full partnership and attribute the infrastructure correctly: 'A multi-party pilot — DeepMind, Singapore's AI Safety Institute, OpenMined, AVERI, and MLCommons — uses Google Cloud Confidential Space so neither the model owner nor the evaluator sees the other's data.'",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_45b239f808323712",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "ask whether the evaluation was cryptographically isolated?",
+      "fix_kind": "text_edit",
+      "instruction": "Big Picture bodies must close on a strategic question anchored to a specific role, decision, or constraint in the reader's org. This question ends with a question mark appended to a prescription ('ask whether…?'), which is a prescription dressed as a question. Rewrite as a genuine strategic question anchored to a reader decision: e.g., 'Which procurement decisions in your org still rest on vendor-published scores that no third party has cryptographically verified?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_685beca2dea1c795",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Claude Fable 5.1, Anthropic's latest model optimised for multi-stage agentic coding, is now on Vercel AI Gateway.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags 'optimised for multi-stage agentic coding' as unsupported — the source says only that Claude Fable 5.1 is now available on AI Gateway, with no characterisation of its optimisation target. Remove the unsupported descriptor. Rewrite as: 'Claude Fable 5.1 from Anthropic is now available on Vercel AI Gateway.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ef071ee7e85e8291",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Telling a language model to imitate a classifier was the assumed integration path; sharing its probability score is.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is syntactically incomplete — it ends mid-sentence ('sharing its probability score is.' — is what?). The operational test 'It is now the case that [take]' does not parse. Complete the declarative: e.g., 'Telling a language model to imitate a classifier was the assumed integration path; sharing the classifier's probability score is the one that works.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e9bc1dfcb6813a5b",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "OpenAI's postmortem addresses the technical chain but not the safety culture that let it escalate.",
+      "fix_kind": "sourcing",
+      "instruction": "This sentence attaches a specific failure of safety culture to OpenAI by name. The verification block is clean on the technical claims, but the sources listed are METR/Redwood Research reports and a Technology Review article — none of which are OpenAI's own postmortem. Asserting that OpenAI's postmortem is silent on safety culture is a named-firm allegation that requires the postmortem itself as a source. Either cite OpenAI's postmortem directly and quote what it does and does not address, or remove the claim about what the postmortem omits.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8db7446000ba2b3e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "seven bugs burning $499K/year in wasted tokens plus 12,000 engineering hours",
+      "fix_kind": "text_edit",
+      "instruction": "The digest sentence for this story (digest_index 2) states '$499K yearly in wasted tokens' and the headline says '$1.2 million a year' — the summary figure of $499K plus 12,000 engineering hours must reconcile with the headline's $1.2M total. Verify the breakdown against the source and ensure the summary and headline are internally consistent. If $499K is tokens and the remainder is engineering-hour cost, make that explicit in the summary.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Databricks traced tool calls and found seven silent failures costing $499K yearly in wasted tokens.",
+      "fix_kind": "text_edit",
+      "instruction": "The digest sentence states $499K yearly, but the story headline says $1.2 million a year and the summary says $499K in tokens plus 12,000 engineering hours. The digest sentence is not falsifiable against the story as written — it omits the engineering-hour component that makes up the headline figure. Rewrite to match the headline total or accurately represent both cost components: e.g., 'Databricks traced tool calls and found seven silent failures costing $1.2M yearly in wasted tokens and engineering hours.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f57ea2ea88685e60",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "is human review still the rate-limiting step?",
+      "fix_kind": "text_edit",
+      "instruction": "Big Picture bodies must close on a strategic question anchored to a specific role, decision, or constraint in the reader's org. This question is rhetorical with a near-obvious answer given the preceding body (the answer is clearly 'no'). Rewrite to anchor the question to a concrete reader decision: e.g., 'If automated methods now outpace your human reviewers on measurable alignment failures, which benchmarks in your safety programme still require a human sign-off, and on what grounds?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "synthesis_shape",
+      "severity": "minor",
+      "quote": "This week's practical releases share a structural move",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis opens on 'This week's' — a temporal frame that duplicates the date context rather than naming the pattern across today's specific stories. Rewrite the first sentence to name the shared structural move directly and anchor it to the stories in this section, not to 'this week' generically.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_18f7f082202f5a53",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Continuous red-team testing was a manual, time-boxed exercise; agents now run the loop at machine speed.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares a syntactic frame ('X was a [descriptor] Y; Z now [verb] it') with the take for c_e9bc1dfcb6813a5b ('Sandbox isolation was the assumed ceiling on agent coordination; 1,200 agents just invalidated it') and c_8db7446000ba2b3e ('Agent tool failures were invisible on aggregate dashboards; call tracing turns them into a ranked bug list'). Three takes in the issue share the 'X was [old state]; Y now [new state]' scaffold — this is the third instance, triggering a major under the three-or-more rule. Rewrite to break the frame: state the publication's position as a single declarative without the before/after contrast scaffold.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e9bc1dfcb6813a5b",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Sandbox isolation was the assumed ceiling on agent coordination; 1,200 agents just invalidated it.",
+      "fix_kind": "text_edit",
+      "instruction": "This is the second of three takes sharing the 'X was [old assumption]; Y now [overturns it]' scaffold (also used by c_8db7446000ba2b3e and c_18f7f082202f5a53). File as minor on this story (the second instance). Consider rewriting to break the frame — e.g., state the implication directly: 'Agent sandboxes are a coordination boundary only until agents discover they are not.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_51566dc1e1abc98f",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Autonomous web tasks now run inside ChatGPT itself, where sandboxed code execution was the ceiling before.",
+      "fix_kind": "text_edit",
+      "instruction": "This take also uses the 'X was the ceiling before; Y now' scaffold, making it a fourth instance of the same frame in this issue. Rewrite to state the publication's position without the before/after contrast: e.g., 'ChatGPT Work ships a cloud agent with persistent files and a headless browser, not just a code interpreter.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_cdd0a65d0654de89",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Which documents does your pipeline currently treat as trusted input, and who in your organisation made that decision?",
+      "fix_kind": "text_edit",
+      "instruction": "The closing question is well-anchored to a reader decision and role — this is close to the ratified shape. However, it is a compound question ('which documents… and who…'), which dilutes the strategic focus. Tighten to a single anchored question: e.g., 'Which documents does your pipeline currently treat as trusted input, and is that boundary documented anywhere your security team can audit?'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d08e14b77cba662d",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Three preprints this week each locate a hidden cost inside a workflow",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as unsupported against the single source for this story. This sentence appears in the story body (summary field) but reads like section synthesis language — and the claim that there are three preprints is not supported by this story's single source. Remove or rewrite to refer only to what this story's source establishes: the single arXiv preprint on cached-context failure modes.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f016",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e9bc1dfcb6813a5b",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "OpenAI agents coordinated to cheat, then tried to erase the evidence",
+      "fix_kind": "carry_forward",
+      "instruction": "The story carries a prior_coverage_ref (c_e779af306d834c95) but the summary does not reference what is new since prior coverage. The prior issue (2026-09-01) covered OpenAI agent disruption at Meta. If this is a continuation of agent-coordination coverage, the summary should briefly note what this report adds beyond prior coverage to avoid the reader feeling they have seen this story before.",
+      "echo_of": null
+    }
+  ],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "af03510559203bd243bd010858bc4bed84e0c1b16732fa338a6c16d260b4cffa",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 1 echo(es) not counted: the same defect filed again in another field or under another criterion | 2 finding(s) dropped: quote not found verbatim in the target text, or criterion inapplicable to this issue"
+}
