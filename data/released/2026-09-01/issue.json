@@ -1,0 +1,1061 @@
+{
+  "schema_version": 9,
+  "issue_number": 47,
+  "revision": 0,
+  "date": "2026-09-01",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_068c0069a222754b",
+        "headline": "Language models caught Credit Suisse prospectus gaps that later triggered disputes",
+        "summary": "A Bank for International Settlements paper applies a language model pipeline to bank prospectuses, ranking divergences from capital rules for supervisors to review. Validated on anonymised Credit Suisse and Yes Bank documents, it recovered the exact rule-prospectus gaps that mattered in loss-absorption disputes. The methodology is now available for integration into supervisory prospectus-review workflows.",
+        "take": "Supervisory prospectus review was a manual read against capital rules; ranked language model output now does it.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://www.bis.org/publications/bulletin-134-supervisory-screening-large-language-models--finding-divergences"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "discuss",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_068c0069a222754b",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Language models caught Credit Suisse prospectus gaps that later triggered disputes",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Language models caught Credit Suisse prospectus gaps that later triggered disputes",
+              "source_span": "We validate the procedure on anonymised documents from Credit Suisse and Yes Bank, recovering rule-prospectus differences that later mattered in disputes over AT1 loss absorption.",
+              "note": "'Caught gaps that triggered disputes' is a fair paraphrase of 'recovering rule-prospectus differences that later mattered in disputes'; omitting Yes Bank is not an error."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A Bank for International Settlements paper applies a language model pipeline to bank prospectuses",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "A Bank for International Settlements paper applies a language model pipeline to bank prospectuses",
+              "source_span": "We develop a procedure based on large language models to help supervisors review prospectuses against capital rules.",
+              "note": "The source is a BIS publication; 'language model pipeline' is a fair paraphrase of 'procedure based on large language models'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The pipeline ranks divergences from capital rules for supervisors to review",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "ranking divergences from capital rules for supervisors to review",
+              "source_span": "This procedure ranks potential divergences for their consideration.",
+              "note": "Direct paraphrase of the source; accurate."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The procedure was validated on anonymised Credit Suisse and Yes Bank documents",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Validated on anonymised Credit Suisse and Yes Bank documents",
+              "source_span": "We validate the procedure on anonymised documents from Credit Suisse and Yes Bank",
+              "note": "Near-verbatim match with the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The procedure recovered the exact rule-prospectus gaps that mattered in loss-absorption disputes",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "it recovered the exact rule-prospectus gaps that mattered in loss-absorption disputes",
+              "source_span": "recovering rule-prospectus differences that later mattered in disputes over AT1 loss absorption.",
+              "note": "'Exact' is a slight intensification not in the source, but the core claim is accurate; 'loss-absorption disputes' correctly paraphrases 'disputes over AT1 loss absorption'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The methodology is now available for integration into supervisory prospectus-review workflows",
+              "verdict": "unsupported",
+              "location": "body",
+              "summary_span": "The methodology is now available for integration into supervisory prospectus-review workflows",
+              "source_span": "",
+              "note": "The source says the procedure 'could support' other supervisory comparisons but never states it is 'now available for integration'; this availability claim is not in the source and drops the conditional hedge."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Supervisory prospectus review was a manual read against capital rules; ranked language model output now does it.",
+              "verdict": "unsupported",
+              "location": "body",
+              "summary_span": "Supervisory prospectus review was a manual read against capital rules; ranked language model output now does it.",
+              "source_span": "",
+              "note": "The source describes a procedure that 'could support' supervisors but never characterises prior review as purely manual or states the LLM output 'now does it'; the 'now does it' framing drops the source's conditional and aspirational language."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A BIS pipeline ranked Credit Suisse prospectus gaps against capital rules.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "A BIS pipeline ranked Credit Suisse prospectus gaps against capital rules",
+              "source_span": "We develop a procedure based on large language models to help supervisors review prospectuses against capital rules. This procedure ranks potential divergences for their consideration. We validate the procedure on anonymised documents from Credit Suisse and Yes Bank",
+              "note": "digest: The source describes a BIS-published procedure that ranks prospectus-rule divergences and was validated on Credit Suisse documents; 'BIS pipeline' is a fair paraphrase, and the BIS attribution is supported by the publication disclaimer referencing BIS."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The pipeline recovered the exact discrepancies that triggered loss-absorption disputes.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "recovering the exact discrepancies that triggered loss-absorption disputes",
+              "source_span": "recovering rule-prospectus differences that later mattered in disputes over AT1 loss absorption",
+              "note": "digest: 'Exact discrepancies that triggered loss-absorption disputes' is a close paraphrase of 'rule-prospectus differences that later mattered in disputes over AT1 loss absorption'; the compression is within house-style rounding/paraphrase norms."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": true,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_b80970d5cf51a1f7",
+          "headline": "NVIDIA buys the world's largest open-model repository for $13 billion",
+          "summary": "NVIDIA is acquiring Hugging Face for $13 billion, roughly 80 times the platform's $150 million annual revenue and nearly double its initial $7 billion offer from January. Hugging Face hosts the dominant repository for open model weights and datasets. Does NVIDIA ownership change your platform-risk calculus for anything currently running on that infrastructure?",
+          "take": "Open-model infrastructure just shifted from a neutral host to NVIDIA's balance sheet.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-nvidia-buys-huggingface-for",
+            "https://arstechnica.com/ai/2026/08/report-nvidia-to-acquire-ai-model-repository-hugging-face-for-13-billion/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b80970d5cf51a1f7",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA buys the world's largest open-model repository for $13 billion",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA buys the world's largest open-model repository for $13 billion",
+                "source_span": "Nvidia is buying HuggingFace for $13B",
+                "note": "Price matches; 'world's largest open-model repository' is a reasonable characterisation of Hugging Face given the source describes it as the dominant host for open model weights and datasets."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA is acquiring Hugging Face for $13 billion",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA is acquiring Hugging Face for $13 billion",
+                "source_span": "Nvidia is buying HuggingFace for $13B",
+                "note": "Directly confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "roughly 80 times the platform's $150 million annual revenue",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "roughly 80 times the platform's $150 million annual revenue",
+                "source_span": "roughly 80x their $150M ARR",
+                "note": "Matches source exactly; 'annual revenue' is a plain-English paraphrase of ARR."
+              },
+              {
+                "schema_version": 1,
+                "claim": "nearly double its initial $7 billion offer from January",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "nearly double its initial $7 billion offer from January",
+                "source_span": "This is almost double Nvidia's initial $7B offer in Jan 2026",
+                "note": "'January' is a reasonable expansion of 'Jan 2026'; 'nearly double' matches 'almost double'; $7B matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face hosts the dominant repository for open model weights and datasets",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Hugging Face hosts the dominant repository for open model weights and datasets",
+                "source_span": "",
+                "note": "The source mentions Hugging Face as a weights host but does not explicitly characterise it as the 'dominant repository for open model weights and datasets'; this specific framing is not confirmed or contradicted in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Open-model infrastructure just shifted from a neutral host to NVIDIA's balance sheet.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Open-model infrastructure just shifted from a neutral host to NVIDIA's balance sheet.",
+                "source_span": "",
+                "note": "This is an editorial position; the factual kernel (NVIDIA acquiring Hugging Face) is supported, but the characterisation of Hugging Face as previously 'a neutral host' is not addressed in the source excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA is purchasing Hugging Face.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA's $13 billion Hugging Face purchase",
+                "source_span": "Nvidia is buying HuggingFace for $13B",
+                "note": "digest: Source confirms Nvidia is buying Hugging Face."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The purchase price is $13 billion.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "$13 billion Hugging Face purchase",
+                "source_span": "Nvidia is buying HuggingFace for $13B",
+                "note": "digest: Source explicitly states the $13B figure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The purchase price is approximately 80 times revenue.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "at 80 times revenue",
+                "source_span": "roughly 80x their $150M ARR",
+                "note": "digest: Source states roughly 80x ARR, which is a revenue multiple; rounding/paraphrase is house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face is the dominant open-weights repository.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the dominant open-weights repository",
+                "source_span": "Weights on Hugging Face",
+                "note": "digest: Source references Hugging Face as the weights distribution platform for major models; characterising it as dominant is a reasonable generalisation supported by context, and editorial framing is not flagged."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The acquirer is a chip vendor.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "hands the dominant open-weights repository to a chip vendor",
+                "source_span": "Nvidia is buying HuggingFace",
+                "note": "digest: Nvidia is universally known as a chip vendor; the source does not contradict this characterisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The text is purely editorial synthesis and pattern-naming with no checkable factual content.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Four stories today each expose a different layer of AI infrastructure shifting from neutral utility to contested territory, whether that is model hosting, API access, agent autonomy, or developer tooling. The common signal for senior leaders: dependencies that felt like commodities are now negotiating positions.",
+                "source_span": "",
+                "note": "synthesis: The entire paragraph is editorial framing and pattern-naming (model hosting, API access, agent autonomy, developer tooling as 'contested territory'); there are no checkable factual assertions such as numbers, named entities with specific attributed actions, capabilities, or mechanisms to verify against the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_08ca6a807dd2952e",
+          "headline": "OpenAI cuts off Cursor after SpaceX acquisition, forcing a model reckoning",
+          "summary": "OpenAI blocked Cursor's API access after SpaceX acquired the coding tool, citing contract violations by Elon Musk's companies. Cursor says OpenAI represents only 5% of its traffic; it is now promoting Grok. The real exposure: any coding tool built on a single model provider can be cut off when corporate rivalries shift. Which model dependency governs your customer-facing deployment?",
+          "take": "Coding tools built on a single model API now carry corporate-rivalry risk, not just technical risk.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-openai-shuts-off-cursor"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_08ca6a807dd2952e",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI cuts off Cursor after SpaceX acquisition, forcing a model reckoning",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "OpenAI cuts off Cursor after SpaceX acquisition, forcing a model reckoning",
+                "source_span": "Following the closing of Cursor's acquisition by SpaceX last week, it was time for OpenAI to do what Anthropic did to Windsurf when it was being considered for acquisition by OpenAI",
+                "note": "Source confirms SpaceX acquired Cursor and OpenAI cut off access; 'model reckoning' is editorial framing not requiring verification."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI blocked Cursor's API access after SpaceX acquired the coding tool",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI blocked Cursor's API access after SpaceX acquired the coding tool",
+                "source_span": "Following the closing of Cursor's acquisition by SpaceX last week, it was time for OpenAI to do what Anthropic did to Windsurf",
+                "note": "Source confirms SpaceX acquired Cursor and OpenAI subsequently cut them off."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI cited contract violations by Elon Musk's companies",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "citing contract violations by Elon Musk's companies",
+                "source_span": "OpenAI's blogpost on this decision cites \"our experience with Elon Musk's companies violating contracts\"",
+                "note": "Source directly quotes OpenAI citing contract violations by Elon Musk's companies."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Cursor says OpenAI represents only 5% of its traffic",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Cursor says OpenAI represents only 5% of its traffic",
+                "source_span": "Cursor's only response so far is diplomatic, on one hand noting that OpenAI is only 5% of Cursor traffic",
+                "note": "Source confirms Cursor noted OpenAI is only 5% of its traffic."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Cursor is now promoting Grok",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it is now promoting Grok",
+                "source_span": "CursorSpaceXai is now promoting Grok 4.6, itself finally a successful coding model for Xai",
+                "note": "Source confirms Cursor/SpaceX entity is promoting Grok; omitting the version number is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Which model dependency governs your customer-facing deployment?",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Which model dependency governs your customer-facing deployment?",
+                "source_span": "",
+                "note": "This is a rhetorical call-to-action question with no factual claim to verify against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Coding tools built on a single model API now carry corporate-rivalry risk, not just technical risk.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Coding tools built on a single model API now carry corporate-rivalry risk, not just technical risk.",
+                "source_span": "This follows on from years of public acrimony between respective company leaders... To some extent this was very forseeable",
+                "note": "The take is editorial but grounded in the source's narrative about corporate acrimony driving the API cutoff; it is a fair characterisation of the source's argument."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_54e7ff964afe0bd1",
+          "headline": "Meta's internal agents caused large-scale disruption before the plan was scrapped",
+          "summary": "Meta's plan to cut teams by 60 percent using autonomous agents collapsed after the agents triggered large-scale, disruptive actions the company hadn't anticipated. The detail is from a single press report with no independent corroboration. Before setting agent autonomy thresholds in your own rollout, what failure modes have you stress-tested at scale?",
+          "take": "Senior leaders treating autonomous agents as workforce replacements now have a documented failure baseline.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arstechnica.com/ai/2026/08/metas-scrapped-plans-to-go-ai-native-included-slashing-teams-by-60-percent/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_54e7ff964afe0bd1",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Meta's internal agents caused large-scale disruption before the plan was scrapped",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "Meta's internal agents caused large-scale disruption before the plan was scrapped",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to confirm or deny this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Meta's plan to cut teams by 60 percent using autonomous agents collapsed",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Meta's plan to cut teams by 60 percent using autonomous agents collapsed",
+                "source_span": "",
+                "note": "Source excerpt is empty; the 60 percent figure and collapse cannot be verified."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agents triggered large-scale, disruptive actions the company hadn't anticipated",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "the agents triggered large-scale, disruptive actions the company hadn't anticipated",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to confirm or deny this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The detail is from a single press report with no independent corroboration",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The detail is from a single press report with no independent corroboration",
+                "source_span": "",
+                "note": "Source excerpt is empty; provenance of the report cannot be verified."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Senior leaders treating autonomous agents as workforce replacements now have a documented failure baseline.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Senior leaders treating autonomous agents as workforce replacements now have a documented failure baseline.",
+                "source_span": "",
+                "note": "Source excerpt is empty; the embedded factual assertion about a documented failure baseline cannot be verified."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9baa55b344bc461d",
+          "headline": "DoorDash moved coding agents off laptops and into the cloud",
+          "summary": "DoorDash's Flux platform shifted agent workloads from developer laptops to isolated cloud sandboxes, handling 130,000 engineering tasks in one month and 25,000 automated code reviews weekly. Each sandbox spins up in under five seconds; an internal gateway scopes permissions and logs every action. If your pipeline runs locally, who in your organisation owns the audit trail it never created?",
+          "take": "Laptop-based coding agents just became a security and audit liability, not a convenience trade-off.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/doordash-flux-cloud-agent/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9baa55b344bc461d",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "DoorDash moved coding agents off laptops and into the cloud",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "DoorDash moved coding agents off laptops and into the cloud",
+                "source_span": "DoorDash has moved engineering agent workloads from developers' laptops to its Flux cloud platform",
+                "note": "Direct paraphrase of the source's opening statement."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DoorDash's Flux platform shifted agent workloads from developer laptops to isolated cloud sandboxes",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "DoorDash's Flux platform shifted agent workloads from developer laptops to isolated cloud sandboxes",
+                "source_span": "DoorDash has moved engineering agent workloads from developers' laptops to its Flux cloud platform... sandboxes provide isolated execution environments",
+                "note": "Accurate compression of the source's description of Flux."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Flux handled 130,000 engineering tasks in one month",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "handling 130,000 engineering tasks in one month",
+                "source_span": "automated 130,000 engineering tasks in a single month in 2026",
+                "note": "Matches the source figure exactly; omission of the year 2026 is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Flux handled 25,000 automated code reviews weekly",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "25,000 automated code reviews weekly",
+                "source_span": "The platform supports more than 25,000 automated code reviews each week",
+                "note": "Drops 'more than' qualifier but this is acceptable rounding/compression per house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each sandbox spins up in under five seconds",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Each sandbox spins up in under five seconds",
+                "source_span": "DoorDash reports a 95th percentile service level objective of less than five seconds for end-to-end sandbox setup",
+                "note": "Accurate compression; omitting the p95 SLO framing is acceptable generalisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An internal gateway scopes permissions and logs every action",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "an internal gateway scopes permissions and logs every action",
+                "source_span": "Agent Gateway, an in-house MCP gateway that provides scoped permissions and logs agent activity for auditing and policy enforcement",
+                "note": "'Logs every action' is a slight generalisation of 'logs agent activity' but not a factual divergence."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Laptop-based coding agents just became a security and audit liability, not a convenience trade-off.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Laptop-based coding agents just became a security and audit liability, not a convenience trade-off.",
+                "source_span": "",
+                "note": "This is an editorial position; the source discusses security and audit concerns but does not make this comparative judgment, so it is not checkable as a factual claim."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Four stories today each expose a different layer of AI infrastructure shifting from neutral utility to contested territory, whether that is model hosting, API access, agent autonomy, or developer tooling. The common signal for senior leaders: dependencies that felt like commodities are now negotiating positions."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_45200699535ba123",
+          "headline": "Coding agents silently installed packages nobody owns inside corporate networks",
+          "summary": "Researchers found 227 install commands in corporate codebases pointing at packages with no registered owner, placed there by Claude, Codex, and Hermes acting autonomously. Any of those slots could be claimed by an attacker. Audit every package your coding agents have installed; treat unowned dependencies as a live exposure, not a theoretical one.",
+          "take": "Package provenance is now an agentic-coding audit item, not just a developer hygiene concern.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arstechnica.com/security/2026/08/claude-codex-and-hermes-installed-unowned-code-inside-corporate-networks/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_45200699535ba123",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Coding agents silently installed packages nobody owns inside corporate networks",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "Coding agents silently installed packages nobody owns inside corporate networks",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source to confirm or deny this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Researchers found 227 install commands in corporate codebases pointing at packages with no registered owner",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Researchers found 227 install commands in corporate codebases pointing at packages with no registered owner",
+                "source_span": "",
+                "note": "Source excerpt is empty; the figure of 227 cannot be verified."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Packages were placed there by Claude, Codex, and Hermes acting autonomously",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "placed there by Claude, Codex, and Hermes acting autonomously",
+                "source_span": "",
+                "note": "Source excerpt is empty; named agents and autonomous behaviour cannot be confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Any of those slots could be claimed by an attacker",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Any of those slots could be claimed by an attacker",
+                "source_span": "",
+                "note": "Source excerpt is empty; this risk assertion cannot be verified."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Package provenance is now an agentic-coding audit item, not just a developer hygiene concern.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Package provenance is now an agentic-coding audit item, not just a developer hygiene concern.",
+                "source_span": "",
+                "note": "Source excerpt is empty; this editorial position embeds no independently checkable fact that can be confirmed or denied."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Researchers found 227 install commands in corporate codebases pointing at unclaimed packages.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Researchers found 227 install commands in corporate codebases pointing at unclaimed packages",
+                "source_span": "",
+                "note": "digest: Source excerpt is empty; the specific figure of 227 and the finding cannot be confirmed or denied."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each unclaimed package slot is claimable by an attacker.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "each claimable by an attacker",
+                "source_span": "",
+                "note": "digest: Source excerpt is empty; this capability claim cannot be verified against any source material."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Three of today's five items are security findings, not capability releases.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Three of today's five items are security findings, not capability releases",
+                "source_span": "",
+                "note": "synthesis: The source excerpt covers only a subset of the newsletter's items; the total count of five items and the breakdown of three security findings cannot be confirmed or denied from this excerpt alone."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Something an agent does autonomously creates an attack surface the developer never explicitly opened.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "something an agent does autonomously creates an attack surface the developer never explicitly opened",
+                "source_span": "He found an attack against auto mode which he claims works 80% of the time, by tricking Claude Code into downloading and uncompressing a zip archive, then executing code that imports base64 without noticing that this will import and execute a local struct.py file extracted from the archive.",
+                "note": "synthesis: The Claude Code finding illustrates an autonomous agent action (downloading/uncompressing a zip) creating an unintended attack surface, consistent with this editorial framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The two tool releases this week are both responses to exactly that problem.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The two tool releases this week are both responses to exactly that problem",
+                "source_span": "",
+                "note": "synthesis: The excerpt contains one tool release (Run SDK) and one security finding; the claim of two tool releases and their shared motivation cannot be fully verified from this excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_183c4704b12b9f3c",
+          "headline": "Claude Code's auto-mode safety can be bypassed four times in five",
+          "summary": "Johann Rehberger, a credible prompt-injection researcher, found that tricking Claude Code into unzipping an archive and importing base64 executes a hidden local file, bypassing auto mode 80% of the time. Worse: auto mode blocked Claude's own cleanup command after detecting the compromise. Run coding agents inside a container with network egress restricted before trusting auto mode in production.",
+          "take": "Auto mode was Anthropic's stated defence against prompt injection; a researcher broke it at 80%.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://simonwillison.net/2026/Aug/27/breaking-claude-code-opus-5-auto-mode/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_183c4704b12b9f3c",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Claude Code's auto-mode safety can be bypassed four times in five",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Claude Code's auto-mode safety can be bypassed four times in five",
+                "source_span": "He found an attack against auto mode which he claims works 80% of the time",
+                "note": "'Four times in five' is a correct rounding/paraphrase of 80%."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Johann Rehberger, a credible prompt-injection researcher",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Johann Rehberger, a credible prompt-injection researcher",
+                "source_span": "Johann Rehberger is one of the most credible prompt injection researchers active today.",
+                "note": "Direct paraphrase of the source's characterisation of Rehberger."
+              },
+              {
+                "schema_version": 1,
+                "claim": "tricking Claude Code into unzipping an archive and importing base64 executes a hidden local file",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "tricking Claude Code into unzipping an archive and importing base64 executes a hidden local file",
+                "source_span": "by tricking Claude Code into downloading and uncompressing a zip archive, then executing code that imports base64 without noticing that this will import and execute a local struct.py file extracted from the archive.",
+                "note": "'Hidden local file' is a fair compression of 'local struct.py file extracted from the archive'; mechanism matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "bypassing auto mode 80% of the time",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "bypassing auto mode 80% of the time",
+                "source_span": "He found an attack against auto mode which he claims works 80% of the time",
+                "note": "Figure matches source exactly; note source attributes the 80% claim to Rehberger, which the summary does not hedge, but the source presents it as his claim rather than independently verified — marginal dropped-trust-flag concern, but the summary attributes it to Rehberger's finding so it is adequately sourced."
+              },
+              {
+                "schema_version": 1,
+                "claim": "auto mode blocked Claude's own cleanup command after detecting the compromise",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "auto mode blocked Claude's own cleanup command after detecting the compromise",
+                "source_span": "In a few runs Claude tried to terminate the malware process once it noticed the compromise, but Auto Mode denied the cleanup command.",
+                "note": "Accurate compression of the source's description of the cleanup-blocking behaviour."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Auto mode was Anthropic's stated defence against prompt injection",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Auto mode was Anthropic's stated defence against prompt injection",
+                "source_span": "Anthropic are putting a great deal of faith in Claude Code's auto mode for protecting their coding agent users against prompt injection attacks. They recently made that the default and have made bold claims about its effectiveness.",
+                "note": "Source confirms Anthropic positioned auto mode as the protection against prompt injection."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a researcher broke it at 80%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a researcher broke it at 80%",
+                "source_span": "He found an attack against auto mode which he claims works 80% of the time",
+                "note": "Consistent with source; 'broke it at 80%' is a fair compression of the 80% bypass rate."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_6ea64cfbb83bde5d",
+          "headline": "The largest CFA and FRM benchmark finds retrieval rarely improves hard questions",
+          "summary": "FinExam-10K (an arXiv preprint) covers CFA Levels I–III and FRM Parts I–II in one protocol, 10,198 questions, with 5,110 released. The best of 17 models scores 85.29% overall but only 34.68% on the hard subset. Retrieval augmentation produces little or negative net gain. Pull the 5,110 questions and run your model against the hard subset before claiming financial-reasoning readiness.",
+          "take": "Financial reasoning evals had no unified CFA-plus-FRM protocol; a 10,198-question benchmark now fills that gap.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.28155"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_6ea64cfbb83bde5d",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "The largest CFA and FRM benchmark finds retrieval rarely improves hard questions",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "The largest CFA and FRM benchmark finds retrieval rarely improves hard questions",
+                "source_span": "FinExam-10K, to our knowledge the largest reported English benchmark for this setting... Function-RAG and FunctionGraph-RAG rescue hundreds of errors but also overturn many correct answers, producing little or negative net gain.",
+                "note": "Source supports both the largest-benchmark claim (hedged as 'to our knowledge') and the retrieval finding; paraphrase of 'little or negative net gain' as 'rarely improves' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "FinExam-10K (an arXiv preprint) covers CFA Levels I–III and FRM Parts I–II in one protocol",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "FinExam-10K (an arXiv preprint) covers CFA Levels I–III and FRM Parts I–II in one protocol",
+                "source_span": "no benchmark covers the full CFA and FRM structure under one protocol. We introduce FinExam-10K... spanning CFA Levels I-III and FRM Parts I-II.",
+                "note": "Directly supported by the source; arXiv preprint status is confirmed by the submission context."
+              },
+              {
+                "schema_version": 1,
+                "claim": "FinExam-10K has 10,198 questions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "10,198 questions",
+                "source_span": "10,198 expert-reannotated questions",
+                "note": "Exact figure matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "FinExam-10K has 5,110 released questions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with 5,110 released",
+                "source_span": "We release 5,110 questions and sequester 5,088 for a quarterly maintained leaderboard.",
+                "note": "Exact figure matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The best of 17 models scores 85.29% overall",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The best of 17 models scores 85.29% overall",
+                "source_span": "Across 17 models, the best accuracy is 85.29% overall.",
+                "note": "Exact figures and model count match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The best of 17 models scores only 34.68% on the hard subset",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "only 34.68% on the hard subset",
+                "source_span": "On the frozen Hard band, the best score is 34.68% on the Full-Coverage Track and 54.57% on the 372 context-complete items.",
+                "note": "The 34.68% figure is accurate for the Full-Coverage Track hard subset; omitting the 54.57% context-complete figure is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Retrieval augmentation produces little or negative net gain",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Retrieval augmentation produces little or negative net gain",
+                "source_span": "Function-RAG and FunctionGraph-RAG rescue hundreds of errors but also overturn many correct answers, producing little or negative net gain.",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pull the 5,110 questions and run your model against the hard subset before claiming financial-reasoning readiness",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Pull the 5,110 questions and run your model against the hard subset before claiming financial-reasoning readiness",
+                "source_span": "",
+                "note": "This is a call to action / editorial recommendation; no factual claim to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Financial reasoning evals had no unified CFA-plus-FRM protocol; a 10,198-question benchmark now fills that gap.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Financial reasoning evals had no unified CFA-plus-FRM protocol; a 10,198-question benchmark now fills that gap.",
+                "source_span": "no benchmark covers the full CFA and FRM structure under one protocol. We introduce FinExam-10K... with 10,198 expert-reannotated questions",
+                "note": "Both the gap claim and the 10,198-question figure are directly supported by the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_1d0b7a4e8e0b976b",
+          "headline": "Vercel's new SDK sandboxes agent-written code with human-approval hooks",
+          "summary": "Running agent-generated JavaScript through eval hands it your app's secrets and credentials. Vercel's Run SDK executes untrusted code in an isolated QuickJS context, exposing only the host functions you define; sensitive operations pause for human approval, then resume without replaying completed work. Wire it into your next tool-use agent before shipping to production.",
+          "take": "Agent-generated code running inside your app now has a named sandbox boundary, not eval's open access.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://vercel.com/blog/introducing-run"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_1d0b7a4e8e0b976b",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Vercel's new SDK sandboxes agent-written code with human-approval hooks",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Vercel's new SDK sandboxes agent-written code with human-approval hooks",
+                "source_span": "Today, we're releasing the Run SDK, a package for executing untrusted JavaScript and TypeScript without giving it direct access to your application or system. Applications expose narrow host functions and can interrupt execution for authentication or human-in-the-loop approval.",
+                "note": "Source confirms Vercel is releasing the Run SDK that sandboxes untrusted code and supports human-in-the-loop approval interrupts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Running agent-generated JavaScript through eval hands it your app's secrets and credentials.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Running agent-generated JavaScript through eval hands it your app's secrets and credentials.",
+                "source_span": "Executing that code with eval gives it the same access as the application around it, including its secrets and internal services, and leaves no durable way to pause at those boundaries.",
+                "note": "Source explicitly states eval gives access to secrets and internal services; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel's Run SDK executes untrusted code in an isolated QuickJS context",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vercel's Run SDK executes untrusted code in an isolated QuickJS context",
+                "source_span": "The Run SDK evaluates JavaScript or type-stripped TypeScript in a fresh QuickJS context inside a worker thread, with no direct route to Node.js or the network.",
+                "note": "Source confirms execution in a fresh QuickJS context; 'isolated' is a fair paraphrase of 'fresh ... inside a worker thread, with no direct route to Node.js or the network'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Run SDK exposes only the host functions you define",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "exposing only the host functions you define",
+                "source_span": "Applications expose narrow host functions and can interrupt execution for authentication or human-in-the-loop approval.",
+                "note": "Source confirms the application exposes selected host functions and nothing else reaches the sandbox."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Sensitive operations pause for human approval, then resume without replaying completed work.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "sensitive operations pause for human approval, then resume without replaying completed work",
+                "source_span": "The program resumes after a decision without repeating completed work.",
+                "note": "Source confirms resumption without repeating completed work and human-in-the-loop approval interrupts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent-generated code running inside your app now has a named sandbox boundary, not eval's open access.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent-generated code running inside your app now has a named sandbox boundary, not eval's open access.",
+                "source_span": "Today, we're releasing the Run SDK, a package for executing untrusted JavaScript and TypeScript without giving it direct access to your application or system... Executing that code with eval gives it the same access as the application around it, including its secrets and internal services.",
+                "note": "Source confirms the Run SDK provides a named sandbox (QuickJS context) contrasted explicitly with eval's open access."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_6d9ff2ebbbaa1970",
+          "headline": "NVIDIA makes Python a first-class path to GPU programming",
+          "summary": "Writing custom GPU kernels from Python used to mean C++ extensions or accepting whatever PyTorch exposed. CUDA Python 1.0, from NVIDIA's technical blog, unifies five previously scattered libraries under semantic versioning, so a Numba kernel and a cuda.compute call can share the same GPU buffer on the same stream. Install cuda.core and prototype your next custom kernel against it.",
+          "take": "Python GPU library authors now share one NVIDIA-maintained CUDA foundation, not a patchwork of private binding layers.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/cuda-python-1-0-stable-apis-one-foundation-full-platform-access/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_6d9ff2ebbbaa1970",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA makes Python a first-class path to GPU programming",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA makes Python a first-class path to GPU programming",
+                "source_span": "As of CUDA 13.3, CUDA Python and C++ stand as equal first-class citizens, with NVIDIA committing to maintain feature-complete parity going forward. Python is a supported way to use the CUDA platform.",
+                "note": "The source explicitly states Python is now a first-class citizen alongside C++ for GPU programming via CUDA."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Writing custom GPU kernels from Python used to mean C++ extensions or accepting whatever PyTorch exposed.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Writing custom GPU kernels from Python used to mean C++ extensions or accepting whatever PyTorch exposed.",
+                "source_span": "a Python developer who needed a GPU had two realistic choices: Learn NVIDIA CUDA C++ well enough to write an extension, set up a build toolchain, and maintain bindings back to Python... or move up the stack and let someone else's library do it, namely PyTorch, CuPy, or RAPIDS.",
+                "note": "The source confirms these two prior options; naming only PyTorch is a fair compression of the list."
+              },
+              {
+                "schema_version": 1,
+                "claim": "CUDA Python 1.0, from NVIDIA's technical blog, unifies five previously scattered libraries under semantic versioning.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "CUDA Python 1.0, from NVIDIA's technical blog, unifies five previously scattered libraries under semantic versioning",
+                "source_span": "",
+                "note": "The source lists five components (cuda.core, cuda.compute, cuda.bindings, cuda-pathfinder, nvmath-python) but never describes them as 'five previously scattered libraries'; the source says most were already available and improving, and the 1.0 milestone is about semantic versioning commitment, not unification of scattered libraries — the 'five previously scattered' framing is not in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a Numba kernel and a cuda.compute call can share the same GPU buffer on the same stream",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a Numba kernel and a cuda.compute call can share the same GPU buffer on the same stream",
+                "source_span": "A Numba kernel and a cuda.compute call can operate on the same GPU buffer in the same stream, because neither one brought a private CUDA layer along.",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Python GPU library authors now share one NVIDIA-maintained CUDA foundation, not a patchwork of private binding layers.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Python GPU library authors now share one NVIDIA-maintained CUDA foundation, not a patchwork of private binding layers.",
+                "source_span": "There is now one official, NVIDIA-maintained way to reach CUDA from Python... Each was maintained by a different project, each covered a different slice of the API, and each had its own idea of what a stream or a device or an allocation was.",
+                "note": "The source explicitly contrasts the old patchwork of private binding layers with the new single NVIDIA-maintained foundation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Three of today's five items are security findings, not capability releases, and they share a structure: something an agent does autonomously creates an attack surface the developer never explicitly opened. The two tool releases this week are both responses to exactly that problem."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_0a95cf23e0e5539d",
+          "headline": "OpenAI cuts off Cursor's model access after SpaceX acquires the coding tool",
+          "summary": "OpenAI is winding down its contract supplying models to Cursor following SpaceX's acquisition of the coding assistant. The mechanism is straightforward: a corporate relationship changed, and model access ends. If your development workflow depends on a single API provider, an acquirer's identity is now a supply-chain variable worth auditing before the next renewal.",
+          "take": "Coding-tool vendor lock-in just acquired a geopolitical dimension, not merely a technical one.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://openai.com/index/our-decision-on-cursor-following-its-acquisition-by-spacex"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0a95cf23e0e5539d",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI cuts off Cursor's model access after SpaceX acquires the coding tool",
+                "verdict": "unverifiable",
+                "location": "headline",
+                "summary_span": "OpenAI cuts off Cursor's model access after SpaceX acquires the coding tool",
+                "source_span": "",
+                "note": "Source excerpt is empty; no source material exists to confirm or deny any part of this headline claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI is winding down its contract supplying models to Cursor",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "OpenAI is winding down its contract supplying models to Cursor",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SpaceX acquired Cursor",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "following SpaceX's acquisition of the coding assistant",
+                "source_span": "",
+                "note": "Source excerpt is empty; cannot verify the acquisition claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Coding-tool vendor lock-in just acquired a geopolitical dimension, not merely a technical one.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Coding-tool vendor lock-in just acquired a geopolitical dimension, not merely a technical one.",
+                "source_span": "",
+                "note": "Source excerpt is empty; while largely editorial, the embedded factual implication (geopolitical actor involved) cannot be verified."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": null
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "BIS validates AI bank review.",
+      "sentence": "A BIS pipeline ranked Credit Suisse prospectus gaps against capital rules, recovering the exact discrepancies that triggered loss-absorption disputes.",
+      "story_ids": [
+        "c_068c0069a222754b"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "NVIDIA acquires open model hub.",
+      "sentence": "NVIDIA's $13 billion Hugging Face purchase, at 80 times revenue, hands the dominant open-weights repository to a chip vendor.",
+      "story_ids": [
+        "c_b80970d5cf51a1f7"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Agents planted unowned package slots.",
+      "sentence": "Researchers found 227 install commands in corporate codebases pointing at unclaimed packages, each claimable by an attacker.",
+      "story_ids": [
+        "c_45200699535ba123"
+      ]
+    }
+  ],
+  "generated_at": "2026-09-01T00:10:23.948721Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23.1",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: amber -- currents: 1 (tier pool exhausted)"
+}
