@@ -1,0 +1,873 @@
+{
+  "schema_version": 9,
+  "issue_number": 49,
+  "revision": 0,
+  "date": "2026-09-03",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_db9a045f5aeed7fb",
+        "headline": "Anthropic's new flagship cuts cache costs but raises per-task spend",
+        "summary": "Claude Fable 5.1 and Mythos 5.1 top current benchmarks, with cache reads cut 75% to $0.25 per million tokens. But Artificial Analysis finds the model uses 1.7 times more output tokens, lifting per-task cost 20% above its predecessor. Re-benchmark your highest-volume agent pipelines before committing to the upgrade.",
+        "take": "Frontier model pricing now splits on usage pattern, not just capability tier.",
+        "take_route": "R3",
+        "source_urls": [
+          "https://www.latent.space/p/ainews-claude-fablemythos-51-new"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_db9a045f5aeed7fb",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's new flagship cuts cache costs but raises per-task spend",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Anthropic's new flagship cuts cache costs but raises per-task spend",
+              "source_span": "the cache reads had a 75% price cut… great news for long sessions/long context users, however offset by observed 1.7x output token usage increases per Artificial Analysis, for a total net per-task cost increase of 20%",
+              "note": "Both parts of the headline are confirmed: cache reads cut 75% and per-task cost up 20%."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Claude Fable 5.1 and Mythos 5.1 top current benchmarks",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Claude Fable 5.1 and Mythos 5.1 top current benchmarks",
+              "source_span": "Artificial Analysis Intelligence Index: 66 at max effort - ahead of: - Claude Opus 5 max: 63 - Claude Fable 5 max: 62 - GPT-5.6 Sol max: 61 - Grok 4.6 high: 61",
+              "note": "Source confirms Fable 5.1 leads the Artificial Analysis Intelligence Index above all listed competitors."
+            },
+            {
+              "schema_version": 1,
+              "claim": "cache reads cut 75% to $0.25 per million tokens",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "cache reads cut 75% to $0.25 per million tokens",
+              "source_span": "Cache read price: reduced from $1.00 to $0.25 / 1M tokens (75% cut)",
+              "note": "Exact figures match the source precisely."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Artificial Analysis finds the model uses 1.7 times more output tokens",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Artificial Analysis finds the model uses 1.7 times more output tokens",
+              "source_span": "observed 1.7x output token usage increases per Artificial Analysis",
+              "note": "Source attributes the 1.7x output token figure to Artificial Analysis, matching the body."
+            },
+            {
+              "schema_version": 1,
+              "claim": "lifting per-task cost 20% above its predecessor",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "lifting per-task cost 20% above its predecessor",
+              "source_span": "Fable 5 max: lower, so 5.1 is 20% more expensive per task",
+              "note": "Source confirms 20% higher per-task cost versus Fable 5."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Re-benchmark your highest-volume agent pipelines before committing to the upgrade",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "Re-benchmark your highest-volume agent pipelines before committing to the upgrade",
+              "source_span": "",
+              "note": "This is an editorial call to action; no factual claim to check against the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Frontier model pricing now splits on usage pattern, not just capability tier.",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "Frontier model pricing now splits on usage pattern, not just capability tier.",
+              "source_span": "",
+              "note": "This is a purely editorial position; the source discusses pricing details but does not make this generalised structural claim."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Cache reads drop 75%.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Cache reads drop 75%",
+              "source_span": "Cache read price: reduced from $1.00 to $0.25 / 1M tokens (75% cut)",
+              "note": "digest: Source explicitly states a 75% cut in cache read price, matching the summary."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Output tokens increase 1.7x per task.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "1.7x output tokens",
+              "source_span": "reason: Fable 5.1 uses ~1.7× output tokens",
+              "note": "digest: Source confirms Fable 5.1 uses approximately 1.7x output tokens, matching the summary."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Per-task cost is 20% above the previous model.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "per-task cost 20% above the previous model",
+              "source_span": "Fable 5 max: lower, so 5.1 is 20% more expensive per task",
+              "note": "digest: Source explicitly states Fable 5.1 is 20% more expensive per task than Fable 5, supporting the summary."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The model discussed is Claude 5.1.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Claude 5.1",
+              "source_span": "Anthropic launched Claude Fable 5.1 and Claude Mythos 5.1 as its new flagship models",
+              "note": "digest: 'Claude 5.1' is a reasonable plain-English compression of 'Claude Fable 5.1', consistent with house style generalisation."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_e64f841436442700",
+          "headline": "Nubank vetted 2,000 AI skills before letting them reach developers",
+          "summary": "Nubank's security team reviewed more than 2,000 AI skills (instructions, workflows, tool manifests) before any reached its internal developer marketplace. Skills that look like configuration can expose credentials, approve their own actions, or modify production data. When your security review covers AI skills with the same rigour as code packages, who owns that gate?",
+          "take": "Developer toolchains now carry supply-chain risk from AI skills, not just from code.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://building.nubank.com/when-ai-skills-become-supply-chain-dependencies-2/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e64f841436442700",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Nubank vetted 2,000 AI skills before letting them reach developers",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Nubank vetted 2,000 AI skills before letting them reach developers",
+                "source_span": "a security system that reviewed more than 2,000 AI skills before they could reach developers",
+                "note": "'Vetted' is a fair paraphrase of 'reviewed', and '2,000' is a rounding of 'more than 2,000', both acceptable house-style compressions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nubank's security team reviewed more than 2,000 AI skills (instructions, workflows, tool manifests) before any reached its internal developer marketplace.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Nubank's security team reviewed more than 2,000 AI skills (instructions, workflows, tool manifests) before any reached its internal developer marketplace.",
+                "source_span": "a security system that reviewed more than 2,000 AI skills before they could reach developers",
+                "note": "The figure and gate point match the source; the parenthetical examples are consistent with the source's description of skill components."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Skills that look like configuration can expose credentials",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Skills that look like configuration can expose credentials",
+                "source_span": "A skill might instruct an agent to retrieve a local token so it can access a service... retrieving the token can cause the credential to enter the model's context, potentially exposing it through logs or other infrastructure",
+                "note": "The source explicitly describes credential exposure as a risk from skills that resemble configuration."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Skills that look like configuration can approve their own actions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "approve their own actions",
+                "source_span": "The model can interpret previous context as consent, skip the expected pause or effectively approve its own action.",
+                "note": "The source directly describes a skill effectively approving its own action."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Skills that look like configuration can modify production data",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "or modify production data",
+                "source_span": "Another skill might contain a shell command capable of modifying production-related data.",
+                "note": "The source explicitly mentions modification of production-related data as a risk."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Developer toolchains now carry supply-chain risk from AI skills, not just from code.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Developer toolchains now carry supply-chain risk from AI skills, not just from code.",
+                "source_span": "the software supply chain is expanding beyond code... This is why the team started treating AI skills and similar components as part of the software supply chain.",
+                "note": "The take accurately reflects the source's central argument that supply-chain risk now extends to AI skills beyond traditional code."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nubank screened over 2,000 AI skill manifests before any reached its developer marketplace.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Nubank screened over 2,000 AI skill manifests for credential exposure before any reached its developer marketplace.",
+                "source_span": "a security system that reviewed more than 2,000 AI skills before they could reach developers",
+                "note": "digest: Source confirms more than 2,000 AI skills were reviewed before reaching developers/marketplace; 'skill manifests' is a reasonable paraphrase of 'AI skills' in context."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The screening was specifically for credential exposure.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "screened over 2,000 AI skill manifests for credential exposure",
+                "source_span": "",
+                "note": "digest: The source describes the review as covering multiple risk classes (credentials, shell commands, permissions, etc.), not solely credential exposure; asserting it was specifically for credential exposure is not supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "All four stories today show organisations pulling AI capability inward rather than outward, tightening control over toolchains, document pipelines, and model fleets simultaneously.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "All four stories today show organisations pulling AI capability inward rather than outward, tightening control over toolchains, document pipelines, and model fleets simultaneously.",
+                "source_span": "",
+                "note": "synthesis: This is an editorial pattern-naming claim across four stories; the source excerpt covers only three stories and does not enumerate or confirm a count of four, making the specific number unverifiable from this excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The consolidation impulse is real, but each story also reveals a new governance surface that tighter control creates.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The consolidation impulse is real, but each story also reveals a new governance surface that tighter control creates.",
+                "source_span": "",
+                "note": "synthesis: This is pure editorial framing and pattern-naming with no checkable factual assertion; there is nothing factual to verify against the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_899bc6edb618f3ad",
+          "headline": "Wrapping coding agents in a loop delivers 52% more working software",
+          "summary": "Harness-of-Harness, an arXiv preprint, wraps existing coding-agent frameworks in planning-coding-testing loops that keep improving across iterations. Across three benchmarks, three harness-model pairs averaged 52% relative gain after three loops; one run reached 83%. Code is public on GitHub. Before committing to a single-pass agent architecture, does your team have a replay mechanism to exploit failed runs?",
+          "take": "Iterative agent loops replace single-pass coding runs as the baseline for autonomous software delivery.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/papers/2609.01481"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_899bc6edb618f3ad",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Wrapping coding agents in a loop delivers 52% more working software",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Wrapping coding agents in a loop delivers 52% more working software",
+                "source_span": "achieving an average relative gain of 52.25 percent and a maximum gain of 82.86 percent after three iterations",
+                "note": "52.25% rounds to 52%; 'more working software' is a fair plain-English paraphrase of relative performance gain on coding benchmarks."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Harness-of-Harness is an arXiv preprint",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Harness-of-Harness, an arXiv preprint",
+                "source_span": "hf papers read 2609.01481",
+                "note": "The paper is referenced via a Hugging Face papers identifier consistent with an arXiv preprint; the source excerpt is from the paper's abstract page."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Harness-of-Harness wraps existing coding-agent frameworks in planning-coding-testing loops",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "wraps existing coding-agent frameworks in planning-coding-testing loops",
+                "source_span": "HoH operates on existing coding-agent harnesses, and organizes their executions into iterative planning-coding-testing loops",
+                "note": "Direct paraphrase of the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Harness-of-Harness loops keep improving across iterations",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "keep improving across iterations",
+                "source_span": "enables coding agents to continually improve software during autonomous development",
+                "note": "Accurate paraphrase of the continual improvement claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Across three benchmarks, three harness-model pairs averaged 52% relative gain after three loops",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Across three benchmarks, three harness-model pairs averaged 52% relative gain after three loops",
+                "source_span": "On GameCraft-Bench, FrontierSWE, and ProgramBench, three harness-model pairs (Codex with GPT-5.5, OpenCode with DeepSeek-V4-Pro, and Pi with MiniMax-M3), HoH consistently outperforms the corresponding standalone harnesses, achieving an average relative gain of 52.25 percent",
+                "note": "52.25% rounds to 52%; three benchmarks and three harness-model pairs match exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "one run reached 83%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "one run reached 83%",
+                "source_span": "a maximum gain of 82.86 percent after three iterations",
+                "note": "82.86% rounds to 83%; legitimate rounding under house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Code is public on GitHub",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Code is public on GitHub",
+                "source_span": "Github: https://github.com/Flesymeb/HarnessOfHarness",
+                "note": "Source explicitly provides a GitHub link."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Iterative agent loops replace single-pass coding runs as the baseline for autonomous software delivery",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Iterative agent loops replace single-pass coding runs as the baseline for autonomous software delivery",
+                "source_span": "",
+                "note": "This is an editorial position about industry adoption trends; the source demonstrates iterative loops outperform single-pass but does not claim they have replaced single-pass as the baseline."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_281da01772e29ddf",
+          "headline": "Deployed document model cuts extraction costs 80% below human review",
+          "summary": "A mixture-of-experts image-and-text model (35B total, 3B active parameters) fine-tuned on production documents fits a single H100 and leads all deployable baselines. An arXiv preprint reports quality-adjusted costs over 80% below human annotation and 50% below the best competing open-source model. If document extraction cannot leave your perimeter, does this economics case justify the fine-tuning investment?",
+          "take": "Regulated document extraction now has a cost-viable on-premises option; human annotation was the only defensible baseline.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2609.01575"
+          ],
+          "prior_coverage_ref": "c_693588327d0855b4",
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_281da01772e29ddf",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Deployed document model cuts extraction costs 80% below human review",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Deployed document model cuts extraction costs 80% below human review",
+                "source_span": "it reduces expected costs by over 80% against the human baseline",
+                "note": "Source confirms over 80% cost reduction against the human baseline for a deployed system."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A mixture-of-experts image-and-text model (35B total, 3B active parameters)",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A mixture-of-experts image-and-text model (35B total, 3B active parameters)",
+                "source_span": "a Mixture-of-Experts VLM (35B total, 3B active)",
+                "note": "Numbers and architecture match exactly; 'image-and-text' is a fair plain-English rendering of VLM."
+              },
+              {
+                "schema_version": 1,
+                "claim": "fine-tuned on production documents",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "fine-tuned on production documents",
+                "source_span": "fine-tuned on in-house production data mixed with open-domain documents curated by a Difficulty-Aware pipeline",
+                "note": "Source confirms fine-tuning on production data; omission of the open-domain mix is not an error."
+              },
+              {
+                "schema_version": 1,
+                "claim": "fits a single H100",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "fits a single H100",
+                "source_span": "Fitting on a single H100",
+                "note": "Exact match with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "leads all deployable baselines",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "leads all deployable baselines",
+                "source_span": "the model leads all deployable (non-reasoning) baselines up to an order of magnitude larger",
+                "note": "Source confirms this; dropping the '(non-reasoning)' qualifier is a compression, not a false assertion."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint reports quality-adjusted costs over 80% below human annotation",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint reports quality-adjusted costs over 80% below human annotation",
+                "source_span": "A quality-adjusted cost analysis...shows it reduces expected costs by over 80% against the human baseline",
+                "note": "Source is an arXiv preprint and confirms the >80% figure against the human baseline."
+              },
+              {
+                "schema_version": 1,
+                "claim": "50% below the best competing open-source model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "50% below the best competing open-source model",
+                "source_span": "by more than 50% against the best competing open-source model",
+                "note": "Source says 'more than 50%'; summary says '50%' which is a supported approximation/rounding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Regulated document extraction now has a cost-viable on-premises option; human annotation was the only defensible baseline.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Regulated document extraction now has a cost-viable on-premises option; human annotation was the only defensible baseline.",
+                "source_span": "privacy rules preclude external models...existing open-source VLMs that clear quality thresholds cost more to serve than human annotation",
+                "note": "Source establishes that privacy rules force on-premises deployment and that prior open-source options were more expensive than human annotation, supporting both embedded factual claims."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_d8c25a12d64528db",
+          "headline": "One self-hosted model now handles 116 million monthly requests across 200 corporate apps",
+          "summary": "An arXiv preprint describes training separate reinforcement-learning experts per failure mode, then merging them, to consolidate 200-plus internal applications onto one self-hosted model. The merged model beat a roughly seven-times-larger baseline on instruction-following and function-calling. Quality scores rely on the paper's own LLM-judge ensemble. When your team evaluates consolidation gains, which benchmark judges are actually governing that decision?",
+          "take": "Fleet sprawl was the default cost of data-residency compliance; targeted post-training makes consolidation viable.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/papers/2609.01572"
+          ],
+          "prior_coverage_ref": "c_82eec112d9669bab",
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_d8c25a12d64528db",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "One self-hosted model now handles 116 million monthly requests across 200 corporate apps",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "One self-hosted model now handles 116 million monthly requests across 200 corporate apps",
+                "source_span": "The model absorbs 50% of platform traffic, 116M requests per month, at a fraction of the serving cost. ... We consolidate traffic from over 200 internal applications onto a single model",
+                "note": "Both the 116M monthly requests and 200+ apps figures are confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint describes training separate reinforcement-learning experts per failure mode, then merging them",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint describes training separate reinforcement-learning experts per failure mode, then merging them",
+                "source_span": "Rather than optimising all objectives jointly... we train a separate GRPO expert per axis and merge them via two-stage SLERP.",
+                "note": "GRPO is a reinforcement-learning method; training separate experts per failure mode and merging is confirmed. The paper is on arXiv (hf papers read 2609.01572)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "consolidate 200-plus internal applications onto one self-hosted model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "to consolidate 200-plus internal applications onto one self-hosted model",
+                "source_span": "We consolidate traffic from over 200 internal applications onto a single model",
+                "note": "Directly confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The merged model beat a roughly seven-times-larger baseline on instruction-following and function-calling",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The merged model beat a roughly seven-times-larger baseline on instruction-following and function-calling",
+                "source_span": "In non-reasoning mode the recipe surpasses a {sim}7times larger by total parameters baseline on the in-house Arena with 69.6 to 65.8, instruction following with 0.85 to 0.83, and function-calling with 0.79 to 0.77",
+                "note": "~7× larger baseline and wins on instruction-following and function-calling are confirmed; 'roughly' is appropriate rounding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Quality scores rely on the paper's own LLM-judge ensemble",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Quality scores rely on the paper's own LLM-judge ensemble",
+                "source_span": "Quality is tracked by offline benchmarks stratified to production traffic and scored by deterministic verifiers or calibrated LLM judges.",
+                "note": "The source describes 'calibrated LLM judges' used for quality scoring; 'ensemble' is a reasonable paraphrase of the judge setup described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Fleet sprawl was the default cost of data-residency compliance; targeted post-training makes consolidation viable.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Fleet sprawl was the default cost of data-residency compliance; targeted post-training makes consolidation viable.",
+                "source_span": "Data-residency constraints force enterprises to self-host LLMs, but continuous adoption of newer models without decommissioning their predecessors expands the serving fleet, fragmenting a finite GPU pool.",
+                "note": "The source confirms fleet sprawl from data-residency constraints; the paper's method (targeted per-axis GRPO post-training) enabling consolidation is the paper's central claim."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "All four stories today show organisations pulling AI capability inward rather than outward, tightening control over toolchains, document pipelines, and model fleets simultaneously. The consolidation impulse is real, but each story also reveals a new governance surface that tighter control creates."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_87ccc7c5e5b100b0",
+          "headline": "AWS open-sources coding agents that keep working while you step away",
+          "summary": "Kiro Crew, built internally at Amazon where 39,000 developers adopted it before open-sourcing, lets multiple coding agents run asynchronously across sessions, handling incident triage, PR monitoring, and migrations unsupervised. Code is public under Apache 2.0. Token costs run higher than the standard CLI; measure your workload before committing to background agents at scale.",
+          "take": "Unsupervised coding agents were a prototype concern; 39,000 internal users make Kiro Crew a production precedent.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/08/kiro-crew-coding-agents/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_87ccc7c5e5b100b0",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AWS open-sources coding agents that keep working while you step away",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AWS open-sources coding agents that keep working while you step away",
+                "source_span": "Amazon recently announced Kiro Crew, an open-source system for running multiple Kiro coding agents across sessions, tools, and tasks... allowing work such as incident investigation, ticket triage, migrations, and PR monitoring to continue without active supervision.",
+                "note": "The headline accurately captures that Amazon/AWS open-sourced Kiro Crew, which runs agents asynchronously while developers are away."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Kiro Crew was built internally at Amazon",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "built internally at Amazon",
+                "source_span": "Developed internally at Amazon as MeshClaw",
+                "note": "Source confirms Kiro Crew was developed internally at Amazon."
+              },
+              {
+                "schema_version": 1,
+                "claim": "39,000 developers adopted Kiro Crew before open-sourcing",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "39,000 developers adopted it before open-sourcing",
+                "source_span": "reportedly adopted internally by more than 39000 developers, Kiro Crew is now available as an open source project",
+                "note": "Source confirms the 39,000 internal adoption figure prior to open-sourcing, though it uses 'reportedly' as a hedge which the summary drops — however the figure itself is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Kiro Crew lets multiple coding agents run asynchronously across sessions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "lets multiple coding agents run asynchronously across sessions",
+                "source_span": "an open-source system for running multiple Kiro coding agents across sessions, tools, and tasks... lets developers assign asynchronous coding tasks to AI agents",
+                "note": "Source directly supports this characterisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Kiro Crew handles incident triage, PR monitoring, and migrations unsupervised",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "handling incident triage, PR monitoring, and migrations unsupervised",
+                "source_span": "work such as incident investigation, ticket triage, migrations, and PR monitoring to continue without active supervision",
+                "note": "Source lists these same use cases and confirms they run without active supervision."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Code is public under Apache 2.0",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Code is public under Apache 2.0",
+                "source_span": "It is released under the Apache 2.0 license",
+                "note": "Source confirms the Apache 2.0 licence."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Token costs run higher than the standard CLI",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Token costs run higher than the standard CLI",
+                "source_span": "some have raised concerns about costs, reporting that Crew can consume tokens significantly faster than Kiro CLI",
+                "note": "Source confirms token consumption is higher than Kiro CLI, which the summary paraphrases accurately."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Unsupervised coding agents were a prototype concern; 39,000 internal users make Kiro Crew a production precedent.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Unsupervised coding agents were a prototype concern; 39,000 internal users make Kiro Crew a production precedent.",
+                "source_span": "",
+                "note": "The 39,000 figure is sourced, but the framing that unsupervised agents were previously only a 'prototype concern' is an editorial position not checkable from the source excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Today's three items share a diagnosis: the defaults practitioners inherited for agents, cache evaluation, and context management are quietly wrong in production.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Today's three items share a diagnosis: the defaults practitioners inherited for agents, cache evaluation, and context management are quietly wrong in production.",
+                "source_span": "",
+                "note": "synthesis: This is editorial pattern-naming framing three stories together; while the sources do discuss problems with defaults in each domain, the claim that all three share this specific diagnosis is an editorial synthesis not directly checkable as a single factual assertion from the excerpts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each fix is already documented and deployable.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Each fix is already documented and deployable",
+                "source_span": "",
+                "note": "synthesis: This is an editorial characterization about all three items' fixes being ready to deploy; while Kiro Crew is released and the paper proposes metrics, the claim as applied to all three is an editorial synthesis not directly verifiable from the excerpts."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_524ff9f42590bbeb",
+          "headline": "The standard metric for semantic cache selection is systematically wrong",
+          "summary": "PR-AUC, the standard metric for choosing a semantic cache model, measures ranking quality but ignores whether scores hold at a fixed deployment threshold. An arXiv preprint shows the highest-ranked model is often the worst in production. Swap your cache-model eval to P-CHR AUC before your next selection decision.",
+          "take": "Semantic cache model selection was a ranking problem; it is a threshold problem.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2606.19719"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_524ff9f42590bbeb",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "The standard metric for semantic cache selection is systematically wrong",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "The standard metric for semantic cache selection is systematically wrong",
+                "source_span": "Standard practice evaluates these systems using PR-AUC, a metric that only measures how well scores rank and ignores whether they are usable at a fixed threshold. We show this mismatch leads to systematically poor deployment choices",
+                "note": "'Systematically wrong' is a fair plain-English compression of 'leads to systematically poor deployment choices'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PR-AUC is the standard metric for choosing a semantic cache model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "PR-AUC, the standard metric for choosing a semantic cache model",
+                "source_span": "Standard practice evaluates these systems using PR-AUC",
+                "note": "Source confirms PR-AUC is standard practice for evaluating semantic caching systems."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PR-AUC measures ranking quality but ignores whether scores hold at a fixed deployment threshold",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "measures ranking quality but ignores whether scores hold at a fixed deployment threshold",
+                "source_span": "a metric that only measures how well scores rank and ignores whether they are usable at a fixed threshold",
+                "note": "Direct paraphrase of the source's description of PR-AUC's limitation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint shows the highest-ranked model is often the worst in production",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint shows the highest-ranked model is often the worst in production",
+                "source_span": "models with the highest PR-AUC are often the worst in operation",
+                "note": "'Worst in production' is a supported paraphrase of 'worst in operation'; arXiv preprint status is confirmed by the submission page."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Swap your cache-model eval to P-CHR AUC before your next selection decision",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Swap your cache-model eval to P-CHR AUC before your next selection decision",
+                "source_span": "",
+                "note": "This is an editorial call to action; the source introduces P-CHR AUC but does not issue this prescriptive recommendation, so it cannot be verified from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Semantic cache model selection was a ranking problem; it is a threshold problem",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Semantic cache model selection was a ranking problem; it is a threshold problem",
+                "source_span": "model selection for semantic caching is a threshold-utility problem, not a ranking one",
+                "note": "The take accurately restates the paper's own conclusion in plain English."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PR-AUC ranks cache models by quality.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "PR-AUC ranks cache models by quality",
+                "source_span": "PR-AUC, a metric that only measures how well scores rank",
+                "note": "digest: Source confirms PR-AUC measures ranking quality of scores."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PR-AUC ignores fixed-threshold production behaviour.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "ignores fixed-threshold production behaviour",
+                "source_span": "a metric that only measures how well scores rank and ignores whether they are usable at a fixed threshold",
+                "note": "digest: Source explicitly states PR-AUC ignores fixed-threshold usability, matching the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Top-ranked models by PR-AUC are the worst deployed.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "making top-ranked models the worst deployed",
+                "source_span": "models with the highest PR-AUC are often the worst in operation",
+                "note": "digest: Source says 'often the worst in operation'; summary's 'worst deployed' is a supported paraphrase, and 'often' being dropped is an acceptable compression."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_1ee17a1c8669be4c",
+          "headline": "Redis engineer's four-pattern fix for AI apps that lose context in production",
+          "summary": "A Redis engineer built an LLM-backed Alexa skill under an 8-second response ceiling and hit every context failure in the book: poisoning, rot, confusion, cost blowout. The fixes are documented patterns; Redis memory layers, summarisation, reranking, and semantic caching. Map them against your context-rot symptoms before your next memory-layer design session.",
+          "take": "Production AI failures trace to context architecture, not prompt wording.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/presentations/context-engineering-redis-llm-architecture/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_1ee17a1c8669be4c",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Redis engineer's four-pattern fix for AI apps that lose context in production",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Redis engineer's four-pattern fix for AI apps that lose context in production",
+                "source_span": "I work for Redis... I started realizing that, ok, I am running through a set of problems that has to do with context poisoning... context distraction... Context confusion... the context rots... the context clash",
+                "note": "The source confirms a Redis engineer encountered multiple context failure types; four patterns are named in the body and consistent with the source's enumeration, making the headline a fair compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A Redis engineer built an LLM-backed Alexa skill",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A Redis engineer built an LLM-backed Alexa skill",
+                "source_span": "I work for Redis... what if I put an LLM behind Alexa, and then I create this skill that I've called My Jarvis",
+                "note": "Source confirms Ricardo Ferreira works for Redis and built an LLM-backed Alexa skill."
+              },
+              {
+                "schema_version": 1,
+                "claim": "under an 8-second response ceiling",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "under an 8-second response ceiling",
+                "source_span": "the Alexa interaction has a fixed timeout of 8 seconds. It needs to respond within this time frame.",
+                "note": "Source explicitly states the 8-second fixed timeout."
+              },
+              {
+                "schema_version": 1,
+                "claim": "hit every context failure in the book: poisoning, rot, confusion, cost blowout",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "hit every context failure in the book: poisoning, rot, confusion, cost blowout",
+                "source_span": "context poisoning... context distraction, too much data... Context confusion... the context rots... the context clash",
+                "note": "The source names five distinct failure types (poisoning, distraction, confusion, rot, clash); the summary substitutes 'cost blowout' for 'context clash' and omits 'context distraction', misrepresenting the named failure modes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The fixes are documented patterns; Redis memory layers, summarisation, reranking, and semantic caching",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The fixes are documented patterns; Redis memory layers, summarisation, reranking, and semantic caching",
+                "source_span": "",
+                "note": "The source excerpt does not reach the solutions/fixes section; these four specific patterns cannot be confirmed or denied from the provided excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Production AI failures trace to context architecture, not prompt wording.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Production AI failures trace to context architecture, not prompt wording.",
+                "source_span": "",
+                "note": "The source excerpt discusses context problems encountered but does not explicitly contrast context architecture with prompt wording as the root cause; this editorial position cannot be verified from the excerpt."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Today's three items share a diagnosis: the defaults practitioners inherited for agents, cache evaluation, and context management are quietly wrong in production. Each fix is already documented and deployable, which makes this a week for auditing assumptions rather than adopting new tools."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Nothing surfaced for Currents today."
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Claude 5.1 cache trade-off.",
+      "sentence": "Cache reads drop 75% but 1.7x output tokens push per-task cost 20% above the previous model.",
+      "story_ids": [
+        "c_db9a045f5aeed7fb"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Nubank's 2,000-skill security review.",
+      "sentence": "Nubank screened over 2,000 AI skill manifests for credential exposure before any reached its developer marketplace.",
+      "story_ids": [
+        "c_e64f841436442700"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Cache model selection metric flaw.",
+      "sentence": "PR-AUC ranks cache models by quality but ignores fixed-threshold production behaviour, making top-ranked models the worst deployed.",
+      "story_ids": [
+        "c_524ff9f42590bbeb"
+      ]
+    }
+  ],
+  "generated_at": "2026-09-02T21:36:44.898419Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23.1",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 3, currents: 0"
+}

@@ -1,0 +1,284 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-02T21:40:24.981940Z",
+  "computed_verdict": "red",
+  "one_line": "Solid sourcing day undermined by repeated take scaffolds, three imperative body closes, and one contradicted claim in Hands-On",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e64f841436442700",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Skills that look like configuration can expose credentials, approve their own actions, or modify production data.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags 'credential exposure' as the only unsupported specific claim attached to the screening. The source does not assert the screening was specifically for credential exposure as the sole or primary risk. Broaden or remove the credential-specific framing: rewrite to 'Skills that look like configuration can carry supply-chain risks the source code review process was never designed to catch' or similar language that does not assert a specific risk category the source does not name.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1ee17a1c8669be4c",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "hit every context failure in the book: poisoning, rot, confusion, cost blowout",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as contradicted: the source names context poisoning, context distraction, too much data, context confusion, and context rot — not 'cost blowout' as a named failure category, and the grouping 'every context failure in the book' overstates the source's taxonomy. Rewrite to enumerate only the failure modes the source names, e.g. 'context poisoning, distraction, confusion, and rot' and drop 'every context failure in the book' and 'cost blowout' as a labelled failure type.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_281da01772e29ddf",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Regulated document extraction now has a cost-viable on-premises option; human annotation was the only defensible baseline.",
+      "fix_kind": "text_edit",
+      "instruction": "The take contains two independent propositions joined by a semicolon, making it read as two takes. The second clause ('human annotation was the only defensible baseline') is a past-state description that the body already implies; it does not add the publication's forward position. Collapse to one declarative sentence, e.g. 'Regulated document extraction now has a cost-viable on-premises alternative to human annotation.'",
+      "echo_of": "f015"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_524ff9f42590bbeb",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Semantic cache model selection was a ranking problem; it is a threshold problem.",
+      "fix_kind": "text_edit",
+      "instruction": "Same two-clause semicolon structure as c_281da01772e29ddf's take — both takes share the 'X was a Y problem; it is a Z problem' scaffold, making this the later instance of a repeated syntactic frame. Rewrite to break the frame, e.g. 'Production semantic cache selection requires threshold-calibrated evaluation, not ranking metrics.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_db9a045f5aeed7fb",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Re-benchmark your highest-volume agent pipelines before committing to the upgrade.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body must end on the day's direction in plain editorial prose; prescriptions and imperatives belong in the take, not the body close. This sentence is an imperative instruction to the reader. Rewrite the closing sentence as a declarative statement of direction, e.g. 'The upgrade decision now turns on usage pattern, not benchmark rank alone.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e64f841436442700",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "When your security review covers AI skills with the same rigour as code packages, who owns that gate?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture closing question must be anchored to a specific role, decision, or constraint in the reader's org. This question is conditional ('When your security review covers...') rather than anchored — it presupposes the condition is already met before asking who owns the gate, making the question rhetorical rather than strategic. Rewrite to anchor to a concrete org role or decision point, e.g. 'If your security team does not own the AI-skill review gate today, which team does?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_87ccc7c5e5b100b0",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "measure your workload before committing to background agents at scale.",
+      "fix_kind": "text_edit",
+      "instruction": "Hands-On body must close on an imperative action sharpened to a specific artefact and trigger. 'Measure your workload' is generic — it names no artefact and no trigger condition. Rewrite to name the specific thing to measure and when, e.g. 'Run a token-cost profile on your highest-frequency async task before enabling Kiro Crew's background-agent mode at scale.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_524ff9f42590bbeb",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Swap your cache-model eval to P-CHR AUC before your next selection decision.",
+      "fix_kind": "text_edit",
+      "instruction": "The imperative is present and names an artefact (P-CHR AUC) and a trigger (next selection decision) — this is close to the required shape. Minor: the trigger 'next selection decision' is vague. Sharpen to a concrete artefact trigger, e.g. 'Swap your cache-model eval to P-CHR AUC before running your next benchmark comparison on a candidate semantic cache model.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1ee17a1c8669be4c",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Map them against your context-rot symptoms before your next memory-layer design session.",
+      "fix_kind": "text_edit",
+      "instruction": "The imperative names an action ('map') and a trigger ('next memory-layer design session') but the artefact is vague — 'them' refers back to four patterns listed earlier. Sharpen to name the specific artefact: e.g. 'Run the four-pattern checklist (poisoning, rot, confusion, cost) against your current memory-layer config before your next architecture review.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "minor",
+      "quote": "Cache reads drop 75% but 1.7x output tokens push per-task cost 20% above the previous model.",
+      "fix_kind": "text_edit",
+      "instruction": "The sentence restates the Pulse take's core proposition ('Frontier model pricing now splits on usage pattern') without adding compression value beyond what the take already owns. Rewrite to anchor to a concrete operational fact not foregrounded in the take, e.g. 'Artificial Analysis finds Claude 5.1 costs 20% more per task than its predecessor despite a 75% cut in cache-read prices.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_899bc6edb618f3ad",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Before committing to a single-pass agent architecture, does your team have a replay mechanism to exploit failed runs?",
+      "fix_kind": "text_edit",
+      "instruction": "The closing question is anchored to a concrete decision ('committing to a single-pass agent architecture') and a specific org capability ('replay mechanism') — this is close to the ratified shape. Minor: 'does your team have' is a yes/no question with an obvious implied answer (no), weakening the strategic force. Rewrite to surface the decision consequence: e.g. 'If your agent architecture has no replay mechanism, the 52% gain documented here is not available to it.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d8c25a12d64528db",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "When your team evaluates consolidation gains, which benchmark judges are actually governing that decision?",
+      "fix_kind": "text_edit",
+      "instruction": "The question is anchored to a real decision (consolidation evaluation) but 'which benchmark judges are actually governing' is slightly rhetorical — the story already names the paper's LLM-judge ensemble as the only judges, so the answer is implicit. Sharpen to surface the governance gap: e.g. 'If your consolidation evaluation relies on LLM-judge ensembles, who in your org has ratified those judges as authoritative?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "section_intro",
+      "severity": "minor",
+      "quote": "The consolidation impulse is real, but each story also reveals a new governance surface that tighter control creates.",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis's second sentence names a pattern ('new governance surface') that is only weakly present across all four stories — the Nubank story is about supply-chain risk, the harness story is about architecture, the document model story is about economics, and the consolidation story is about fleet management. The 'governance surface' framing fits two of four stories well. Revise to name the actual aggregate motion more precisely, or drop the second sentence's over-generalisation.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_87ccc7c5e5b100b0",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Unsupervised coding agents were a prototype concern; 39,000 internal users make Kiro Crew a production precedent.",
+      "fix_kind": "text_edit",
+      "instruction": "Same two-clause semicolon scaffold as c_281da01772e29ddf and c_524ff9f42590bbeb takes ('X was Y; Z makes it A'). Three takes sharing this frame triggers a major finding per the criterion, but this is the first instance in hands_on — flag as part of the frame-repetition pattern. Rewrite to break the scaffold: e.g. 'Kiro Crew's 39,000-user internal deployment establishes unsupervised multi-agent coding as a production-grade pattern, not a prototype.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_281da01772e29ddf",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Regulated document extraction now has a cost-viable on-premises option; human annotation was the only defensible baseline.",
+      "fix_kind": "text_edit",
+      "instruction": "This take, c_524ff9f42590bbeb's take ('Semantic cache model selection was a ranking problem; it is a threshold problem'), and c_87ccc7c5e5b100b0's take ('Unsupervised coding agents were a prototype concern; 39,000 internal users make Kiro Crew a production precedent') all share the 'X was Y; it/Z is now A' scaffold. Three or more takes sharing a frame is a major finding. Rewrite all three to break the shared structure; for this take specifically: 'On-premises document extraction is now cost-competitive with human annotation for regulated pipelines.'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "1679b2e8339d542829984729d469c7dca4a0ef69b13ed3970f928036d82d3d52",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.) | 1 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
