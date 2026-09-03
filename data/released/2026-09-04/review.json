@@ -1,0 +1,230 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-03T21:40:54.910610Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking issues (contradicted headline, prescriptive body copy); three major factual gaps need correction before publish.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_094573f2e2617236",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "OpenAI launches its most capable model to match Anthropic on price",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this headline as contradicted: the source states GPT-6 Astra scores equal to GPT-5.6 Sol on the Intelligence Index at 61, which is 5 points below Claude Fable 5.1. The headline's claim that Astra matches Anthropic on capability is not supported. Rewrite to reflect price parity only, e.g. 'OpenAI launches GPT-6 Astra at Claude Fable's price point, trailing on third-party benchmarks'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_195ca92f1a9006bb",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Muse Spark 1.3, from Meta Superintelligence, now ranks third globally on public leaderboards, matching OpenAI and Anthropic's top models.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as unsupported: the source says it is the #3 model per AAII, not that it matches OpenAI and Anthropic's top models. Remove the 'matching OpenAI and Anthropic's top models' clause; retain the #3 ranking with the AAII attribution implied by the source.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bf60359587155972",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "A five-subagent demo cut completion time from 18 minutes to under 9 on a three-device cluster.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as contradicted: the source states the three-device cluster took 8 minutes and 48 seconds on average, not 'under 9 minutes' in a way that implies a clean halving. The prose says 'under 9' which is technically true but the digest says 'halving a five-subagent job from 18 to 9 minutes' — the body should state the precise figure. Rewrite to: 'A five-subagent demo cut completion time from 18 minutes to 8 minutes 48 seconds on a three-device cluster.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "NVIDIA PAIR's beta proxies multi-agent requests across home network devices, halving a five-subagent job from 18 to 9 minutes.",
+      "fix_kind": "text_edit",
+      "instruction": "The source gives 8 minutes 48 seconds, not 9 minutes; 'halving' overstates the precision. Rewrite to: 'NVIDIA PAIR's beta proxies multi-agent requests across home network devices, cutting a five-subagent job from 18 minutes to 8 minutes 48 seconds on a three-device cluster.'",
+      "echo_of": "f003"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_3652ef29dbd7e295",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "lifting schema-pass rate from 22.6% in 100 steps on a free-tier GPU",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as unsupported: the source gives 22.6% as the overall pass rate (452/2000 passed), not as a starting baseline that was then lifted. The sentence is grammatically incomplete and misleading — it implies a before/after comparison but only states one number. Rewrite to accurately reflect what the source says, e.g. 'reaching a 22.6% schema-pass rate in 100 steps on a free-tier GPU' if that is what the source reports, or supply the actual before/after figures if available.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_067041f0e7446f50",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Price agentic engineering capacity against a $6/hr ceiling before your next headcount conversation.",
+      "fix_kind": "text_edit",
+      "instruction": "This sentence functions as investment/operational advice framed as a direct instruction to act on a specific price point in a headcount decision. Per the reputational_liability criterion, AI Vector reports on companies; it does not advise on them. The take field already carries the editorial position. Remove this prescriptive sentence from the summary body; the take handles the position.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_094573f2e2617236",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Model-selection decisions made on vendor benchmarks alone now carry measurable risk of miscalibration.",
+      "fix_kind": "text_edit",
+      "instruction": "The take hedges with 'measurable risk of miscalibration' — 'risk' is a hedge word that softens the declarative position. Rewrite as a plain declarative, e.g. 'Vendor benchmarks and third-party scores now diverge enough to change which model a team selects.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_fc66241a2ef07176",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Shopify's own numbers, but the mechanism is sound: factor it into your next inference-cost architecture decision.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body must end on a presence-form maturity signal (what exists and what it is worth today), not a prescription. 'Factor it into your next inference-cost architecture decision' is an imperative instruction, not a maturity signal. Rewrite the closing sentence to characterise the current state of the technique, e.g. 'The gisting mechanism is validated at production scale on a single vendor's pipeline; independent replication across model families is the remaining open question.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a6fe0aa0de572229",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Where does your organisation draw the deterministic-versus-probabilistic boundary for customer-facing agent queries?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture closing question must be anchored to a specific role, decision, or constraint in the reader's org. This question is anchored to 'customer-facing agent queries' but repeats the same phrase used earlier in the same sentence ('The core design decision is where to draw the deterministic-versus-probabilistic boundary'), making it a restatement rather than a strategic question that opens new territory. Rewrite to anchor to a specific role or decision point, e.g. 'Which team in your org owns the boundary decision when a customer-facing agent query spans both transactional and historical data?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_067041f0e7446f50",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "Autonomous engineering work was a headcount decision; GPT-6 Astra makes it a per-hour line item.",
+      "fix_kind": "carry_forward",
+      "instruction": "The prior issue (2026-09-02) ran a Pulse on GPT-6 Astra crossing a cybersecurity threshold. Today's Pulse covers the same model's pricing and case studies without referencing that prior coverage. The take is editorially distinct (cost framing vs. safety threshold), so this is a minor drift note rather than a blocking issue. Tomorrow, if Astra appears again, require explicit progression language.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "currents",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "section_intro",
+      "severity": "minor",
+      "quote": "All three items today measure something practitioners assumed was already solved: prompt cost, session memory, and fine-tuning fidelity.",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis names the three topics correctly but the second sentence ('agent pipelines carry hidden degradation at scale, and current benchmarks are not yet reliable enough to catch it') does not fit all three stories equally — the Shopify gisting story is about latency/cost optimisation, not degradation or benchmark unreliability. Tighten the aggregate characterisation to cover all three, e.g. noting that each story surfaces a hidden cost or measurement gap in a workflow practitioners had treated as settled.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a313fc0d12303af4",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Banking assistant accuracy now has a measured floor: recall falls by a fifth over 300 sessions.",
+      "fix_kind": "text_edit",
+      "instruction": "The label construction 'has a measured floor:' followed by a colon-introduced clause is a mild label pattern. Rewrite as a single clean declarative without the colon scaffold, e.g. 'Banking assistant recall degrades by a fifth across 300 sessions, giving teams a concrete ceiling to design against.'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "161975ab28294889508180f6a8a69f52ebcb965e19da0dc89c8e6ce2005a7680",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 1 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
