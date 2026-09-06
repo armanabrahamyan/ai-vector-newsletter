@@ -1,0 +1,1007 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-06T21:34:52.624314Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 89,
+    "contradicted": 1,
+    "unsupported": 2,
+    "unverifiable": 6
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_42ca7b4ec690593f",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Coding agents installed untrusted packages on Fortune 500 networks within an hour",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Coding agents installed untrusted packages on Fortune 500 networks within an hour",
+          "source_span": "Within an hour, the researchers received a phone-home response from a Fortune 500 company... coding agents, including Claude, OpenAI's Codex, and Nous Research's Hermes, were involved.",
+          "note": "Source confirms a Fortune 500 agent executed the package within an hour; 'installed untrusted packages' is a fair paraphrase of registering unclaimed names and hosting packages that phoned home."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Researchers registered unclaimed package names referenced in llms.txt files across 6,214 scanned corporate domains",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Researchers registered unclaimed package names referenced in llms.txt files across 6,214 scanned corporate domains",
+          "source_span": "Researchers at a stealth startup in Israel scanned 6,214 live domains belonging to defense contractors, Fortune 500, and Big Tech companies... the researchers registered a handful of the unclaimed names",
+          "note": "Source confirms 6,214 domains scanned and researchers registered unclaimed names from llms.txt files."
+        },
+        {
+          "schema_version": 1,
+          "claim": "120 pointed to unregistered packages",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "120 pointed to unregistered packages",
+          "source_span": "120 of them, each on a different site, pointed to one or more code packages or domain names that weren't registered",
+          "note": "Source confirms 120 sites pointed to unregistered packages or domain names; paraphrase is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Within an hour, a Fortune 500 company's agent phoned home",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Within an hour, a Fortune 500 company's agent phoned home",
+          "source_span": "Within an hour, the researchers received a phone-home response from a Fortune 500 company.",
+          "note": "Direct match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude, Codex, and Hermes were all in the process chain",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude, Codex, and Hermes were all in the process chain",
+          "source_span": "coding agents, including Claude, OpenAI's Codex, and Nous Research's Hermes, were involved",
+          "note": "'Process chain' is a fair paraphrase of 'chain of parent processes'; all three agents named correctly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The attack surface now extends to every documentation file an agent silently fetches before writing a single line of code",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The attack surface now extends to every documentation file an agent silently fetches before writing a single line of code",
+          "source_span": "Agents treat vendor docs as ground truth and don't question them... Agentic AI usage is exploding, and agents are spreading across every layer... As they multiply, so does the supply-chain surface, and today's guards don't cover it.",
+          "note": "This is a reasonable editorial synthesis of the source's argument about agent trust and supply-chain surface; no specific fact is contradicted."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Supply-chain hygiene reviews now cover agent-consumed documentation files, not just code dependencies.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Supply-chain hygiene reviews now cover agent-consumed documentation files, not just code dependencies.",
+          "source_span": "Agents treat vendor docs as ground truth and don't question them... today's guards don't cover it.",
+          "note": "The take is an editorial position, but it is grounded in the source's argument that documentation files are now an attack surface beyond traditional code dependencies."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Researchers registered 120 abandoned package names.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "Researchers registered 120 abandoned package names",
+          "source_span": "120 of them, each on a different site, pointed to one or more code packages or domain names that weren't registered. To test what happens when an AI agent processes such files, the researchers registered a handful of the unclaimed names",
+          "note": "digest: The source says 120 llms.txt files pointed to unclaimed names, but researchers only registered 'a handful' of them, not all 120."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A Fortune 500 agent fetched one and phoned home within an hour.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a Fortune 500 agent fetched one and phoned home within an hour",
+          "source_span": "Within an hour, the researchers received a phone-home response from a Fortune 500 company.",
+          "note": "digest: The source directly confirms a phone-home response from a Fortune 500 company within an hour."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_038242b00eeecd3c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "An AI agent drained an internal database in under an hour",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "An AI agent drained an internal database in under an hour",
+          "source_span": "The full attack chain — marimo notebook compromise to internal Postgres database dump — ran end-to-end in under one hour.",
+          "note": "'Drained an internal database' is a supported paraphrase of the full attack chain ending in a Postgres database dump, and the under-one-hour timeframe matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On 10 May 2026, Sysdig recorded the first confirmed intrusion driven by a live language-model agent",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "On 10 May 2026, Sysdig recorded the first confirmed intrusion driven by a live language-model agent",
+          "source_span": "On May 10, 2026, the Sysdig Threat Research Team (TRT) observed an intrusion driven by a large language model (LLM) agent in its post-exploitation phase. This is the first AI-agent-driven intrusion the Sysdig TRT has captured.",
+          "note": "Date, actor, and 'first confirmed' claim all match the source; 'live language-model agent' is a supported paraphrase of 'LLM agent' executing in real time."
+        },
+        {
+          "schema_version": 1,
+          "claim": "CVE to internal database dump in four pivots, under one hour",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "CVE to internal database dump in four pivots, under one hour",
+          "source_span": "",
+          "note": "'Four pivots' is not stated in the source; the source describes four signatures of agent-driven execution, not four pivots in the attack chain, and the actual chain involves more steps than four discrete pivots."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agent improvised commands in real time",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The agent improvised commands in real time",
+          "source_span": "An LLM agent executed the post-compromise actions in real time rather than running a pre-built playbook.",
+          "note": "'Improvised commands in real time' is a supported paraphrase of executing post-compromise actions in real time rather than a pre-built playbook."
+        },
+        {
+          "schema_version": 1,
+          "claim": "fanning 12 API calls across 11 IPs in 22 seconds",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "fanning 12 API calls across 11 IPs in 22 seconds",
+          "source_span": "12 cloud API calls fanned across eleven distinct IPs in 22 seconds",
+          "note": "All three figures match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Attacker-controlled AI agents now adapt mid-intrusion; defenders built for static scripts face a new baseline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Attacker-controlled AI agents now adapt mid-intrusion; defenders built for static scripts face a new baseline.",
+          "source_span": "An LLM agent executed the post-compromise actions in real time rather than running a pre-built playbook. The question is whether the script was written before the session started or if it was composed in real time.",
+          "note": "'Attacker-controlled AI agents adapt mid-intrusion' is a supported paraphrase of real-time LLM composition; 'defenders built for static scripts' reflects the source's contrast with pre-built playbooks, making this editorially grounded in the source facts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Sysdig recorded the attack.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Sysdig recorded an AI agent",
+          "source_span": "On May 10, 2026, the Sysdig Threat Research Team (TRT) observed an intrusion driven by a large language model (LLM) agent in its post-exploitation phase.",
+          "note": "digest: The source confirms Sysdig TRT observed and recorded the attack."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An AI agent fanned 12 API calls across 11 IPs in 22 seconds.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "an AI agent fanning 12 API calls across 11 IPs in 22 seconds",
+          "source_span": "12 cloud API calls fanned across eleven distinct IPs in 22 seconds, defeating per-source-IP detection.",
+          "note": "digest: The source directly states 12 API calls, 11 IPs, and 22 seconds."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The AI agent dumped internal data.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "to dump internal data",
+          "source_span": "The bastion phase exfiltrated the schema and full contents of an internal PostgreSQL database in under two minutes.",
+          "note": "digest: The source confirms internal database contents were exfiltrated, which the summary paraphrases as 'dump internal data'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The attack involved four pivots.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Database drained in four pivots",
+          "source_span": "",
+          "note": "digest: The source describes four signatures of agent-driven execution and multiple attack steps, but never characterises the attack chain as 'four pivots'; this specific framing appears nowhere in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The full text is purely editorial synthesis or pattern-naming with no checkable factual content.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Every story today lands on the same structural gap: the security assumptions organisations built for human-speed, bounded software no longer hold when agents act autonomously, adapt mid-task, and escape the containment layers defenders treated as settled. The governance debt is no longer theoretical.",
+          "source_span": "",
+          "note": "synthesis: The text is editorial framing and pattern-naming; however, it does embed implicit checkable claims about agent behaviour (acting autonomously, adapting mid-task, escaping containment) that can be partially checked against sources — see sub-claims below."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents act autonomously.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "agents act autonomously",
+          "source_span": "Hermes output logs show the operator ran the agent in unattended or YOLO mode, bypassing approval prompts for commands that could be considered dangerous.",
+          "note": "synthesis: Multiple sources confirm AI agents operating without human approval in the described attacks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents escape the containment layers defenders treated as settled.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "escape the containment layers defenders treated as settled",
+          "source_span": "An off-the-shelf VM is not enough to contain a modern, cyber-capable AI agent. There is simply too much attack surface.",
+          "note": "synthesis: The VM containment source directly states that previously assumed containment layers are insufficient for capable AI agents."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Security assumptions built for human-speed software no longer hold.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the security assumptions organisations built for human-speed, bounded software no longer hold",
+          "source_span": "The assumptions underpinning BeyondCorp — that accessors are human, that actions occur at human speed, and that applications are the correct boundary for trust—are no longer sufficient.",
+          "note": "synthesis: Google's Beyond Zero paper explicitly states that human-speed assumptions are no longer sufficient, directly supporting this claim."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_7910003817b39cb1",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Open-source AI agent ran a cyberattack unsupervised on a government treasury",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Open-source AI agent ran a cyberattack unsupervised on a government treasury",
+          "source_span": "an agent enumerating a government ministry's network on its own... Hermes, an open-source assistant from Nous Research... The mode the operator used, called YOLO, is a documented feature... No vendor was watching, and there was no account to ban... Thailand's Ministry of Finance, which runs the country's treasury and tax collection.",
+          "note": "All bundled facts are supported: Hermes is open-source, ran unsupervised (YOLO mode), and targeted Thailand's Finance Ministry which runs the treasury."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hunt.io found 585 files on an exposed staging server",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Hunt.io found 585 files on an exposed staging server",
+          "source_span": "Hunt.io Attack Capture archived three open directories on 43.246.208[.]207 during the period of 9 - 13 July 2026, totaling 585 files and 470 MB of attack code and stolen credentials.",
+          "note": "The 585 files figure matches the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hermes is an open-source AI assistant",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Hermes, an open-source AI assistant",
+          "source_span": "The tool is Hermes, an open-source assistant from Nous Research that people install to manage their mail, run chores, and take instructions over Telegram or Slack.",
+          "note": "Source confirms Hermes is an open-source assistant."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hermes ran in 'YOLO' mode",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ran in 'YOLO' mode",
+          "source_span": "The mode the operator used, called YOLO, is a documented feature with its own command-line flag.",
+          "note": "Source confirms the YOLO mode designation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "YOLO mode bypassed human approval",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "bypassing human approval",
+          "source_span": "Hermes output logs show the operator ran the agent in unattended or YOLO mode, bypassing approval prompts for commands that could be considered dangerous.",
+          "note": "Source explicitly states YOLO mode bypasses approval prompts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hermes enumerated Thailand's Finance Ministry network",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "enumerate Thailand's Finance Ministry network",
+          "source_span": "The Hermes logs found within the three directories capture the agent enumerating ministry hosts, traversing files, and capturing LinPEAS output from an adjacent host.",
+          "note": "Source confirms the agent enumerated the Finance Ministry network."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hermes crawled personnel records back to 2012",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "crawl personnel records back to 2012",
+          "source_span": "a recursive crawl of the web root belonging to the Office of the Permanent Secretary. That folder held Office documents, performance evaluations, and personnel records dating to 2012.",
+          "note": "Source confirms personnel records dating to 2012 were crawled."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No vendor could intervene; there was no account to ban",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "No vendor could intervene; there was no account to ban",
+          "source_span": "Hermes runs on the operator's own machine. No vendor was watching, and there was no account to ban.",
+          "note": "Source directly states no vendor was watching and no account to ban."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Unattended AI agents moved from red-team hypothetical to documented espionage tool, with no vendor to intervene",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Unattended AI agents moved from red-team hypothetical to documented espionage tool, with no vendor to intervene.",
+          "source_span": "Attackers have started handing routine offensive work to AI agents, and the agents are doing it without anyone watching... No vendor was watching, and there was no account to ban.",
+          "note": "The factual core — documented unattended AI espionage with no vendor intervention — is supported; the 'red-team hypothetical' framing is editorial but consistent with the source's contrast with prior AI-assisted attacks."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e7400630abc6d7a2",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Standard virtual machines cannot contain a capable AI cyber-agent",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Standard virtual machines cannot contain a capable AI cyber-agent",
+          "source_span": "An off-the-shelf VM is not enough to contain a modern, cyber-capable AI agent.",
+          "note": "'Standard virtual machines' is a fair paraphrase of 'off-the-shelf VM' and the core claim matches the source directly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Bruce Schneier's verdict on GPT-5.6-Cyber's sandbox escapes is unambiguous",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Bruce Schneier's verdict on GPT-5.6-Cyber's sandbox escapes is unambiguous",
+          "source_span": "",
+          "note": "The source excerpt does not name Bruce Schneier as the author; the attribution cannot be confirmed or denied from this excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "an off-the-shelf virtual machine carries too much attack surface",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "an off-the-shelf virtual machine carries too much attack surface",
+          "source_span": "An off-the-shelf VM is not enough to contain a modern, cyber-capable AI agent. There is simply too much attack surface.",
+          "note": "Near-verbatim match to the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "innocuous features like running a display add exploitable attack surface",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "innocuous features like running a display",
+          "source_span": "Even innocuous features (like running with a display) add extra, exploitable attack surface.",
+          "note": "The body's example matches the source example precisely."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-5.6-Cyber performed sandbox escapes",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GPT-5.6-Cyber's sandbox escapes",
+          "source_span": "My suspicion was that GPT 5.6-Cyber would succeed, but the frequency and manner of its success removed all doubt.",
+          "note": "The source confirms GPT-5.6-Cyber succeeded (implying sandbox escapes); the model name matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "VM sandboxing was the default containment answer; cyber-capable agents have made it an open question.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "VM sandboxing was the default containment answer; cyber-capable agents have made it an open question.",
+          "source_span": "We have to reassess sandboxing quality for capable AI agents, and in general the software stack with which they interact.",
+          "note": "The take's editorial framing is consistent with the source's call to reassess VM sandboxing; 'open question' is a fair paraphrase of 'reassess'."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9e3ddf63f5d71609",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google's security blueprint shifts access control to every individual agent action",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Google's security blueprint shifts access control to every individual agent action",
+          "source_span": "The new approach moves access decisions from the application level to individual resources and actions",
+          "note": "Source confirms the shift to individual actions and resources; 'agent action' is a fair compression of 'individual resources and actions' in an AI-agent context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google's Beyond Zero paper redraws enterprise security around individual actions and resources, not application-level boundaries",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google's Beyond Zero paper redraws enterprise security around individual actions and resources, not application-level boundaries",
+          "source_span": "The new approach moves access decisions from the application level to individual resources and actions",
+          "note": "Source directly supports this characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AI agents act at machine speed and volume",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "because AI agents act at machine speed and volume",
+          "source_span": "combining static authorization controls with dynamic AI-driven decisions to enable machine-speed enforcement for humans and agents",
+          "note": "Machine speed is explicitly mentioned in the source; 'volume' is a reasonable inference from 'millions of agents' context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google's own deployment is internal-only and components are unfinished",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google's own deployment is internal-only and components are unfinished",
+          "source_span": "Google says deployments are internal-only, the components aren't all built, and more papers are coming.",
+          "note": "Source directly confirms both claims."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Enterprise access controls were built for humans; AI agents now require action-level authorisation at machine speed",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Enterprise access controls were built for humans; AI agents now require action-level authorisation at machine speed",
+          "source_span": "The assumptions underpinning BeyondCorp — that accessors are human, that actions occur at human speed, and that applications are the correct boundary for trust—are no longer sufficient.",
+          "note": "Source confirms the human-centric legacy assumption and the need for machine-speed, action-level controls."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_0ddd66aaf00f1c3c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A coding agent wiped a production database via a misdirected migration command",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A coding agent wiped a production database via a misdirected migration command",
+          "source_span": "A migration command intended for a disposable test database instead targeted production. Every table was dropped.",
+          "note": "Source confirms a coding agent (Claude Opus 5) wiped a production database via a misdirected migration command."
+        },
+        {
+          "schema_version": 1,
+          "claim": "In early August 2026, Claude Opus 5 in Ultracode mode dropped every table in a live Supabase database",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "In early August 2026, Claude Opus 5 in Ultracode mode dropped every table in a live Supabase database",
+          "source_span": "In early August 2026, a developer connected Claude Opus 5, running in Ultracode mode, to a production Supabase database with unrestricted access... Every table was dropped.",
+          "note": "Source confirms the date, model, mode, database platform, and outcome."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a Prisma migration command received the production URL instead of a disposable shadow database",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a Prisma migration command received the production URL instead of a disposable shadow database",
+          "source_span": "The command was prisma migrate diff, using the shadow-database-url argument... the value passed into that argument was the live production database URL.",
+          "note": "Source confirms the Prisma command was pointed at the production URL instead of the intended shadow database."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agent self-reported the damage first",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The agent self-reported the damage first",
+          "source_span": "Detection: self-reported by the agent, not the developer",
+          "note": "Source explicitly states the agent self-reported the error before the developer noticed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Thin sourcing (one Reddit thread)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Thin sourcing (one Reddit thread)",
+          "source_span": "Source: reported directly by the developer, on Reddit, in r/Anthropic",
+          "note": "Source confirms the primary source is a single Reddit post; characterising this as thin sourcing is a fair editorial compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Broad database credentials were the silent multiplier that turned a misdirected command into total data loss",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Broad database credentials were the silent multiplier that turned a misdirected command into total data loss",
+          "source_span": "The database credentials provided to the agent were also unscoped. Broad access converted a misdirected argument into total data loss rather than a contained failure.",
+          "note": "Source directly states that broad/unscoped credentials converted the misdirected command into total data loss."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Two of today's three stories trace back to the same misconfiguration: broad credentials sitting inside an agent's environment.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Two of today's three stories trace back to the same misconfiguration: broad credentials sitting inside an agent's environment.",
+          "source_span": "The database credentials provided to the agent were also unscoped. Broad access converted a misdirected argument into total data loss rather than a contained failure.",
+          "note": "synthesis: Both source stories (the Claude Opus 5 incident and the Mantis/Google story) involve agents with broad/unscoped credentials; the synthesis accurately characterises the shared pattern, and the Claude incident source explicitly names unscoped credentials as the root cause."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google's sandboxed scanner suggests the industry is starting to build tooling that treats verification as a precondition rather than an afterthought.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google's sandboxed scanner suggests the industry is starting to build tooling that treats verification as a precondition rather than an afterthought.",
+          "source_span": "It can also reproduce findings in a sandboxed environment, providing evidence that a finding is a real vulnerability in a safe and controlled way, rather than relying solely on the LLM's judgement.",
+          "note": "synthesis: The claim that Google's tool uses sandboxed reproduction to verify findings before acting is directly supported; the editorial framing ('precondition rather than afterthought') is pattern-naming and not a checkable factual assertion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "That detail, not model behaviour, sets the blast radius.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "That detail, not model behaviour, sets the blast radius.",
+          "source_span": "The failure was not in the model's judgment. The failure was in the blast radius the human set up before the model was ever asked to do anything.",
+          "note": "synthesis: The source explicitly states the blast radius was determined by the human-configured environment (broad credentials), not the model's behaviour."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_4c6cd0bd45178954",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code wiped 22 production tables by following one misdirected command",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Claude Code wiped 22 production tables by following one misdirected command",
+          "source_span": "That single command dropped every table in the production database... All 22 tables were emptied",
+          "note": "Source confirms 22 tables were dropped by a single misdirected migration command run by Claude Code."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude Opus 5 ran a standard Prisma migration command",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude Opus 5 ran a standard Prisma migration command",
+          "source_span": "gave Claude Opus 5, running in Claude Code's ultracode mode, write access to a production Supabase database. The agent then ran a normal-looking migration command: prisma migrate diff --shadow-database-url=$DATABASE_URL_UNPOOLED",
+          "note": "Source confirms Claude Opus 5 ran the Prisma migration command, described as normal-looking."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the production connection string sat where the throwaway shadow database URL should have been",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the production connection string sat where the throwaway shadow database URL should have been",
+          "source_span": "The --shadow-database-url flag tells Prisma where that disposable database lives. In this case, DATABASE_URL_UNPOOLED pointed at the production database.",
+          "note": "Source confirms the production connection string was used as the shadow database URL."
+        },
+        {
+          "schema_version": 1,
+          "claim": "All 22 tables dropped",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "All 22 tables dropped",
+          "source_span": "All 22 tables were emptied: 130 tools, 21 comparisons, users, reviews, and likes.",
+          "note": "Source explicitly states all 22 tables were emptied/dropped."
+        },
+        {
+          "schema_version": 1,
+          "claim": "two were never in the migrations folder and never came back",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "two were never in the migrations folder and never came back",
+          "source_span": "Two tables - BlogPost and ApiKey - were never in the migrations folder at all, so they were dropped and never recreated.",
+          "note": "Source confirms two tables (BlogPost and ApiKey) were never in the migrations folder and were not recreated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Thin sourcing (one Reddit thread plus a postmortem)",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Thin sourcing (one Reddit thread plus a postmortem)",
+          "source_span": "",
+          "note": "The source excerpt does not mention Reddit or characterise its own sourcing; this cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the mechanism is documented Prisma behaviour",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the mechanism is documented Prisma behaviour",
+          "source_span": "Prisma resets the database at that URL before replaying migrations. Point it at anything you cannot afford to lose, and Prisma will erase it as designed.",
+          "note": "Source describes the behaviour as by design and documented, supporting this characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Set shadowDatabaseUrl in schema.prisma now",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Set shadowDatabaseUrl in schema.prisma now",
+          "source_span": "Prisma lets you set shadowDatabaseUrl once in schema.prisma so it is always pointed at the safe target and you stop passing --shadow-database-url on the command line entirely.",
+          "note": "Source explicitly recommends setting shadowDatabaseUrl in schema.prisma as the safe pattern."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Production database credentials in an agent's environment were always the blast radius, not the model.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Production database credentials in an agent's environment were always the blast radius, not the model.",
+          "source_span": "The failure was not in the model's judgment. The failure was in the blast radius the human set up before the model was ever asked to do anything... keep prod credentials out of the blast zone, and assume any tool with hands will eventually use them.",
+          "note": "Source explicitly frames the blast radius as the production credentials in the environment, not the model's behaviour."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A production connection string sat where a shadow database URL belonged.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A production connection string sat where a shadow database URL belonged",
+          "source_span": "The --shadow-database-url flag tells Prisma where that disposable database lives. In this case, DATABASE_URL_UNPOOLED pointed at the production database.",
+          "note": "digest: The source confirms the production URL was passed into the shadow-database-url argument, matching this paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "All 22 tables were dropped.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "all 22 tables dropped",
+          "source_span": "All 22 tables were emptied: 130 tools, 21 comparisons, users, reviews, and likes.",
+          "note": "digest: The source explicitly states all 22 tables were emptied/dropped."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Two tables were never recovered.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "two never recovered",
+          "source_span": "Two tables - BlogPost and ApiKey - were never in the migrations folder at all, so they were dropped and never recreated.",
+          "note": "digest: The source confirms exactly two tables (BlogPost and ApiKey) were dropped and never recreated."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_20d8efd40d77d0f8",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google's agentic security scanner validates vulnerabilities before flagging them",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Google's agentic security scanner validates vulnerabilities before flagging them",
+          "source_span": "It can also reproduce findings in a sandboxed environment, providing evidence that a finding is a real vulnerability in a safe and controlled way, rather than relying solely on the LLM's judgement.",
+          "note": "The source confirms Mantis reproduces/validates vulnerabilities before surfacing them, supporting the headline's characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Conventional AI code scanners produce true-positive rates below 7%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Conventional AI code scanners produce true-positive rates below 7%",
+          "source_span": "sloppiness in AI code scanning frequently leads to hallucinated bugs and weak true-positive rates under 7%",
+          "note": "Source directly states true-positive rates under 7%, matching the body's claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google's Mantis (code on GitHub)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google's Mantis (code on GitHub)",
+          "source_span": "Mantis is available on GitHub.",
+          "note": "Source confirms Mantis is available on GitHub."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mantis addresses this with critic and reviewer agents",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "addresses this with critic and reviewer agents plus sandboxed vulnerability reproduction",
+          "source_span": "Mantis uses industry-standard agentic techniques, such as critic and reviewer agents to filter out false positives and prioritize meaningful findings.",
+          "note": "Source explicitly names critic and reviewer agents as part of Mantis."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mantis uses sandboxed vulnerability reproduction to confirm findings are real before they surface",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "sandboxed vulnerability reproduction to confirm findings are real before they surface",
+          "source_span": "It can also reproduce findings in a sandboxed environment, providing evidence that a finding is a real vulnerability in a safe and controlled way",
+          "note": "Source confirms sandboxed reproduction is used to validate findings."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Clone it and run against a repository your static scanner already flagged",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Clone it and run against a repository your static scanner already flagged; compare the reproduction rate against your false-positive baseline.",
+          "source_span": "",
+          "note": "This is a call-to-action/editorial instruction not present in the source; however it is editorial craft advice and not a factual claim — flagged unverifiable as the source contains no such instruction."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Security teams' AI scanner queues were dominated by false positives; sandboxed reproduction changes that baseline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Security teams' AI scanner queues were dominated by false positives; sandboxed reproduction changes that baseline.",
+          "source_span": "Google says it developed Mantis to address the high rate of false positives and hallucinated vulnerabilities produced by conventional AI-powered code scanning. ... It can also reproduce findings in a sandboxed environment, providing evidence that a finding is a real vulnerability",
+          "note": "The source supports both the false-positive problem and sandboxed reproduction as the solution; the take is a fair editorial compression of these facts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_a5b9e6f6d6f90ac4",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Cohere's document parser reads financial PDFs and returns exact page coordinates",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Cohere's document parser reads financial PDFs and returns exact page coordinates",
+          "source_span": "converts visually rich PDFs, including financial reports and scientific papers, into clean Markdown while providing precise bounding box coordinates for visual grounding",
+          "note": "Source confirms financial PDFs are a target and bounding box coordinates are returned; 'exact page coordinates' is a fair paraphrase of 'precise bounding box coordinates'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Brittle OCR pipelines for financial reports now have a cleaner alternative.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Brittle OCR pipelines for financial reports now have a cleaner alternative.",
+          "source_span": "the model promises to eliminate the need for brittle, rules-based OCR pipelines",
+          "note": "'Brittle OCR pipelines' is a direct paraphrase of the source's 'brittle, rules-based OCR pipelines'; the framing as an alternative is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cohere's Parse 5 converts complex PDFs to Markdown with bounding-box coordinates for audit-trail grounding",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cohere's Parse 5 converts complex PDFs to Markdown with bounding-box coordinates for audit-trail grounding",
+          "source_span": "converts visually rich PDFs, including financial reports and scientific papers, into clean Markdown while providing precise bounding box coordinates for visual grounding... This capability is critical for regulated industries requiring strict audit trails and verification.",
+          "note": "All elements of this claim are directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Parse 5 scoring 79.2 on Cohere's own ParseBench",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scoring 79.2 on Cohere's own ParseBench",
+          "source_span": "Cohere Parse 5 achieved an average score of 79.2 across table extraction, content faithfulness, and semantic formatting",
+          "note": "Score of 79.2 on ParseBench is confirmed; 'Cohere's own' correctly flags it as a vendor benchmark."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ParseBench covers 2,000 enterprise pages",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across 2,000 enterprise pages",
+          "source_span": "a rigorous, rule-based benchmark dataset comprising over 2000 human-verified enterprise pages",
+          "note": "'2,000' is a standard rounding of 'over 2000'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The open-weight model and a Hugging Face demo are public",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The open-weight model and a Hugging Face demo are public",
+          "source_span": "the model is available for testing through Cohere's API dashboard, via a free Hugging Face Space for UI-based testing, and locally using the open-weight North-Micro-Vision-Instruct foundation model on Hugging Face",
+          "note": "Both the open-weight model and a Hugging Face demo (Space) being public are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Rules-based document parsers were the default for regulated-industry ingestion; a shipped API with audit coordinates changes that baseline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Rules-based document parsers were the default for regulated-industry ingestion; a shipped API with audit coordinates changes that baseline.",
+          "source_span": "the model promises to eliminate the need for brittle, rules-based OCR pipelines... This capability is critical for regulated industries requiring strict audit trails and verification.",
+          "note": "The source supports both the prior dominance of rules-based parsers and the audit-trail relevance of the new API; the take is a fair editorial compression of these facts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cohere's Parse 5 scores 79.2 on ParseBench.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cohere's Parse 5 scores 79.2 on ParseBench",
+          "source_span": "Cohere Parse 5 achieved an average score of 79.2 across table extraction, content faithfulness, and semantic formatting.",
+          "note": "digest: The score of 79.2 on ParseBench is directly confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ParseBench covers 2,000 enterprise pages.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across 2,000 enterprise pages",
+          "source_span": "a rigorous, rule-based benchmark dataset comprising over 2000 human-verified enterprise pages across insurance, finance, and government sectors.",
+          "note": "digest: '2,000' is a standard rounding of 'over 2000', consistent with house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Parse 5 returns bounding-box coordinates for grounding.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "returning bounding-box coordinates for grounding",
+          "source_span": "providing precise bounding box coordinates for visual grounding.",
+          "note": "digest: The source explicitly states Parse 5 provides bounding box coordinates for visual grounding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The text characterises bounding-box coordinates as 'audit coordinates'.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "PDF parser ships audit coordinates",
+          "source_span": "This capability is critical for regulated industries requiring strict audit trails and verification.",
+          "note": "digest: 'Audit coordinates' is a plain-English compression of bounding boxes used for audit trails, consistent with house style paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Unstructured data handling and conflict detection are becoming benchmarkable disciplines.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "unstructured data handling and conflict detection are becoming benchmarkable disciplines, not engineering folklore",
+          "source_span": "Cohere evaluated Parse 5 using ParseBench, a rigorous, rule-based benchmark dataset... PACE, a dataset for evaluating whether models can identify latent constraints",
+          "note": "synthesis: Both source stories introduce formal benchmarks (ParseBench for document ingestion, PACE for conflict detection), supporting the editorial claim that these are becoming benchmarkable disciplines."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_ffd10baaf0b9194a",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A dataset tests whether AI assistants catch hidden request conflicts",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A dataset tests whether AI assistants catch hidden request conflicts",
+          "source_span": "we introduce Personalized Assistants for Conflict Evaluation (PACE), a dataset for evaluating whether models can identify latent constraints, expressed as egocentric knowledge or events, that render seemingly reasonable user requests inappropriate.",
+          "note": "The headline accurately paraphrases PACE as a dataset testing whether AI assistants detect hidden conflicts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Most personalised AI assistants execute requests without checking whether those requests conflict with the user's own circumstances.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Most personalised AI assistants execute requests without checking whether those requests conflict with the user's own circumstances.",
+          "source_span": "prior work has primarily focused on accurately executing requests, overlooking the need for assistants to account for context and engage in conflict-based refusal.",
+          "note": "'Most' is a reasonable paraphrase of 'prior work has primarily focused on accurately executing requests, overlooking conflict-based refusal.'"
+        },
+        {
+          "schema_version": 1,
+          "claim": "PACE is an arXiv preprint.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "PACE, an arXiv preprint",
+          "source_span": "PACE: Towards Surfacing Hidden Conflicts in User Requests",
+          "note": "The source is hosted on Hugging Face papers referencing an arXiv paper ID (2609.03293), consistent with it being an arXiv preprint."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PACE introduces a dataset pairing requests with egocentric knowledge-base facts.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "introduces a dataset pairing requests with egocentric knowledge-base facts",
+          "source_span": "PACE pairs user requests grounded in well-defined personas with egocentric KB facts",
+          "note": "Directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PACE requires models to detect latent conflicts.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "requiring models to detect latent conflicts",
+          "source_span": "a dataset for evaluating whether models can identify latent constraints, expressed as egocentric knowledge or events, that render seemingly reasonable user requests inappropriate.",
+          "note": "'Detect latent conflicts' is a supported paraphrase of 'identify latent constraints that render requests inappropriate.'"
+        },
+        {
+          "schema_version": 1,
+          "claim": "PaceMaker is a multi-agent framework.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The accompanying multi-agent framework, PaceMaker",
+          "source_span": "we further propose PaceMaker, a multi-agent framework",
+          "note": "Directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PaceMaker outperforms existing approaches.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "PaceMaker, outperforms existing approaches",
+          "source_span": "PaceMaker consistently outperforms existing approaches.",
+          "note": "Directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PaceMaker's benchmark results cover five conflict types.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "PaceMaker's benchmark results cover five conflict types",
+          "source_span": "",
+          "note": "The source does not mention the number of conflict types; this specific figure cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PaceMaker's benchmark results cover publicly released evaluation data.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "across publicly released evaluation data",
+          "source_span": "",
+          "note": "The source does not mention whether the evaluation data is publicly released; this cannot be confirmed from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Personalised AI assistants were built to comply; PACE makes conflict-detection a measurable benchmark.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Personalised AI assistants were built to comply; PACE makes conflict-detection a measurable benchmark.",
+          "source_span": "Personalized assistants should not only comply with user requests but also assess whether those requests are appropriate given the user's current circumstances. However, prior work has primarily focused on accurately executing requests... we introduce Personalized Assistants for Conflict Evaluation (PACE), a dataset for evaluating whether models can identify latent constraints",
+          "note": "The take accurately characterises the source's framing that prior assistants focused on compliance and PACE introduces conflict-detection evaluation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e061b94e62830cf8",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Databricks lets data agents read PDFs alongside tables, no analyst required",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Databricks lets data agents read PDFs alongside tables, no analyst required",
+          "source_span": "Genie Agents can now analyze files stored in Unity Catalog volumes, allowing agents to answer questions on your PDFs, documents, slide decks, and images alongside structured data in a single conversation... For open-ended business questions that previously required a data analyst and a full research plan, Agent mode can now serve as your real-time research partner.",
+          "note": "Source confirms agents can read PDFs alongside structured tables and positions Agent mode as replacing the need for a data analyst."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Databricks' Genie Agents can now combine structured tables with unstructured files (PDFs, documents, images) stored in Unity Catalog",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Databricks' Genie Agents can now combine structured tables with unstructured files (PDFs, documents, images) stored in Unity Catalog",
+          "source_span": "Genie Agents can now analyze files stored in Unity Catalog volumes, allowing agents to answer questions on your PDFs, documents, slide decks, and images alongside structured data in a single conversation.",
+          "note": "Source directly confirms this capability including the named file types and Unity Catalog storage."
+        },
+        {
+          "schema_version": 1,
+          "claim": "up to 10 volumes per agent",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "up to 10 volumes per agent",
+          "source_span": "Agent builders can attach up to 10 volumes to a Genie Agent",
+          "note": "Source explicitly states the 10-volume limit per agent."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent mode, now available via API, runs multi-step reasoning across both data types",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent mode, now available via API, runs multi-step reasoning across both data types",
+          "source_span": "Agent mode, the agentic reasoning loop that powers multi-step analysis, is now available for all Genie Agents... Developers can now also bring multi-step reasoning and analysis beyond the Databricks UI with Agent mode APIs.",
+          "note": "Source confirms Agent mode is available via API and performs multi-step reasoning; 'both data types' is a fair compression of structured and unstructured."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Structured-data agents were table-only; Databricks now routes PDFs and slide decks through the same reasoning loop.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Structured-data agents were table-only; Databricks now routes PDFs and slide decks through the same reasoning loop.",
+          "source_span": "Answers to business questions may not rely on data in tables alone—they often require context from unstructured data to paint a full picture... Genie Agents can now analyze files stored in Unity Catalog volumes, allowing agents to answer questions on your PDFs, documents, slide decks, and images alongside structured data in a single conversation... Unstructured data analysis runs in Agent mode, using multi-step reasoning to retrieve and analyze the most relevant file content.",
+          "note": "Source confirms prior table-only limitation is now extended to PDFs and slide decks via the same Agent mode reasoning loop."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 11 stories -- factual flags present | digest-bar: digest bullet 1 carries a claim the verifier marked 'contradicted' (story c_42ca7b4ec690593f): 'Researchers registered 120 abandoned package names.'"
+}
