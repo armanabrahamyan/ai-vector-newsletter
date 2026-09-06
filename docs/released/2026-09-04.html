@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 50 &middot; 04 September 2026</title>
+<meta name="description" content="OpenAI&#39;s autonomous engineering agent costs less than $6 an hour. Issue No. 50 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 50 &middot; 04 Sep &middot; 4 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>OpenAI&#39;s agent priced by the hour.</strong> <span>Legora reviewed 41 documents in minutes using GPT-6 Astra, which OpenAI prices at under $6 per hour.</span></p>
+    <p><strong>Meta&#39;s lab reaches frontier cheaply.</strong> <span>Muse Spark 1.3 ranks third globally while opting into training data cuts costs by over 90%.</span></p>
+    <p><strong>Home GPUs now share agent load.</strong> <span>NVIDIA PAIR&#39;s beta proxies multi-agent requests across home network devices, halving a five-subagent job from 18 to 9 minutes.</span></p>
+    <p><strong>Fine-tuning scores hide real skill.</strong> <span>Across 12 tasks, answer format drove quality metrics while one skill gained 40 points yet vanished under different formats.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>OpenAI&#39;s autonomous engineering agent costs less than $6 an hour</h1>
+  <p class="takeaway">Autonomous engineering work was a headcount decision; GPT-6 Astra makes it a per-hour line item.</p>
+  <p class="dek">GPT-6 Astra is OpenAI&#39;s first model to reach the &#34;Critical&#34; cybersecurity tier under their Preparedness Framework. On OpenAI&#39;s own case studies, Playco cut manual fixes by 50% prototyping games; Legora reviewed 41 documents in minutes, found all four planted errors, and lifted performance by nearly 40%. Price agentic engineering capacity against a $6/hr ceiling before your next headcount conversation.</p>
+  <div class="story-meta">
+    <a class="src" href="https://www.latent.space/p/astra" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    <a class="src" href="https://openai.com/index/playco-game-prototyping-with-astra" target="_blank" rel="noreferrer">openai.com <span class="arw">&rarr;</span></a>
+    <a class="src" href="https://openai.com/index/legora-financial-statement-review-with-astra" target="_blank" rel="noreferrer">openai.com <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Three of today&#39;s four stories quietly dismantle assumptions baked into decisions made eighteen months ago: what frontier capability costs, whose benchmark to trust, and whether enterprise data architecture was ever designed for agents. The fourth shows what rebuilding for agents actually looks like in practice.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Meta&#39;s new lab reaches frontier AI at a tenth of training cost</h3>
+    <p class="takeaway">Build-vs-buy calculus for AI teams just shifted; closed-model contracts now compete against a 90% cost floor.</p>
+    <p class="dek">Muse Spark 1.3, from Meta Superintelligence, now ranks third globally on public leaderboards, matching OpenAI and Anthropic&#39;s top models. The kicker: opting into training data use drops cost by more than 90%. Weights are promised as open. If you&#39;re renegotiating a closed-model contract, what does your vendor&#39;s pricing look like against that floor?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://www.latent.space/p/ainews-muse-spark-13-matches-gpt" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>OpenAI launches its most capable model to match Anthropic on price</h3>
+    <p class="takeaway">Model-selection decisions made on vendor benchmarks alone now carry measurable risk of miscalibration.</p>
+    <p class="dek">GPT-6 Astra rolls out today at $10/$50 per million tokens, matching Claude Fable&#39;s price exactly. OpenAI&#39;s own benchmarks put Astra ahead on security and long-context tasks; Artificial Analysis scores it five points below Fable on its Intelligence Index. Which benchmark source is your team treating as authoritative when the next model-selection decision lands on your desk?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://simonwillison.net/2026/Sep/3/gpt6-astra/" target="_blank" rel="noreferrer">simonwillison.net <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A skill library from 1,000 repos doubles autonomous research agent scores</h3>
+    <p class="takeaway">Autonomous research agents were re-discovering domain know-how each run; distilled skill libraries make it reusable.</p>
+    <p class="dek">The AREX-Skill Library packages 5,000-plus verified skills distilled from 1,000 machine-learning repositories. An arXiv preprint reports the DisCo agent scored 134.3% higher on one benchmark with the same model and compute budget. Code and a CLI are public. When your research pipeline rediscovers the same operational patterns each run, does your architecture have a place to store them?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://huggingface.co/papers/2609.02749" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>TOTVS shows how to rebuild enterprise data for AI agents</h3>
+    <p class="takeaway">Enterprise data architectures were built for applications and analysts, not for agents.</p>
+    <p class="dek">Fabiane Nardon&#39;s QCon talk lays out TOTVS&#39;s framework: route write operations and fresh-data queries directly to transactional systems, stale or historical queries to the data platform. The core design decision is where to draw the deterministic-versus-probabilistic boundary. Where does your organisation draw the deterministic-versus-probabilistic boundary for customer-facing agent queries?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.infoq.com/presentations/enterprise-data-architecture-ai-agents/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Each release today moves a constraint that practitioners had accepted as fixed: vendor-held memory, schema compliance as a large-model privilege, single-GPU ceilings, cloud-only multimodal input. The pattern is infrastructure ownership shifting downward, one binary or build at a time.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Self-hosted memory gives coding agents recall across sessions without vendor lock-in</h3>
+    <p class="takeaway">Coding agent memory was a vendor-held service; funes makes it a dataset you own.</p>
+    <p class="dek">Agent sessions already contain the reasoning behind every decision, but that record was unsearchable across tools. Funes, a single binary from Hugging Face, indexes Claude Code, Codex, and other agents&#39; traces locally, combining vector and BM25 search with cross-encoder reranking. Install it with one curl command; credentials are stripped before any sync to a private dataset you own.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/funes" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A 350M model learns reliable JSON output in 100 training steps</h3>
+    <p class="takeaway">Schema compliance was a large-model tax; 100 reinforcement steps close the gap.</p>
+    <p class="dek">Schema compliance decides whether a model plugs into a downstream system at all. A Hugging Face tutorial fine-tunes a 350M model with reinforcement learning across three reward functions, lifting schema-pass rate from 22.6% in 100 steps on a free-tier GPU. Notebook and dataset are public; run it against your own structured-output tasks.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/grpo-with-trl-ifstruct" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>llama.cpp cuts attention compute for long contexts on Apple Silicon</h3>
+    <p class="takeaway">Long-context attention on Apple Silicon was fully computed; sparse gating now skips irrelevant tokens.</p>
+    <p class="dek">llama.cpp build b10785 adds sparse flash attention to the Metal backend, with a host-side gate that skips attention over tokens outside a 4,096-token window hint. Multi-row cases had a known addressing bug; a follow-up commit in the same build fixed it. Pull b10785 and run the built-in sparse flash attention perf test against your longest production context.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b10785" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Ollama adds image and audio input for Gemma 4 on Apple Silicon</h3>
+    <p class="takeaway">Apple Silicon&#39;s local Gemma 4 now accepts images and audio, closing the gap with cloud-hosted multimodal APIs.</p>
+    <p class="dek">Ollama&#39;s v0.33.3-rc2 release candidate unlocks image and audio input for Gemma 4 safetensors models via the MLX engine on Apple Silicon. Audio clips over 30 seconds are split at pauses and encoded in chunks. Pull the release candidate and run a multimodal prompt against your local Gemma 4 checkpoint before wiring it into a production pipeline.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/ollama/ollama/releases/tag/v0.33.3-rc2" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>NVIDIA&#39;s local inference router spreads multi-agent workloads across home network GPUs</h3>
+    <p class="takeaway">Local multi-agent inference was single-GPU bound; PAIR makes idle network hardware a schedulable resource.</p>
+    <p class="dek">Multi-agent pipelines bottleneck when every subagent call hits one local GPU. NVIDIA PAIR, now in beta for Windows, macOS, and Linux, proxies Ollama and LM Studio requests across compatible devices on your home network without agent code changes. A five-subagent demo cut completion time from 18 minutes to under 9 on a three-device cluster.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://developer.nvidia.com/blog/nvidia-pair-virtual-inference-router-expands-available-compute-on-your-local-network/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">3 items</span></div>
+    <p class="synthesis">All three items today measure something practitioners assumed was already solved: prompt cost, session memory, and fine-tuning fidelity. The aggregate direction is that agent pipelines carry hidden degradation at scale, and current benchmarks are not yet reliable enough to catch it.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Shopify compresses agent system prompts to cut latency by 38%</h3>
+    <p class="takeaway">System prompt cost was paid in full at every inference call; gisting makes it a one-time training expense.</p>
+    <p class="dek">Shopify&#39;s gisting trains a small set of learned tokens to replace a long system prompt, leaving model weights untouched. Their Sidekick agent&#39;s 6,000-token prompt collapsed to 1,500 tokens; end-to-end latency fell from 6.8 to 4.2 seconds, freeing GPU capacity. Shopify&#39;s own numbers, but the mechanism is sound: factor it into your next inference-cost architecture decision.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.infoq.com/news/2026/09/spotify-gisting-llm-performance/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Banking AI assistants forget customer history as conversations pile up</h3>
+    <p class="takeaway">Banking assistant accuracy now has a measured floor: recall falls by a fifth over 300 sessions.</p>
+    <p class="dek">An arXiv preprint tests eleven language models on 6,000 synthetic Korean banking dialogues, tracking 34 financial-state paths across up to 300 sessions. Event recall falls from 0.591 at 15 sessions to 0.445 at 300; models routinely treat superseded data as current. The benchmark and its 6,000-dialogue harness are publicly available for teams building longitudinal assistants.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2609.01198" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Fine-tuning benchmarks measure output format, not model capability</h3>
+    <p class="takeaway">Fine-tuning quality scores were measuring answer format; the skill itself stayed hidden.</p>
+    <p class="dek">An arXiv preprint tested 12 tasks across three model families and found that answer format, not content, drives standard fine-tuning quality metrics. One skill raised accuracy by over 40 points under its training format yet became nearly invisible under others. The preprint and its benchmark data are public on arXiv, covering all three model families and all 12 tasks.</p>
+    <div class="story-meta"><span class="tag">read</span>
+      <a class="src" href="https://arxiv.org/abs/2609.02015" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
