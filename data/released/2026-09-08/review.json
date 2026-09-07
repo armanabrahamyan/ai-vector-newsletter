@@ -1,0 +1,176 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-07T21:36:46.711104Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual contradictions on the Pulse headline and a blocking unsupported claim on a Big Picture headline require fixes before publish.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c1507be5515d3276",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "GitHub Copilot matches frontier model quality at two-thirds the cost",
+      "fix_kind": "text_edit",
+      "instruction": "The source states HydraFusion improved verified task quality by 4.9 percentage points versus Claude Opus 5 at 67% lower cost — it did not match or equal frontier quality. Rewrite to reflect the margin improvement, e.g. 'GitHub Copilot closes the frontier quality gap at two-thirds the cost' or 'GitHub Copilot narrows the frontier quality gap while cutting cost by two-thirds'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c1507be5515d3276",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "it matched Claude Opus 5 quality at 67% lower estimated cost",
+      "fix_kind": "text_edit",
+      "instruction": "Source says HydraFusion improved verified task quality by 4.9 percentage points compared with Claude Opus 5 at 67% lower cost — not that it matched. Replace with: 'it improved verified task quality by 4.9 percentage points over Claude Opus 5 at 67% lower estimated cost'.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "HydraFusion matched a named frontier model's benchmark score while reducing estimated spend by 67%.",
+      "fix_kind": "text_edit",
+      "instruction": "Source says HydraFusion improved verified task quality by 4.9 percentage points versus Claude Opus 5, not that it matched the score. Replace with: 'HydraFusion improved verified task quality by 4.9 percentage points over Claude Opus 5 while reducing estimated spend by 67%'.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c1507be5515d3276",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Multi-model routing now delivers frontier coding quality without a frontier model contract.",
+      "fix_kind": "text_edit",
+      "instruction": "The take inherits the unsupported 'matches frontier quality' claim. The source supports a 4.9pp improvement at lower cost, not parity. Rewrite to reflect the actual finding, e.g. 'Multi-model routing now closes the frontier quality gap at a third less cost, without a frontier model contract'.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f963b256b70822ff",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "OpenAI's own researchers doubled their AI spend per head after GPT-6 Astra",
+      "fix_kind": "text_edit",
+      "instruction": "Verification flags 'doubled' as unsupported — the source does not state a doubling figure. Remove the specific magnitude claim and rewrite to what the source supports, e.g. 'OpenAI's own researchers sharply increased AI spend per head after GPT-6 Astra'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f963b256b70822ff",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "coinciding with internal access to the model later released as GPT-6 Astra",
+      "fix_kind": "text_edit",
+      "instruction": "Source hedges this as 'my best guess is that's when internal employees gained access' — not a stated fact. Add the hedge: replace with 'coinciding with what the source characterises as its best guess for when internal access to GPT-6 Astra began'.",
+      "echo_of": "f005"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ba58c7073afadeee",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Nemotron 3.5 Lightning and Qwen3-27B as examples",
+      "fix_kind": "text_edit",
+      "instruction": "Source names the model as 'Qwen3.8-27B', not 'Qwen3-27B'. Correct to 'Qwen3.8-27B'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_3f59bacaa04010db",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Document retrieval encoders carried a separate vision tower as fixed overhead; NeoMME folds both into one pass.",
+      "fix_kind": "text_edit",
+      "instruction": "This is the third take in the issue using the 'X was [framed as Y]; Z changes that' two-clause reframe scaffold (BP3 and HO3 precede it). Break the pattern: rewrite as a single declarative sentence that states the publication's position on what NeoMME's architecture change means, e.g. 'NeoMME's single-encoder design makes the separate vision tower an avoidable overhead, not a retrieval requirement'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "Each item today removes a constraint practitioners had filed under 'infrastructure given'",
+      "fix_kind": "text_edit",
+      "instruction": "This framing closely echoes the 2026-09-04 Hands-On synthesis ('Each release today moves a constraint that practitioners had accepted as fixed'). Vary the register: frame today's pattern around the specific constraint types removed (GPU kernel fusion, edge routing, memory governance, eval fragmentation, retrieval architecture) rather than repeating the generic 'constraint removal' scaffold.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "ff0a726966cee06923c32448236d4ef418596bfe081a8c5fee097c1255523482",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 4 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
