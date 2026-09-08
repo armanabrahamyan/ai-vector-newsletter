@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 52 &middot; 08 September 2026</title>
+<meta name="description" content="GitHub Copilot matches frontier model quality at two-thirds the cost. Issue No. 52 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 52 &middot; 08 Sep &middot; 3 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>GitHub&#39;s routing preview cuts costs.</strong> <span>HydraFusion matched a named frontier model&#39;s benchmark score while reducing estimated spend by 67%.</span></p>
+    <p><strong>Open-source projects close the crowd.</strong> <span>Vercel reports agent pipelines now author up to 35% of merged pull requests, replacing external contributor intake.</span></p>
+    <p><strong>Vulkan inference gap now closed.</strong> <span>Build b10844 fuses three ops into register-level kernels, replacing roughly 137 ordered dispatches and cutting decode time 32%.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>GitHub Copilot matches frontier model quality at two-thirds the cost</h1>
+  <p class="takeaway">Multi-model routing now delivers frontier coding quality without a frontier model contract.</p>
+  <p class="dek">GitHub&#39;s HydraFusion research preview routes each coding task across multiple models, selecting the cheapest pattern that clears a quality gate. On TerminalBench 2.1, it matched Claude Opus 5 quality at 67% lower estimated cost. Benchmarks are GitHub&#39;s own against a named competitor. The economics now favour multi-model routing over single-provider frontier contracts.</p>
+  <div class="story-meta">
+    <a class="src" href="https://github.blog/ai-and-ml/github-copilot/project-hydrafusion-frontier-quality-via-multi-model-orchestration/" target="_blank" rel="noreferrer">github.blog <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">3 stories</span></div>
+    <p class="synthesis">All three stories today show agent workflows quietly converting one-time costs into reusable capital, whether that is research throughput, merged code, or structured document context. Organisations that treat each agent interaction as a discrete transaction will keep paying full price for work that compounds elsewhere.</p>
+  </div>
+  <article class="measure stack">
+    <h3>OpenAI&#39;s own researchers doubled their AI spend per head after GPT-6 Astra</h3>
+    <p class="takeaway">Research throughput is now the metric OpenAI tracks internally, not model capability alone.</p>
+    <p class="dek">OpenAI&#39;s internal data shows coding-agent adoption accelerated sharply across its research teams in 2026, with AI spend per researcher spiking in late July, coinciding with internal access to the model later released as GPT-6 Astra. Which research output metric is your team actually tracking to justify the next round of AI spend?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://simonwillison.net/2026/Sep/6/research-acceleration-the-view-inside-openai/" target="_blank" rel="noreferrer">simonwillison.net <span class="arw">&rarr;</span></a>
+      <a class="src" href="https://openai.com/index/research-acceleration-view-inside-openai" target="_blank" rel="noreferrer">openai.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Open-source projects now let agents write code, not crowds</h3>
+    <p class="takeaway">Community pull requests were the intake valve for open-source projects; agent factories replace them.</p>
+    <p class="dek">Vercel&#39;s AI SDK, tldraw, and Flue have closed external pull requests, routing community input through agent pipelines instead. Vercel reports agents now author 25-35% of merged PRs and close 70-80% of issues. If your project closes external PRs tomorrow, who in your organisation owns the agent pipeline that must replace them?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://www.latent.space/p/pr-not-welcome" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A document-reading agent that structures as it goes cuts costs 53%</h3>
+    <p class="takeaway">Document-querying agents pay the same reading cost repeatedly; adaptive structuring makes that cost accumulate as reusable knowledge.</p>
+    <p class="dek">Agents querying unstructured documents (filings, contracts) burn up to a million tokens per question. An arXiv preprint proposes &#39;agentic data cracking&#39;: a sub-agent forks from already-loaded context at marginal cost, extracting structure for future queries. On FanOutQA, costs fell 53% with no accuracy loss. Does your document-agent architecture accumulate what it already paid to read?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2608.31082" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Each item today removes a constraint practitioners had filed under &#39;infrastructure given&#39;: fused GPU kernels, edge routing, memory governance, eval fragmentation, retrieval architecture. The practical question this week is which of those assumed ceilings your team is still building around.</p>
+  </div>
+  <article class="measure stack">
+    <h3>llama.cpp closes the Vulkan gap for DeepSeek inference, cutting decode time 32%</h3>
+    <p class="takeaway">DeepSeek-V4 inference on Vulkan hardware now runs the same fused ops CUDA and Metal have had for months.</p>
+    <p class="dek">Vulkan was the last major backend running DeepSeek-V4&#39;s hyper-connection ops as an unfused chain, costing roughly 32% of decode time on AMD Strix Halo hardware. Build b10844 fuses all three ops into register-level kernels; one dispatch replaces about 137 ordered executions per site. Pull b10844 and profile your DeepSeek-V4 decode throughput against the prior build.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/ggml-org/llama.cpp/releases/tag/b10844" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Reasoning agents now run at the edge, without a data centre link</h3>
+    <p class="takeaway">Agentic workloads that required data-centre routing now have a documented local path on Jetson hardware.</p>
+    <p class="dek">NVIDIA&#39;s technical blog walks through deploying compact reasoning models on Jetson edge hardware, using Nemotron 3.5 Lightning and Qwen3-27B as examples. Two techniques, NVFP4 quantisation and speculative decoding, combine to lift generation speed; the vendor&#39;s own numbers show each compounds the other. Benchmark both models against your specific agent workload before committing to one.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://developer.nvidia.com/blog/frontier-reasoning-reaches-the-edge-how-to-deploy-and-optimize-models-on-nvidia-jetson/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>NVIDIA&#39;s memory-driven agent recipe separates context from authorisation at runtime</h3>
+    <p class="takeaway">Persistent agent memory was a storage problem; NemoClaw&#39;s recipe makes it a governance architecture.</p>
+    <p class="dek">Enterprise agents forget context between sessions. NVIDIA&#39;s NemoClaw Chief of Staff recipe, open on GitHub, addresses this with three layers: Markdown knowledge pages, a SQLite obligation ledger, and a sandboxed runtime where memory informs actions but never authorises them. Benchmarks against a retrieval baseline ship with the repo. Clone nemoclaw-community and run the offline walkthrough before wiring live credentials.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://developer.nvidia.com/blog/building-a-memory-driven-agent-with-nvidia-nemoclaw/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>One harness now runs agents across 80 benchmarks, with results public</h3>
+    <p class="takeaway">Agent eval pipelines now have a shared harness baseline, not dozens of bespoke integrations.</p>
+    <p class="dek">Porting agents across dozens of benchmarks has meant rebuilding integrations each time. Harbor Adapters unifies more than 80 benchmarks into a single harness; the authors ran 8 models across 54 of them. No evaluated model clears 30% on Harbor-Index, the curated 82-task subset. Adapters, results, and the index are open-source. Run Harbor-Index against your own agent before trusting vendor scores.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://arxiv.org/abs/2609.04298" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A single-transformer encoder retrieves document pages at twice a rival&#39;s speed</h3>
+    <p class="takeaway">Document retrieval encoders carried a separate vision tower as fixed overhead; NeoMME folds both into one pass.</p>
+    <p class="dek">NeoMME trains a single bidirectional transformer on text and images together, skipping the separate vision tower most retrievers carry. The 260M model encodes 51 document pages per second, roughly twice ColModernVBERT&#39;s throughput; late-interaction index storage shrinks 255-fold. Checkpoints are public under Apache 2.0. Pull the 260M checkpoint and run it against your document retrieval pipeline.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/Hcompany/neomme" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2></div>
+    <p class="synthesis">Nothing surfaced for Currents today.</p>
+  </div>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

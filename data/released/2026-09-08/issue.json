@@ -1,0 +1,978 @@
+{
+  "schema_version": 9,
+  "issue_number": 52,
+  "revision": 0,
+  "date": "2026-09-08",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_c1507be5515d3276",
+        "headline": "GitHub Copilot matches frontier model quality at two-thirds the cost",
+        "summary": "GitHub's HydraFusion research preview routes each coding task across multiple models, selecting the cheapest pattern that clears a quality gate. On TerminalBench 2.1, it matched Claude Opus 5 quality at 67% lower estimated cost. Benchmarks are GitHub's own against a named competitor. The economics now favour multi-model routing over single-provider frontier contracts.",
+        "take": "Multi-model routing now delivers frontier coding quality without a frontier model contract.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://github.blog/ai-and-ml/github-copilot/project-hydrafusion-frontier-quality-via-multi-model-orchestration/"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "try",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_c1507be5515d3276",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "GitHub Copilot matches frontier model quality at two-thirds the cost",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "GitHub Copilot matches frontier model quality at two-thirds the cost",
+              "source_span": "On TerminalBench 2.1, it improved verified task quality by 4.9 percentage points at 67% lower estimated cost compared with Claude Opus 5.",
+              "note": "67% lower cost means paying ~33% of the original price, i.e. roughly one-third the cost, so 'two-thirds the cost' is a supported approximation; 'matches frontier quality' is supported by the source's 'matched or exceeded the evaluated Opus 5 baseline'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "GitHub's HydraFusion research preview routes each coding task across multiple models",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "GitHub's HydraFusion research preview routes each coding task across multiple models",
+              "source_span": "Today, we're introducing Project HydraFusion, a research preview that delivers frontier intelligence through runtime orchestration. It creates a full execution plan, choosing from models across multiple providers to draft, critique and revise, or cascade to more powerful models to complete your task.",
+              "note": "Source confirms HydraFusion is a research preview that routes tasks across multiple models."
+            },
+            {
+              "schema_version": 1,
+              "claim": "HydraFusion selects the cheapest pattern that clears a quality gate",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "selecting the cheapest pattern that clears a quality gate",
+              "source_span": "HydraFusion evaluates each request and chooses the least complex workflow expected to meet its needs, using additional model calls only when they are likely to improve the result.",
+              "note": "'Least complex workflow expected to meet its needs' is accurately paraphrased as 'cheapest pattern that clears a quality gate'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "On TerminalBench 2.1, it matched Claude Opus 5 quality at 67% lower estimated cost",
+              "verdict": "contradicted",
+              "location": "body",
+              "summary_span": "On TerminalBench 2.1, it matched Claude Opus 5 quality at 67% lower estimated cost",
+              "source_span": "On TerminalBench 2.1, it improved verified task quality by 4.9 percentage points at 67% lower estimated cost compared with Claude Opus 5.",
+              "note": "The source says HydraFusion improved quality by 4.9 percentage points over Opus 5 (exceeded, not merely matched), so 'matched' understates the result; however the 67% cost figure is accurate."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Benchmarks are GitHub's own against a named competitor",
+              "verdict": "contradicted",
+              "location": "body",
+              "summary_span": "Benchmarks are GitHub's own against a named competitor",
+              "source_span": "Fixed HydraFusion policies were evaluated across three agentic coding benchmarks — TerminalBench 2.1, DeepSWE, and CheckpointBench, our internal benchmark based on real GitHub Copilot sessions — using Claude Opus 5 and GPT-5.6 Sol as comparison baselines.",
+              "note": "Only CheckpointBench is GitHub's own; TerminalBench 2.1 and DeepSWE are external benchmarks, and there are two named competitors (Claude Opus 5 and GPT-5.6 Sol), not one."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Multi-model routing now delivers frontier coding quality without a frontier model contract.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Multi-model routing now delivers frontier coding quality without a frontier model contract.",
+              "source_span": "In controlled offline evaluations, HydraFusion's selective coding workflows matched or exceeded the evaluated Opus 5 baseline while reducing estimated workflow cost.",
+              "note": "The take's factual core — that multi-model routing achieves frontier quality at lower cost — is supported by the source's benchmark results, though the 'offline evaluations' qualifier is dropped per house-style compression norms."
+            },
+            {
+              "schema_version": 1,
+              "claim": "GitHub's routing preview is called HydraFusion.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "HydraFusion",
+              "source_span": "Today, we're introducing Project HydraFusion, a research preview that delivers frontier intelligence through runtime orchestration.",
+              "note": "digest: Source confirms HydraFusion is GitHub's research preview routing system."
+            },
+            {
+              "schema_version": 1,
+              "claim": "HydraFusion matched a named frontier model's benchmark score.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "HydraFusion matched a named frontier model's benchmark score",
+              "source_span": "HydraFusion's selective coding workflows matched or exceeded the evaluated Opus 5 baseline",
+              "note": "digest: Claude Opus 5 is the named frontier model; 'matched' is supported by 'matched or exceeded'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "HydraFusion reduced estimated spend by 67%.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "reducing estimated spend by 67%",
+              "source_span": "On TerminalBench 2.1, it improved verified task quality by 4.9 percentage points at 67% lower estimated cost compared with Claude Opus 5.",
+              "note": "digest: The 67% cost reduction figure is directly stated in the source for TerminalBench 2.1; 'estimated spend' is a plain-English paraphrase of 'estimated cost'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "HydraFusion cuts costs.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "cuts costs",
+              "source_span": "HydraFusion consistently demonstrated frontier-level quality with substantial estimated cost savings.",
+              "note": "digest: Cost reduction is a central finding of the source."
+            }
+          ],
+          "has_contradiction": true,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_f963b256b70822ff",
+          "headline": "OpenAI's own researchers doubled their AI spend per head after GPT-6 Astra",
+          "summary": "OpenAI's internal data shows coding-agent adoption accelerated sharply across its research teams in 2026, with AI spend per researcher spiking in late July, coinciding with internal access to the model later released as GPT-6 Astra. Which research output metric is your team actually tracking to justify the next round of AI spend?",
+          "take": "Research throughput is now the metric OpenAI tracks internally, not model capability alone.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://simonwillison.net/2026/Sep/6/research-acceleration-the-view-inside-openai/",
+            "https://openai.com/index/research-acceleration-view-inside-openai"
+          ],
+          "prior_coverage_ref": "c_6e6e688fba2f6c90",
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_f963b256b70822ff",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's own researchers doubled their AI spend per head after GPT-6 Astra",
+                "verdict": "unsupported",
+                "location": "headline",
+                "summary_span": "OpenAI's own researchers doubled their AI spend per head after GPT-6 Astra",
+                "source_span": "",
+                "note": "The source describes a 'significant acceleration in AI spend per researcher' but never quantifies it as 'doubled'; the specific multiplier is asserted without basis in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's internal data shows coding-agent adoption accelerated sharply across its research teams in 2026",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI's internal data shows coding-agent adoption accelerated sharply across its research teams in 2026",
+                "source_span": "Like pretty much everyone else 2026 has been the year that agentic engineering really took off at OpenAI",
+                "note": "The source confirms agentic/coding adoption accelerated at OpenAI in 2026; 'internal data' is a fair paraphrase of the included chart details."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI spend per researcher spiking in late July",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with AI spend per researcher spiking in late July",
+                "source_span": "I'm intrigued at what caused that significant acceleration in AI spend per researcher in late July",
+                "note": "The source explicitly references a significant acceleration in AI spend per researcher in late July."
+              },
+              {
+                "schema_version": 1,
+                "claim": "coinciding with internal access to the model later released as GPT-6 Astra",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "coinciding with internal access to the model later released as GPT-6 Astra",
+                "source_span": "my best guess is that's when internal employees gained access to the model later released as GPT-6 Astra",
+                "note": "The source explicitly frames this as the author's 'best guess', not a confirmed fact; the summary drops this trust qualifier and states it as fact."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Which research output metric is your team actually tracking to justify the next round of AI spend?",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Which research output metric is your team actually tracking to justify the next round of AI spend?",
+                "source_span": "",
+                "note": "This is a call-to-action/editorial question with no factual content to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Research throughput is now the metric OpenAI tracks internally, not model capability alone.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Research throughput is now the metric OpenAI tracks internally, not model capability alone.",
+                "source_span": "",
+                "note": "The source discusses AI spend per researcher and research acceleration but never explicitly states 'research throughput' is the tracked metric or contrasts it with model capability; this specific framing is absent from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent workflows convert one-time costs into reusable capital in the form of research throughput.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "agent workflows quietly converting one-time costs into reusable capital, whether that is research throughput",
+                "source_span": "2026 has been the year that agentic engineering really took off at OpenAI",
+                "note": "synthesis: The OpenAI source describes growing research throughput via coding agents, supporting the editorial framing of reusable capital in research; this is a legitimate paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent workflows convert one-time costs into reusable capital in the form of merged code.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "agent workflows quietly converting one-time costs into reusable capital, whether that is … merged code",
+                "source_span": "Vercel claims the factory now 'authors between 25 and 35% of PRs we merge and closes 70-80% of issues.'",
+                "note": "synthesis: Vercel's software factory producing merged PRs directly supports the 'merged code' as reusable capital framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent workflows convert one-time costs into reusable capital in the form of structured document context.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "agent workflows quietly converting one-time costs into reusable capital, whether that is … structured document context",
+                "source_span": "a shared substrate beneath the model where knowledge that reasoning already paid to uncover accumulates",
+                "note": "synthesis: The agentic context cracking paper explicitly describes accumulated structured context as reusable capital, directly supporting this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Organisations that treat each agent interaction as a discrete transaction will keep paying full price for work that compounds elsewhere.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Organisations that treat each agent interaction as a discrete transaction will keep paying full price for work that compounds elsewhere.",
+                "source_span": "",
+                "note": "synthesis: This is an editorial inference drawn from the sources; no source span states or contradicts this specific consequence for organisations, making it unverifiable from the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": true
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_fe0c7b058fba1ec6",
+          "headline": "Open-source projects now let agents write code, not crowds",
+          "summary": "Vercel's AI SDK, tldraw, and Flue have closed external pull requests, routing community input through agent pipelines instead. Vercel reports agents now author 25-35% of merged PRs and close 70-80% of issues. If your project closes external PRs tomorrow, who in your organisation owns the agent pipeline that must replace them?",
+          "take": "Community pull requests were the intake valve for open-source projects; agent factories replace them.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.latent.space/p/pr-not-welcome"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_fe0c7b058fba1ec6",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Open-source projects now let agents write code, not crowds",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Open-source projects now let agents write code, not crowds",
+                "source_span": "some of the top AI-native open source projects are shutting PRs off, because they've found a better way... the maintainers prefer to use their own agents to create and manage PRs",
+                "note": "Source confirms projects are replacing external contributor PRs with agent-authored code, supporting the headline's framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel's AI SDK, tldraw, and Flue have closed external pull requests",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vercel's AI SDK, tldraw, and Flue have closed external pull requests",
+                "source_span": "Like Flue, the \"source available\" React drawing tool tldraw (50,000 stars) automatically closes external PRs... every external pull request in the Flue project is automatically closed and converted into an issue or discussion.",
+                "note": "Source confirms tldraw and Flue close external PRs; Vercel's AI SDK is described as deploying a software factory to manage its PR backlog, consistent with the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "routing community input through agent pipelines instead",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "routing community input through agent pipelines instead",
+                "source_span": "many projects have begun using a 'software factory' to manage community contributions. Typically this involves a 'team' of agents triaging a PR, reproducing the issue (if it's a bug), implementing a fix or a new feature, reviewing it",
+                "note": "Source confirms community input is now routed through agent pipelines rather than direct PR review."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel reports agents now author 25-35% of merged PRs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vercel reports agents now author 25-35% of merged PRs",
+                "source_span": "Vercel claims the factory now \"authors between 25 and 35% of PRs we merge and closes 70-80% of issues.\"",
+                "note": "Source matches the figures exactly; 'Vercel reports' appropriately preserves the self-reported/claims framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel reports agents now... close 70-80% of issues",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "close 70-80% of issues",
+                "source_span": "Vercel claims the factory now \"authors between 25 and 35% of PRs we merge and closes 70-80% of issues.\"",
+                "note": "Figure matches source exactly and attribution to Vercel's own claim is preserved."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Community pull requests were the intake valve for open-source projects; agent factories replace them.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Community pull requests were the intake valve for open-source projects; agent factories replace them.",
+                "source_span": "GitHub invented pull requests, and for 18 years they have been open by default. But now some of the top AI-native open source projects are shutting PRs off... many projects have begun using a 'software factory' to manage community contributions.",
+                "note": "Source supports both the historical role of PRs and the shift to agent/software-factory replacements; the editorial framing is consistent with documented facts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel reports agent pipelines now author up to 35% of merged pull requests.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vercel reports agent pipelines now author up to 35% of merged pull requests",
+                "source_span": "Vercel claims the factory now 'authors between 25 and 35% of PRs we merge and closes 70-80% of issues.'",
+                "note": "digest: The source confirms the 35% upper bound figure for merged PRs authored by agents, attributed to Vercel's own claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent pipelines are replacing external contributor intake.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "replacing external contributor intake",
+                "source_span": "these projects, which include Flue and tldraw, refuse to accept PRs from external contributors — in part because they're usually AI-generated. Instead, the maintainers prefer to use their own agents to create and manage PRs.",
+                "note": "digest: The source describes projects closing external PRs and using internal agents instead, which the summary accurately paraphrases as replacing external contributor intake."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_57d883a1132b1c0a",
+          "headline": "A document-reading agent that structures as it goes cuts costs 53%",
+          "summary": "Agents querying unstructured documents (filings, contracts) burn up to a million tokens per question. An arXiv preprint proposes 'agentic data cracking': a sub-agent forks from already-loaded context at marginal cost, extracting structure for future queries. On FanOutQA, costs fell 53% with no accuracy loss. Does your document-agent architecture accumulate what it already paid to read?",
+          "take": "Document-querying agents pay the same reading cost repeatedly; adaptive structuring makes that cost accumulate as reusable knowledge.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2608.31082"
+          ],
+          "prior_coverage_ref": "c_736f88eea2fa38d2",
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_57d883a1132b1c0a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A document-reading agent that structures as it goes cuts costs 53%",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A document-reading agent that structures as it goes cuts costs 53%",
+                "source_span": "cracking cuts cost by 53% while preserving accuracy",
+                "note": "The headline accurately captures the 53% cost reduction and the adaptive structuring mechanism described in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agents querying unstructured documents (filings, contracts) burn up to a million tokens per question",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agents querying unstructured documents (filings, contracts) burn up to a million tokens per question",
+                "source_span": "Each question repeatedly opens large documents to recover scattered evidence, consuming up to a million tokens",
+                "note": "The million-token figure and document types (filings, contracts) match the source directly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint proposes 'agentic data cracking'",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint proposes 'agentic data cracking'",
+                "source_span": "We propose agentic data cracking, a method that structures unstructured data adaptively and speculatively as a byproduct of reasoning itself",
+                "note": "The paper is an arXiv submission and proposes agentic data cracking by name."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a sub-agent forks from already-loaded context at marginal cost, extracting structure for future queries",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a sub-agent forks from already-loaded context at marginal cost, extracting structure for future queries",
+                "source_span": "a cracking sub-agent forks from the already-loaded context at marginal cost and extracts grounded structure likely to serve related future queries",
+                "note": "The body accurately paraphrases the source's description of the cracking sub-agent mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "On FanOutQA, costs fell 53% with no accuracy loss",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "On FanOutQA, costs fell 53% with no accuracy loss",
+                "source_span": "On FanOutQA, extended with merely one related question per test question, cracking cuts cost by 53% while preserving accuracy",
+                "note": "The 53% cost reduction and accuracy preservation on FanOutQA are confirmed; the body omits the benchmark extension detail but does not assert anything false."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Document-querying agents pay the same reading cost repeatedly; adaptive structuring makes that cost accumulate as reusable knowledge",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Document-querying agents pay the same reading cost repeatedly; adaptive structuring makes that cost accumulate as reusable knowledge",
+                "source_span": "knowledge that reasoning already paid to uncover accumulates",
+                "note": "The take accurately reflects the source's framing of repeated reading costs and the accumulation of reusable structured knowledge."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "All three stories today show agent workflows quietly converting one-time costs into reusable capital, whether that is research throughput, merged code, or structured document context. Organisations that treat each agent interaction as a discrete transaction will keep paying full price for work that compounds elsewhere."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_e4e34ff6273fba98",
+          "headline": "llama.cpp closes the Vulkan gap for DeepSeek inference, cutting decode time 32%",
+          "summary": "Vulkan was the last major backend running DeepSeek-V4's hyper-connection ops as an unfused chain, costing roughly 32% of decode time on AMD Strix Halo hardware. Build b10844 fuses all three ops into register-level kernels; one dispatch replaces about 137 ordered executions per site. Pull b10844 and profile your DeepSeek-V4 decode throughput against the prior build.",
+          "take": "DeepSeek-V4 inference on Vulkan hardware now runs the same fused ops CUDA and Metal have had for months.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://github.com/ggml-org/llama.cpp/releases/tag/b10844"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e4e34ff6273fba98",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "llama.cpp closes the Vulkan gap for DeepSeek inference, cutting decode time 32%",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "llama.cpp closes the Vulkan gap for DeepSeek inference, cutting decode time 32%",
+                "source_span": "Vulkan was the last major backend running the unfused primitive chain. On DeepSeek-V4-Flash the unfused Sinkhorn comb chain alone takes about 32% of decode op time on gfx1151 (Strix Halo)",
+                "note": "Source confirms Vulkan was the last major backend and the unfused chain took ~32% of decode op time; headline is a supported compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vulkan was the last major backend running DeepSeek-V4's hyper-connection ops as an unfused chain",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vulkan was the last major backend running DeepSeek-V4's hyper-connection ops as an unfused chain",
+                "source_span": "Vulkan was the last major backend running the unfused primitive chain.",
+                "note": "Direct paraphrase of source; supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "costing roughly 32% of decode time on AMD Strix Halo hardware",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "costing roughly 32% of decode time on AMD Strix Halo hardware",
+                "source_span": "On DeepSeek-V4-Flash the unfused Sinkhorn comb chain alone takes about 32% of decode op time on gfx1151 (Strix Halo)",
+                "note": "Source says gfx1151 (Strix Halo); 'AMD Strix Halo' is a supported paraphrase of that hardware identifier."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Build b10844 fuses all three ops into register-level kernels",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Build b10844 fuses all three ops into register-level kernels",
+                "source_span": "vulkan: add DeepSeek-V4 hyper-connection fused ops (DSV4_HC_COMB/PRE/POST) (#26578)\ndsv4_hc_comb runs the full 20-iteration Sinkhorn in registers.",
+                "note": "Source confirms b10844 adds three fused ops and runs computation in registers; supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "one dispatch replaces about 137 ordered executions per site",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "one dispatch replaces about 137 ordered executions per site",
+                "source_span": "One dispatch replaces about 137 strictly ordered node executions per site.",
+                "note": "Near-verbatim match with source; supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pull b10844 and profile your DeepSeek-V4 decode throughput against the prior build.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Pull b10844 and profile your DeepSeek-V4 decode throughput against the prior build.",
+                "source_span": "",
+                "note": "This is a call to action; no factual claim to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DeepSeek-V4 inference on Vulkan hardware now runs the same fused ops CUDA and Metal have had for months.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "DeepSeek-V4 inference on Vulkan hardware now runs the same fused ops CUDA and Metal have had for months.",
+                "source_span": "CUDA has these ops from the DeepSeek-V4 merge and Metal gained them in PR 26459. Vulkan was the last major backend running the unfused primitive chain.",
+                "note": "Source confirms CUDA and Metal already had these fused ops before this Vulkan addition; 'for months' is a reasonable inference from the sequencing described and is not contradicted."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Build b10844 fuses three ops into register-level kernels.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Build b10844 fuses three ops into register-level kernels",
+                "source_span": "vulkan: add DeepSeek-V4 hyper-connection fused ops (DSV4_HC_COMB/PRE/POST) (#26578) ... dsv4_hc_comb runs the full 20-iteration Sinkhorn in registers.",
+                "note": "digest: The source confirms b10844 adds three fused ops (COMB/PRE/POST) and that the comb op runs in registers; 'register-level kernels' is a fair paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Build b10844 replaces roughly 137 ordered dispatches.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "replacing roughly 137 ordered dispatches",
+                "source_span": "One dispatch replaces about 137 strictly ordered node executions per site.",
+                "note": "digest: 'Roughly 137 ordered dispatches' accurately paraphrases 'about 137 strictly ordered node executions per site'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Build b10844 cuts decode time 32%.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "cutting decode time 32%",
+                "source_span": "the unfused Sinkhorn comb chain alone takes about 32% of decode op time on gfx1151 (Strix Halo)",
+                "note": "digest: The source states the unfused chain takes ~32% of decode op time, so fusing it removes that cost; the summary's '32%' reduction is a reasonable compression of this figure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vulkan was the last major backend running the unfused primitive chain.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vulkan inference gap now closed",
+                "source_span": "CUDA has these ops from the DeepSeek-V4 merge and Metal gained them in PR 26459. Vulkan was the last major backend running the unfused primitive chain.",
+                "note": "digest: The source explicitly states Vulkan was the last major backend without these fused ops, supporting the 'gap now closed' framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each item today removes a constraint practitioners had filed under 'infrastructure given': fused GPU kernels, edge routing, memory governance, eval fragmentation, retrieval architecture.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "fused GPU kernels, edge routing, memory governance, eval fragmentation, retrieval architecture",
+                "source_span": "",
+                "note": "synthesis: This is editorial pattern-naming that maps loosely but accurately to the five source stories (Vulkan fused ops, Jetson edge inference, NemoClaw memory governance, Harbor Adapters eval infrastructure, NeoMME retrieval); treated as supported editorial framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The practical question this week is which of those assumed ceilings your team is still building around.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The practical question this week is which of those assumed ceilings your team is still building around.",
+                "source_span": "",
+                "note": "synthesis: Pure editorial call-to-action with no checkable factual content; unverifiable as it contains no atomic factual assertion."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_ba58c7073afadeee",
+          "headline": "Reasoning agents now run at the edge, without a data centre link",
+          "summary": "NVIDIA's technical blog walks through deploying compact reasoning models on Jetson edge hardware, using Nemotron 3.5 Lightning and Qwen3-27B as examples. Two techniques, NVFP4 quantisation and speculative decoding, combine to lift generation speed; the vendor's own numbers show each compounds the other. Benchmark both models against your specific agent workload before committing to one.",
+          "take": "Agentic workloads that required data-centre routing now have a documented local path on Jetson hardware.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/frontier-reasoning-reaches-the-edge-how-to-deploy-and-optimize-models-on-nvidia-jetson/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_ba58c7073afadeee",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Reasoning agents now run at the edge, without a data centre link",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Reasoning agents now run at the edge, without a data centre link",
+                "source_span": "All of this runs locally at the edge without an internet connection, keeping latency low.",
+                "note": "Source confirms reasoning agents can run locally at the edge without network dependency."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's technical blog walks through deploying compact reasoning models on Jetson edge hardware",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA's technical blog walks through deploying compact reasoning models on Jetson edge hardware",
+                "source_span": "This post walks through what you need to know to deploy this new generation of open models on Jetson",
+                "note": "Source confirms the post covers deploying compact reasoning models on Jetson hardware."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nemotron 3.5 Lightning and Qwen3-27B are used as examples",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "using Nemotron 3.5 Lightning and Qwen3-27B as examples",
+                "source_span": "using Nemotron 3.5 Lightning and Qwen3.8-27B as examples",
+                "note": "Source names the model 'Qwen3.8-27B', not 'Qwen3-27B'; the summary drops the '.8' designation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Two techniques, NVFP4 quantisation and speculative decoding, combine to lift generation speed",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Two techniques, NVFP4 quantisation and speculative decoding, combine to lift generation speed",
+                "source_span": "Two complementary techniques can improve inference performance: NVFP4 quantization reduces the work and memory required for model operations, while speculative decoding can generate multiple accepted tokens per verification step.",
+                "note": "Source confirms both techniques improve inference/generation performance and are complementary."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The vendor's own numbers show each compounds the other",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the vendor's own numbers show each compounds the other",
+                "source_span": "Together, they improve performance more than either optimization alone.",
+                "note": "Source confirms the two optimizations compound each other, and the numbers are vendor-reported from their own testing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agentic workloads that required data-centre routing now have a documented local path on Jetson hardware",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agentic workloads that required data-centre routing now have a documented local path on Jetson hardware",
+                "source_span": "Developers building agents have had to route inference through a data center... That constraint is lifting... NVIDIA Jetson can run them today. This post walks through what you need to know to deploy this new generation of open models on Jetson",
+                "note": "Source confirms agentic workloads previously required data-centre routing and now have a documented deployment path on Jetson."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_bf2f9f8f79b7c0c6",
+          "headline": "NVIDIA's memory-driven agent recipe separates context from authorisation at runtime",
+          "summary": "Enterprise agents forget context between sessions. NVIDIA's NemoClaw Chief of Staff recipe, open on GitHub, addresses this with three layers: Markdown knowledge pages, a SQLite obligation ledger, and a sandboxed runtime where memory informs actions but never authorises them. Benchmarks against a retrieval baseline ship with the repo. Clone nemoclaw-community and run the offline walkthrough before wiring live credentials.",
+          "take": "Persistent agent memory was a storage problem; NemoClaw's recipe makes it a governance architecture.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/building-a-memory-driven-agent-with-nvidia-nemoclaw/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_bf2f9f8f79b7c0c6",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's memory-driven agent recipe separates context from authorisation at runtime",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA's memory-driven agent recipe separates context from authorisation at runtime",
+                "source_span": "Context can inform an action, but it cannot authorize one. ... This separation is enforced with NVIDIA NemoClaw and the NVIDIA OpenShell secure runtime for autonomous agents.",
+                "note": "The source explicitly states context informs but cannot authorise actions, enforced at runtime — the headline is an accurate compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Enterprise agents forget context between sessions.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Enterprise agents forget context between sessions.",
+                "source_span": "An AI agent that starts without this context must reconstruct it before contributing.",
+                "note": "The source describes agents lacking persistent context across sessions, which the body paraphrases accurately."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's NemoClaw Chief of Staff recipe is open on GitHub",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA's NemoClaw Chief of Staff recipe, open on GitHub",
+                "source_span": "review the open source Memory-Driven Chief of Staff recipe and its design proposal in the NVIDIA/nemoclaw-community GitHub repo.",
+                "note": "The source confirms the recipe is open source and hosted on GitHub."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The recipe addresses this with three layers: Markdown knowledge pages, a SQLite obligation ledger, and a sandboxed runtime",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "addresses this with three layers: Markdown knowledge pages, a SQLite obligation ledger, and a sandboxed runtime where memory informs actions but never authorises them",
+                "source_span": "A Markdown agent memory stores knowledge. A SQLite ledger stores obligations, rankings, corrections, and audit events. ... This separation is enforced with NVIDIA NemoClaw and the NVIDIA OpenShell secure runtime for autonomous agents. NemoClaw integrates the example with NVIDIA OpenShell and manages its lifecycle, while NVIDIA OpenShell runs the agent in a sandbox",
+                "note": "All three layers are confirmed in the source; the characterisation of memory informing but not authorising actions is also directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Benchmarks against a retrieval baseline ship with the repo.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Benchmarks against a retrieval baseline ship with the repo.",
+                "source_span": "The Agent Memory Benchmark and evaluation examples are included in the example repo. The example repo compares an agentic retrieval-augmented generation (RAG) baseline that performs multi-round retrieval with the self model.",
+                "note": "The source confirms a benchmark comparing against a retrieval baseline is included in the repo."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone nemoclaw-community and run the offline walkthrough before wiring live credentials.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Clone nemoclaw-community and run the offline walkthrough before wiring live credentials.",
+                "source_span": "NVIDIA/nemoclaw-community GitHub repo ... An offline walkthrough ... Live connectors require separate handling for credentials, privacy, retention, and deletion.",
+                "note": "The repo name, offline walkthrough, and separate live credential handling are all confirmed in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Persistent agent memory was a storage problem; NemoClaw's recipe makes it a governance architecture.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Persistent agent memory was a storage problem; NemoClaw's recipe makes it a governance architecture.",
+                "source_span": "Our experience shows that useful agent memory requires structure, selective retrieval, and governance—not just storage.",
+                "note": "The source explicitly contrasts governance with mere storage, directly supporting the take's framing."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_0b7133fdb6ed1575",
+          "headline": "One harness now runs agents across 80 benchmarks, with results public",
+          "summary": "Porting agents across dozens of benchmarks has meant rebuilding integrations each time. Harbor Adapters unifies more than 80 benchmarks into a single harness; the authors ran 8 models across 54 of them. No evaluated model clears 30% on Harbor-Index, the curated 82-task subset. Adapters, results, and the index are open-source. Run Harbor-Index against your own agent before trusting vendor scores.",
+          "take": "Agent eval pipelines now have a shared harness baseline, not dozens of bespoke integrations.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2609.04298"
+          ],
+          "prior_coverage_ref": "c_b68d5c5b21d5a9d9",
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0b7133fdb6ed1575",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "One harness now runs agents across 80 benchmarks, with results public",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "One harness now runs agents across 80 benchmarks, with results public",
+                "source_span": "we develop benchmark adapters that port more than 80 benchmarks to evaluate arbitrary agents... We release the adapters, evaluation results, in-depth analysis, and Harbor-Index as open-source artifacts",
+                "note": "Headline accurately summarises the unified harness covering 80+ benchmarks with public results; rounding 'more than 80' to '80' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Porting agents across dozens of benchmarks has meant rebuilding integrations each time.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Porting agents across dozens of benchmarks has meant rebuilding integrations each time.",
+                "source_span": "Evaluating agents on the growing number of agentic benchmarks is challenging because they often require complex environments and agent integrations.",
+                "note": "The body paraphrases the source's motivation for Harbor Adapters; 'rebuilding integrations each time' is a fair plain-English rendering of the integration challenge described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Harbor Adapters unifies more than 80 benchmarks into a single harness",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Harbor Adapters unifies more than 80 benchmarks into a single harness",
+                "source_span": "we develop benchmark adapters that port more than 80 benchmarks to evaluate arbitrary agents",
+                "note": "Directly matches the source's stated contribution."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the authors ran 8 models across 54 of them",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the authors ran 8 models across 54 of them",
+                "source_span": "we conduct a large-scale evaluation of 8 models spanning capability tiers across 54 benchmarks",
+                "note": "Exact figures match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "No evaluated model clears 30% on Harbor-Index, the curated 82-task subset.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "No evaluated model clears 30% on Harbor-Index, the curated 82-task subset.",
+                "source_span": "Harbor-Index, a curated set of 82 difficult, diverse, and high-quality tasks spanning 29 benchmarks... no evaluated model-harness configuration exceeds 30% pass rate",
+                "note": "Both the 30% ceiling and the 82-task count match the source; 'subset' is a fair generalisation of 'curated set refined from the adapted suite'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Adapters, results, and the index are open-source.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Adapters, results, and the index are open-source.",
+                "source_span": "We release the adapters, evaluation results, in-depth analysis, and Harbor-Index as open-source artifacts",
+                "note": "The source explicitly states all three items are released as open-source artifacts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Run Harbor-Index against your own agent before trusting vendor scores.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Run Harbor-Index against your own agent before trusting vendor scores.",
+                "source_span": "",
+                "note": "This is a call to action / editorial recommendation; no factual claim to check against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent eval pipelines now have a shared harness baseline, not dozens of bespoke integrations.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent eval pipelines now have a shared harness baseline, not dozens of bespoke integrations.",
+                "source_span": "We introduce Harbor Adapters, a unified evaluation infrastructure for agentic benchmarks... Evaluating agents on the growing number of agentic benchmarks is challenging because they often require complex environments and agent integrations.",
+                "note": "The take is editorial framing but its embedded factual assertion—that Harbor Adapters provides a shared unified harness replacing fragmented integrations—is directly supported by the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_3f59bacaa04010db",
+          "headline": "A single-transformer encoder retrieves document pages at twice a rival's speed",
+          "summary": "NeoMME trains a single bidirectional transformer on text and images together, skipping the separate vision tower most retrievers carry. The 260M model encodes 51 document pages per second, roughly twice ColModernVBERT's throughput; late-interaction index storage shrinks 255-fold. Checkpoints are public under Apache 2.0. Pull the 260M checkpoint and run it against your document retrieval pipeline.",
+          "take": "Document retrieval encoders carried a separate vision tower as fixed overhead; NeoMME folds both into one pass.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/blog/Hcompany/neomme"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_3f59bacaa04010db",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A single-transformer encoder retrieves document pages at twice a rival's speed",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A single-transformer encoder retrieves document pages at twice a rival's speed",
+                "source_span": "A single bidirectional Transformer processes both text tokens and raw image patches... the 260M model encodes about 51 pages per second, or about twice ColModernVBERT's throughput.",
+                "note": "The source confirms a single bidirectional transformer encoder achieving roughly twice ColModernVBERT's throughput, supporting the headline's claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NeoMME trains a single bidirectional transformer on text and images together",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NeoMME trains a single bidirectional transformer on text and images together",
+                "source_span": "A single bidirectional Transformer processes both text tokens and raw image patches",
+                "note": "The source explicitly confirms a single bidirectional transformer processes both text and images."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NeoMME skips the separate vision tower most retrievers carry",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "skipping the separate vision tower most retrievers carry",
+                "source_span": "NeoMME does not use a separate pretrained vision tower or a causal language model.",
+                "note": "The source confirms NeoMME omits the separate vision tower used by many other retrievers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The 260M model encodes 51 document pages per second",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The 260M model encodes 51 document pages per second",
+                "source_span": "the 260M model encodes about 51 pages per second",
+                "note": "The source states approximately 51 pages per second for the 260M model, matching the body's figure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The 260M model encodes roughly twice ColModernVBERT's throughput",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "roughly twice ColModernVBERT's throughput",
+                "source_span": "or about twice ColModernVBERT's throughput",
+                "note": "The source directly states about twice ColModernVBERT's throughput, matching the body's claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Late-interaction index storage shrinks 255-fold",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "late-interaction index storage shrinks 255-fold",
+                "source_span": "Hierarchical token pooling and asymmetric quantization reduce late-interaction index storage from roughly 1.5 MB to 6 kB per page (255× smaller)",
+                "note": "The source confirms a 255× reduction in late-interaction index storage."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Checkpoints are public under Apache 2.0",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Checkpoints are public under Apache 2.0",
+                "source_span": "We release all model checkpoints under the Apache 2.0 license.",
+                "note": "The source confirms all model checkpoints are released under Apache 2.0."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pull the 260M checkpoint and run it against your document retrieval pipeline",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Pull the 260M checkpoint and run it against your document retrieval pipeline",
+                "source_span": "",
+                "note": "This is a call to action; the word 'Pull' as an instruction is editorial and not a factual claim to verify against the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Document retrieval encoders carried a separate vision tower as fixed overhead; NeoMME folds both into one pass",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Document retrieval encoders carried a separate vision tower as fixed overhead; NeoMME folds both into one pass",
+                "source_span": "NeoMME does not use a separate pretrained vision tower or a causal language model. A single bidirectional Transformer processes both text tokens and raw image patches... NeoMME-Retriever returns dense and late-interaction embeddings in one forward pass.",
+                "note": "The source confirms that many retrievers use a separate vision tower and that NeoMME processes both modalities in a single transformer forward pass."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Each item today removes a constraint practitioners had filed under 'infrastructure given': fused GPU kernels, edge routing, memory governance, eval fragmentation, retrieval architecture. The practical question this week is which of those assumed ceilings your team is still building around."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Nothing surfaced for Currents today."
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "GitHub's routing preview cuts costs.",
+      "sentence": "HydraFusion matched a named frontier model's benchmark score while reducing estimated spend by 67%.",
+      "story_ids": [
+        "c_c1507be5515d3276"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Open-source projects close the crowd.",
+      "sentence": "Vercel reports agent pipelines now author up to 35% of merged pull requests, replacing external contributor intake.",
+      "story_ids": [
+        "c_fe0c7b058fba1ec6"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Vulkan inference gap now closed.",
+      "sentence": "Build b10844 fuses three ops into register-level kernels, replacing roughly 137 ordered dispatches and cutting decode time 32%.",
+      "story_ids": [
+        "c_e4e34ff6273fba98"
+      ]
+    }
+  ],
+  "generated_at": "2026-09-07T21:32:17.367367Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23.1",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 3, hands_on: 5, currents: 0"
+}
