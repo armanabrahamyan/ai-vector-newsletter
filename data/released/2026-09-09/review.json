@@ -1,0 +1,176 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-08T21:32:34.160288Z",
+  "computed_verdict": "red",
+  "one_line": "Solid issue with a genuine Pulse; take-frame repetition and one unsupported claim need fixing before publish.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a8e6045bc4e0617b",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "multi-turn edge cases only surface in production",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this claim as unsupported by the source. Soften to reflect what the source actually asserts: e.g., 'multi-turn edge cases are systematically underrepresented in pre-deployment testing' or similar hedged framing. Do not state it as bare fact.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_6771f6475e209118",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "What is your containment boundary if the model reaches outside it?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture closing question must be anchored to a specific role, decision, or constraint in the reader's org — not a generic rhetorical question with an obvious implied answer ('you don't have one'). Rewrite to anchor to a concrete decision point, e.g., 'Which team in your org owns the decision to halt a sandboxed rollout when the model breaches its containment boundary?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1068526f71351b6d",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "GPU kernel optimisation had no single on-ramp; NVIDIA's six-step walkthrough with runnable code changes that.",
+      "fix_kind": "text_edit",
+      "instruction": "The take exceeds 18 words (20 words). Trim to 18 words or fewer while preserving the proposition, e.g., 'GPU kernel optimisation now has a single on-ramp: NVIDIA's six-step walkthrough with runnable code.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a8e6045bc4e0617b",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent demo failures were anecdote; synthetic-persona simulation makes them a measurable, reproducible test suite.",
+      "fix_kind": "text_edit",
+      "instruction": "The take exceeds 18 words (16 words — acceptable on count, but 'were anecdote' is a register oddity and the proposition largely restates the summary's closing sentence rather than adding the publication's position. Rewrite to state the editorial position the body stopped short of, e.g., 'Synthetic-persona simulation has closed the gap between agent demos and production-grade test coverage.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_03143d25d84c1f71",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Manual experimentation spreadsheets were the research bottleneck; automated pipelines now own that job.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares a syntactic frame with c_1068526f71351b6d ('X was the problem; Y now owns/changes that') and c_149ce2694dda0a71 ('X was a gap; Y closes it'). Three takes in the same section using the same 'X was [deficiency]; Y [resolves it]' scaffold triggers a major frame-collision flag. Rewrite to a distinct syntactic shape, e.g., 'Automated eval pipelines have made experiment throughput a function of pipeline design, not headcount.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_149ce2694dda0a71",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Durable agent runs were an infrastructure gap; a reference implementation closes it.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the 'X was a [deficiency]; Y [resolves it]' frame with at least two other Hands-On takes this issue (c_03143d25d84c1f71, c_1068526f71351b6d). Filed on the earliest instance as a minor to flag the pattern; the later instances carry the heavier flag. Rewrite to a distinct syntactic shape, e.g., 'Temporal plus Lakebase gives long-running agents a durable execution baseline that previously required custom infrastructure.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_486602b7efd4f096",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Data architects now face a storage-layer unification pitch, not an engine-swap.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's framing ('Databricks argues AI agents collapse the decades-old split') rather than adding the publication's position on whether the pitch holds. Rewrite to state the editorial stance, e.g., 'LTAP shifts the data architecture debate from engine selection to storage-layer design — a different conversation than architects have been having.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_486602b7efd4f096",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "finance_angle",
+      "severity": "note",
+      "quote": "Databricks argues AI agents collapse the decades-old split between transactional and analytical databases.",
+      "fix_kind": "human",
+      "instruction": "This story is a vendor blog post from Databricks arguing for their own LTAP architecture. The single source is the vendor themselves. Note for Arman: the sourcing is thin for a Big Picture claim about a '40-year database rule' being broken. Consider whether a corroborating independent source exists before next run.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_6771f6475e209118",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "OpenAI's best computer-use model also escapes its own sandbox",
+      "fix_kind": "carry_forward",
+      "instruction": "OpenAI sandbox/containment failures have now appeared across three consecutive issues (2026-09-07 'Standard virtual machines cannot contain a capable AI cyber-agent', 2026-09-08 implicitly via Copilot/agent context, and today). The prior_coverage_ref is noted, but the synthesis does not reference the accumulating pattern. Tomorrow: if a fourth containment story surfaces, the synthesis must explicitly name the streak and advance the editorial position rather than re-framing the same structural gap.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "eafd63f7874cc49b7f1e40de7f1241542d1ba81673353e5e661bb21da4078edd",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.)"
+}
