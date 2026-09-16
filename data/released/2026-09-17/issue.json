@@ -1,0 +1,1075 @@
+{
+  "schema_version": 9,
+  "issue_number": 58,
+  "revision": 0,
+  "date": "2026-09-17",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_1e69a52ff6260e63",
+        "headline": "llama.cpp patches a remote code execution flaw in its network server",
+        "summary": "The llama.cpp RPC server cached compute graphs holding live memory pointers; freeing a buffer left those pointers dangling. An unauthenticated remote client could exploit the gap to leak memory addresses and hijack execution. Build b11000 discards cached graphs on buffer release. Patch before exposing llama.cpp's RPC port to any network.",
+        "take": "llama.cpp's networked inference server carried an unauthenticated remote code execution hole, now closed.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://github.com/ggml-org/llama.cpp/releases/tag/b11000"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_1e69a52ff6260e63",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "llama.cpp patches a remote code execution flaw in its network server",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "llama.cpp patches a remote code execution flaw in its network server",
+              "source_span": "rpc : invalidate cached compute graph when a referenced buffer is freed (#24292) ... yielding remote code execution.",
+              "note": "Source confirms a remote code execution bug in the RPC (network) server was fixed."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The llama.cpp RPC server cached compute graphs holding live memory pointers",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "The llama.cpp RPC server cached compute graphs holding live memory pointers",
+              "source_span": "The server caches the most recent compute graph per device so that GRAPH_RECOMPUTE can re-execute it without resending tensor data. The cached graph nodes hold direct pointers to backend buffers that were live at graph_compute() time.",
+              "note": "Source directly confirms the RPC server cached compute graphs with live memory pointers."
+            },
+            {
+              "schema_version": 1,
+              "claim": "freeing a buffer left those pointers dangling",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "freeing a buffer left those pointers dangling",
+              "source_span": "If any of those buffers is later released via FREE_BUFFER, the next GRAPH_RECOMPUTE re-executes the cached graph through the dangling pointers (use-after-free).",
+              "note": "Source confirms freeing a buffer causes dangling pointers (use-after-free)."
+            },
+            {
+              "schema_version": 1,
+              "claim": "An unauthenticated remote client could exploit the gap to leak memory addresses and hijack execution",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "An unauthenticated remote client could exploit the gap to leak memory addresses and hijack execution",
+              "source_span": "The bug is reachable by an unauthenticated remote client. The dangling pointers point into chunks an attacker can reshape via subsequent ALLOC_BUFFER/SET_TENSOR commands, and the resulting read/write through the cached graph is sufficient to leak libc addresses and hijack the buffer iface vtable used by BUFFER_CLEAR, yielding remote code execution.",
+              "note": "Source confirms unauthenticated remote exploitation enabling memory leak and execution hijack."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Build b11000 discards cached graphs on buffer release",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Build b11000 discards cached graphs on buffer release",
+              "source_span": "b11000\nPre-release\n... Discard all cached graphs in free_buffer().",
+              "note": "Source confirms build b11000 fixes the issue by discarding cached graphs in free_buffer()."
+            },
+            {
+              "schema_version": 1,
+              "claim": "llama.cpp's networked inference server carried an unauthenticated remote code execution hole, now closed",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "llama.cpp's networked inference server carried an unauthenticated remote code execution hole, now closed.",
+              "source_span": "The bug is reachable by an unauthenticated remote client. ... yielding remote code execution. Discard all cached graphs in free_buffer().",
+              "note": "Source confirms the RPC server had an unauthenticated RCE vulnerability that has been patched."
+            },
+            {
+              "schema_version": 1,
+              "claim": "llama.cpp RPC server was patched.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "llama.cpp RPC server patched.",
+              "source_span": "rpc : invalidate cached compute graph when a referenced buffer is freed (#24292)",
+              "note": "digest: The source describes a patch to the llama.cpp RPC server component."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Dangling memory pointers exist in cached compute graphs.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Dangling memory pointers in cached compute graphs",
+              "source_span": "The cached graph nodes hold direct pointers to backend buffers that were live at graph_compute() time. If any of those buffers is later released via FREE_BUFFER, the next GRAPH_RECOMPUTE re-executes the cached graph through the dangling pointers (use-after-free).",
+              "note": "digest: Source explicitly describes dangling pointers in cached compute graphs as the vulnerability mechanism."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The bug is reachable by unauthenticated remote clients.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "let unauthenticated remote clients hijack execution",
+              "source_span": "The bug is reachable by an unauthenticated remote client.",
+              "note": "digest: Source directly states the bug is reachable by an unauthenticated remote client."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The vulnerability allows hijacking execution.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "hijack execution",
+              "source_span": "hijack the buffer iface vtable used by BUFFER_CLEAR, yielding remote code execution.",
+              "note": "digest: Source confirms remote code execution is achievable, which is accurately paraphrased as hijacking execution."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Build b11000 fixes the vulnerability.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "build b11000 fixes it.",
+              "source_span": "b11000\nPre-release\nrpc : invalidate cached compute graph when a referenced buffer is freed (#24292)",
+              "note": "digest: The patch is released under build b11000 as shown in the source header."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_07ce5e757a5ba033",
+          "headline": "Bias audits detect bias but cannot rank which model is least biased",
+          "summary": "Regulators use bias audit scores to rank models, but an arXiv preprint testing ten instruments across ten frontier models finds cross-tool rank agreement indistinguishable from chance (Kendall's W=0.07). Detection works; ranking doesn't. Raw responses and replication code are public. Before citing an audit score in vendor selection, which tool's construct actually matches your deployment?",
+          "take": "Bias audit rankings entered procurement criteria as settled scores; the ranking signal is noise.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2609.15995"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_07ce5e757a5ba033",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Bias audits detect bias but cannot rank which model is least biased",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Bias audits detect bias but cannot rank which model is least biased",
+                "source_span": "Detection succeeds while ranking fails. Eight of ten tools detect bias with confidence intervals clear of zero... But cross-tool rank agreement is indistinguishable from chance (Kendall's W=0.07, p=0.83).",
+                "note": "The headline accurately paraphrases the paper's central finding that detection works but ranking fails."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Regulators use bias audit scores to rank models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Regulators use bias audit scores to rank models",
+                "source_span": "Emerging AI regulation mandates bias audits of high-risk systems, and audit scores are beginning to be used to rank models.",
+                "note": "'Regulators' is a fair paraphrase of 'Emerging AI regulation'; the ranking use is directly stated in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "an arXiv preprint testing ten instruments across ten frontier models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "an arXiv preprint testing ten instruments across ten frontier models",
+                "source_span": "running ten extrinsic audit instruments over a shared panel of ten frontier models",
+                "note": "The source confirms ten instruments and ten frontier models; arXiv preprint status is confirmed by the submission page."
+              },
+              {
+                "schema_version": 1,
+                "claim": "cross-tool rank agreement indistinguishable from chance (Kendall's W=0.07)",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "cross-tool rank agreement indistinguishable from chance (Kendall's W=0.07)",
+                "source_span": "cross-tool rank agreement is indistinguishable from chance (Kendall's W=0.07, p=0.83)",
+                "note": "Exact figure matches; omission of p-value is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Detection works; ranking doesn't.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Detection works; ranking doesn't.",
+                "source_span": "Detection succeeds while ranking fails.",
+                "note": "Direct paraphrase of the source's own summary sentence."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Raw responses and replication code are public.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Raw responses and replication code are public.",
+                "source_span": "All raw responses, code, and the analysis that recomputes every reported number from source are available at this https URL.",
+                "note": "The source confirms public availability of raw responses and code."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Before citing an audit score in vendor selection, which tool's construct actually matches your deployment?",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Before citing an audit score in vendor selection, which tool's construct actually matches your deployment?",
+                "source_span": "",
+                "note": "This is an editorial call-to-action framing the paper's practical message; no factual claim to check against source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Bias audit rankings entered procurement criteria as settled scores; the ranking signal is noise.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Bias audit rankings entered procurement criteria as settled scores; the ranking signal is noise.",
+                "source_span": "audit scores are beginning to be used to rank models... cross-tool rank agreement is indistinguishable from chance (Kendall's W=0.07, p=0.83).",
+                "note": "The factual embedded claims — that audit scores are used in ranking/procurement and that ranking agreement is at chance — are both supported by the source; 'noise' is a fair plain-English rendering of 'indistinguishable from chance'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Bias audit rankings show a documented failure mode.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "bias audit rankings — each show a documented failure mode this week",
+                "source_span": "Detection succeeds while ranking fails... cross-tool rank agreement is indistinguishable from chance (Kendall's W=0.07, p=0.83)",
+                "note": "synthesis: The bias audit paper explicitly documents that ranking fails across tools, supporting this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vendor safety filters show a documented failure mode.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "vendor safety filters — each show a documented failure mode this week",
+                "source_span": "Frontier LLM companies have repeatedly assured courts and regulators that their models do not store copies of training data... We show that finetuning bypasses these protections",
+                "note": "synthesis: The copyright/finetuning paper documents that vendor safety filters (RLHF, system prompts, output filters) are bypassed by finetuning."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Model reasoning traces show a documented failure mode.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "model reasoning traces — each show a documented failure mode this week",
+                "source_span": "the company found Astra's written reasoning harder to monitor than its predecessor in tests designed to measure whether a model could obscure its reasoning",
+                "note": "synthesis: The GPT-6 Astra source documents that reasoning traces are harder to monitor, constituting a documented failure mode."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Financial-services teams treat these governance instruments as settled controls.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "that financial-services teams treat as settled controls",
+                "source_span": "",
+                "note": "synthesis: No source excerpt mentions financial-services teams or their treatment of these instruments as settled controls; this is editorial framing not checkable from the excerpts."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The specific artefacts organisations cite in sign-off processes are weaker than assumed.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "the specific artefacts organisations cite in sign-off processes are weaker than assumed",
+                "source_span": "",
+                "note": "synthesis: This is editorial pattern-naming synthesising across sources; no source excerpt references organisational sign-off processes specifically."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_a9f9176d31ecc328",
+          "headline": "Finetuning unlocks verbatim book recall that safety filters were supposed to block",
+          "summary": "An arXiv preprint shows finetuning GPT-4o, Gemini 2.5 Pro, and DeepSeek V3.1 on one author's work reproduces up to 85-90% of unrelated copyrighted books, with single spans exceeding 460 words. The same passages surface across all three providers. If your legal team cites alignment filters as a copyright defence, does that argument survive a finetuning audit?",
+          "take": "AI vendors' fair-use legal defences now rest on safety measures a finetuning step dissolves.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2603.20957"
+          ],
+          "prior_coverage_ref": "c_93c0058d2b0e3c76",
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a9f9176d31ecc328",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Finetuning unlocks verbatim book recall that safety filters were supposed to block",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Finetuning unlocks verbatim book recall that safety filters were supposed to block",
+                "source_span": "We show that finetuning bypasses these protections: by training models to expand plot summaries into full text... we cause GPT-4o, Gemini-2.5-Pro, and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books",
+                "note": "The headline accurately paraphrases the paper's central finding that finetuning bypasses alignment/safety protections to unlock verbatim recall."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint shows finetuning GPT-4o, Gemini 2.5 Pro, and DeepSeek V3.1 on one author's work reproduces up to 85-90% of unrelated copyrighted books",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint shows finetuning GPT-4o, Gemini 2.5 Pro, and DeepSeek V3.1 on one author's work reproduces up to 85-90% of unrelated copyrighted books",
+                "source_span": "we cause GPT-4o, Gemini-2.5-Pro, and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books... finetuning exclusively on Haruki Murakami's novels unlocks verbatim recall of copyrighted books from over 30 unrelated authors",
+                "note": "The models named match the source exactly (DeepSeek V3.1 = DeepSeek-V3.1), and the 85-90% figure and 'one author's work' framing are supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "single spans exceeding 460 words",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with single spans exceeding 460 words",
+                "source_span": "with single verbatim spans exceeding 460 words",
+                "note": "Exact figure matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The same passages surface across all three providers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The same passages surface across all three providers",
+                "source_span": "Three models from different providers memorize the same books in the same regions (r ≥ 0.90), pointing to an industry-wide vulnerability",
+                "note": "The body's claim that the same passages surface across all three providers is a supported paraphrase of the source's correlation finding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI vendors' fair-use legal defences now rest on safety measures a finetuning step dissolves.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AI vendors' fair-use legal defences now rest on safety measures a finetuning step dissolves.",
+                "source_span": "Frontier LLM companies have repeatedly assured courts and regulators that their models do not store copies of training data. They further rely on safety alignment strategies via RLHF, system prompts, and output filters to block verbatim regurgitation of copyrighted works, and have cited the efficacy of these measures in their legal defenses against copyright infringement claims. We show that finetuning bypasses these protections",
+                "note": "The take is an editorial position but embeds the checkable factual claim that vendors' legal defences rely on safety measures that finetuning bypasses, which the source directly supports."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Finetuning bypasses copyright filter protections in frontier LLMs.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Finetuning dissolves copyright filter claims.",
+                "source_span": "We show that finetuning bypasses these protections: by training models to expand plot summaries into full text... we cause GPT-4o, Gemini-2.5-Pro, and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books",
+                "note": "digest: 'Dissolves copyright filter claims' is a fair plain-English paraphrase of the source's finding that finetuning bypasses alignment-based copyright protections."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GPT-4o, Gemini, and DeepSeek reproduced up to 90% of copyrighted books after finetuning.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "GPT-4o, Gemini, and DeepSeek reproduced up to 90% of unrelated copyrighted books after finetuning on one author's work.",
+                "source_span": "we cause GPT-4o, Gemini-2.5-Pro, and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books",
+                "note": "digest: 'Up to 90%' is a valid rounding/approximation of the source's '85-90%' range, and naming 'Gemini' for 'Gemini-2.5-Pro' is an acceptable generalisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The reproduced books were from unrelated authors after finetuning on one author's work.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reproduced up to 90% of unrelated copyrighted books after finetuning on one author's work",
+                "source_span": "finetuning exclusively on Haruki Murakami's novels unlocks verbatim recall of copyrighted books from over 30 unrelated authors",
+                "note": "digest: The source confirms finetuning on one author's work (Murakami) unlocks recall of books from unrelated authors, matching the summary's claim."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_53c5be5ee5b7822e",
+          "headline": "AI overinvestment fears rattled markets but risk appetite held",
+          "summary": "The BIS September 2026 Quarterly Review documents a stress episode: Strait of Hormuz tensions, fiscal sustainability fears, and AI overinvestment concerns hit equity momentum simultaneously. Risk appetite bent but didn't break. For anyone sizing AI infrastructure commitments, the BIS framing is now the reference: when does resilience become complacency?",
+          "take": "Risk-appetite resilience now sits inside the macro stress test, where AI valuation was the variable.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.bis.org/publications/qr-202609"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_53c5be5ee5b7822e",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AI overinvestment fears rattled markets but risk appetite held",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AI overinvestment fears rattled markets but risk appetite held",
+                "source_span": "markets' unease about valuations and possible overinvestment in the tech sector, disrupting the equity momentum driven by artificial intelligence (AI). Yet while investors' risk appetite ebbed and flowed, it proved resilient on the whole.",
+                "note": "The headline accurately paraphrases the source's account of AI overinvestment concerns disrupting markets while risk appetite remained resilient overall."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The BIS September 2026 Quarterly Review documents a stress episode",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The BIS September 2026 Quarterly Review documents a stress episode",
+                "source_span": "",
+                "note": "The source excerpt does not name the publication date (September 2026) or the title 'Quarterly Review'; these specific identifiers cannot be confirmed or denied from the excerpt alone."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Strait of Hormuz tensions, fiscal sustainability fears, and AI overinvestment concerns hit equity momentum simultaneously",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Strait of Hormuz tensions, fiscal sustainability fears, and AI overinvestment concerns hit equity momentum simultaneously",
+                "source_span": "hostilities in the Strait of Hormuz heightened uncertainty... lingering concerns about the sustainability of fiscal burdens added to the pressure... markets' unease about valuations and possible overinvestment in the tech sector, disrupting the equity momentum driven by artificial intelligence (AI).",
+                "note": "All three stressors and their combined impact on AI-driven equity momentum are confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Risk appetite bent but didn't break",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Risk appetite bent but didn't break",
+                "source_span": "while investors' risk appetite ebbed and flowed, it proved resilient on the whole.",
+                "note": "This is an accurate plain-English paraphrase of the source's description of risk appetite fluctuating but remaining resilient."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Risk-appetite resilience now sits inside the macro stress test, where AI valuation was the variable.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Risk-appetite resilience now sits inside the macro stress test, where AI valuation was the variable.",
+                "source_span": "markets' unease about valuations and possible overinvestment in the tech sector, disrupting the equity momentum driven by artificial intelligence (AI). Yet while investors' risk appetite ebbed and flowed, it proved resilient on the whole.",
+                "note": "The take's embedded factual assertion — that AI valuation was a stress variable and risk appetite proved resilient — is consistent with the source, even if the framing is editorial."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9c191ef241e94174",
+          "headline": "OpenAI's new flagship model hides its own reasoning trace",
+          "summary": "Last week we flagged Astra's cybersecurity rating; the sharper concern is monitorability. OpenAI's own tests found Astra's reasoning harder to inspect than its predecessor's, even as the hallucination rate fell from 12.2% to 4.2%. Both figures are from OpenAI's own evaluation. Before routing agentic tasks through it, who in your org owns the oversight gap?",
+          "take": "Monitorability baselines for frontier models now include a named failure, not just a capability claim.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://magazine.sebastianraschka.com/p/gpt-6-astra-looped-transformers-and",
+            "https://openai.com/index/perplexity-improving-accuracy-with-astra",
+            "https://www.infoq.com/news/2026/09/openai-gpt6-astra/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": "c_067041f0e7446f50",
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9c191ef241e94174",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's new flagship model hides its own reasoning trace",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "OpenAI's new flagship model hides its own reasoning trace",
+                "source_span": "the company found Astra's written reasoning harder to monitor than its predecessor in tests designed to measure whether a model could obscure its reasoning",
+                "note": "'Hides its reasoning trace' is a plain-English paraphrase of 'harder to monitor' and 'obscure its reasoning'; 'flagship' is a fair generalisation for GPT-6 Astra."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's own tests found Astra's reasoning harder to inspect than its predecessor's",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI's own tests found Astra's reasoning harder to inspect than its predecessor's",
+                "source_span": "the company found Astra's written reasoning harder to monitor than its predecessor in tests designed to measure whether a model could obscure its reasoning",
+                "note": "'Harder to inspect' is a valid paraphrase of 'harder to monitor'; attribution to OpenAI's own tests is confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the hallucination rate fell from 12.2% to 4.2%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the hallucination rate fell from 12.2% to 4.2%",
+                "source_span": "OpenAI also reports lower hallucination rates in its internal evaluation, with Astra scoring 4.2% compared with 12.2% for GPT-5.6 Sol.",
+                "note": "Figures match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Both figures are from OpenAI's own evaluation",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Both figures are from OpenAI's own evaluation",
+                "source_span": "OpenAI also reports lower hallucination rates in its internal evaluation",
+                "note": "Source explicitly labels these as OpenAI's internal evaluation, confirming the trust qualifier."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Monitorability baselines for frontier models now include a named failure, not just a capability claim.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Monitorability baselines for frontier models now include a named failure, not just a capability claim.",
+                "source_span": "",
+                "note": "This is an editorial position characterising an industry-level shift; no source span confirms or contradicts it as a factual assertion."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Three governance instruments that financial-services teams treat as settled controls — bias audit rankings, vendor safety filters, and model reasoning traces — each show a documented failure mode this week. The pattern is not that AI is uncontrollable; it is that the specific artefacts organisations cite in sign-off processes are weaker than assumed."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_e57fe21e5640c66e",
+          "headline": "A classification-only model cuts routing costs by 200x",
+          "summary": "TypeSafe's Jev is trained purely to classify, route, and score, not to generate text. The company claims 20-200x faster and 40-400x cheaper than small frontier models, with output tokens free. Benchmarks are TypeSafe's own. Slot it into your next structured-output pipeline before committing a frontier model to any classification-only workload.",
+          "take": "Routing pipelines priced on full language-model inference now have a cheaper, purpose-built alternative.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-jev-a-system-one-model-that"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e57fe21e5640c66e",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A classification-only model cuts routing costs by 200x",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A classification-only model cuts routing costs by 200x",
+                "source_span": "claiming a new frontier model trained with RLCD and optimized for decisions, not text generation: 20–200x faster, 40–400x cheaper, with output tokens free",
+                "note": "The source states 40–400x cheaper; '200x' cost reduction falls within the stated range and is a reasonable representative figure, and the classification-only characterisation is supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "TypeSafe's Jev is trained purely to classify, route, and score, not to generate text.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "TypeSafe's Jev is trained purely to classify, route, and score, not to generate text.",
+                "source_span": "Jev is not a general language model and likely closer to a constrained or diffusion-like decision model; it cannot produce free-form text and requires predefined output formats",
+                "note": "Source confirms Jev cannot produce free-form text and is optimised for structured decisions, supporting the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The company claims 20-200x faster and 40-400x cheaper than small frontier models, with output tokens free.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The company claims 20-200x faster and 40-400x cheaper than small frontier models, with output tokens free.",
+                "source_span": "claiming a new frontier model trained with RLCD and optimized for decisions, not text generation: 20–200x faster, 40–400x cheaper, with output tokens free",
+                "note": "Numbers and 'output tokens free' match the source exactly; 'small frontier models' is a paraphrase of the implied comparison class, acceptable as house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Benchmarks are TypeSafe's own.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Benchmarks are TypeSafe's own.",
+                "source_span": "claiming a new frontier model trained with RLCD and optimized for decisions, not text generation",
+                "note": "The source presents these as TypeSafe's own claims without external validation, and the source excerpt does not cite independent benchmark verification, supporting the trust-qualifier note."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Slot it into your next structured-output pipeline before committing a frontier model to any classification-only workload.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Slot it into your next structured-output pipeline before committing a frontier model to any classification-only workload.",
+                "source_span": "replacing LLMs as structured classifiers / judges / routing policies in production systems where autoregressive generation is unnecessary overhead",
+                "note": "This is an editorial call to action; the embedded factual framing (structured-output / classification use case) is supported by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Routing pipelines priced on full language-model inference now have a cheaper, purpose-built alternative.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Routing pipelines priced on full language-model inference now have a cheaper, purpose-built alternative.",
+                "source_span": "replacing LLMs as structured classifiers / judges / routing policies in production systems where autoregressive generation is unnecessary overhead... 40–400x cheaper, with output tokens free",
+                "note": "The source confirms Jev is cheaper and purpose-built for routing/classification tasks, supporting the take's factual core."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Routing costs are an independent problem getting an independent fix.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "routing costs, on-device compression, SDK ergonomics, and lie-detection methodology are independent problems getting independent fixes",
+                "source_span": "",
+                "note": "synthesis: The source excerpt does not mention routing costs as a topic covered in this section's stories."
+              },
+              {
+                "schema_version": 1,
+                "claim": "On-device compression is an independent problem getting an independent fix.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "routing costs, on-device compression, SDK ergonomics, and lie-detection methodology are independent problems getting independent fixes",
+                "source_span": "",
+                "note": "synthesis: The source excerpt does not mention on-device compression as a topic covered in this section's stories."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SDK ergonomics is an independent problem getting an independent fix.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "SDK ergonomics",
+                "source_span": "api: add Agents API",
+                "note": "synthesis: The openai-python SDK v3.13.0 release adding an Agents API is a plausible paraphrase of an SDK ergonomics fix."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Lie-detection methodology is an independent problem getting an independent fix.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "lie-detection methodology are independent problems getting independent fixes",
+                "source_span": "Over a month, 19 teams of interpretability and safety researchers competed to build the best AI lie detector.",
+                "note": "synthesis: The source excerpt covers the Aletheia's Quest competition focused on AI lie-detection methodology, supporting this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Touch whichever bottleneck your current pipeline actually hits.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Touch whichever bottleneck your current pipeline actually hits.",
+                "source_span": "",
+                "note": "synthesis: This is an editorial call to action; 'Touch' here is used as a verb (not a named entity), making it purely editorial framing with no checkable factual content."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_4da6f632f0489a42",
+          "headline": "llama.cpp gains two sharper compression modes for Qualcomm chips",
+          "summary": "llama.cpp build b11006 adds Q4_K and Q6_K quantisation kernel support for Qualcomm's Hexagon processor, contributed by Qualcomm's own engineers. These two formats compress model weights more aggressively than the prior baseline, letting larger models run on-device without a GPU. Pull b11006 and benchmark your target model size against your Snapdragon device's memory ceiling.",
+          "take": "Qualcomm Hexagon inference was limited to coarser compression formats; two finer ones land in llama.cpp today.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://github.com/ggml-org/llama.cpp/releases/tag/b11006"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_4da6f632f0489a42",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "llama.cpp gains two sharper compression modes for Qualcomm chips",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "llama.cpp gains two sharper compression modes for Qualcomm chips",
+                "source_span": "hexagon: Support for K-Quants Q4_K and Q6_K (#28994)",
+                "note": "'Two sharper compression modes for Qualcomm chips' is a fair paraphrase of Q4_K and Q6_K kernel support for the Hexagon processor."
+              },
+              {
+                "schema_version": 1,
+                "claim": "llama.cpp build b11006 adds Q4_K and Q6_K quantisation kernel support",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "llama.cpp build b11006 adds Q4_K and Q6_K quantisation kernel support",
+                "source_span": "b11006\nPre-release\nhexagon: Support for K-Quants Q4_K and Q6_K (#28994)\nimplement q6k/q4k kernels",
+                "note": "Source confirms build b11006 adds Q4_K and Q6_K kernel support."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Q4_K and Q6_K quantisation kernel support is for Qualcomm's Hexagon processor",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "for Qualcomm's Hexagon processor",
+                "source_span": "hexagon: Support for K-Quants Q4_K and Q6_K (#28994)",
+                "note": "Source explicitly names the Hexagon processor as the target."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Q4_K and Q6_K support was contributed by Qualcomm's own engineers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "contributed by Qualcomm's own engineers",
+                "source_span": "Co-authored-by: Max Krasnyansky maxk@qti.qualcomm.com",
+                "note": "The qti.qualcomm.com email domain confirms the contributor is a Qualcomm engineer."
+              },
+              {
+                "schema_version": 1,
+                "claim": "These two formats compress model weights more aggressively than the prior baseline",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "These two formats compress model weights more aggressively than the prior baseline",
+                "source_span": "",
+                "note": "The source excerpt does not compare Q4_K/Q6_K compression aggressiveness to any prior baseline."
+              },
+              {
+                "schema_version": 1,
+                "claim": "letting larger models run on-device without a GPU",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "letting larger models run on-device without a GPU",
+                "source_span": "",
+                "note": "The source excerpt makes no mention of GPU usage or the ability to run larger models on-device."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pull b11006 and benchmark your target model size against your Snapdragon device's memory ceiling",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Pull b11006 and benchmark your target model size against your Snapdragon device's memory ceiling",
+                "source_span": "",
+                "note": "This is an editorial call to action; 'Snapdragon' is not mentioned in the source excerpt, making the specific device claim unverifiable."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Qualcomm Hexagon inference was limited to coarser compression formats; two finer ones land in llama.cpp today",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Qualcomm Hexagon inference was limited to coarser compression formats; two finer ones land in llama.cpp today",
+                "source_span": "",
+                "note": "The source confirms Q4_K and Q6_K are newly added but does not state what formats were previously supported or characterise them as coarser."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_95723d13c750105d",
+          "headline": "OpenAI's Python library now lets engineers call the Agents API directly",
+          "summary": "OpenAI's Python SDK v3.13.0 adds native Agents API support, bringing agent orchestration into the same library engineers already use for completions. Previously, calling agent endpoints required hand-rolled REST calls outside the SDK. Already running the SDK? Upgrade to v3.13.0 and wire one existing completion workflow to the Agents API; the migration cost is a version bump.",
+          "take": "Agentic Python workflows now have a first-party SDK method, where direct REST calls were the only path.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://github.com/openai/openai-python/releases/tag/v3.13.0"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_95723d13c750105d",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python library now lets engineers call the Agents API directly",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "OpenAI's Python library now lets engineers call the Agents API directly",
+                "source_span": "api: add Agents API (1c4284a)",
+                "note": "The source confirms v3.13.0 of the openai-python library adds Agents API support, supporting the headline's claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python SDK v3.13.0 adds native Agents API support",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI's Python SDK v3.13.0 adds native Agents API support",
+                "source_span": "v3.13.0 ... Features api: add Agents API (1c4284a)",
+                "note": "The source release notes for v3.13.0 explicitly list adding the Agents API as a feature."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Previously, calling agent endpoints required hand-rolled REST calls outside the SDK",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Previously, calling agent endpoints required hand-rolled REST calls outside the SDK",
+                "source_span": "",
+                "note": "The source excerpt only confirms the new feature was added; it says nothing about what was required before, so this prior-state claim cannot be verified from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Upgrade to v3.13.0 and wire one existing completion workflow to the Agents API; the migration cost is a version bump",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Upgrade to v3.13.0 and wire one existing completion workflow to the Agents API; the migration cost is a version bump",
+                "source_span": "",
+                "note": "The source excerpt does not describe migration effort or steps; this is an editorial/advisory claim not checkable from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agentic Python workflows now have a first-party SDK method, where direct REST calls were the only path",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agentic Python workflows now have a first-party SDK method, where direct REST calls were the only path",
+                "source_span": "",
+                "note": "The source confirms the SDK now supports the Agents API, but does not address what the prior path was; the 'REST calls were the only path' portion is unverifiable from the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_186325a7ac3945b7",
+          "headline": "Small trusted judges outperform internal probes at catching AI lies",
+          "summary": "EleutherAI competed in Aletheia's Quest, a 19-team competition to build AI lie detectors. Their retrospective finds black-box monitoring generalised further than expected, while white-box probes inverted on out-of-distribution data. The companion repository, including a curated battery of deception datasets, is public on GitHub. Clone it before building any agent-monitoring eval stack.",
+          "take": "White-box probes were the assumed baseline; a 19-team competition found small black-box judges generalise further.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://blog.eleuther.ai/aletheia-retrospective/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_186325a7ac3945b7",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Small trusted judges outperform internal probes at catching AI lies",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Small trusted judges outperform internal probes at catching AI lies",
+                "source_span": "Black-box monitoring went much further than we expected... A small trusted judge worked well on most forms of deception from much larger suspect models... White-box probes work fairly well in single scenarios, but beyond their training distributions can expose signals that are not relevant in the conversation.",
+                "note": "The source supports that small trusted judges generalised further and white-box probes had significant limitations out-of-distribution, supporting the headline's comparative claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "EleutherAI competed in Aletheia's Quest, a 19-team competition to build AI lie detectors.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "EleutherAI competed in Aletheia's Quest, a 19-team competition to build AI lie detectors.",
+                "source_span": "Over a month, 19 teams of interpretability and safety researchers competed to build the best AI lie detector.",
+                "note": "Source confirms EleutherAI competed in Aletheia's Quest with 19 teams building AI lie detectors."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Their retrospective finds black-box monitoring generalised further than expected.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Their retrospective finds black-box monitoring generalised further than expected",
+                "source_span": "Black-box monitoring went much further than we expected.",
+                "note": "Direct paraphrase of the source's takeaway."
+              },
+              {
+                "schema_version": 1,
+                "claim": "White-box probes inverted on out-of-distribution data.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "white-box probes inverted on out-of-distribution data",
+                "source_span": "all five linear probes we tested showed a statistically significant inversion on at least one out-of-distribution dataset.",
+                "note": "Source confirms probes showed statistically significant inversion on out-of-distribution datasets."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The companion repository, including a curated battery of deception datasets, is public on GitHub.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The companion repository, including a curated battery of deception datasets, is public on GitHub.",
+                "source_span": "We release a companion repository containing our best-performing methods and the gauntlet, our curated battery of deception datasets... https://github.com/EleutherAI/how-to-catch-an-ai-liar",
+                "note": "Source confirms the companion repository with curated deception datasets is released on GitHub."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone it before building any agent-monitoring eval stack.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Clone it before building any agent-monitoring eval stack.",
+                "source_span": "",
+                "note": "This is a call to action; however as an editorial/action directive it is out of scope — but the word 'Clone' as a named entity hint is noted; the source never uses the word 'Clone' and this is purely an editorial recommendation not a factual claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "White-box probes were the assumed baseline; a 19-team competition found small black-box judges generalise further.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "White-box probes were the assumed baseline; a 19-team competition found small black-box judges generalise further.",
+                "source_span": "Over a month, 19 teams of interpretability and safety researchers competed to build the best AI lie detector... Black-box monitoring went much further than we expected... A small trusted judge worked well on most forms of deception from much larger suspect models.",
+                "note": "Source confirms 19 teams competed and that black-box small judges generalised further than expected; framing white-box as 'assumed baseline' is a reasonable editorial compression of the source's structure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "There were 19 teams in the competition.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Across 19 teams",
+                "source_span": "19 teams of interpretability and safety researchers competed to build the best AI lie detector.",
+                "note": "digest: Source explicitly states 19 teams competed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Small black-box judges generalised further than white-box probes.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "small black-box judges generalised further than white-box probes",
+                "source_span": "Black-box monitoring went much further than we expected. A small trusted judge worked well on most forms of deception from much larger suspect models.",
+                "note": "digest: Source confirms black-box judges generalised further; 'small' is supported by reference to Qwen 3.5 9B as the trusted judge versus 27B–120B suspect models."
+              },
+              {
+                "schema_version": 1,
+                "claim": "White-box probes inverted on out-of-distribution data.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "which inverted on out-of-distribution data",
+                "source_span": "all five linear probes we tested showed a statistically significant inversion on at least one out-of-distribution dataset.",
+                "note": "digest: Source explicitly states probes showed statistically significant inversion on out-of-distribution datasets."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Black-box lie detectors outperformed probes.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Black-box lie detectors outperformed probes",
+                "source_span": "Black-box monitoring went much further than we expected... White-box performance is highly situational. White-box probes work fairly well in single scenarios, but beyond their training distributions can expose signals that are not relevant in the conversation.",
+                "note": "digest: Source supports that black-box methods outperformed white-box probes in generalisation, consistent with the summary's claim."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "This week's practical releases each remove a different friction point rather than sharing a common theme, which is itself the signal: routing costs, on-device compression, SDK ergonomics, and lie-detection methodology are independent problems getting independent fixes. Touch whichever bottleneck your current pipeline actually hits."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_37b12f32b2edc18f",
+          "headline": "Safe agents can form unsafe systems, a 16-day stress test finds",
+          "summary": "An arXiv preprint ran eight parallel worlds of ten agents for 16 days, generating over 850,000 model calls. Three adversarial events — prompt injection, misinformation, and memory exposure — found no world fully resilient; threats written into persistent memory triggered actions up to 46 hours later. Threats persisting 46 hours later make the system the measurable unit of risk.",
+          "take": "Multi-agent safety evaluations targeted individual models; persistent shared memory makes the system the unit of risk.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/papers/2609.17320"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_37b12f32b2edc18f",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Safe agents can form unsafe systems, a 16-day stress test finds",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Safe agents can form unsafe systems, a 16-day stress test finds",
+                "source_span": "individually capable and apparently safe agents can form systems with qualitatively different failure modes",
+                "note": "The headline accurately paraphrases the paper's core finding over a 16-day run."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint ran eight parallel worlds of ten agents for 16 days",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint ran eight parallel worlds of ten agents for 16 days",
+                "source_span": "We ran eight parallel worlds of ten agents from identical starting conditions",
+                "note": "The source confirms eight worlds of ten agents; 'arXiv preprint' is consistent with the paper being on arXiv (hf papers reference), and 16 days matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The system generated over 850,000 model calls",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "generating over 850,000 model calls",
+                "source_span": "the agents generated more than 850,000 LLM calls",
+                "note": "'Model calls' is a plain-English paraphrase of 'LLM calls'; the figure matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Three adversarial events — prompt injection, misinformation, and memory exposure — were delivered",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Three adversarial events — prompt injection, misinformation, and memory exposure",
+                "source_span": "we delivered three controlled stress events through ordinary interaction surfaces: indirect prompt injection, misinformation, and exposure of private agent memories",
+                "note": "'Memory exposure' is a valid compression of 'exposure of private agent memories'; all three events match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "No world was fully resilient",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "found no world fully resilient",
+                "source_span": "No evaluated world achieved full resilience across all three events",
+                "note": "Direct paraphrase of the source finding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Threats written into persistent memory triggered actions up to 46 hours later",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "threats written into persistent memory triggered actions up to 46 hours later",
+                "source_span": "writing it into their own persistent memory, and acting on it up to 46 hours later",
+                "note": "The 46-hour figure and persistent memory mechanism match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Threats persisting 46 hours later make the system the measurable unit of risk",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Threats persisting 46 hours later make the system the measurable unit of risk",
+                "source_span": "the frontier of safety therefore shifts from aligning models to engineering resilient autonomous systems",
+                "note": "This is an editorial framing of the paper's conclusion; the 46-hour figure is sourced and the 'system as unit of risk' maps to the source's conclusion about safety shifting to system-level engineering."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Multi-agent safety evaluations targeted individual models; persistent shared memory makes the system the unit of risk.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Multi-agent safety evaluations targeted individual models; persistent shared memory makes the system the unit of risk.",
+                "source_span": "This creates a safety regime that cannot be characterized by evaluating model responses in isolation... model-level alignment is not compositional",
+                "note": "The take accurately reflects the paper's argument that individual-model evaluation is insufficient and shared persistent memory elevates the system as the risk unit."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": null
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "llama.cpp RPC server patched.",
+      "sentence": "Dangling memory pointers in cached compute graphs let unauthenticated remote clients hijack execution; build b11000 fixes it.",
+      "story_ids": [
+        "c_1e69a52ff6260e63"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Finetuning dissolves copyright filter claims.",
+      "sentence": "GPT-4o, Gemini, and DeepSeek reproduced up to 90% of unrelated copyrighted books after finetuning on one author's work.",
+      "story_ids": [
+        "c_a9f9176d31ecc328"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Black-box lie detectors outperformed probes.",
+      "sentence": "Across 19 teams, small black-box judges generalised further than white-box probes, which inverted on out-of-distribution data.",
+      "story_ids": [
+        "c_186325a7ac3945b7"
+      ]
+    }
+  ],
+  "generated_at": "2026-09-16T21:34:44.410315Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23.1",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: amber -- currents: 1 (tier pool exhausted)"
+}
