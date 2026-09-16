@@ -1,0 +1,248 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-16T21:38:38.090048Z",
+  "computed_verdict": "red",
+  "one_line": "Solid editorial day; headline/take misalignment on Astra and two body-close shape failures need fixing before publish.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9c191ef241e94174",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "OpenAI's new flagship model hides its own reasoning trace",
+      "fix_kind": "text_edit",
+      "instruction": "The headline asserts the model 'hides its own reasoning trace' as a deliberate act, but the summary says the reasoning is 'harder to inspect' — a capability limitation, not concealment. Rewrite to reflect the documented finding: e.g. 'OpenAI's new flagship model is harder to inspect than its predecessor, even as hallucinations fall'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9c191ef241e94174",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Last week we flagged Astra's cybersecurity rating; the sharper concern is monitorability.",
+      "fix_kind": "sourcing",
+      "instruction": "The prior_coverage_ref (c_067041f0e7446f50) is not in any of the three supplied prior issues, so the claim 'Last week we flagged Astra's cybersecurity rating' cannot be verified against the record. Either confirm the reference resolves to a published story or remove the callback sentence.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9c191ef241e94174",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Monitorability baselines for frontier models now include a named failure, not just a capability claim.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is abstract and does not name the model or the specific failure (harder-to-inspect reasoning). Sharpen to a declarative proposition that adds the position the body stopped short of, e.g. 'Astra's reasoning is measurably harder to inspect than its predecessor's, making monitorability a named baseline gap.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_53c5be5ee5b7822e",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "when does resilience become complacency?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture body must close on a strategic question anchored to a specific role, decision, or constraint in the reader's org. 'When does resilience become complacency?' is a rhetorical question with no anchor — it could apply to any domain. Rewrite to anchor it: e.g. 'If your AI infrastructure commitments were sized before the BIS stress episode, does your current scenario set still hold?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_53c5be5ee5b7822e",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Risk-appetite resilience now sits inside the macro stress test, where AI valuation was the variable.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is opaque — 'sits inside the macro stress test' is not a falsifiable proposition. Rewrite as a plain declarative: e.g. 'The BIS September review names AI overinvestment as a documented macro stress variable, not a speculative one.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_53c5be5ee5b7822e",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "finance_angle",
+      "severity": "minor",
+      "quote": "For anyone sizing AI infrastructure commitments, the BIS framing is now the reference",
+      "fix_kind": "text_edit",
+      "instruction": "The financial-services angle here is thin: the story is a macro market-stress summary with AI as one of three simultaneous triggers. The FS lens ('sizing AI infrastructure commitments') is grafted on rather than intrinsic. Either sharpen the FS angle with a specific implication for FS teams (e.g. how the BIS framing affects model-risk or capital-planning sign-off) or consider whether this story belongs in Currents.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_186325a7ac3945b7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "Small trusted judges outperform internal probes at catching AI lies",
+      "fix_kind": "text_edit",
+      "instruction": "Hands-On headlines must carry the tool / repo / version / config in the noun phrase. 'Small trusted judges' names a category, not an artefact. Rewrite to name the concrete deliverable: e.g. 'EleutherAI's Aletheia retrospective: black-box judges outperform white-box probes on out-of-distribution deception data'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_186325a7ac3945b7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Clone it before building any agent-monitoring eval stack.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On imperative close must be sharpened to a specific artefact + trigger. 'Clone it' is acceptable but 'before building any agent-monitoring eval stack' is generic. Tighten the trigger to the specific decision point: e.g. 'Clone the repository and run the deception-dataset battery against your current monitoring probe before committing to a white-box approach.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "GPT-4o, Gemini, and DeepSeek reproduced up to 90% of unrelated copyrighted books after finetuning on one author's work.",
+      "fix_kind": "text_edit",
+      "instruction": "The story summary states 'up to 85-90%'; the digest sentence rounds to '90%' without the lower bound, overstating the finding. Change to '85–90%' to match the sourced range.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_37b12f32b2edc18f",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Threats persisting 46 hours later make the system the measurable unit of risk.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body should end on a presence-form maturity signal (what exists and what it is worth today). 'Make the system the measurable unit of risk' is a normative conclusion that belongs in the take, not the body close. Rewrite the body's final sentence to describe what the study demonstrates exists: e.g. 'The 850,000-call dataset and adversarial event logs are public, giving practitioners the first large-scale empirical baseline for multi-agent threat persistence.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_37b12f32b2edc18f",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Multi-agent safety evaluations targeted individual models; persistent shared memory makes the system the unit of risk.",
+      "fix_kind": "text_edit",
+      "instruction": "The take's second clause ('persistent shared memory makes the system the unit of risk') repeats the body's closing sentence almost verbatim. The take should add the publication's position beyond what the body already states. Rewrite to assert the implication: e.g. 'Shared memory persistence, not model-level alignment, is now the documented attack surface in multi-agent deployments.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a9f9176d31ecc328",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "AI vendors' fair-use legal defences now rest on safety measures a finetuning step dissolves.",
+      "fix_kind": "text_edit",
+      "instruction": "The take asserts a legal position ('fair-use legal defences') that the source (an arXiv preprint) does not establish — the preprint demonstrates technical bypass, not legal consequence. Rewrite to stay within what the source supports: e.g. 'Safety filters cited as copyright controls are bypassed by a single finetuning step, across GPT-4o, Gemini, and DeepSeek.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e57fe21e5640c66e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "Routing pipelines priced on full language-model inference now have a cheaper, purpose-built alternative.",
+      "fix_kind": "carry_forward",
+      "instruction": "The routing-cost theme (classification-only models as cheaper alternatives to frontier inference) has appeared across recent issues in different forms. Not a defect today, but if a third routing-cost story appears next issue, require explicit progression or a cross-reference.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "ad3df2c13de0d0d40bfb693c1e08ee1b2152323cbe28bf6beda2de8ca1c1bd4d",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.) | 1 echo(es) not counted: the same defect filed again in another field or under another criterion | 1 finding(s) dropped: malformed shape"
+}
