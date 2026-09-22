@@ -1049,3 +1049,29 @@ python -m pytest tests/ -q                        # full suite before commit
 
 `pyproject.toml` keeps its floors-only philosophy — it states intent;
 `constraints.txt` states what actually runs tonight.
+
+## 20. "How is readership doing?" — the local dashboard
+
+Two surfaces exist. The GoatCounter site (aivector.goatcounter.com,
+log in with your account) is live to the second and always available.
+The branded local dashboard gives the considered view — issues labelled
+by number, the publication's own typography — and fetches on demand — one
+batch of API calls when it opens or when you press the refresh badge in
+the masthead, none in between:
+
+```bash
+cd tools/dashboard
+npm install        # first time only
+npm run dev        # then open http://localhost:5199
+```
+
+It reads `GOATCOUNTER_API_TOKEN` from the repo `.env` and injects it
+server-side, so the token never reaches the browser. If the page says
+"api unreachable", the token is missing from `.env` — regenerate one at
+GoatCounter under your user settings → API.
+
+Issue labels come from `data/released/*/issue.json` at server start, so
+a freshly released issue appears by number after restarting `npm run
+dev`. All counter dimensions are shown: pages, referrers, countries,
+languages, browsers, systems, screen sizes, and campaigns when any
+exist.
