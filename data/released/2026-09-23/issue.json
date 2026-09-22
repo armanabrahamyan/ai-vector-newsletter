@@ -1,0 +1,1161 @@
+{
+  "schema_version": 9,
+  "issue_number": 62,
+  "revision": 0,
+  "date": "2026-09-23",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_cd3d305d87fcc49a",
+        "headline": "Anthropic's flagship model now costs 40% less and runs 30% faster",
+        "summary": "Anthropic's Claude Opus 5.5 delivers frontier agentic coding at 40% lower cost per task than Opus 5, with cache reads priced 60% cheaper, the dominant cost in long-running agent work. One early tester audited a 200,000-line codebase in under three hours; Opus 5 took over 20. Migrate long-horizon agent workflows first.",
+        "take": "Long-horizon agent costs drop 40% where Opus 5 set the baseline.",
+        "take_route": "R3",
+        "source_urls": [
+          "https://www.anthropic.com/claude-opus-5-5",
+          "https://vercel.com/changelog/claude-opus-5-5-now-available-on-ai-gateway",
+          "https://tldr.tech/ai/2026-09-22"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_cd3d305d87fcc49a",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's flagship model now costs 40% less and runs 30% faster",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Anthropic's flagship model now costs 40% less and runs 30% faster",
+              "source_span": "Our tests show that at default settings it will cost 40% less than Opus 5 on typical workloads... Opus 5.5 also generates output more than 30% faster than Opus 5.",
+              "note": "Both the 40% cost reduction and 30% speed improvement are directly confirmed by the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's Claude Opus 5.5 delivers frontier agentic coding at 40% lower cost per task than Opus 5",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Anthropic's Claude Opus 5.5 delivers frontier agentic coding at 40% lower cost per task than Opus 5",
+              "source_span": "It costs less per token than Opus 5 and uses fewer tokens per task, which nets out to a 40% drop in costs... Opus 5.5 delivers frontier results on agentic coding at a fraction of the cost.",
+              "note": "The source confirms 40% cost drop per task and frontier agentic coding positioning."
+            },
+            {
+              "schema_version": 1,
+              "claim": "cache reads priced 60% cheaper",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "with cache reads priced 60% cheaper",
+              "source_span": "Cache reads (which make up the majority of agentic and coding work costs) are $0.20 per million tokens, 60% less than Opus 5.",
+              "note": "The 60% cache read price reduction is directly stated in the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "cache reads are the dominant cost in long-running agent work",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the dominant cost in long-running agent work",
+              "source_span": "Cache reads (which make up the majority of agentic and coding work costs)",
+              "note": "'Dominant cost' is a fair paraphrase of 'make up the majority of agentic and coding work costs'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "One early tester audited a 200,000-line codebase in under three hours",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "One early tester audited a 200,000-line codebase in under three hours",
+              "source_span": "An early tester used it to audit and fix a 200,000-line codebase in under three hours",
+              "note": "Exact match with the source, though the source also says 'and fix' which the summary omits — omission is not an error."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Opus 5 took over 20 hours",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Opus 5 took over 20",
+              "source_span": "where Opus 5 took over 20 hours and used 2.5x as many tokens",
+              "note": "The source confirms Opus 5 took over 20 hours on the same task."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Long-horizon agent costs drop 40% where Opus 5 set the baseline.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Long-horizon agent costs drop 40% where Opus 5 set the baseline.",
+              "source_span": "Our tests show that at default settings it will cost 40% less than Opus 5 on typical workloads... Cache reads (which make up the majority of agentic and coding work costs) are $0.20 per million tokens, 60% less than Opus 5.",
+              "note": "The 40% cost drop versus Opus 5 is confirmed; 'long-horizon agent' is a reasonable paraphrase of agentic/coding workloads where cache reads dominate."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Opus 5.5 cuts agent costs.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Opus 5.5 cuts agent costs.",
+              "source_span": "It costs less per token than Opus 5 and uses fewer tokens per task, which nets out to a 40% drop in costs.",
+              "note": "digest: The source confirms Opus 5.5 costs 40% less than Opus 5, supporting the claim that it cuts agent costs."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A 200,000-line codebase audit finished in under three hours under Opus 5.5.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "a 200,000-line codebase audit that took over 20 hours under Opus 5 finished in under three hours",
+              "source_span": "An early tester used it to audit and fix a 200,000-line codebase in under three hours, where Opus 5 took over 20 hours and used 2.5x as many tokens.",
+              "note": "digest: The source directly states the 200,000-line codebase audit took under three hours with Opus 5.5 and over 20 hours with Opus 5."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The same audit took over 20 hours under Opus 5.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "took over 20 hours under Opus 5",
+              "source_span": "where Opus 5 took over 20 hours and used 2.5x as many tokens",
+              "note": "digest: The source explicitly states Opus 5 took over 20 hours on the same task."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_73dd8c6c918a2efa",
+          "headline": "Xiaomi reaches frontier AI on $3M, reshaping the build-vs-buy calculus",
+          "summary": "Xiaomi's MiMo-V2.6-Pro, a mixture-of-experts model with 42 billion active parameters, debuted top of Artificial Analysis's open-weights intelligence ranking. The reinforcement learning run cost $2.6M across 130 hours; weights, training code, and environments are public under MIT licence. If a phone maker reaches frontier open-weight quality at that cost, what does your closed-model contract actually buy?",
+          "take": "Frontier open-weight leadership now belongs to a phone maker, not an established AI lab.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.latent.space/p/ainews-xiaomi-mimo-v26-pro-1t-a42b"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_73dd8c6c918a2efa",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Xiaomi reaches frontier AI on $3M, reshaping the build-vs-buy calculus",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Xiaomi reaches frontier AI on $3M, reshaping the build-vs-buy calculus",
+                "source_span": "@zephyr_z9 cites 130 hours, 75B tokens, and $2.6M for the RL run behind the result",
+                "note": "$2.6M rounded to $3M is acceptable approximation; 'frontier AI' is supported by Artificial Analysis ranking MiMo-V2.6-Pro top open-weights model."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Xiaomi's MiMo-V2.6-Pro is a mixture-of-experts model with 42 billion active parameters",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Xiaomi's MiMo-V2.6-Pro, a mixture-of-experts model with 42 billion active parameters",
+                "source_span": "Artificial Analysis says MiMo-V2.6-Pro debuts as the top open-weights model on its Intelligence Index (46), with 1.02T total / 42B active parameters",
+                "note": "42B active parameters and MoE architecture are confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "MiMo-V2.6-Pro debuted top of Artificial Analysis's open-weights intelligence ranking",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "debuted top of Artificial Analysis's open-weights intelligence ranking",
+                "source_span": "Artificial Analysis says MiMo-V2.6-Pro debuts as the top open-weights model on its Intelligence Index (46)",
+                "note": "Source directly confirms this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The reinforcement learning run cost $2.6M across 130 hours",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The reinforcement learning run cost $2.6M across 130 hours",
+                "source_span": "@zephyr_z9 cites 130 hours, 75B tokens, and $2.6M for the RL run behind the result",
+                "note": "Both figures match the source exactly, though attributed to a tweet rather than Xiaomi directly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Weights, training code, and environments are public under MIT licence",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "weights, training code, and environments are public under MIT licence",
+                "source_span": "@XiaomiMiMo launched MiMo-V2.6 Pro and Flash, described as open omnimodal models with weights, technical report, RL environments, and training code. @victormustar notes the models are under MIT license.",
+                "note": "Source confirms weights, training code, and environments are open, and MIT licence is noted; the 7K+ task datasets have not yet been released but the summary does not claim otherwise."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Frontier open-weight leadership now belongs to a phone maker, not an established AI lab.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Frontier open-weight leadership now belongs to a phone maker, not an established AI lab.",
+                "source_span": "This is a first for the 'Apple of China' phone maker-turned-frontier lab... Xiaomi is not traditionally considered one of the six Chinese AI Tigers, so it is very surprising to the established order of names you have come to know and love.",
+                "note": "Source confirms Xiaomi is a phone maker outside the established AI lab order, and the model tops the open-weights ranking, supporting this editorial-factual claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Xiaomi is a phone maker.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a phone maker's open-weight model",
+                "source_span": "the 'Apple of China' phone maker-turned-frontier lab",
+                "note": "digest: Source explicitly describes Xiaomi as a phone maker."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The RL run cost $2.6M.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A $2.6M reinforcement learning run",
+                "source_span": "@zephyr_z9 cites 130 hours, 75B tokens, and $2.6M for the RL run behind the result",
+                "note": "digest: Source directly cites $2.6M for the RL run, though attributed to a tweet rather than the official report."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Xiaomi's model is open-weight.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a phone maker's open-weight model",
+                "source_span": "@XiaomiMiMo launched MiMo-V2.6 Pro and Flash, described as open omnimodal models with weights",
+                "note": "digest: Source confirms the model is released with open weights."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Xiaomi's model topped the open-weights intelligence ranking.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "atop the open-weights intelligence ranking",
+                "source_span": "Artificial Analysis says MiMo-V2.6-Pro debuts as the top open-weights model on its Intelligence Index (46)",
+                "note": "digest: Source confirms MiMo-V2.6-Pro is ranked #1 on Artificial Analysis's Intelligence Index for open-weights models."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Four separate supply-chain decisions converged this week.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Four separate supply-chain decisions converged this week",
+                "source_span": "",
+                "note": "synthesis: The number 'four' is an editorial count of thematic decisions; the sources do not enumerate or label four supply-chain decisions, making this unverifiable from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Who builds frontier models is one of the supply-chain decisions.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "who builds frontier models",
+                "source_span": "Xiaomi is not traditionally considered one of the six Chinese AI Tigers, so it is very surprising to the established order of names you have come to know and love.",
+                "note": "synthesis: The Xiaomi MiMo-V2.6 story is about a new entrant building frontier models, supporting this framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Who verifies their scores is one of the supply-chain decisions.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "who verifies their scores",
+                "source_span": "AISI and EvalEval are working to diagnose gaps in evaluation reporting and build shared infrastructure to close them.",
+                "note": "synthesis: The AISI/EvalEval story is explicitly about verifying and reproducing benchmark scores."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Who secures their inference is one of the supply-chain decisions.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "who secures their inference",
+                "source_span": "NVIDIA Confidential Computing (CC) provides a pathway for running these workloads securely using memory-encrypted confidential virtual machines (CVMs), confidential GPUs, and encrypted NVIDIA NVLink.",
+                "note": "synthesis: The NVIDIA Confidential Computing story is directly about securing AI inference."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Who controls their permissions is one of the supply-chain decisions.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "who controls their permissions",
+                "source_span": "A zero-day vulnerability that gives locally run apps and terminal commands complete control of the agent raises serious doubts.",
+                "note": "synthesis: The Meta Muse zero-day story is centrally about permission control and access token security."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each decision just got cheaper to get right and more expensive to get wrong.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Each decision just got cheaper to get right and more expensive to get wrong",
+                "source_span": "",
+                "note": "synthesis: This is pure editorial framing/pattern-naming with no checkable factual content in the sources."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_d81491f7759e4515",
+          "headline": "Meta's new AI agent hands full account control to any local app",
+          "summary": "Muse, Meta's agentic assistant, holds authenticated access to email, calendar, purchases, and social accounts. A zero-day lets any locally installed app or terminal command redirect transcription to an attacker's server, handing over the authentication token. Amazon has already blocked Muse. Does your agent-approval process actually inspect credential-storage models before account-level permissions are granted?",
+          "take": "Privileged AI agents inherit the attack surface of every permission they hold, not just the tasks they run.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arstechnica.com/security/2026/09/muse-metas-extraordinarily-privileged-ai-assistant-has-a-serious-0-day/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_d81491f7759e4515",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Meta's new AI agent hands full account control to any local app",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Meta's new AI agent hands full account control to any local app",
+                "source_span": "The zero-day allows any app or terminal command to gain access to the token that authenticates users to their Muse account... Once that happens, the attackers have the token that gives complete control over the Muse account.",
+                "note": "The headline accurately paraphrases the zero-day's effect as described in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse is Meta's agentic assistant",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Muse, Meta's agentic assistant",
+                "source_span": "Meta introduced Muse a few weeks ago. The assistant \"books appointments, fills out forms and handles customer service,\" \"proactively takes tasks off your plate\"",
+                "note": "The source confirms Muse is Meta's AI assistant with agentic capabilities."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse holds authenticated access to email, calendar, purchases, and social accounts",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "holds authenticated access to email, calendar, purchases, and social accounts",
+                "source_span": "The macOS app... also works with a user's WhatsApp, email, calendar, and social media accounts... can \"make purchases, generate images, create documents, and connect with your favorite apps and services.\"",
+                "note": "Source confirms authenticated access to email, calendar, social accounts, and purchase capability."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A zero-day lets any locally installed app or terminal command redirect transcription to an attacker's server",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A zero-day lets any locally installed app or terminal command redirect transcription to an attacker's server",
+                "source_span": "It allows processes to change the endpoint where transcription occurs. Normally, it's a server address operated by Meta. Attackers can exploit this flaw by changing the location to their own endpoint.",
+                "note": "Source directly confirms the transcription endpoint redirection mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The zero-day hands over the authentication token",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "handing over the authentication token",
+                "source_span": "The zero-day allows any app or terminal command to gain access to the token that authenticates users to their Muse account... Once that happens, the attackers have the token that gives complete control over the Muse account.",
+                "note": "Source confirms the attack yields the authentication token."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Amazon has already blocked Muse",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Amazon has already blocked Muse",
+                "source_span": "Amazon on Sunday began blocking Muse from its site.",
+                "note": "Source confirms Amazon blocked Muse, minor omission of 'from its site' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Privileged AI agents inherit the attack surface of every permission they hold, not just the tasks they run.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Privileged AI agents inherit the attack surface of every permission they hold, not just the tasks they run.",
+                "source_span": "",
+                "note": "This is an editorial position; the source does not use the phrase 'Privileged AI agents' or make this generalised claim, so it cannot be confirmed or denied from the excerpt alone."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9686512bb1915a6f",
+          "headline": "UK government agency makes benchmark results reproducible and publicly verifiable",
+          "summary": "Benchmark scores for frontier models have been unverifiable across labs; UK AISI and EvalEval now publish structured Evaluation Cards covering six frontier models across five benchmarks, including GPT-5 and Claude Opus variants. Configuration and transcript data are public. Does the published configuration behind that benchmark score actually match your deployment context?",
+          "take": "Procurement teams leaning on benchmark scores now have verified reference points, where unverifiable self-reports were the only option.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://huggingface.co/blog/evaleval-aisi"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9686512bb1915a6f",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "UK government agency makes benchmark results reproducible and publicly verifiable",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "UK government agency makes benchmark results reproducible and publicly verifiable",
+                "source_span": "AISI and EvalEval are working to diagnose gaps in evaluation reporting and build shared infrastructure to close them... The UK AI Security Institute is a research organisation within the UK government's Department for Science, Innovation and Technology.",
+                "note": "AISI is a UK government agency and the collaboration explicitly aims to make benchmark results reproducible and publicly verifiable via Evaluation Cards."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Benchmark scores for frontier models have been unverifiable across labs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Benchmark scores for frontier models have been unverifiable across labs",
+                "source_span": "results are reported across many formats, platforms, and outlets, often without enough information to reproduce them.",
+                "note": "The source confirms results have lacked reproducibility information across outlets, supporting this characterisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "UK AISI and EvalEval now publish structured Evaluation Cards",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "UK AISI and EvalEval now publish structured Evaluation Cards",
+                "source_span": "AISI is making publicly reported evaluation methods and findings available through Evaluation Cards where appropriate.",
+                "note": "The source confirms AISI and EvalEval are publishing Evaluation Cards."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evaluation Cards cover six frontier models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "covering six frontier models across five benchmarks",
+                "source_span": "These results cover six frontier models: Claude Opus 4, Claude Opus 4.5, Claude Opus 4.6, GPT-5, GPT-5.2, and GPT-5.4.",
+                "note": "The source explicitly lists six frontier models."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evaluation Cards cover five benchmarks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "covering six frontier models across five benchmarks",
+                "source_span": "verified results, context, and configuration information for the five benchmarks in the paper's main experiment",
+                "note": "The source confirms five benchmarks are included."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evaluation Cards include GPT-5 and Claude Opus variants",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "including GPT-5 and Claude Opus variants",
+                "source_span": "Claude Opus 4, Claude Opus 4.5, Claude Opus 4.6, GPT-5, GPT-5.2, and GPT-5.4.",
+                "note": "The source confirms GPT-5 variants and Claude Opus variants are included; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Configuration and transcript data are public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Configuration and transcript data are public.",
+                "source_span": "AISI is making publicly reported evaluation methods and findings available through Evaluation Cards where appropriate. The release includes verified results, context, and configuration information... Transcript-level transparency matters not only for reproducibility, but also for analysis and diagnosis.",
+                "note": "The source confirms configuration and transcript-level data are being made publicly available."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Procurement teams leaning on benchmark scores now have verified reference points, where unverifiable self-reports were the only option.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Procurement teams leaning on benchmark scores now have verified reference points, where unverifiable self-reports were the only option.",
+                "source_span": "Where other reports lack these details, releases like AISI's provide verified reference points for interpreting evaluations in context",
+                "note": "The source supports 'verified reference points'; 'procurement teams' is an editorial generalisation of practitioners, and 'unverifiable self-reports were the only option' is supported by the source's description of the prior state of reporting."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_4eee9be0463a47b5",
+          "headline": "NVIDIA's secure inference retains 96% speed on sensitive workloads",
+          "summary": "Encrypted inference on NVIDIA's Blackwell GPUs retained 96.1–98.2% of baseline throughput in NVIDIA's own tests, with per-token latency under 5% overhead. The gains come from framework-level fixes: smarter memory routing, async token readback, and a kernel-timing correction. Which data residency obligation actually governs your customer-facing deployment: the one your legal team cited, or your regulator's published standard?",
+          "take": "Secure inference was a performance trade-off; NVIDIA's own numbers put the cost below 4%.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/enabling-private-high-performance-production-ai-inference-with-nvidia-confidential-computing/"
+          ],
+          "prior_coverage_ref": "c_6890100a93a19344",
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_4eee9be0463a47b5",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's secure inference retains 96% speed on sensitive workloads",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA's secure inference retains 96% speed on sensitive workloads",
+                "source_span": "CC on retained 96.1– 98.2% of CC off output-token throughput",
+                "note": "Rounding 96.1–98.2% to '96%' is acceptable approximation; 'sensitive workloads' paraphrases the confidential/secure inference context accurately."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Encrypted inference on NVIDIA's Blackwell GPUs retained 96.1–98.2% of baseline throughput in NVIDIA's own tests",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Encrypted inference on NVIDIA's Blackwell GPUs retained 96.1–98.2% of baseline throughput in NVIDIA's own tests",
+                "source_span": "CC on retained 96.1– 98.2% of CC off output-token throughput... The NVIDIA performance engineering team applied this comparison using the hardware and software configuration summarized in Table 2.",
+                "note": "Figures and attribution to NVIDIA's own tests match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "per-token latency under 5% overhead",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with per-token latency under 5% overhead",
+                "source_span": "mean TPOT remained within 1.2% to 4.3% of the baseline",
+                "note": "1.2–4.3% is correctly summarised as 'under 5% overhead'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "smarter memory routing, async token readback, and a kernel-timing correction",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "smarter memory routing, async token readback, and a kernel-timing correction",
+                "source_span": "TensorRT LLM uses CC-aware memory selection... TensorRT LLM moves repeated token and sampling-data readback to an asynchronous worker... TensorRT LLM uses the GPU %globaltimer for tactic measurements under CC",
+                "note": "All three framework-level fixes are accurately paraphrased from the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Secure inference was a performance trade-off; NVIDIA's own numbers put the cost below 4%.",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "Secure inference was a performance trade-off; NVIDIA's own numbers put the cost below 4%.",
+                "source_span": "mean TPOT remained within 1.2% to 4.3% of the baseline... keeping per-token latency overhead below 5%",
+                "note": "The source states latency overhead reaches up to 4.3% (and characterises it as 'below 5%'), so 'below 4%' is contradicted by the upper bound of 4.3% reported in the source."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Four separate supply-chain decisions converged this week: who builds frontier models, who verifies their scores, who secures their inference, and who controls their permissions. Each decision just got cheaper to get right and more expensive to get wrong."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_cd463181d973efaf",
+          "headline": "Hugging Face lets you load quantised local models without a wrapper",
+          "summary": "Hugging Face's Transformers library now loads GGUF quantised models (the format powering Ollama, LM Studio, and Jan) directly via from_pretrained, no wrapper needed. On Apple Silicon, it reuses llama.cpp's underlying kernels and benchmarks within a few percent of llama.cpp's speed. Load a Q4_K_M checkpoint and drop it into your existing Transformers pipeline today.",
+          "take": "Local quantised models required a separate inference stack; Transformers now loads them natively on Apple Silicon.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/blog/transformers-llama-cpp-quants"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_cd463181d973efaf",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face lets you load quantised local models without a wrapper",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Hugging Face lets you load quantised local models without a wrapper",
+                "source_span": "To load a GGUF model, pass its Hub model_id and filename as gguf_file to from_pretrained. No extra configuration is needed",
+                "note": "Source confirms GGUF models load via from_pretrained with no extra wrapper or configuration."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face's Transformers library now loads GGUF quantised models directly via from_pretrained",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Hugging Face's Transformers library now loads GGUF quantised models (the format powering Ollama, LM Studio, and Jan) directly via from_pretrained, no wrapper needed.",
+                "source_span": "Transformers now runs llama.cpp quants from_pretrained",
+                "note": "Source confirms GGUF models load directly via from_pretrained in Transformers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GGUF is the format powering Ollama, LM Studio, and Jan",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the format powering Ollama, LM Studio, and Jan",
+                "source_span": "Its inference engine powers local AI tools such as Ollama, LM Studio, and Jan.",
+                "note": "Source confirms llama.cpp (which uses GGUF) powers Ollama, LM Studio, and Jan."
+              },
+              {
+                "schema_version": 1,
+                "claim": "On Apple Silicon, it reuses llama.cpp's underlying kernels",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "On Apple Silicon, it reuses llama.cpp's underlying kernels",
+                "source_span": "To bring performance close to llama.cpp, we're reusing its underlying ggml kernels through the kernels library, and reducing overhead in generate. Our initial focus is local inference on Apple Silicon",
+                "note": "Source explicitly states reuse of llama.cpp's underlying ggml kernels on Apple Silicon."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Transformers benchmarks within a few percent of llama.cpp's speed",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "benchmarks within a few percent of llama.cpp's speed",
+                "source_span": "Transformers is close to llama.cpp across all three checkpoints.",
+                "note": "'Within a few percent' is a reasonable paraphrase of 'close to llama.cpp' per the benchmark results described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Local quantised models required a separate inference stack; Transformers now loads them natively on Apple Silicon.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Local quantised models required a separate inference stack; Transformers now loads them natively on Apple Silicon.",
+                "source_span": "We want to make it easier to run these models locally with transformers, too... Our initial focus is local inference on Apple Silicon",
+                "note": "Source supports both that GGUF previously required separate tools (llama.cpp, Ollama, etc.) and that Transformers now loads them natively on Apple Silicon."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hugging Face's Transformers library now loads GGUF checkpoints directly.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Hugging Face's Transformers library now loads GGUF checkpoints directly",
+                "source_span": "Transformers now runs llama.cpp quants from_pretrained",
+                "note": "digest: The source confirms Transformers can now load GGUF checkpoints via from_pretrained, which is a direct load."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Transformers benchmarks within a few percent of llama.cpp on Apple Silicon.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "benchmarking within a few percent of llama.cpp on Apple Silicon",
+                "source_span": "Transformers is close to llama.cpp across all three checkpoints. Our initial focus is local inference on Apple Silicon",
+                "note": "digest: 'Within a few percent' is a reasonable paraphrase of 'close to llama.cpp'; Apple Silicon focus is confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Quantised local models load natively.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Quantised local models load natively",
+                "source_span": "when the weights stay packed on Metal, transformers automatically loads the compatible ggml/Metal layer kernels",
+                "note": "digest: 'Quantised' is a paraphrase of GGUF/quantized checkpoints; 'natively' reflects the automatic kernel loading without extra configuration described in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "This week's practical releases each reduce a different cost that teams had quietly accepted as fixed: inference overhead, token spend on classification, brittle eval suites, guesswork in test design, and contradictory data answers.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "inference overhead, token spend on classification, brittle eval suites, guesswork in test design, and contradictory data answers",
+                "source_span": "Transformers is close to llama.cpp across all three checkpoints ... this-that-model-1.0 ... generates zero output tokens doing it, where a frontier API call costs 8758 ms and the hosted systems that answer these questions well spend between 21 and 212 generated tokens per question thinking first ... EdgeGen enables agent improvement through finetuning and harness optimization ... Agents deployed in isolation lack the semantics and business definitions they need to answer accurately ... return answers that contradict other agents pointed at the same data.",
+                "note": "synthesis: Each cost named maps to a corresponding source story: inference overhead (transformers/llama.cpp), token spend (this-that-model-1.0), brittle eval suites (AI Evals/EdgeGen), guesswork in test design (EdgeGen), contradictory data answers (Genie One MCP); this is supported editorial compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The common thread is substitution, not augmentation.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The common thread is substitution, not augmentation.",
+                "source_span": "",
+                "note": "synthesis: This is pure editorial pattern-naming with no checkable factual content in the source excerpts."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_62baba3ee185d1e7",
+          "headline": "A small open model answers classification branches in 30 ms for a fraction of a cent",
+          "summary": "Routing tickets, flagging commands, clearing claims: software sends these questions to frontier models and waits 8.7 seconds, paying per token. This-that-model-1.0, a 2-billion-parameter typed decision model on arXiv, reads answers directly from its hidden state, never generating text. It scores 0.941 on a third-party question set; weights are public. Swap it into your next classification branch before the next billing cycle.",
+          "take": "Classification branches priced on frontier-model tokens now have a local, sub-cent alternative.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2609.23886"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_62baba3ee185d1e7",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A small open model answers classification branches in 30 ms for a fraction of a cent",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A small open model answers classification branches in 30 ms for a fraction of a cent",
+                "source_span": "this-that-model-1.0: A typed decision model that decides in 30 ms, for a millionth of a cent",
+                "note": "'Fraction of a cent' is a legitimate generalisation of 'a millionth of a cent'; 30 ms and open model are confirmed by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "software sends these questions to frontier models and waits 8.7 seconds",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "software sends these questions to frontier models and waits 8.7 seconds",
+                "source_span": "a frontier API call costs 8758 ms",
+                "note": "The source states 8758 ms (~8.8 seconds), not 8.7 seconds; this is a specific numeric mismatch, not a rounding within normal tolerance."
+              },
+              {
+                "schema_version": 1,
+                "claim": "This-that-model-1.0 is a 2-billion-parameter typed decision model on arXiv",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "This-that-model-1.0, a 2-billion-parameter typed decision model on arXiv",
+                "source_span": "this-that-model-1.0 is a 2B-parameter typed decision model",
+                "note": "2B-parameter matches 2-billion-parameter; arXiv provenance is confirmed by the source page."
+              },
+              {
+                "schema_version": 1,
+                "claim": "this-that-model-1.0 reads answers directly from its hidden state, never generating text",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reads answers directly from its hidden state, never generating text",
+                "source_span": "Its answer is read directly from the hidden state at a designated position and restricted to the option set the caller declared, so no text is generated",
+                "note": "Direct paraphrase of the source mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "this-that-model-1.0 scores 0.941 on a third-party question set",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It scores 0.941 on a third-party question set",
+                "source_span": "On a third party's recorded cohort of 68 decision questions, on their inputs and their wording, it scores 0.941",
+                "note": "Score and third-party attribution match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "weights are public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "weights are public",
+                "source_span": "The model is open-sourced in this https URL",
+                "note": "Open-sourced implies public weights; legitimate paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Classification branches priced on frontier-model tokens now have a local, sub-cent alternative.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Classification branches priced on frontier-model tokens now have a local, sub-cent alternative.",
+                "source_span": "a frontier API call costs 8758 ms and the hosted systems that answer these questions well spend between 21 and 212 generated tokens per question thinking first, billed for every one... One pass of our 42-family internal suite takes 32 seconds and 0.000217 USD of electricity",
+                "note": "'Local' is confirmed (never lets the state leave the machine); 'sub-cent' is supported by 0.000217 USD cost figure; 'frontier-model tokens' pricing is confirmed."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_5d1bb4a384462663",
+          "headline": "Synthetic edge cases expose where tool-calling agents break beyond happy paths",
+          "summary": "Tool-calling agents score well on tidy benchmarks but fail on edge cases that violate their own rules. EdgeGen (an arXiv preprint) auto-generates database-grounded edge cases from an agent's spec, no human annotation required. Fine-tuning on EdgeGen data lifted task-progress scores by 2 to 42 percent. Run it against your hardest agent workflow before your next eval cycle.",
+          "take": "Happy-path eval suites miss the failure modes that matter; edge-case generation closes that gap.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://huggingface.co/papers/2609.24115"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5d1bb4a384462663",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Synthetic edge cases expose where tool-calling agents break beyond happy paths",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Synthetic edge cases expose where tool-calling agents break beyond happy paths",
+                "source_span": "EdgeGen, a synthetic task generation framework that extracts compliance rules from an agent's specification and uses them to generate database-grounded edge-case tasks designed to violate these rules",
+                "note": "Headline accurately paraphrases the paper's core contribution of using synthetic edge cases to expose agent failures beyond happy paths."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Tool-calling agents score well on tidy benchmarks but fail on edge cases that violate their own rules.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Tool-calling agents score well on tidy benchmarks but fail on edge cases that violate their own rules.",
+                "source_span": "Existing synthetic task generation methods often produce generic tasks that ignore an agent's underlying state or database and fail to reflect real-world usage diversity.",
+                "note": "Reasonable paraphrase of the source's critique of existing benchmarks and the motivation for EdgeGen."
+              },
+              {
+                "schema_version": 1,
+                "claim": "EdgeGen is an arXiv preprint.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "EdgeGen (an arXiv preprint)",
+                "source_span": "EDGEGEN: Improving Tool-Calling Agents Beyond Happy Paths with Synthetic Edge Case Generation",
+                "note": "The source excerpt is from an arXiv-style paper page (community section, no peer review indicators), consistent with calling it a preprint; the trust qualifier is preserved."
+              },
+              {
+                "schema_version": 1,
+                "claim": "EdgeGen auto-generates database-grounded edge cases from an agent's spec.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "EdgeGen (an arXiv preprint) auto-generates database-grounded edge cases from an agent's spec",
+                "source_span": "EdgeGen, a synthetic task generation framework that extracts compliance rules from an agent's specification and uses them to generate database-grounded edge-case tasks",
+                "note": "Direct match to source description of EdgeGen's mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "EdgeGen requires no human annotation.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "no human annotation required",
+                "source_span": "a fully automated closed-loop system that requires no human annotation",
+                "note": "Exact match to source claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Fine-tuning on EdgeGen data lifted task-progress scores by 2 to 42 percent.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Fine-tuning on EdgeGen data lifted task-progress scores by 2 to 42 percent.",
+                "source_span": "Finetuning on data generated by EdgeGen yields a consistent mean progress improvement of 2 percent to 42 percent on tau2bench airline domain",
+                "note": "Numbers match; 'task-progress scores' is a fair plain-English rendering of 'mean progress improvement'; omission of the specific benchmark domain is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Happy-path eval suites miss the failure modes that matter; edge-case generation closes that gap.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Happy-path eval suites miss the failure modes that matter; edge-case generation closes that gap.",
+                "source_span": "Existing synthetic task generation methods often produce generic tasks that ignore an agent's underlying state or database and fail to reflect real-world usage diversity. We propose EdgeGen, a synthetic task generation framework that extracts compliance rules from an agent's specification and uses them to generate database-grounded edge-case tasks",
+                "note": "The take is an editorial position but its embedded factual assertion — that existing evals miss real failure modes and EdgeGen addresses this — is directly supported by the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_6546901918850f69",
+          "headline": "The AI testing guide built from 700 engineers' real questions",
+          "summary": "Hamel Husain's FAQ distils questions from over 700 engineers into sharp opinions on what actually works. The core advice: spend 60-80% of development time on error analysis, start by manually reviewing 20-50 outputs, and treat evals as part of development, not a separate budget line. Pull it up when your eval scores stop matching what users experience.",
+          "take": "Eval design was guesswork for most teams; 700 engineers' real failures now anchor the starting point.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://hamel.dev/blog/posts/evals-faq/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_6546901918850f69",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "The AI testing guide built from 700 engineers' real questions",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "The AI testing guide built from 700 engineers' real questions",
+                "source_span": "This document curates the most common questions Shreya and I received while teaching 700+ engineers & PMs AI Evals.",
+                "note": "Source confirms 700+ engineers; 'real questions' paraphrases 'most common questions received while teaching'; rounding and paraphrase are house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hamel Husain's FAQ distils questions from over 700 engineers",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Hamel Husain's FAQ distils questions from over 700 engineers",
+                "source_span": "",
+                "note": "The source names 'Shreya and I' as authors but never identifies the narrator as Hamel Husain; attributing the FAQ to Hamel Husain specifically is not supported by the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "spend 60-80% of development time on error analysis",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "spend 60-80% of development time on error analysis",
+                "source_span": "In the projects we've worked on, we've spent 60-80% of our development time on error analysis and evaluation.",
+                "note": "Near-verbatim match with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "start by manually reviewing 20-50 outputs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "start by manually reviewing 20-50 outputs",
+                "source_span": "Spend 30 minutes manually reviewing 20-50 LLM outputs whenever you make significant changes.",
+                "note": "Numbers match; omission of '30 minutes' qualifier is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "treat evals as part of development, not a separate budget line",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "treat evals as part of development, not a separate budget line",
+                "source_span": "It's important to recognize that evaluation is part of the development process rather than a distinct line item, similar to how debugging is part of software development.",
+                "note": "'Separate budget line' is a valid plain-English paraphrase of 'distinct line item'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pull it up when your eval scores stop matching what users experience",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Pull it up when your eval scores stop matching what users experience",
+                "source_span": "",
+                "note": "This specific trigger condition ('eval scores stop matching what users experience') does not appear in the source excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Eval design was guesswork for most teams; 700 engineers' real failures now anchor the starting point.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Eval design was guesswork for most teams; 700 engineers' real failures now anchor the starting point.",
+                "source_span": "",
+                "note": "The 'guesswork' characterisation is editorial; the '700 engineers' figure is sourced but 'real failures anchoring the starting point' is an editorial framing not verifiable from the excerpt alone."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_854b524659de6dfc",
+          "headline": "Databricks gives any agent a single governed window into your data estate",
+          "summary": "Agents querying the same Databricks data from different tools have returned contradictory answers, each carrying stale, hand-modelled definitions. Genie One MCP, now generally available inside Unity Gateway, gives any agent a single governed entry point across structured and unstructured data, with audit logging on every invocation. Add it to any agent already hitting your Lakehouse.",
+          "take": "Data agents now return consistent answers across tools; fragmented definitions produced contradictions before.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.databricks.com/blog/genie-one-mcp-now-generally-available"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_854b524659de6dfc",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks gives any agent a single governed window into your data estate",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Databricks gives any agent a single governed window into your data estate",
+                "source_span": "It gives any agent a single interface to retrieve structured and unstructured data, insights, and answers from Genie One, grounded in governed business context from Genie Ontology.",
+                "note": "'Single governed window into your data estate' is a supported paraphrase of 'single interface' with 'governed business context' across the data estate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agents querying the same Databricks data from different tools have returned contradictory answers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agents querying the same Databricks data from different tools have returned contradictory answers",
+                "source_span": "return answers that contradict other agents pointed at the same data.",
+                "note": "Source directly states agents return contradictory answers when pointed at the same data."
+              },
+              {
+                "schema_version": 1,
+                "claim": "each carrying stale, hand-modelled definitions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "each carrying stale, hand-modelled definitions",
+                "source_span": "rely on context that was modeled by hand at setup and has since gone stale",
+                "note": "'Stale, hand-modelled definitions' is a supported paraphrase of 'context that was modeled by hand at setup and has since gone stale'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie One MCP is now generally available inside Unity Gateway",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Genie One MCP, now generally available inside Unity Gateway",
+                "source_span": "The Genie One MCP now lives within Unity Gateway as a managed MCP Service",
+                "note": "Source confirms Genie One MCP is generally available and lives within Unity Gateway."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie One MCP gives any agent a single governed entry point across structured and unstructured data",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "gives any agent a single governed entry point across structured and unstructured data",
+                "source_span": "By serving as a single governed entry point for agentic interactions, the Genie One MCP directly eliminates the friction of agent sprawl.",
+                "note": "Source uses the exact phrase 'single governed entry point' and confirms coverage of structured and unstructured data."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie One MCP has audit logging on every invocation",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with audit logging on every invocation",
+                "source_span": "providing centralized governance, fine-grained policies, and audit logging across every invocation",
+                "note": "Source explicitly states audit logging across every invocation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Add it to any agent already hitting your Lakehouse",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Add it to any agent already hitting your Lakehouse",
+                "source_span": "",
+                "note": "The source never uses the term 'Lakehouse'; it refers to 'data estate' and 'Databricks', so the specific 'Lakehouse' label cannot be confirmed from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Data agents now return consistent answers across tools; fragmented definitions produced contradictions before.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Data agents now return consistent answers across tools; fragmented definitions produced contradictions before.",
+                "source_span": "With Genie One MCP, answers across agents stay consistent and grounded in Genie Ontology... reducing fragmented definitions and conflicting answers.",
+                "note": "Source confirms consistent answers across tools and that fragmented definitions previously caused conflicting answers."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "This week's practical releases each reduce a different cost that teams had quietly accepted as fixed: inference overhead, token spend on classification, brittle eval suites, guesswork in test design, and contradictory data answers. The common thread is substitution, not augmentation."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_159a6d34ba83baaf",
+          "headline": "Latin America's card fraud rate runs 160% above Europe's",
+          "summary": "Stripe's analysis of billions of transactions (2022–2026) finds Latin America's card fraud rate ran 160% above Europe's in 2025. Asia Pacific flipped to the lowest-fraud region for the first time, driven by strict 3DS mandates: Malaysia cut fraud 74% in three years. Before entering a new market, price its fraud environment into your margin model.",
+          "take": "Cross-border fraud risk was assumed uniform; four years of Stripe data shows it varies by 160%.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://stripe.com/blog/new-trends-in-global-card-fraud-how-3d-secure-and-regional-mandates-are-affecting-risk"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_159a6d34ba83baaf",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Latin America's card fraud rate runs 160% above Europe's",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Latin America's card fraud rate runs 160% above Europe's",
+                "source_span": "card fraud rates for businesses in Latin America were 65% higher than businesses in North America; 151% higher than businesses in Asia Pacific; and 160% higher than businesses in Europe, the Middle East, and Africa.",
+                "note": "The 160% figure is accurate; the headline omits 'Middle East and Africa' from the comparison region, which is a permissible compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Stripe's analysis of billions of transactions (2022–2026) finds Latin America's card fraud rate ran 160% above Europe's in 2025.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Stripe's analysis of billions of transactions (2022–2026) finds Latin America's card fraud rate ran 160% above Europe's in 2025.",
+                "source_span": "We analyzed billions of transactions on Stripe from January 2022 to March 2026... In 2025, businesses in Latin America saw 160% higher card fraud rates compared to businesses in Europe, the Middle East, and Africa",
+                "note": "All figures and the time range match the source; omission of 'Middle East and Africa' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Asia Pacific flipped to the lowest-fraud region for the first time",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Asia Pacific flipped to the lowest-fraud region for the first time",
+                "source_span": "businesses in Asia Pacific had lower card fraud rates than businesses in Europe, the Middle East, and Africa for the first time",
+                "note": "The source confirms Asia Pacific reached the lowest fraud rate for the first time, consistent with the summary's paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Asia Pacific's flip was driven by strict 3DS mandates",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "driven by strict 3DS mandates",
+                "source_span": "Markets across Asia Pacific have introduced 3D Secure (3DS) requirements for online card transactions... The data suggests the mandates are working.",
+                "note": "The source attributes Asia Pacific's fraud decline to 3DS mandates, supporting this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Malaysia cut fraud 74% in three years.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Malaysia cut fraud 74% in three years.",
+                "source_span": "businesses saw a 74% decrease in card fraud rates from 2022 to 2025—the biggest decrease across countries in the Asia Pacific region.",
+                "note": "2022 to 2025 is three years; the 74% figure matches exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Cross-border fraud risk was assumed uniform; four years of Stripe data shows it varies by 160%.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Cross-border fraud risk was assumed uniform; four years of Stripe data shows it varies by 160%.",
+                "source_span": "",
+                "note": "The source never states that cross-border fraud risk was 'assumed uniform'; that framing is introduced by the take without sourcing, making it unsupported as a factual assertion."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": null
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Opus 5.5 cuts agent costs.",
+      "sentence": "A 200,000-line codebase audit that took over 20 hours under Opus 5 finished in under three hours.",
+      "story_ids": [
+        "c_cd3d305d87fcc49a"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Xiaomi reaches frontier AI cheaply.",
+      "sentence": "A $2.6M reinforcement learning run put a phone maker's open-weight model atop the open-weights intelligence ranking.",
+      "story_ids": [
+        "c_73dd8c6c918a2efa"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Quantised local models load natively.",
+      "sentence": "Hugging Face's Transformers library now loads GGUF checkpoints directly, benchmarking within a few percent of llama.cpp on Apple Silicon.",
+      "story_ids": [
+        "c_cd463181d973efaf"
+      ]
+    }
+  ],
+  "generated_at": "2026-09-22T21:33:27.398582Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23.1",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: amber -- currents: 1 (tier pool exhausted)"
+}
