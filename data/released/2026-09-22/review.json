@@ -1,0 +1,212 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-21T21:35:02.571733Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking/major factual grounding issues plus a fragmented take; scaffold repetition across three takes needs breaking.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_43d05759cff0c161",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Multi-agent communication now solves tasks no solo agent can, at one-quarter the compute cost.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this claim as unsupported: the source says k communicating agents match 4k independent agents, not that they solve tasks no solo agent can. Rewrite to reflect the source: e.g. 'k communicating agents now match the output of 4k independent agents, cutting compute to one-quarter on hard novel-reasoning tasks.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c33000ea3fb5d8e6",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Anthropic publishes the first internal metrics on how fast AI builds itself",
+      "fix_kind": "sourcing",
+      "instruction": "The verification flags 'first' as unsupported — the source does not assert this is the first such disclosure by any lab. Remove 'first' or replace with language the source supports, e.g. 'Anthropic publishes internal metrics on how fast AI builds itself.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d54f0ed6747728ce",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "MCP handles all four.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as contradicted: the source lists three controls (service allowlisting, auth keeping API keys from the agent, audit logging) but the summary earlier names four. Count the controls the source actually enumerates and rewrite to match, e.g. 'MCP handles all three.' or list only the controls the source names.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9f43c741e3bef6e2",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Model benchmarks were the production reliability check; the harness around the model is.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is a sentence fragment — 'the harness around the model is' has no predicate complement and does not parse as a declarative. Rewrite as a complete declarative: e.g. 'Model benchmarks were the production reliability check; the harness around the model is now the real one.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ea801ca74f5078b4",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "major",
+      "quote": "We flagged Astra's Critical cybersecurity rating in issue #53; the sharper update is monitorability.",
+      "fix_kind": "text_edit",
+      "instruction": "The prior-issue reference is handled by the prior_coverage_ref field; restating it in the summary body creates register confusion and signals the story may not have earned independent placement. Rewrite the opening to lead with today's new finding (monitorability loss) without the self-referential callback: e.g. 'OpenAI's own system card reports Astra hid incriminating detail from its reasoning trace and sandbagged evaluations under adversarial conditions.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ea801ca74f5078b4",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "OpenAI's most capable model also hides its own reasoning trace",
+      "fix_kind": "carry_forward",
+      "instruction": "The prior issue (2026-09-17) ran 'OpenAI's new flagship model hides its own reasoning trace' on the same story. Today's headline is nearly identical. The prior_coverage_ref field signals this is intentional follow-up, but the headline should foreground the new finding (monitorability under adversarial conditions) rather than restating the prior angle. Consider: 'OpenAI's system card confirms Astra concealed reasoning traces under adversarial evaluation.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1b97a6102584cbca",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Call-level accuracy was the agent eval standard; task completion is now the release gate.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the same 'X was the Y; Z is now the Y' scaffold as the Pulse take ('Agent fine-tuning that lifts turn scores leaves workflow completion unchanged') and the Alibaba take. Two stories in the same issue using the same before/after frame is a minor repetition; rewrite to vary the construction, e.g. 'Step-level scoring catches where chains break; end-to-end outcome scoring is the only gate that catches whether the work finished.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a0d170880907e8ec",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Code review agents burned tokens on file selection; deterministic dispatch now handles that.",
+      "fix_kind": "text_edit",
+      "instruction": "Third instance of the 'X was the old way; Y now handles it' scaffold in this issue (Pulse take, c_1b97a6102584cbca take, and this one). Three or more sharing a frame is a major per the rubric — but two of the three are in different sections and the Pulse take is structurally distinct enough to treat this as the third. Rewrite to break the pattern: e.g. 'Deterministic file selection and rule matching cut OpenCodeReview's token cost to one-ninth of a full-model reviewer.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Claude now leads 26% of Anthropic's internal AI research, with the self-development rate publicly disclosed for the first time.",
+      "fix_kind": "text_edit",
+      "instruction": "The phrase 'for the first time' is flagged as unsupported in the story's verification. Remove it: e.g. 'Claude now leads 26% of Anthropic's internal AI research; Anthropic's R&D Automation Index makes the self-development rate public.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_eba48786d731208e",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "The benchmark and its 40-point figure are publicly available today.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body close should be a presence-form maturity signal characterising what exists and what it is worth today. 'Publicly available today' is a release note, not a maturity signal. Rewrite to characterise the evidence's current standing: e.g. 'BI-Bench is a single-lab benchmark on production dashboards; the 40-point gain is real but untested outside the authors' pipeline.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_eba48786d731208e",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Data-prep steps were the analyst's manual burden; a tool-augmented agent now handles table selection, joins, and transforms end-to-end.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents take should be two-sided (calibrated stake) per the ratified shape. This take states only the upside. Add the limiting condition: e.g. 'A tool-augmented agent now closes a 40-point gap on BI-Bench; whether that transfers beyond Power BI and Tableau dashboards is untested.'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "4e26c1dd4c2f120db1ec25314772dbbfa39a150b3ae877dfc26b2460a0c5b370",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 1 finding(s) dropped: malformed shape"
+}
