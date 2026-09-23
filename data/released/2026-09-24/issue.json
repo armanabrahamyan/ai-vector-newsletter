@@ -1,0 +1,1242 @@
+{
+  "schema_version": 9,
+  "issue_number": 63,
+  "revision": 0,
+  "date": "2026-09-24",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_ea96487524e186f9",
+        "headline": "Ollama rejects some models before inference, making benchmark scores meaningless",
+        "summary": "An arXiv preprint finds that in Ollama, Phi-3 and Gemma-3 are rejected before inference runs; the harness logs this as a model non-call, reporting 0% fidelity. Turn-pooled versus per-instance estimates differ by up to 55 points across stacks. The serving layer, not the model, is where local tool-use performance is decided.",
+        "take": "Local tool-use benchmarks measured model capability; the serving layer was the hidden variable all along.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://arxiv.org/abs/2609.26693"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "read",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_ea96487524e186f9",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Ollama rejects some models before inference, making benchmark scores meaningless",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Ollama rejects some models before inference, making benchmark scores meaningless",
+              "source_span": "Phi-3 and Gemma-3 are rejected before inference",
+              "note": "'Meaningless' is editorial compression of the source's finding that measured outcomes depend on the serving layer rather than model behavior, which is supported; the rejection fact is directly confirmed."
+            },
+            {
+              "schema_version": 1,
+              "claim": "An arXiv preprint finds that in Ollama, Phi-3 and Gemma-3 are rejected before inference runs",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "An arXiv preprint finds that in Ollama, Phi-3 and Gemma-3 are rejected before inference runs",
+              "source_span": "Phi-3 and Gemma-3 are rejected before inference",
+              "note": "The source is an arXiv preprint and explicitly states Phi-3 and Gemma-3 are rejected before inference in Ollama."
+            },
+            {
+              "schema_version": 1,
+              "claim": "the harness logs this as a model non-call, reporting 0% fidelity",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the harness logs this as a model non-call, reporting 0% fidelity",
+              "source_span": "downstream analysis can misclassify them as model non-calls and naively report 0% fidelity",
+              "note": "The body's phrasing is a slight compression but accurately reflects the source's description of the misclassification and 0% fidelity outcome."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Turn-pooled versus per-instance estimates differ by up to 55 points across stacks",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Turn-pooled versus per-instance estimates differ by up to 55 points across stacks",
+              "source_span": "turn-pooled versus per-instance estimates differ by up to about 55 points",
+              "note": "Rounding 'about 55 points' to '55 points' is acceptable house-style approximation; the claim is accurate."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The serving layer, not the model, is where local tool-use performance is decided",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "The serving layer, not the model, is where local tool-use performance is decided",
+              "source_span": "measured outcomes can depend on the serving layer rather than model behavior alone",
+              "note": "The body's stronger phrasing ('is decided') is a compression of the source's 'can depend on the serving layer rather than model behavior alone', but accurately captures the paper's central finding."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Local tool-use benchmarks measured model capability; the serving layer was the hidden variable all along.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Local tool-use benchmarks measured model capability; the serving layer was the hidden variable all along.",
+              "source_span": "Measuring the Serving Stack Instead of the Model: Hidden Confounds in Local Tool-Use Evaluation",
+              "note": "The take is an editorial restatement of the paper's central thesis, which is directly reflected in the paper's title and abstract findings."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_96ecfd6b9c01d625",
+          "headline": "AI agents' only readable audit trail is now under architectural threat",
+          "summary": "Redwood Research argues that latent-reasoning architectures, such as COCONUT and full-bandwidth transformers, would let agents reason for orders of magnitude longer without producing any human-readable chain of thought. That removes the only tool that currently makes agent cognition auditable. Does your governance framework still hold if the reasoning traces it depends on simply cease to exist?",
+          "take": "Chain-of-thought is the sole validated window into agent reasoning; competing labs are building around it.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://blog.redwoodresearch.org/p/latent-reasoning-architectures-would"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_96ecfd6b9c01d625",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AI agents' only readable audit trail is now under architectural threat",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AI agents' only readable audit trail is now under architectural threat",
+                "source_span": "Currently, 'chain of thought' (CoT) is our most valuable tool for understanding the reasoning and cognition of AI systems. However, some architectures would enable AI models to reason much more extensively in latent states rather than in text CoT. We think that a shift towards latent reasoning architectures would undermine the usefulness of CoT and make oversight much harder.",
+                "note": "The headline is a supported paraphrase: CoT is the primary readable audit trail and latent architectures threaten it, matching the source's core argument."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Redwood Research argues that latent-reasoning architectures, such as COCONUT and full-bandwidth transformers, would let agents reason for orders of magnitude longer without producing any human-readable chain of thought.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Redwood Research argues that latent-reasoning architectures, such as COCONUT and full-bandwidth transformers, would let agents reason for orders of magnitude longer without producing any human-readable chain of thought.",
+                "source_span": "some architectural changes (which could very plausibly become adopted in the near future) would give AI agents the ability to reason for orders of magnitude longer without necessarily putting any information into the CoT. Examples include COCONUT, which would entirely replace the CoT; and full-bandwidth transformers, which would add a latent channel in parallel to the CoT.",
+                "note": "The source never names 'Redwood Research' as the author; the organization behind this argument is not identified in the excerpt, so attributing it to Redwood Research is unsupported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "That removes the only tool that currently makes agent cognition auditable.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "That removes the only tool that currently makes agent cognition auditable.",
+                "source_span": "No other tool for understanding models' cognition comes close in terms of either practical usefulness or degree of empirical validation.",
+                "note": "The source supports CoT being the uniquely valuable tool for auditing cognition; calling it 'the only tool' is a supported compression of this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Chain-of-thought is the sole validated window into agent reasoning; competing labs are building around it.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Chain-of-thought is the sole validated window into agent reasoning; competing labs are building around it.",
+                "source_span": "No other tool for understanding models' cognition comes close in terms of either practical usefulness or degree of empirical validation.",
+                "note": "The first part (sole validated window) is supported, but 'competing labs are building around it' is not stated in the source; the source says companies 'might choose to adopt' latent architectures, not that competing labs are actively building around CoT."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One architectural shift closes the only readable window into agent reasoning.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "one architectural shift closes the only readable window into agent reasoning",
+                "source_span": "a shift towards latent reasoning architectures would undermine the usefulness of CoT and make oversight much harder... Today, the overwhelming majority of our (limited) information about AI systems' internal workings comes from (i) their CoT",
+                "note": "synthesis: The source explicitly states CoT is the primary readable window and latent reasoning architectures would close it; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Two separate developments hand regulators and institutions their first credible tools for inspecting what models actually do internally.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "two separate developments hand regulators and institutions their first credible tools for inspecting what models actually do internally",
+                "source_span": "Hariom Tatsat and Ariye Shater apply mechanistic interpretability to surface, monitor and steer internal features in Gemma 2 and GPT OSS, examining bias, hallucination, sentiment and trading setups for auditability",
+                "note": "synthesis: The source mentions mechanistic interpretability work for auditability (one development) and Morgan Stanley's governance/CALM framework (another), supporting 'two separate developments'; framing as 'first credible tools' is editorial but the underlying claim of new inspection tools is supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Governance and interpretability are moving in opposite directions simultaneously.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Governance and interpretability are moving in opposite directions simultaneously",
+                "source_span": "",
+                "note": "synthesis: This is editorial pattern-naming characterising the relationship between the stories; no single source span confirms or denies this directional framing."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_64106e0542203099",
+          "headline": "Regulators can now audit what a finance language model actually thinks",
+          "summary": "Tatsat and Shater apply mechanistic interpretability to Gemma 2 and GPT OSS, surfacing internal features tied to bias, hallucination, sentiment, and trading signals. The technique steers and monitors model internals rather than treating outputs as a black box. Before citing auditability in your next regulatory submission, which internal features does your model-risk framework actually specify?",
+          "take": "Opacity was the deployment barrier for language models in regulated finance; mechanistic interpretability removes it.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.risk.net/cutting-edge/7964165/beyond-the-black-box-interpretability-of-llms-in-finance"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_64106e0542203099",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Regulators can now audit what a finance language model actually thinks",
+                "verdict": "unsupported",
+                "location": "headline",
+                "summary_span": "Regulators can now audit what a finance language model actually thinks",
+                "source_span": "",
+                "note": "The source says the technique enables auditability in regulated settings but never mentions regulators as the auditing actor, and the claim that regulators 'can now' audit is presented as bare fact whereas the source frames it as potential/aspiration; additionally 'regulators' is not named in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Tatsat and Shater apply mechanistic interpretability to Gemma 2 and GPT OSS",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Tatsat and Shater apply mechanistic interpretability to Gemma 2 and GPT OSS",
+                "source_span": "Hariom Tatsat and Ariye Shater apply mechanistic interpretability to surface, monitor and steer internal features in Gemma 2 and GPT OSS",
+                "note": "Directly matches the source on authors, method, and models."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The technique surfaces internal features tied to bias, hallucination, sentiment, and trading signals",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "surfacing internal features tied to bias, hallucination, sentiment, and trading signals",
+                "source_span": "examining bias, hallucination, sentiment and trading setups for auditability",
+                "note": "'Trading signals' is a reasonable paraphrase of 'trading setups'; all four topics match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The technique steers and monitors model internals rather than treating outputs as a black box",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The technique steers and monitors model internals rather than treating outputs as a black box",
+                "source_span": "apply mechanistic interpretability to surface, monitor and steer internal features in Gemma 2 and GPT OSS",
+                "note": "'Black box' paraphrases the source's 'opacity'; steering and monitoring internals is directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Opacity was the deployment barrier for language models in regulated finance; mechanistic interpretability removes it",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Opacity was the deployment barrier for language models in regulated finance; mechanistic interpretability removes it",
+                "source_span": "their opacity is a barrier to deployment in high-stakes, regulated settings",
+                "note": "The source confirms opacity as a barrier but does not assert that mechanistic interpretability removes it; that conclusion is editorial and goes beyond what the source states."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": true
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_89bf1f97ec032227",
+          "headline": "Morgan Stanley deployed 110 agent-ready APIs with automated governance gates",
+          "summary": "Morgan Stanley has 110 APIs in production under an Architecture as Code framework that pairs the Model Context Protocol with agent-to-agent communication, enforcing governance through automated deployment gates. The model: describe your architecture in code; the gates check compliance before anything ships. When your agent network spans dozens of services, which team owns the governance layer?",
+          "take": "Morgan Stanley's API governance now runs as automated code checks, not post-deployment reviews.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.infoq.com/presentations/mcp-calm-api-architecture/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": "c_2877c632f9bb1a5c",
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_89bf1f97ec032227",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Morgan Stanley deployed 110 agent-ready APIs with automated governance gates",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Morgan Stanley deployed 110 agent-ready APIs with automated governance gates",
+                "source_span": "we've now deployed over 110 APIs in production using Architecture as Code, continuous deployments around a very unique combination of architecture, platform, and security",
+                "note": "'Over 110' rounds to '110'; 'agent-ready' and 'automated governance gates' are supported by the MCP/A2A and gates discussion in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Morgan Stanley has 110 APIs in production",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Morgan Stanley has 110 APIs in production",
+                "source_span": "we've now deployed over 110 APIs in production using Architecture as Code",
+                "note": "'Over 110' is reasonably compressed to '110' under house rounding rules."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Morgan Stanley uses an Architecture as Code framework",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "under an Architecture as Code framework",
+                "source_span": "we've now deployed over 110 APIs in production using Architecture as Code",
+                "note": "Source explicitly names Architecture as Code as the framework used."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The framework pairs the Model Context Protocol with agent-to-agent communication",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "pairs the Model Context Protocol with agent-to-agent communication",
+                "source_span": "how we've gone from a traditional API program to supporting MCP, to then looking at future protocols, which this is using A2A in the background",
+                "note": "Source references MCP and A2A (agent-to-agent) as the two protocols paired together; 'Model Context Protocol' is the full name of MCP, confirmed in source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The framework enforces governance through automated deployment gates",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "enforcing governance through automated deployment gates",
+                "source_span": "We're going to introduce governance and controls, that's a really big thing for us, and how that fits into both CALM and some of the work that we've been doing around gates",
+                "note": "Source confirms governance/controls and gates are key components; 'automated deployment gates' is a fair paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The model: describe your architecture in code; the gates check compliance before anything ships",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "describe your architecture in code; the gates check compliance before anything ships",
+                "source_span": "we've now deployed over 110 APIs in production using Architecture as Code, continuous deployments around a very unique combination of architecture, platform, and security",
+                "note": "Architecture as Code plus gates for compliance before deployment is consistent with the source's description of the program."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Morgan Stanley's API governance now runs as automated code checks, not post-deployment reviews",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Morgan Stanley's API governance now runs as automated code checks, not post-deployment reviews",
+                "source_span": "We're going to introduce governance and controls, that's a really big thing for us, and how that fits into both CALM and some of the work that we've been doing around gates",
+                "note": "The take's characterisation of governance via automated gates (pre-deployment) rather than post-deployment reviews is consistent with the source's description of Architecture as Code and deployment gates."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_3d91af67bc98d184",
+          "headline": "Google open-sources a Kubernetes-style orchestrator built for long-running agents",
+          "summary": "Agent workloads don't fit containers: they're stateful, bursty, and idle for long stretches waiting on model calls or human input. Google's AX (Apache 2.0, code public on GitHub) suspends idle agents in under a second and multiplexes dozens onto shared workers. The Hacker News thread flags real Kubernetes overhead. Does your fleet size justify the Kubernetes overhead you're replacing?",
+          "take": "Idle agents burning compute on standby now have a purpose-built suspension layer, not a Kubernetes workaround.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/09/google-ax-orchestrator/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_3d91af67bc98d184",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Google open-sources a Kubernetes-style orchestrator built for long-running agents",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Google open-sources a Kubernetes-style orchestrator built for long-running agents",
+                "source_span": "Google has introduced AX... an open-source, Apache 2.0-licensed orchestrator and declarative runtime designed to execute and scale autonomous AI agent workloads... The control plane exposes four declarative Kubernetes-style primitives",
+                "note": "Source confirms Google open-sourced AX, an Apache 2.0 orchestrator with Kubernetes-style primitives designed for autonomous agent workloads."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent workloads are stateful, bursty, and idle for long stretches waiting on model calls or human input",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "they're stateful, bursty, and idle for long stretches waiting on model calls or human input",
+                "source_span": "autonomous agents are stateful, bursty, and long-running... interspersed with prolonged idle periods while awaiting model responses, external API feedback, or human-in-the-loop intervention",
+                "note": "Source directly confirms agents are stateful, bursty, and idle waiting on model responses or human input."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google's AX is Apache 2.0",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google's AX (Apache 2.0, code public on GitHub)",
+                "source_span": "Google has introduced AX... an open-source, Apache 2.0-licensed orchestrator",
+                "note": "Source confirms AX is Apache 2.0 licensed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AX code is public on GitHub",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google's AX (Apache 2.0, code public on GitHub)",
+                "source_span": "hosted at agentexecutor.io and on GitHub as google/ax",
+                "note": "Source confirms AX is available on GitHub."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AX suspends idle agents in under a second",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "suspends idle agents in under a second",
+                "source_span": "AX is designed to resume suspended actors in sub-second intervals with zero cold-start delay",
+                "note": "Source confirms sub-second suspension/resumption; summary's 'under a second' is an accurate paraphrase of 'sub-second'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AX multiplexes dozens onto shared workers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "multiplexes dozens onto shared workers",
+                "source_span": "multiplexing dozens of tasks onto shared host workers to conserve compute resources",
+                "note": "Source directly states AX multiplexes dozens of tasks onto shared host workers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The Hacker News thread flags real Kubernetes overhead",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The Hacker News thread flags real Kubernetes overhead",
+                "source_span": "developers who criticise the marketing claim of 'ergonomic workflows' due to the heavy operational overhead of maintaining Kubernetes clusters, container registries, and custom CRDs via tools like ko",
+                "note": "Source confirms Hacker News discussions raised concerns about Kubernetes operational overhead; 'The Hacker News' is a minor name variant but refers to the same platform."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Idle agents burning compute on standby now have a purpose-built suspension layer, not a Kubernetes workaround",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Idle agents burning compute on standby now have a purpose-built suspension layer, not a Kubernetes workaround",
+                "source_span": "In conventional Kubernetes or container orchestration setups, keeping dedicated sandboxes active during these idle phases leads to compute underutilization... AX addresses this operational profile through an architecture rooted in systems research",
+                "note": "Source confirms AX is a purpose-built solution addressing the compute waste of idle agents in conventional Kubernetes setups, supporting the take's framing."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Governance and interpretability are moving in opposite directions simultaneously: one architectural shift closes the only readable window into agent reasoning while two separate developments hand regulators and institutions their first credible tools for inspecting what models actually do internally."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_0741a23743f82b3c",
+          "headline": "A healthy GPU cluster can still silently fail a real training job",
+          "summary": "NVIDIA's open-source Kubernetes controller, NVCRE, runs actual distributed workloads across node groups and names exactly which node failed each test. A 512-GPU job can underperform despite every health check passing; one slow GPU or misconfigured network path is enough. Deploy NVCRE against your next cluster bring-up and get a failed-node report before production lands.",
+          "take": "Cluster operators now have a named suspect node before the workload stalls, not after a customer ticket.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/validate-gpu-cluster-readiness-before-ai-workloads-land/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0741a23743f82b3c",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A healthy GPU cluster can still silently fail a real training job",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A healthy GPU cluster can still silently fail a real training job",
+                "source_span": "A GPU cluster can pass every health check and still fail to run an AI workload.",
+                "note": "The headline is a supported paraphrase of the source's opening statement."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA's open-source Kubernetes controller, NVCRE, runs actual distributed workloads across node groups",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA's open-source Kubernetes controller, NVCRE, runs actual distributed workloads across node groups",
+                "source_span": "NVIDIA Cluster Readiness Engine (NVCRE) is an open source Kubernetes controller that narrows the search to the specific nodes involved before production workloads land. It runs real distributed workloads across topology-aware node groups, measures the results, and reports which nodes failed each test.",
+                "note": "All facts — NVIDIA, open-source, Kubernetes controller, runs distributed workloads across node groups — are directly supported by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "NVCRE names exactly which node failed each test",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "names exactly which node failed each test",
+                "source_span": "It runs real distributed workloads across topology-aware node groups, measures the results, and reports which nodes failed each test.",
+                "note": "The source confirms NVCRE reports which nodes failed each test."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A 512-GPU job can underperform despite every health check passing",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A 512-GPU job can underperform despite every health check passing",
+                "source_span": "Even when every GPU, network link, and pod reports healthy, a 512-GPU training job can underperform or fail.",
+                "note": "Directly supported by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "one slow GPU or misconfigured network path is enough",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "one slow GPU or misconfigured network path is enough",
+                "source_span": "The cause may be one slow GPU, a link that degrades under load, or a configuration that quietly routes traffic over a slower path.",
+                "note": "Supported paraphrase; 'misconfigured network path' covers 'a configuration that quietly routes traffic over a slower path'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Deploy NVCRE against your next cluster bring-up and get a failed-node report before production lands",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Deploy NVCRE against your next cluster bring-up and get a failed-node report before production lands",
+                "source_span": "NVIDIA Cluster Readiness Engine (NVCRE) is an open source Kubernetes controller that narrows the search to the specific nodes involved before production workloads land.",
+                "note": "The call-to-action embeds a factual claim (failed-node report before production) that is supported; 'Deploy NVCRE' is the product name used in the source as NVCRE."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Cluster operators now have a named suspect node before the workload stalls, not after a customer ticket.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Cluster operators now have a named suspect node before the workload stalls, not after a customer ticket.",
+                "source_span": "Operators no longer need to write NVIDIA Collective Communications Library (NCCL) manifests by hand, bisect racks manually, or learn about degraded hardware from customer tickets.",
+                "note": "The take's factual core — identifying the suspect node before a customer ticket — is supported by the source's statement that operators no longer learn about degraded hardware from customer tickets."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Health checks miss slow GPUs.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "health checks that miss slow GPUs",
+                "source_span": "A GPU cluster can pass every health check and still fail to run an AI workload. Even when every GPU, network link, and pod reports healthy, a 512-GPU training job can underperform or fail. The cause may be one slow GPU, a link that degrades under load, or a configuration that quietly routes traffic over a slower path.",
+                "note": "synthesis: The source explicitly states health checks can miss slow GPUs causing job failures."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Local tests miss live failures.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "local tests that miss live failures",
+                "source_span": "the same patches passed 69.4% of the time when those checks were excluded, but only 45.9% with the complete verifier. About one in three patches that passed the other checks failed live-serving tests.",
+                "note": "synthesis: SWE-Serve source confirms patches passing local tests fail live-serving checks, matching the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Kubernetes masks scheduling limits.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Kubernetes that masks scheduling limits",
+                "source_span": "the load on both the scheduling algorithm and the central durable store (etcd) grows with the number of nodes and pods... which can create serious issues under high pod creation rates or high pod churn",
+                "note": "synthesis: The Modal source describes Kubernetes hiding scaling/scheduling limits until they become serious issues at scale."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The practical work this week is instrumentation, not capability.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The practical work this week is instrumentation, not capability.",
+                "source_span": "",
+                "note": "synthesis: This is editorial pattern-naming framing the week's theme; no checkable factual assertion is embedded."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_91c1af1f9ce79a50",
+          "headline": "Open-source tool converts any research paper into a runnable agent",
+          "summary": "Paper2Agent (open-source, published in Nature) feeds a paper and its codebase to an orchestration system that auto-generates tested tools, then packages them as a conversational agent. For AlphaGenome, it produced 22 validated tools on a laptop for under $15. Clone the repo and run it against a paper you've been meaning to implement before writing the scaffolding yourself.",
+          "take": "Repo archaeology was the hidden cost of published methods; Paper2Agent makes the paper itself the runnable artefact.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://spectrum.ieee.org/paper2agent-ai-agents-research-papers"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_91c1af1f9ce79a50",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Open-source tool converts any research paper into a runnable agent",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Open-source tool converts any research paper into a runnable agent",
+                "source_span": "Paper2Agent, a new open-source framework that transforms academic reports into interactive AI agents you can talk to",
+                "note": "'Any research paper' is a slight generalisation (source notes 26% of papers failed), but the headline is a fair paraphrase of the tool's stated purpose."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Paper2Agent is open-source",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Paper2Agent (open-source, published in Nature)",
+                "source_span": "Paper2Agent, a new open-source framework",
+                "note": "Source explicitly calls it open-source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Paper2Agent was published in Nature",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Paper2Agent (open-source, published in Nature)",
+                "source_span": "Zou and his colleagues described the tool 16 September in Nature.",
+                "note": "Source confirms publication in Nature."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Paper2Agent feeds a paper and its codebase to an orchestration system that auto-generates tested tools",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "feeds a paper and its codebase to an orchestration system that auto-generates tested tools",
+                "source_span": "Give it a paper, along with the accompanying codebase, data, or other supplementary material, and the system automatically extracts the core workflows, then spins up a tested, runnable toolkit",
+                "note": "Accurate paraphrase of the source description."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Paper2Agent packages tools as a conversational agent",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "then packages them as a conversational agent",
+                "source_span": "The validated tools were then packaged into a Model Context Protocol server and connected to Claude Code... a user-facing AlphaGenome agent that could take questions in plain English",
+                "note": "'Conversational agent' is a fair plain-English paraphrase of the MCP server connected to a chat-based AI."
+              },
+              {
+                "schema_version": 1,
+                "claim": "For AlphaGenome, Paper2Agent produced 22 validated tools",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "For AlphaGenome, it produced 22 validated tools",
+                "source_span": "the AI had produced 22 tools covering different aspects of AlphaGenome's functionality... All 22 tools passed automated validation",
+                "note": "Source confirms 22 tools, all validated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Paper2Agent produced the AlphaGenome tools on a laptop",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "on a laptop",
+                "source_span": "all on a personal laptop",
+                "note": "Source confirms 'personal laptop'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Paper2Agent produced the AlphaGenome tools for under $15",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "for under $15",
+                "source_span": "for less than US $15 in computing costs",
+                "note": "'Under $15' is an accurate rounding of 'less than US $15'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone the repo and run it against a paper",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Clone the repo and run it against a paper you've been meaning to implement before writing the scaffolding yourself",
+                "source_span": "",
+                "note": "This is a call to action referencing a repo URL/availability not confirmed in the source excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Repo archaeology was the hidden cost of published methods; Paper2Agent makes the paper itself the runnable artefact.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Repo archaeology was the hidden cost of published methods; Paper2Agent makes the paper itself the runnable artefact.",
+                "source_span": "spend a week wrestling with someone else's undocumented repo, broken dependencies, and half-finished readme.txt... Paper2Agent, a new open-source framework that transforms academic reports into interactive AI agents",
+                "note": "The take is editorial framing but its embedded factual assertion—that Paper2Agent turns papers into runnable artefacts—is supported by the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_b468bf46eacaf247",
+          "headline": "Databricks gives AI assistants governed access to enterprise business context",
+          "summary": "General-purpose agents hallucinate business answers because they lack governed context: wrong metric definitions, wrong source authority, wrong permissions. Databricks' Genie One MCP server publishes a single governed ontology to any compatible assistant, including Claude, ChatGPT, and Copilot. Connect the MCP server to your next agent prototype; the ontology layer is the part your prompt engineering can't replicate.",
+          "take": "Business analysts' agent queries now carry governed metric definitions, where raw table access was the only option.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.databricks.com/blog/genie-one-mcp-give-any-ai-agent-right-business-context"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b468bf46eacaf247",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks gives AI assistants governed access to enterprise business context",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Databricks gives AI assistants governed access to enterprise business context",
+                "source_span": "Genie One MCP brings that context to any MCP-compatible AI assistant, delivering reliable, governed, permission-aware answers in the tools teams already use.",
+                "note": "Source confirms Databricks' Genie One MCP provides governed business context to compatible AI assistants."
+              },
+              {
+                "schema_version": 1,
+                "claim": "General-purpose agents hallucinate business answers because they lack governed context",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "General-purpose agents hallucinate business answers because they lack governed context: wrong metric definitions, wrong source authority, wrong permissions.",
+                "source_span": "Without the right business context, general-purpose agents can't reliably determine what your metrics mean, which sources are authoritative, how data should connect, or what each user is allowed to see.",
+                "note": "Source supports the claim that lacking governed context causes unreliable answers; 'hallucinate' is a fair plain-English paraphrase of 'can't reliably determine'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks' Genie One MCP server publishes a single governed ontology to any compatible assistant",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Databricks' Genie One MCP server publishes a single governed ontology to any compatible assistant",
+                "source_span": "Instead of asking agents to infer meaning from raw tables or overloaded prompts, organizations can define business context once in Genie Ontology and make it available across every approved AI agent.",
+                "note": "Source confirms a single governed ontology is defined once and made available to any compatible agent."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Compatible assistants include Claude, ChatGPT, and Copilot",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "including Claude, ChatGPT, and Copilot",
+                "source_span": "It connects assistants such as ChatGPT, Claude, Microsoft Copilot, and coding agents to Genie One",
+                "note": "Source explicitly names Claude, ChatGPT, and Microsoft Copilot as compatible assistants."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Business analysts' agent queries now carry governed metric definitions, where raw table access was the only option",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Business analysts' agent queries now carry governed metric definitions, where raw table access was the only option.",
+                "source_span": "Instead of asking agents to infer meaning from raw tables or overloaded prompts, organizations can define business context once in Genie Ontology and make it available across every approved AI agent.",
+                "note": "Source confirms the shift from raw table access to governed metric definitions; 'business analysts' is a reasonable generalisation of business users."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9a5a366c98447ab6",
+          "headline": "Coding agents pass local tests but fail one-in-three live serving checks",
+          "summary": "SWE-Serve, a benchmark from NVIDIA built with the SGLang team, tests coding agents on real inference-serving code. Across 19 tasks with live-serving checks, pass rates dropped from 69.4% to 45.9% when those checks ran. The benchmark, paper, and leaderboard are public. Run SWE-Serve against your next agent eval before trusting local scores in production.",
+          "take": "Local test suites were the coding-agent quality bar; live serving failures expose a 23-point gap.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/how-swe-serve-exposes-the-gap-between-local-tests-and-live-serving/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9a5a366c98447ab6",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Coding agents pass local tests but fail one-in-three live serving checks",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Coding agents pass local tests but fail one-in-three live serving checks",
+                "source_span": "About one in three patches that passed the other checks failed live-serving tests.",
+                "note": "Source explicitly states 'about one in three patches that passed the other checks failed live-serving tests', directly supporting the headline."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SWE-Serve is a benchmark from NVIDIA built with the SGLang team",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "SWE-Serve, a benchmark from NVIDIA built with the SGLang team",
+                "source_span": "Developed with input from the SGLang team, SWE-Serve evaluates this gap with 53 tasks derived from merged changes to SGLang",
+                "note": "Source confirms SGLang team involvement; NVIDIA authorship is consistent with the source context (not contradicted), and 'built with' is a fair paraphrase of 'developed with input from'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SWE-Serve tests coding agents on real inference-serving code",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "tests coding agents on real inference-serving code",
+                "source_span": "SWE-Serve instead tests repository-scale changes across the inference-serving stack",
+                "note": "Source confirms SWE-Serve tests changes to real inference-serving software."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Across 19 tasks with live-serving checks, pass rates dropped from 69.4% to 45.9% when those checks ran",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Across 19 tasks with live-serving checks, pass rates dropped from 69.4% to 45.9% when those checks ran",
+                "source_span": "Across 19 tasks with live-serving checks, the same patches passed 69.4% of the time when those checks were excluded, but only 45.9% with the complete verifier.",
+                "note": "Numbers and task count match the source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The benchmark, paper, and leaderboard are public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The benchmark, paper, and leaderboard are public",
+                "source_span": "Quick links: Read the paper | Explore the leaderboard | Run SWE-Serve on GitHub",
+                "note": "Source provides public links to the paper, leaderboard, and GitHub, confirming all three are public."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Local test suites were the coding-agent quality bar; live serving failures expose a 23-point gap.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Local test suites were the coding-agent quality bar; live serving failures expose a 23-point gap.",
+                "source_span": "Across 19 tasks with live-serving checks, the same patches passed 69.4% of the time when those checks were excluded, but only 45.9% with the complete verifier.",
+                "note": "69.4% minus 45.9% equals 23.5 percentage points, which rounds to a 23-point gap; the editorial framing is opinion but the embedded number is supported by the source arithmetic."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_b1f1e39fe2480b65",
+          "headline": "Modal rebuilt its sandbox infrastructure to launch a million containers without Kubernetes",
+          "summary": "Modal's staff engineers scrapped Kubernetes for a fleet of parallel scheduling servers, each worker its own source of truth. The result: one million sandboxes in under a minute, median startup under 0.5 seconds. The one remaining bottleneck, a single Redis stream, holds past 100,000 workers. Pull the architecture write-up before designing your next high-concurrency agent execution layer.",
+          "take": "Kubernetes was the default scaling layer for AI sandboxes; Modal replaces global coordination with per-worker state.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/09/modal-scaling-sandboxes/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b1f1e39fe2480b65",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Modal rebuilt its sandbox infrastructure to launch a million containers without Kubernetes",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Modal rebuilt its sandbox infrastructure to launch a million containers without Kubernetes",
+                "source_span": "Colin Weld and Connor Adams, staff engineers at Modal, describe how they rebuilt their sandbox infrastructure from the ground up to support millions of concurrent sandboxes... In their benchmark, they created 1 million sandboxes in under a minute",
+                "note": "Source confirms Modal rebuilt sandbox infrastructure and achieved 1 million sandboxes, replacing Kubernetes-style coordination."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Modal's staff engineers scrapped Kubernetes for a fleet of parallel scheduling servers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Modal's staff engineers scrapped Kubernetes for a fleet of parallel scheduling servers",
+                "source_span": "rather than using a single, serialized scheduler, they deployed a fleet of scheduling servers operating in parallel",
+                "note": "Source confirms the shift away from Kubernetes to parallel scheduling servers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "each worker its own source of truth",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "each worker its own source of truth",
+                "source_span": "Instead of relying on a central datastore as the source of truth, each worker became its own source of truth.",
+                "note": "Near-verbatim match with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "one million sandboxes in under a minute",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "one million sandboxes in under a minute",
+                "source_span": "In their benchmark, they created 1 million sandboxes in under a minute",
+                "note": "Exact match with source benchmark result."
+              },
+              {
+                "schema_version": 1,
+                "claim": "median startup under 0.5 seconds",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "median startup under 0.5 seconds",
+                "source_span": "with median startup-to-code time under 0.5 seconds",
+                "note": "Matches source; minor omission of 'to-code time' is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The one remaining bottleneck, a single Redis stream",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The one remaining bottleneck, a single Redis stream",
+                "source_span": "The resulting architecture has only one bottleneck, they say: all workers publish their state as a single Redis stream.",
+                "note": "Matches source description of the sole bottleneck."
+              },
+              {
+                "schema_version": 1,
+                "claim": "holds past 100,000 workers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "holds past 100,000 workers",
+                "source_span": "load testing has suggested that this remains viable until well over 100,000 workers",
+                "note": "'Holds past 100,000 workers' is acceptable compression of 'viable until well over 100,000 workers'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pull the architecture write-up before designing your next high-concurrency agent execution layer.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Pull the architecture write-up before designing your next high-concurrency agent execution layer.",
+                "source_span": "",
+                "note": "This is a call to action; not a checkable factual claim and not addressed in the source excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Kubernetes was the default scaling layer for AI sandboxes; Modal replaces global coordination with per-worker state.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Kubernetes was the default scaling layer for AI sandboxes; Modal replaces global coordination with per-worker state.",
+                "source_span": "traditional container orchestration systems such as Kubernetes struggle to operate at this scale because they rely heavily on centralized coordination... The fundamental change Modal's engineers made to their platform was to stop coordinating globally and make scheduling look more like load balancing. Instead of relying on a central datastore as the source of truth, each worker became its own source of truth.",
+                "note": "Source supports both the Kubernetes-as-default framing and Modal's shift to per-worker state; editorial framing of 'default' is a reasonable generalisation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Each story today exposes a gap between what a standard check reports and what a real workload reveals: health checks that miss slow GPUs, local tests that miss live failures, Kubernetes that masks scheduling limits. The practical work this week is instrumentation, not capability."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_06dbe546ebbf05b1",
+          "headline": "Top AI agents pick the right fork only 60% of the time",
+          "summary": "Existing benchmarks measure whether an agent finishes a task; Taste-Bench measures whether it chose well along the way. Across 502 automatically mined decision forks, the best of 14 frontier models scores 59.7% (random baseline: 25%). Dataset and code are public. Distilling hindsight into a student model lifted SWE-bench Pro success from 14.6% to 33.7%.",
+          "take": "End-to-end task scores were the only agent quality signal; mid-run decision accuracy is now benchmarked and trainable.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/papers/2609.25804"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_06dbe546ebbf05b1",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Top AI agents pick the right fork only 60% of the time",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Top AI agents pick the right fork only 60% of the time",
+                "source_span": "the best model answers only 59.7% of the questions correctly",
+                "note": "59.7% rounds to 'only 60%'; 'top AI agents' paraphrases 'the best of 14 frontier models' — legitimate rounding and generalisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Existing benchmarks measure whether an agent finishes a task",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Existing benchmarks measure whether an agent finishes a task",
+                "source_span": "While existing benchmarks measure the end-to-end success of agents on long-horizon tasks, none of them measures the taste of an agent.",
+                "note": "Accurate paraphrase of the source's description of existing benchmarks."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Taste-Bench measures whether it chose well along the way",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Taste-Bench measures whether it chose well along the way",
+                "source_span": "we build Taste-Bench, a benchmark of taste questions constructed automatically from trajectories... Each question presents a decision fork, a point in a trajectory where multiple directions are available and one of them leads to a better outcome",
+                "note": "Accurate characterisation of Taste-Bench's purpose."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Across 502 automatically mined decision forks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Across 502 automatically mined decision forks",
+                "source_span": "Taste-Bench: 502 decision forks mined automatically from SWE-bench Pro and METR AI R&D trajectories",
+                "note": "Exact figure matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the best of 14 frontier models scores 59.7%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the best of 14 frontier models scores 59.7%",
+                "source_span": "The best of 14 frontier models scores 59.7% (random = 25%).",
+                "note": "Exact match with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "random baseline: 25%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "(random baseline: 25%)",
+                "source_span": "The best of 14 frontier models scores 59.7% (random = 25%).",
+                "note": "Exact match with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Dataset and code are public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Dataset and code are public.",
+                "source_span": "Dataset: https://huggingface.co/datasets/wenbopan/taste-bench · Code: https://github.com/wbopan/tastebench",
+                "note": "Source confirms both dataset and code are publicly linked."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Distilling hindsight into a student model lifted SWE-bench Pro success from 14.6% to 33.7%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Distilling hindsight into a student model lifted SWE-bench Pro success from 14.6% to 33.7%.",
+                "source_span": "distilling a hindsight teacher lifts Qwen3.6-27B from 30.0% to 47.9% on unseen tasks, and its advice raises SWE-bench Pro success from 14.6% to 33.7%.",
+                "note": "The SWE-bench Pro figures 14.6% to 33.7% match exactly; 'distilling hindsight into a student model' is an accurate paraphrase of the mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "End-to-end task scores were the only agent quality signal; mid-run decision accuracy is now benchmarked and trainable.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "End-to-end task scores were the only agent quality signal; mid-run decision accuracy is now benchmarked and trainable.",
+                "source_span": "While existing benchmarks measure the end-to-end success of agents on long-horizon tasks, none of them measures the taste of an agent... we show that taste can be trained.",
+                "note": "Both assertions — that end-to-end was the prior signal and that mid-run decision quality is now benchmarked and trainable — are directly supported by the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Three preprints this week are quietly rewriting what agent evaluation actually measures.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Three preprints this week are quietly rewriting what agent evaluation actually measures",
+                "source_span": "",
+                "note": "synthesis: The source excerpt contains only two distinct papers (Taste-Bench and GittinsEval/task-state paper); a third preprint is not identifiable from the excerpt, making the count of three unverifiable."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The shift is from whether a task finished to how well decisions were made along the way.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "shifting attention from whether a task finished to how well decisions were made along the way",
+                "source_span": "While existing benchmarks measure the end-to-end success of agents on long-horizon tasks, none of them measures the taste of an agent.",
+                "note": "synthesis: The Taste-Bench paper explicitly contrasts end-to-end success measurement with decision-quality measurement, supporting this framing."
+              },
+              {
+                "schema_version": 1,
+                "claim": "All three remain early and single-source.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "All three remain early and single-source",
+                "source_span": "",
+                "note": "synthesis: The source excerpts are preprint abstracts and do not characterize themselves as 'single-source'; this editorial qualifier cannot be confirmed or denied from the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_39d80fbda035a833",
+          "headline": "A smart sampling method cuts language model eval costs to under 2%",
+          "summary": "Exhaustive benchmarking of every model configuration is the hidden tax on evaluation pipelines. GittinsEval, an arXiv preprint, applies a Bayesian bandit policy to decide which configuration to test next and when to stop, reaching near-zero error using just 1–2% of full benchmark items. The preprint and its code are public, covering five model-selection scenarios on standard benchmark datasets.",
+          "take": "Benchmark runs were priced as all-or-nothing; a principled stopping rule makes 98% of them optional.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2609.25645"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_39d80fbda035a833",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A smart sampling method cuts language model eval costs to under 2%",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A smart sampling method cuts language model eval costs to under 2%",
+                "source_span": "GittinsEval often attains near-zero simple regret using only 1% to 2% of the exhaustive-evaluation cost",
+                "note": "The source confirms costs of 1–2% of exhaustive evaluation, which is consistent with 'under 2%' as a rounding/paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GittinsEval applies a Bayesian bandit policy to decide which configuration to test next and when to stop",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "GittinsEval, an arXiv preprint, applies a Bayesian bandit policy to decide which configuration to test next and when to stop",
+                "source_span": "We formulate configuration selection as a cost-aware Bayesian bandit problem and propose GittinsEval, which draws on the Bayesian-optimal Gittins policy to determine which configuration to evaluate next and when to stop.",
+                "note": "Direct paraphrase of the source's description of GittinsEval's mechanism."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GittinsEval reaches near-zero error using just 1–2% of full benchmark items",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reaching near-zero error using just 1–2% of full benchmark items",
+                "source_span": "GittinsEval often attains near-zero simple regret using only 1% to 2% of the exhaustive-evaluation cost",
+                "note": "'Near-zero error' is a plain-English paraphrase of 'near-zero simple regret'; the 1–2% figure matches exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The preprint and its code are public",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The preprint and its code are public",
+                "source_span": "",
+                "note": "The source confirms the preprint is on arXiv but does not mention code availability; this cannot be confirmed or denied from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GittinsEval covers five model-selection scenarios on standard benchmark datasets",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "covering five model-selection scenarios on standard benchmark datasets",
+                "source_span": "",
+                "note": "The source names four benchmark datasets (GSM8K, PIQA, AlpacaEval, MMLU) but does not specify 'five model-selection scenarios'; this figure is absent from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Benchmark runs were priced as all-or-nothing; a principled stopping rule makes 98% of them optional.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Benchmark runs were priced as all-or-nothing; a principled stopping rule makes 98% of them optional.",
+                "source_span": "GittinsEval often attains near-zero simple regret using only 1% to 2% of the exhaustive-evaluation cost; it also offers an adaptive stopping rule that typically triggers at 1% to 10%.",
+                "note": "'98% optional' is a reasonable rounding of using only 1–2% of exhaustive cost; the adaptive stopping rule is confirmed in the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_918a5c4d86d5a5d3",
+          "headline": "Agents track long tasks better when they write their own state",
+          "summary": "An arXiv preprint tests four ways task state reaches an agent: raw transcript, checklist, state-machine directives, or an enforcement gate. The agent-written ledger beats an accurate checklist the agent is shown. Enforcement lifted one model's task-completion rate from 0.39 to 0.54, but hurt a smaller model where the gate's judgement was wrong. The ledger method is public in the preprint.",
+          "take": "Showing agents an accurate checklist was the assumed reliability fix; agent-written ledgers beat it.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2609.25686"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_918a5c4d86d5a5d3",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Agents track long tasks better when they write their own state",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Agents track long tasks better when they write their own state",
+                "source_span": "an unverified ledger the agent writes itself beats an accurate checklist it is shown",
+                "note": "'Agents' is a plain-English paraphrase of 'LLM agent', and the core claim that agent-written state outperforms shown state is directly supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An arXiv preprint tests four ways task state reaches an agent: raw transcript, checklist, state-machine directives, or an enforcement gate.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "An arXiv preprint tests four ways task state reaches an agent: raw transcript, checklist, state-machine directives, or an enforcement gate.",
+                "source_span": "vary how strongly task state reaches the agent: a raw transcript, an exact checklist, per-turn directives from a state machine compiled from the brief and advanced only by execution receipts, or an enforcement gate on that machine that refuses state-violating actions",
+                "note": "All four conditions match the source exactly; 'state-machine directives' is a fair paraphrase of 'per-turn directives from a state machine'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agent-written ledger beats an accurate checklist the agent is shown.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The agent-written ledger beats an accurate checklist the agent is shown.",
+                "source_span": "an unverified ledger the agent writes itself beats an accurate checklist it is shown",
+                "note": "Direct match to source finding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Enforcement lifted one model's task-completion rate from 0.39 to 0.54.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Enforcement lifted one model's task-completion rate from 0.39 to 0.54",
+                "source_span": "The same gate, compiled from τ²-bench's airline policy, raises a 235B agent's pass¹ from 0.39 to 0.54",
+                "note": "'Task-completion rate' is a reasonable plain-English paraphrase of 'pass¹'; numbers match exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Enforcement hurt a smaller model where the gate's judgement was wrong.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "hurt a smaller model where the gate's judgement was wrong",
+                "source_span": "enforcing the matcher's judgement drops a 35B agent below its raw transcript... Enforcement pays when failures are state-decidable and frequent, and hurts when the gate's judgement is wrong.",
+                "note": "The source confirms enforcement hurt the smaller (35B) model when the gate's judgement was wrong."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The ledger method is public in the preprint.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "The ledger method is public in the preprint.",
+                "source_span": "",
+                "note": "The source excerpt describes the paper but does not explicitly state that code or the ledger method is publicly released; this specific availability claim cannot be confirmed from the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Showing agents an accurate checklist was the assumed reliability fix; agent-written ledgers beat it.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Showing agents an accurate checklist was the assumed reliability fix; agent-written ledgers beat it.",
+                "source_span": "displaying accurate state is unreliable, an unverified ledger the agent writes itself beats an accurate checklist it is shown",
+                "note": "The factual core — that agent-written ledgers beat shown accurate checklists — is directly supported; the framing of checklists as 'assumed reliability fix' is editorial but the embedded fact is correct."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Three preprints this week are quietly rewriting what agent evaluation actually measures, shifting attention from whether a task finished to how well decisions were made along the way. All three remain early and single-source, which is precisely why they sit here."
+    }
+  ],
+  "digest": null,
+  "generated_at": "2026-09-23T21:33:39.315361Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23.1",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 4, hands_on: 5, currents: 3"
+}

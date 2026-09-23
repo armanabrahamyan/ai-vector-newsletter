@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 63 &middot; 24 September 2026</title>
+<meta name="description" content="Ollama rejects some models before inference, making benchmark scores meaningless. Issue No. 63 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 63 &middot; 24 Sep &middot; 4 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure gap14">
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>Ollama rejects some models before inference, making benchmark scores meaningless</h1>
+  <p class="takeaway">Local tool-use benchmarks measured model capability; the serving layer was the hidden variable all along.</p>
+  <p class="dek">An arXiv preprint finds that in Ollama, Phi-3 and Gemma-3 are rejected before inference runs; the harness logs this as a model non-call, reporting 0% fidelity. Turn-pooled versus per-instance estimates differ by up to 55 points across stacks. The serving layer, not the model, is where local tool-use performance is decided.</p>
+  <div class="story-meta">
+    <a class="src" href="https://arxiv.org/abs/2609.26693" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Governance and interpretability are moving in opposite directions simultaneously: one architectural shift closes the only readable window into agent reasoning while two separate developments hand regulators and institutions their first credible tools for inspecting what models actually do internally.</p>
+  </div>
+  <article class="measure stack">
+    <h3>AI agents&#39; only readable audit trail is now under architectural threat</h3>
+    <p class="takeaway">Chain-of-thought is the sole validated window into agent reasoning; competing labs are building around it.</p>
+    <p class="dek">Redwood Research argues that latent-reasoning architectures, such as COCONUT and full-bandwidth transformers, would let agents reason for orders of magnitude longer without producing any human-readable chain of thought. That removes the only tool that currently makes agent cognition auditable. Does your governance framework still hold if the reasoning traces it depends on simply cease to exist?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://blog.redwoodresearch.org/p/latent-reasoning-architectures-would" target="_blank" rel="noreferrer">blog.redwoodresearch.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Regulators can now audit what a finance language model actually thinks</h3>
+    <p class="takeaway">Opacity was the deployment barrier for language models in regulated finance; mechanistic interpretability removes it.</p>
+    <p class="dek">Tatsat and Shater apply mechanistic interpretability to Gemma 2 and GPT OSS, surfacing internal features tied to bias, hallucination, sentiment, and trading signals. The technique steers and monitors model internals rather than treating outputs as a black box. Before citing auditability in your next regulatory submission, which internal features does your model-risk framework actually specify?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.risk.net/cutting-edge/7964165/beyond-the-black-box-interpretability-of-llms-in-finance" target="_blank" rel="noreferrer">risk.net <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Morgan Stanley deployed 110 agent-ready APIs with automated governance gates</h3>
+    <p class="takeaway">Morgan Stanley&#39;s API governance now runs as automated code checks, not post-deployment reviews.</p>
+    <p class="dek">Morgan Stanley has 110 APIs in production under an Architecture as Code framework that pairs the Model Context Protocol with agent-to-agent communication, enforcing governance through automated deployment gates. The model: describe your architecture in code; the gates check compliance before anything ships. When your agent network spans dozens of services, which team owns the governance layer?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://www.infoq.com/presentations/mcp-calm-api-architecture/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Google open-sources a Kubernetes-style orchestrator built for long-running agents</h3>
+    <p class="takeaway">Idle agents burning compute on standby now have a purpose-built suspension layer, not a Kubernetes workaround.</p>
+    <p class="dek">Agent workloads don&#39;t fit containers: they&#39;re stateful, bursty, and idle for long stretches waiting on model calls or human input. Google&#39;s AX (Apache 2.0, code public on GitHub) suspends idle agents in under a second and multiplexes dozens onto shared workers. The Hacker News thread flags real Kubernetes overhead. Does your fleet size justify the Kubernetes overhead you&#39;re replacing?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.infoq.com/news/2026/09/google-ax-orchestrator/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Each story today exposes a gap between what a standard check reports and what a real workload reveals: health checks that miss slow GPUs, local tests that miss live failures, Kubernetes that masks scheduling limits. The practical work this week is instrumentation, not capability.</p>
+  </div>
+  <article class="measure stack">
+    <h3>A healthy GPU cluster can still silently fail a real training job</h3>
+    <p class="takeaway">Cluster operators now have a named suspect node before the workload stalls, not after a customer ticket.</p>
+    <p class="dek">NVIDIA&#39;s open-source Kubernetes controller, NVCRE, runs actual distributed workloads across node groups and names exactly which node failed each test. A 512-GPU job can underperform despite every health check passing; one slow GPU or misconfigured network path is enough. Deploy NVCRE against your next cluster bring-up and get a failed-node report before production lands.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://developer.nvidia.com/blog/validate-gpu-cluster-readiness-before-ai-workloads-land/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Open-source tool converts any research paper into a runnable agent</h3>
+    <p class="takeaway">Repo archaeology was the hidden cost of published methods; Paper2Agent makes the paper itself the runnable artefact.</p>
+    <p class="dek">Paper2Agent (open-source, published in Nature) feeds a paper and its codebase to an orchestration system that auto-generates tested tools, then packages them as a conversational agent. For AlphaGenome, it produced 22 validated tools on a laptop for under $15. Clone the repo and run it against a paper you&#39;ve been meaning to implement before writing the scaffolding yourself.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://spectrum.ieee.org/paper2agent-ai-agents-research-papers" target="_blank" rel="noreferrer">spectrum.ieee.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Databricks gives AI assistants governed access to enterprise business context</h3>
+    <p class="takeaway">Business analysts&#39; agent queries now carry governed metric definitions, where raw table access was the only option.</p>
+    <p class="dek">General-purpose agents hallucinate business answers because they lack governed context: wrong metric definitions, wrong source authority, wrong permissions. Databricks&#39; Genie One MCP server publishes a single governed ontology to any compatible assistant, including Claude, ChatGPT, and Copilot. Connect the MCP server to your next agent prototype; the ontology layer is the part your prompt engineering can&#39;t replicate.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.databricks.com/blog/genie-one-mcp-give-any-ai-agent-right-business-context" target="_blank" rel="noreferrer">databricks.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Coding agents pass local tests but fail one-in-three live serving checks</h3>
+    <p class="takeaway">Local test suites were the coding-agent quality bar; live serving failures expose a 23-point gap.</p>
+    <p class="dek">SWE-Serve, a benchmark from NVIDIA built with the SGLang team, tests coding agents on real inference-serving code. Across 19 tasks with live-serving checks, pass rates dropped from 69.4% to 45.9% when those checks ran. The benchmark, paper, and leaderboard are public. Run SWE-Serve against your next agent eval before trusting local scores in production.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://developer.nvidia.com/blog/how-swe-serve-exposes-the-gap-between-local-tests-and-live-serving/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Modal rebuilt its sandbox infrastructure to launch a million containers without Kubernetes</h3>
+    <p class="takeaway">Kubernetes was the default scaling layer for AI sandboxes; Modal replaces global coordination with per-worker state.</p>
+    <p class="dek">Modal&#39;s staff engineers scrapped Kubernetes for a fleet of parallel scheduling servers, each worker its own source of truth. The result: one million sandboxes in under a minute, median startup under 0.5 seconds. The one remaining bottleneck, a single Redis stream, holds past 100,000 workers. Pull the architecture write-up before designing your next high-concurrency agent execution layer.</p>
+    <div class="story-meta"><span class="tag">read</span>
+      <a class="src" href="https://www.infoq.com/news/2026/09/modal-scaling-sandboxes/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">3 items</span></div>
+    <p class="synthesis">Three preprints this week are quietly rewriting what agent evaluation actually measures, shifting attention from whether a task finished to how well decisions were made along the way. All three remain early and single-source, which is precisely why they sit here.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Top AI agents pick the right fork only 60% of the time</h3>
+    <p class="takeaway">End-to-end task scores were the only agent quality signal; mid-run decision accuracy is now benchmarked and trainable.</p>
+    <p class="dek">Existing benchmarks measure whether an agent finishes a task; Taste-Bench measures whether it chose well along the way. Across 502 automatically mined decision forks, the best of 14 frontier models scores 59.7% (random baseline: 25%). Dataset and code are public. Distilling hindsight into a student model lifted SWE-bench Pro success from 14.6% to 33.7%.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://huggingface.co/papers/2609.25804" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A smart sampling method cuts language model eval costs to under 2%</h3>
+    <p class="takeaway">Benchmark runs were priced as all-or-nothing; a principled stopping rule makes 98% of them optional.</p>
+    <p class="dek">Exhaustive benchmarking of every model configuration is the hidden tax on evaluation pipelines. GittinsEval, an arXiv preprint, applies a Bayesian bandit policy to decide which configuration to test next and when to stop, reaching near-zero error using just 1–2% of full benchmark items. The preprint and its code are public, covering five model-selection scenarios on standard benchmark datasets.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2609.25645" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Agents track long tasks better when they write their own state</h3>
+    <p class="takeaway">Showing agents an accurate checklist was the assumed reliability fix; agent-written ledgers beat it.</p>
+    <p class="dek">An arXiv preprint tests four ways task state reaches an agent: raw transcript, checklist, state-machine directives, or an enforcement gate. The agent-written ledger beats an accurate checklist the agent is shown. Enforcement lifted one model&#39;s task-completion rate from 0.39 to 0.54, but hurt a smaller model where the gate&#39;s judgement was wrong. The ledger method is public in the preprint.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2609.25686" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
