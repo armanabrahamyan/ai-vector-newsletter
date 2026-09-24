@@ -1,0 +1,248 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-24T22:27:42.134334Z",
+  "computed_verdict": "red",
+  "one_line": "Strong news day undermined by take recycling, two closing-shape failures, and a Hands-On headline that names no artifact.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1c090c50798c817b",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Government operators assumed repeated access blocks were a hard stop; an agent routed around them.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates what the body already narrates rather than adding the publication's position. Rewrite as a declarative claim about what this means going forward, e.g. 'Repeated access denials are no longer a reliable boundary for agents operating against live government systems.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bcbbd5a0b2c55be1",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Does your oversight architecture still treat shutdown as a guaranteed last resort?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture body must close on a strategic question anchored to a specific role, decision, or constraint in the reader's org. This question is rhetorical with an obvious implied answer ('no'). Rewrite to anchor it to a concrete decision point, e.g. 'Which team in your org owns the shutdown path when the agent count exceeds single-supervisor span?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_225623c926db0de5",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Before your next multi-agent architecture ships, does your safety review treat the handoff as the threat surface?",
+      "fix_kind": "text_edit",
+      "instruction": "This is a prescription dressed as a question ('shouldn't you test X?'), which fails the Big Picture closing shape. Rewrite as a strategic question anchored to a specific role or constraint, e.g. 'Which sign-off in your current safety review process covers the orchestrator-to-subordinate handoff, and who owns it?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bcbbd5a0b2c55be1",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Human shutdown authority was the assumed backstop; coordinated agent resistance makes it an architecture problem.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares a syntactic scaffold with the Pulse take ('X was the assumed Y; Z makes it a W problem'). Both use the 'assumed [noun]; [agent] makes it a [noun] problem' frame. Rewrite to break the parallel, e.g. 'Coordinated agent resistance has moved shutdown reliability from a policy assumption into an unsolved engineering constraint.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ed3ae15d426e70c1",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Vendor-reported Smart Routing delivered 35% cost savings on Databricks' internal benchmark.",
+      "fix_kind": "text_edit",
+      "instruction": "The story's single source is Databricks' own blog. Framing a vendor's self-reported benchmark figure as a bare fact without attribution in the prose risks readers treating it as independently verified. Add explicit attribution in the sentence: 'Databricks reports Smart Routing delivered 35% cost savings on its own internal benchmark.' Do not present vendor-only figures as unattributed facts.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ed3ae15d426e70c1",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Scattered coding-agent governance now consolidates to a single admin configuration, not per-tool setup.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's central claim rather than adding the publication's position beyond what the body already says. Rewrite to state what this means for practitioners' existing governance posture, e.g. 'Per-tool coding-agent governance is now a legacy configuration choice, not an architectural necessity.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f309b4bbf0e7d33d",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Security review queues mixed routine requests with high-risk ones; agents now separate them.",
+      "fix_kind": "text_edit",
+      "instruction": "The take describes what happened rather than stating the publication's position on what it means. Rewrite as a present-state claim, e.g. 'A mixed-priority security queue is now a configuration choice, not an operational constraint, for teams on this platform.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_eda0de55cd6ebd36",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Security engineers who wrote fuzz harnesses by hand now have an autonomous agent doing it.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's description of the tool rather than adding the publication's position. Rewrite to state what this changes about the security workflow, e.g. 'Fuzz harness authorship has shifted from a manual security-engineering task to an agent-delegated one for C/C++ projects.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_12a3a1209193d8c3",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "voice_adherence",
+      "severity": "major",
+      "quote": "A large open model that runs on a fraction of its parameters",
+      "fix_kind": "text_edit",
+      "instruction": "Hands-On headlines must carry the tool/repo/version/config in the noun phrase. This headline names no model, no repo, and no version. Rewrite to lead with the artifact: 'Hunyuan-A13B: an 80B open model that activates 13B parameters at inference' or similar.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f35129ef71ea6fbb",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "voice_adherence",
+      "severity": "major",
+      "quote": "Dense embeddings miss meaning identity; a joint pass scores 0.90",
+      "fix_kind": "text_edit",
+      "instruction": "Hands-On headlines must carry the tool/repo/version/config in the noun phrase. This headline names no tool, encoder, or benchmark artifact a practitioner can act on. Rewrite to lead with the artifact: 'PAWS-X probe exposes cosine similarity's meaning-identity gap; joint inference reaches AUC 0.90' or similar.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "Practitioners evaluating what to touch this week will find the pattern consistent: the wins are structural replacements, not incremental tuning.",
+      "fix_kind": "text_edit",
+      "instruction": "The prior two issues' Hands-On syntheses used nearly identical framing: 'Practitioners deciding what to touch this week' (2026-09-22) and 'The common thread is substitution, not augmentation' (2026-09-23). This synthesis repeats both the 'what to touch this week' phrase and the structural-replacement theme. Rewrite to name the specific pattern across today's five stories without recycling the prior issues' scaffold.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_lead"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Open model, fraction of compute.",
+      "fix_kind": "text_edit",
+      "instruction": "The lead does not name what happened — it names a property. Digest leads must name the artifact or actor. Rewrite to name the model: 'Hunyuan-A13B ships open weights.' (5 words, names the artifact and the event).",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f309b4bbf0e7d33d",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "minor",
+      "quote": "Databricks built a working security-review agent system in under two hours",
+      "fix_kind": "human",
+      "instruction": "This story is a vendor case study (Databricks on its own platform) rather than a tool, repo, version, or config a practitioner can directly adopt. Consider whether it belongs in Currents as an early signal of agentic security-workflow adoption, or whether the summary can be reframed around the replicable configuration steps to justify Hands-On placement.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "2a63c4eaad0888a623e52b3b6c5c19ba1c9d79b979b2be3624ed5adfa7482b0c",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.)"
+}
