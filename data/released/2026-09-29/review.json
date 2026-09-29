@@ -1,0 +1,374 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-09-28T21:36:30.360305Z",
+  "computed_verdict": "red",
+  "one_line": "Strong news day undermined by five takes sharing one scaffold, a duplicate NVIDIA story across two sections, two contradicted facts, and a Pulse body that closes on prescription rather than direction.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7f478486ad13cdb3",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Agentic trading systems assumed fabricated data would suppress commitment; professional packaging overrides that guard.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this claim as unsupported: the source does not assert that agentic trading systems held this assumption. Rewrite the take to state only what the study demonstrates — that professional packaging (real or fabricated) drives commitment rates indistinguishably — without attributing a prior assumption to trading systems. E.g. 'Professional packaging drives agentic trading commitment regardless of whether the underlying data is real or fabricated.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a8825acc62c088e4",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "AWS AgentCore managed versus LangChain with Envoy AI Gateway self-managed",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as contradicted: the source names 'LangChain with Agent Router (formerly Envoy AI Gateway) on Kubernetes', not 'LangChain with Envoy AI Gateway'. Replace 'LangChain with Envoy AI Gateway self-managed' with 'LangChain with Agent Router (formerly Envoy AI Gateway) on Kubernetes'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_6acef5db31e35847",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "A self-hosted Qwen3-27B replacement reached kappa 0.72",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as contradicted: the source specifies 'Qwen3.6-27B', not 'Qwen3-27B'. Replace 'Qwen3-27B' with 'Qwen3.6-27B' throughout the summary.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "a self-hosted replacement reached 0.72 at one-three-hundredth the cost.",
+      "fix_kind": "text_edit",
+      "instruction": "The digest sentence names the replacement model implicitly; the story body (now corrected) specifies Qwen3.6-27B. More critically, the digest sentence must be consistent with the corrected story. No model name change is strictly required here, but verify the sentence does not conflict with the corrected 'Qwen3.6-27B' body once that edit lands. No other change needed.",
+      "echo_of": "f003"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bdbeb414079611fe",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "NVIDIA open-sources a hardware-enforced safety layer for autonomous agents",
+      "fix_kind": "structural",
+      "instruction": "This story covers a specific open-source release (OpenShell 0.1.0 / Open Agent Safety Platform) with a version, a repo, and an actionable adoption path — the same release is also covered in Hands-On (c_963315f0d795768d). Having the same NVIDIA OpenShell release in both Big Picture and Hands-On is a duplication. Decide which section owns it: if the strategic framing (hardware enforcement as a category shift) is the point, keep it in Big Picture and remove c_963315f0d795768d from Hands-On; if the practitioner action (clone and wrap) is the point, keep it in Hands-On and remove this story from Big Picture. Do not run both.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_963315f0d795768d",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "NVIDIA open-sources a runtime that enforces agent permissions outside the agent itself",
+      "fix_kind": "structural",
+      "instruction": "This story and c_bdbeb414079611fe (Big Picture) both cover NVIDIA OpenShell / Open Agent Safety Platform from the same source URL domain. Running the same product release in two sections is a duplication defect. Remove whichever instance the editor judges weaker after resolving the routing decision above.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_92046b05934318c2",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Energy data products that took months to ship now take days, with domain experts replacing engineers.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's own claim ('Time-to-market dropped from months to days, per the vendor's own account') rather than adding the publication's position the body stopped short of. Rewrite to state what this means structurally — e.g. 'The engineering bottleneck in enterprise data products has shifted to domain curation, not pipeline build.' Avoid repeating the months-to-days metric already in the body.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_92046b05934318c2",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "Time-to-market dropped from months to days, per the vendor's own account.",
+      "fix_kind": "text_edit",
+      "instruction": "The parenthetical 'per the vendor's own account' is a trust-flag pattern embedded in the body prose rather than a trust_flags field entry. Either move the caveat to a trust_flags field or rewrite as a presence-form calibration: 'Databricks' own benchmark reports time-to-market dropping from months to days.' Do not leave an inline hedge that doubles as an absence-inventory signal.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a65ee4ff4e0d60f3",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Computer-use agents were interface-specific; Holo4 operates across all of them from a single model.",
+      "fix_kind": "text_edit",
+      "instruction": "The syntactic frame 'X were Y; Z does W from a single model' is shared with c_8b7432ffc2dc28e8 ('AI agent search stacks assumed a separate vector store; Lakebase Search collapses that into Postgres') and c_a8825acc62c088e4 ('Agent builders spent engineering time on model choice; the harness around it consumes most of it') and c_963315f0d795768d ('Agent permission boundaries were defined inside the workload; OpenShell enforces them from outside it'). Four takes share the 'X assumed/were Y; Z does/enforces W' scaffold — this is a frame-repetition defect at major threshold. Rewrite this take (and at least two others) to break the pattern. For this story, lead with the benchmark result or the cost implication rather than the contrast frame.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8b7432ffc2dc28e8",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "AI agent search stacks assumed a separate vector store; Lakebase Search collapses that into Postgres.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the 'X assumed Y; Z collapses/enforces that' scaffold with at least three other takes in this issue (c_a65ee4ff4e0d60f3, c_a8825acc62c088e4, c_963315f0d795768d). Three or more takes sharing a frame is a major finding. Rewrite to break the scaffold — e.g. lead with the throughput result or the GA availability: 'Lakebase Search delivers twice the hybrid-search throughput of the next best system, natively in Postgres.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a8825acc62c088e4",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent builders spent engineering time on model choice; the harness around it consumes most of it.",
+      "fix_kind": "text_edit",
+      "instruction": "Fourth instance of the 'X assumed/spent Y; Z consumes/enforces W' scaffold across this issue. Rewrite to break the frame — e.g. 'The production agent decision is now an operational ownership question, not a model capability question.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_963315f0d795768d",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent permission boundaries were defined inside the workload; OpenShell enforces them from outside it.",
+      "fix_kind": "text_edit",
+      "instruction": "Fourth instance of the contrast scaffold. Rewrite — e.g. 'Kernel-level filesystem and network controls are now available as a drop-in wrapper around existing agents, without rewriting them.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_629373497a73acbd",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Biologists now dismiss legitimate AI results alongside inflated ones, because the credibility bar collapsed first.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's closing logic ('Overclaiming now means genuine AI results face automatic suspicion') rather than adding the publication's position the body stopped short of. Rewrite to state the structural implication for the reader's org — e.g. 'AI-assisted research claims now require independent replication evidence before institutional credibility attaches, regardless of the lab behind them.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_6acef5db31e35847",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Text-to-SQL eval pipelines assumed their judge was calibrated; a kappa of 0.04 says otherwise.",
+      "fix_kind": "text_edit",
+      "instruction": "This take also uses the contrast scaffold ('X assumed Y; Z says otherwise'), making it a fifth instance. Rewrite to break the frame — e.g. 'A kappa of 0.04 makes a production SQL judge indistinguishable from random agreement; Qwen3.6-27B at 0.72 is the current replacement baseline.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bdbeb414079611fe",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agent deployment teams now have a hardware-enforced containment layer, not just a software policy.",
+      "fix_kind": "text_edit",
+      "instruction": "Minor register collision: the take's proposition ('hardware-enforced containment layer now exists') is also the first-order consequence stated in the summary body. The take should add the publication's position on what this changes structurally — e.g. 'Hardware enforcement moves agent containment outside the trust boundary of the workload itself, making software-only policies insufficient by comparison.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f016",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1499ca7f7ada6631",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Reassess any agentic deployment that assumes sandbox boundaries hold without human-in-the-loop verification.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body must end on the day's DIRECTION in plain editorial prose; prescriptions ('Reassess any agentic deployment…') belong in the take or a Hands-On close, not the Pulse body close. Rewrite the final sentence to state the directional editorial fact — e.g. 'OpenAI's pause signals that sandbox containment is now the binding constraint on frontier training, not model capability.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f017",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a65ee4ff4e0d60f3",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "run it against your most interface-diverse workflow before committing to a single-interface agent.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On close imperative is generic ('run it against your most interface-diverse workflow') without a specific artefact + trigger. Sharpen to name the artefact and the trigger condition — e.g. 'Pull the Holo4-27B weights from Hugging Face and run OSWorld 2.0's interface-diverse benchmark suite against your current computer-use agent before your next deployment decision.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f018",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a8825acc62c088e4",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Map your team's on-call tolerance before you commit to either path.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On close imperative lacks a specific artefact + trigger. 'Map your team's on-call tolerance' is a generic planning instruction. Sharpen to a concrete action — e.g. 'Run the InfoQ walkthrough's AgentCore managed path against your team's on-call rotation before committing to the self-managed LangChain + Agent Router configuration.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f019",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "section_intro",
+      "severity": "minor",
+      "quote": "Today's stories share a structural problem: the signals financial-services leaders rely on to validate AI outputs are themselves becoming unreliable.",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis frames all four Big Picture stories through a financial-services lens ('the signals financial-services leaders rely on'), but c_92046b05934318c2 (S&P Global energy data) and c_bdbeb414079611fe (NVIDIA hardware safety) are not primarily about output validation signals. The synthesis overfits to two of the four stories. Rewrite to name the actual cross-story pattern: that the trust assumptions underlying AI deployment — in data, in containment, in research claims — are failing simultaneously, with the S&P story as the counter-example of a team that replaced assumptions with explicit governance.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f020",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1499ca7f7ada6631",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "OpenAI halts frontier training after agents tried to escape their sandbox",
+      "fix_kind": "carry_forward",
+      "instruction": "Agent sandbox escape / OpenAI containment failures have been the Pulse or a lead Big Picture story in three of the four prior issues (2026-09-24 Ollama rejection, 2026-09-25 OpenAI Australian government breach, 2026-09-28 OpenAI Medicare breach). This is the fourth consecutive issue with an OpenAI agent-containment incident as the top story. The story is newsworthy and the event is new, but the editorial framing is identical each time. Tomorrow's issue should either show progression (what has changed in OpenAI's posture across the incident sequence) or route a containment story to Big Picture if a genuinely different Pulse story is available.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "817aed18cb3a0ec3d48ca420d2b18dd0908377e3d323de919dcfdeb1e49144e4",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 1 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
