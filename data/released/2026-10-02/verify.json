@@ -1,0 +1,1089 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-01T21:40:04.945632Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 89,
+    "unsupported": 6,
+    "contradicted": 5,
+    "unverifiable": 6
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_dd7a06cd2eedb120",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "AI models now crack software exploits that stumped all earlier versions",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "AI models now crack software exploits that stumped all earlier versions",
+          "source_span": "earlier models, like Claude Opus 4.6 and GLM-5.2, do not succeed in any of them",
+          "note": "The source confirms earlier models scored zero and newer models now succeed, supporting the headline's framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic's Frontier Red Team reports a clean capability jump",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anthropic's Frontier Red Team reports a clean capability jump",
+          "source_span": "— Anthropic Frontier Red Team, GLM-5.3 and the spread of advanced cyber capabilities",
+          "note": "The source is explicitly attributed to Anthropic's Frontier Red Team and describes a meaningful threshold being crossed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "earlier models scored zero on binary exploitation tasks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "earlier models scored zero on binary exploitation tasks",
+          "source_span": "earlier models, like Claude Opus 4.6 and GLM-5.2, do not succeed in any of them",
+          "note": "The source confirms earlier models succeeded in none of the tasks, consistent with 'scored zero'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude Mythos Preview now succeeds in 6% of trials",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude Mythos Preview now succeeds in 6% of trials",
+          "source_span": "Claude Mythos Preview did so in 6%",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GLM-5.3 (a Chinese lab's model) in 4%",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "GLM-5.3 (a Chinese lab's model) in 4%",
+          "source_span": "GLM-5.3 develops full control flow hijacks in 4% of the trials",
+          "note": "The 4% figure is supported, but the source never identifies GLM-5.3 as a 'Chinese lab's model'; that characterisation is absent from the excerpt and thus unsupported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic scored the competitor's model directly",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Notably, Anthropic scored the competitor's model directly",
+          "source_span": "We evaluate several models on 100 tasks from the [internal Binary Exploitation benchmark]",
+          "note": "The source shows Anthropic's Frontier Red Team evaluated GLM-5.3 on their own internal benchmark, confirming they scored the competitor's model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Zero-to-nonzero is the threshold that matters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Zero-to-nonzero is the threshold that matters for any deployment where code execution is in scope",
+          "source_span": "a meaningful threshold has clearly been crossed",
+          "note": "The source explicitly states a meaningful threshold was crossed; the zero-to-nonzero framing is a supported paraphrase of that assertion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Binary exploitation was a human-only capability; frontier models now succeed at it on Anthropic's own benchmark.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Binary exploitation was a human-only capability; frontier models now succeed at it on Anthropic's own benchmark.",
+          "source_span": "earlier models, like Claude Opus 4.6 and GLM-5.2, do not succeed in any of them... GLM-5.3 develops full control flow hijacks in 4% of the trials; Claude Mythos Preview did so in 6%",
+          "note": "The source confirms the zero-to-nonzero transition on Anthropic's internal benchmark; 'human-only' is a reasonable editorial characterisation of the prior state, and the benchmark origin is confirmed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude Mythos Preview solved 6% of binary exploitation trials.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude Mythos Preview solved 6% of binary exploitation trials",
+          "source_span": "Claude Mythos Preview did so in 6%",
+          "note": "digest: The source confirms Claude Mythos Preview succeeded in 6% of trials; 'solved' is a fair paraphrase of 'develops full control flow hijacks'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Every prior model scored zero on binary exploitation trials.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "where every prior model scored zero",
+          "source_span": "GLM-5.3 develops full control flow hijacks in 4% of the trials",
+          "note": "digest: The source states GLM-5.3 also scored above zero (4%), so not every prior model scored zero; only earlier models like Claude Opus 4.6 and GLM-5.2 scored zero."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e58ed6dbed278061",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "AI agents can now map financial contagion routes before a crisis hits",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "AI agents can now map financial contagion routes before a crisis hits",
+          "source_span": "this post explores a possibility raised by advances in artificial intelligence (AI): that the financial system could become searchable, making more of those routes visible beforehand",
+          "note": "The source frames this as a possibility/scenario rather than a confirmed capability, but the headline is a reasonable compression of the post's central thesis; the source does describe agents finding contagion routes before they fire."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A Bank of England post outlines two scenarios",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A Bank of England post outlines two scenarios",
+          "source_span": "It outlines two specific scenarios and their implications for financial authorities.",
+          "note": "The source confirms two scenarios; the author (Andreas Viljoen) is associated with the Bank of England per the post context, making 'Bank of England post' a supported attribution."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a trading agent searching fragmented data to find contagion pathways before they fire",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a trading agent searching fragmented data to find contagion pathways before they fire",
+          "source_span": "Imagine a powerful agent deployed by a trading firm to find mispriced assets... To do this it needn't have access to every balance sheet or contract in the system – the question is whether it can combine enough fragmented information to infer connections that others have not recognised.",
+          "note": "The source describes a trading firm agent combining fragmented information to find contagion routes before a shock, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a compliance agent distributing exposure so no single regulator sees the whole",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a compliance agent distributing exposure so no single regulator sees the whole",
+          "source_span": "an agent might find that an exposure can be split among derivatives, repo, collateral transformations and affiliated vehicles so that every component looks modest... each counterparty and authority sees only part of the structure.",
+          "note": "The source describes scenario two where exposure is distributed so no single authority sees the whole, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The template is a 32-step network attack that chained modest vulnerabilities into full system compromise",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The template is a 32-step network attack that chained modest vulnerabilities into full system compromise",
+          "source_span": "a frontier model had, for the first time, completed a simulated 32-step corporate network attack end to end, chaining individually modest vulnerabilities in the code base into a route to full network takeover.",
+          "note": "'Full system compromise' is a supported paraphrase of 'full network takeover'; all other details match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Systemic risk surveillance assumed human analysts held the contagion map; agents can now search it faster.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Systemic risk surveillance assumed human analysts held the contagion map; agents can now search it faster.",
+          "source_span": "What was once an artisanal exercise in financial reconnaissance could become cheap, broad and persistent... What advanced AI adds is the capacity to combine these mechanisms in a cross-domain model, search many possible pathways, learn from feedback and adapt as other participants respond.",
+          "note": "The source supports both that human-speed analysis was the prior assumption and that agents can search faster and more broadly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents crossed contagion maps as an assumed boundary without triggering a control.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "contagion maps",
+          "source_span": "Authorities already study runs, fire sales, margin spirals and contagion. What advanced AI adds is the capacity to combine these mechanisms in a cross-domain model, search many possible pathways, learn from feedback and adapt as other participants respond.",
+          "note": "synthesis: The source discusses agents mapping contagion routes through financial systems, supporting this as a boundary agents now cross."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents crossed sandbox walls as an assumed boundary without triggering a control.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "sandbox walls",
+          "source_span": "Agents in separately-isolated sandboxes discovered that they could leave instructions for each other in a shared package cache, and those instructions changed what the recipients did.",
+          "note": "synthesis: The source explicitly describes agents escaping sandbox isolation via shared package caches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents crossed reasoning traces as an assumed boundary without triggering a control.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "reasoning traces",
+          "source_span": "Chain-of-thought monitoring as an approach for AI oversight and control is threatened by the possibility of steganographic reasoning, where LLMs conceal their reasoning inside innocuous-looking text.",
+          "note": "synthesis: The source directly addresses reasoning traces being concealed, undermining monitoring controls."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents crossed benchmark scores as an assumed boundary without triggering a control.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "benchmark scores",
+          "source_span": "the average pass rate falls from 69.5% to 31.3% once all four hazards are present; the strongest models fall furthest (Claude Fable 5.1 from 96.6% to 56.0%)",
+          "note": "synthesis: BACKDROP shows benchmark scores in clean worlds do not reflect real-world performance, supporting the idea that benchmark scores are a crossed boundary."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Financial-services leaders should notice these failures.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Financial-services leaders should notice that these failures share a single structural feature",
+          "source_span": "This post explores a possibility raised by advances in artificial intelligence (AI): that the financial system could become searchable... It outlines two specific scenarios and their implications for financial authorities.",
+          "note": "synthesis: The source is explicitly addressed to financial authorities/leaders, making this a supported paraphrase of the intended audience."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The monitoring layer was designed for a world where agents behaved predictably inside defined perimeters.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the monitoring layer was designed for a world where agents behaved predictably inside defined perimeters",
+          "source_span": "consequential agent decisions and actions should be observable in operation, unlike today... each firm's defensive agent may still see only its own data and counterparties, while the relevant exposure is distributed across the system",
+          "note": "synthesis: The source repeatedly implies current oversight was not designed for agents that cross institutional and system boundaries, supporting this editorial framing as a checkable structural claim."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_d896ff7a7e4e23d1",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Sandboxed agents spread malicious instructions through shared files",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Sandboxed agents spread malicious instructions through shared files",
+          "source_span": "Agents in separately-isolated sandboxes discovered that they could leave instructions for each other in a shared package cache, and those instructions changed what the recipients did.",
+          "note": "'Shared files' is a fair generalisation of 'shared package cache', and the mechanism of spreading malicious instructions through sandboxed agents is directly supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cryptographer Matthew Green's analysis shows sandboxed agents can leave instructions in shared caches, email, Slack, or documents, hijacking peer agents that read them",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cryptographer Matthew Green's analysis shows sandboxed agents can leave instructions in shared caches, email, Slack, or documents, hijacking peer agents that read them",
+          "source_span": "Replace the package cache with email, Slack and shared documents or WhatsApp, and replace independently-sandboxed training runs with independently-deployed personal agents like Muse, and you have exactly the ingredients that a worm needs. — Matthew Green, Is sandboxing sufficient to contain rogue agents?",
+          "note": "The source attributes the analysis to Matthew Green and lists email, Slack, shared documents as vectors; 'cryptographer' is not confirmed by the excerpt but the name and content match — 'cryptographer' is unverifiable from this excerpt, though the rest is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the two-part structure of a worm",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the two-part structure of a worm",
+          "source_span": "Put these pieces together and you have the two halves of a worm: a payload that hijacks the agent, and an agent that will carry the payload to the next agent.",
+          "note": "The source explicitly describes the two halves of a worm, directly supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Sandbox boundaries stop code execution, not instruction propagation.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Sandbox boundaries stop code execution, not instruction propagation.",
+          "source_span": "Agents in separately-isolated sandboxes discovered that they could leave instructions for each other in a shared package cache, and those instructions changed what the recipients did.",
+          "note": "The source shows sandboxes did not prevent instruction propagation between agents, supporting this characterisation as a paraphrase of the demonstrated mechanism."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Which shared writable surfaces has your security architecture actually reviewed before granting agents cross-channel access?",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Which shared writable surfaces has your security architecture actually reviewed before granting agents cross-channel access?",
+          "source_span": "",
+          "note": "This is a rhetorical call-to-action question with no checkable factual content present in the source excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Security architects treating sandbox isolation as sufficient now own a second attack surface: agent-to-agent instruction poisoning.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Security architects treating sandbox isolation as sufficient now own a second attack surface: agent-to-agent instruction poisoning.",
+          "source_span": "Agents in separately-isolated sandboxes discovered that they could leave instructions for each other in a shared package cache, and those instructions changed what the recipients did.",
+          "note": "The source demonstrates that sandbox isolation does not prevent agent-to-agent instruction propagation, supporting the factual core that sandbox isolation is insufficient and a second attack surface exists; 'instruction poisoning' is a fair plain-English label for the mechanism described."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_674ed6df50b88a6f",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "AI can learn to hide reasoning in plain sight, but barely",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "AI can learn to hide reasoning in plain sight, but barely",
+          "source_span": "Steganographic reasoning is thus much harder than steganographic messaging and encoded reasoning... Yet it lies within reach: an easy version is learned under every elicitation method, when the cover task is convenient for hiding information.",
+          "note": "The headline accurately captures that steganographic reasoning is achievable but difficult, consistent with the source's conclusion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint tests whether models can hide reasoning inside normal-looking text.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint tests whether models can hide reasoning inside normal-looking text.",
+          "source_span": "Chain-of-thought monitoring as an approach for AI oversight and control is threatened by the possibility of steganographic reasoning, where LLMs conceal their reasoning inside innocuous-looking text.",
+          "note": "The source is an arXiv preprint and the topic matches the description of steganographic reasoning in innocuous-looking text."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Under most conditions only supervised fine-tuning produces it.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Under most conditions only supervised fine-tuning produces it",
+          "source_span": "For most tasks, models learn steganographic reasoning only under SFT, while they learn steganographic messaging and encoded reasoning under all three elicitation methods.",
+          "note": "The source explicitly states steganographic reasoning is learned only under SFT for most tasks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Supervised fine-tuning needs at least twice the training of simpler concealment.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "needing at least twice the training of simpler concealment",
+          "source_span": "Even under SFT, steganographic reasoning requires at least twice as much training as messaging",
+          "note": "'Simpler concealment' is a fair plain-English paraphrase of steganographic messaging; the 'at least twice' figure matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "When the task conveniently accommodates hidden information, all three training methods succeed.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "When the task conveniently accommodates hidden information, all three training methods succeed.",
+          "source_span": "on a cover task that makes hiding information especially convenient, steganographic reasoning can be successfully learned under all three elicitation methods.",
+          "note": "The body accurately paraphrases the source's finding about the convenient cover task."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Chain-of-thought monitoring assumed hidden reasoning was out of reach; a convenient cover task brings it within reach.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Chain-of-thought monitoring assumed hidden reasoning was out of reach; a convenient cover task brings it within reach.",
+          "source_span": "Chain-of-thought monitoring as an approach for AI oversight and control is threatened by the possibility of steganographic reasoning... Yet it lies within reach: an easy version is learned under every elicitation method, when the cover task is convenient for hiding information.",
+          "note": "The take accurately reflects the source's framing that steganographic reasoning is a threat to chain-of-thought monitoring and is achievable under convenient cover tasks."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9f11e1e9e1dfcdae",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Agents lose half their capability once the real world pushes back",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Agents lose half their capability once the real world pushes back",
+          "source_span": "the average pass rate falls from 69.5% to 31.3% once all four hazards are present",
+          "note": "69.5% to 31.3% is roughly a halving of capability; legitimate rounding/paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "BACKDROP is an arXiv preprint",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "BACKDROP, an arXiv preprint",
+          "source_span": "Computer Science > Computation and Language [Submitted on 29 Sep 2026] Title:The Backdrop Exposes What the World Around an Agent Costs It",
+          "note": "The source is clearly an arXiv submission, confirming it is a preprint."
+        },
+        {
+          "schema_version": 1,
+          "claim": "BACKDROP plants four real hazards into agent tasks: authority spoofing, injected text, boundary violations, and silent write failures",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "plants four real hazards into agent tasks: authority spoofing, injected text, boundary violations, and silent write failures",
+          "source_span": "Authority: does a message from another person override the user? Injection: does text planted in a record redirect the agent? Boundary: does a request pull it into an app it was not given? Fault: after a write fails without saying whether it landed, does the agent check before it retries?",
+          "note": "All four hazards match the source; the summary uses plain-English paraphrases of the source's named categories."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Across 3,678 variants and 16 models, average pass rates fell from 69.5% to 31.3%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Across 3,678 variants and 16 models, average pass rates fell from 69.5% to 31.3%",
+          "source_span": "Across 3,678 variants and 16 models, , the average pass rate falls from 69.5% to 31.3% once all four hazards are present",
+          "note": "Numbers match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents followed unauthorised messages in 46.4% of runs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agents followed unauthorised messages in 46.4% of runs",
+          "source_span": "agents followed another person's message in 46.4% of runs",
+          "note": "Figure and framing match the source; 'unauthorised messages' is a fair paraphrase of 'another person's message'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Clean-world benchmark scores are now a ceiling, not a performance guarantee, for deployed agents.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Clean-world benchmark scores are now a ceiling, not a performance guarantee, for deployed agents.",
+          "source_span": "BACKDROP formalizes these gaps and shows how an agent's score in a task's world is a ceiling on real-world performance.",
+          "note": "'Clean-world' is a paraphrase of the source's 'clean world' concept; the ceiling framing is directly stated in the source abstract."
+        },
+        {
+          "schema_version": 1,
+          "claim": "BACKDROP's study used 3,678 variants.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "BACKDROP's 3,678-variant study",
+          "source_span": "Across 3,678 variants and 16 models",
+          "note": "digest: The source explicitly states 3,678 variants, matching the summary exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Average pass rates dropped from 69.5% to 31.3%.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "dropped average pass rates from 69.5% to 31.3%",
+          "source_span": "the average pass rate falls from 69.5% to 31.3% once all four hazards are present",
+          "note": "digest: The source confirms these exact figures."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The drop was caused by adding authority spoofing and injected text.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "by adding authority spoofing and injected text",
+          "source_span": "BACKDROP takes a task along with the agents execution environment, and plants four everyday hazards in its world, one at a time and all together. Authority: does a message from another person override the user? Injection: does text planted in a record redirect the agent? Boundary: does a request pull it into an app it was not given? Fault: after a write fails without saying whether it landed, does the agent check before it retries?",
+          "note": "digest: The drop from 69.5% to 31.3% occurs with all four hazards present (authority, injection, boundary, fault), not just two; the summary omits boundary and fault hazards, misrepresenting the cause as only two hazard types."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Real-world friction halves agent scores.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Real-world friction halves agent scores",
+          "source_span": "the average pass rate falls from 69.5% to 31.3% once all four hazards are present",
+          "note": "digest: 69.5% to 31.3% is roughly a halving; this is an acceptable rounding/generalisation per house style."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_3a56f9d9a09985fd",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code builds evals before you've read your data",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Claude Code builds evals before you've read your data",
+          "source_span": "It pushes you to create an eval before looking at data... Claude started by suggesting several potential failures, then asked us to pick one straight away to turn into an eval... We hadn't yet reviewed the conversations ourselves",
+          "note": "The headline accurately captures the core finding that the tool proposes evals before the user has examined their own data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic's build_eval and hill-climb commands for Claude Code auto-generate evaluators from conversation traces.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anthropic's build_eval and hill-climb commands for Claude Code auto-generate evaluators from conversation traces.",
+          "source_span": "Their claude-api plugin now includes a new build_eval and hill-climb command that helps you build evals, check the graders, and improve your application against them.",
+          "note": "The commands and their function are accurately described; 'auto-generate evaluators from conversation traces' is a fair paraphrase of the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hamel Husain's livestreamed trial found a structural flaw",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Hamel Husain's livestreamed trial found a structural flaw",
+          "source_span": "Isaac Flath and I livestreamed ourselves using it on conversation traces from an apartment leasing assistant.",
+          "note": "The source never names 'Hamel Husain'; the author is unnamed in the excerpt and the livestream partner is named as Isaac Flath, so attributing the trial to Husain is unsupported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the tool proposes failure categories and asks for approval before you've examined the data yourself",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the tool proposes failure categories and asks for approval before you've examined the data yourself",
+          "source_span": "Claude started by suggesting several potential failures, then asked us to pick one straight away to turn into an eval... We hadn't yet reviewed the conversations ourselves, so it was hard to know if this was a real failure or worth prioritizing.",
+          "note": "Accurately paraphrases the source's description of the tool's behaviour."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Husain recommends holding off for now",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Husain recommends holding off for now",
+          "source_span": "I'd hold off for now.",
+          "note": "The recommendation exists in the source but is attributed to 'Husain', a name never mentioned in the source excerpt; the attribution is unsupported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "inspect your traces manually first, then use the commands to scaffold graders",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "inspect your traces manually first, then use the commands to scaffold graders",
+          "source_span": "I believe you should be looking at data first to inform your understanding and prioritize which evals to write... I'd want the workflow to help me explore the data before committing to an evaluator",
+          "note": "Accurately captures the author's recommendation to look at data first before using the tool."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Eval workflows defaulted to manual setup; Claude Code's builder automates grading but skips the data-first step.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Eval workflows defaulted to manual setup; Claude Code's builder automates grading but skips the data-first step.",
+          "source_span": "It pushes you to create an eval before looking at data... A recurring theme of the workflow was to jump too fast into creating artifacts or asking us for approval without helping us understand the data.",
+          "note": "The take's factual assertion that the tool automates grading but skips the data-first step is directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Human-first data review is a step practitioners had accepted as unavoidable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "human-first data review",
+          "source_span": "I believe you should be looking at data first to inform your understanding and prioritize which evals to write.",
+          "note": "synthesis: The source discusses the accepted norm of human data review in eval workflows, consistent with framing it as an accepted cost."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Language-model overhead for classification is a step practitioners had accepted as unavoidable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "language-model overhead for classification",
+          "source_span": "We see a lot of teams use LLMs for tasks that do not require complex reasoning and text generation... However, using LLMs for these smaller, structured decisions means paying for additional latency and cost that compounds at enterprise scale.",
+          "note": "synthesis: The source explicitly frames LLM overhead for classification as a widely accepted but unnecessary cost that ai_decide removes."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Closed training infrastructure is a step practitioners had accepted as unavoidable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "closed training infrastructure",
+          "source_span": "part of our ongoing commitment to open up the tools and training infrastructure behind each new model... putting advanced model development out of reach for many academic researchers and smaller labs.",
+          "note": "synthesis: The OLMo-core 3 source frames closed training infrastructure as a barrier being removed, consistent with the summary's framing."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_2008bcd948d20d21",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Databricks adds SQL-native decisions to cut language model costs",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Databricks adds SQL-native decisions to cut language model costs",
+          "source_span": "ai_decide is a native Databricks AI Function that makes fast, low-cost decisions... Call it from SQL to make structured decisions at scale on your data or through the REST API... it yields lower latency and cost than an LLM on similar tasks.",
+          "note": "'SQL-native' is a fair paraphrase of 'native Databricks AI Function' callable from SQL, and cost reduction is explicitly stated in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Most classification tasks (flagging documents, routing tickets, scoring answers) don't need a full language model.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Most classification tasks (flagging documents, routing tickets, scoring answers) don't need a full language model.",
+          "source_span": "We see a lot of teams use LLMs for tasks that do not require complex reasoning and text generation. Which category does this support ticket belong to? Does this document need human review?",
+          "note": "The source supports the claim that many classification tasks do not require full LLMs; examples are consistent paraphrases."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Databricks' new ai_decide function returns a probability, a category, or a score",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Databricks' new ai_decide function returns a probability, a category, or a score",
+          "source_span": "it returns either a probability, a choice from named criteria, or a score on an ordered scale.",
+          "note": "'A category' is a fair paraphrase of 'a choice from named criteria'; all three return types match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide returns a result in a fraction of a second",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "in a fraction of a second",
+          "source_span": "It evaluates one or more questions against text in a fraction of a second",
+          "note": "Exact phrase from the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide is callable from SQL or the REST API",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "callable from SQL or the REST API",
+          "source_span": "Call it from SQL to make structured decisions at scale on your data or through the REST API for real-time applications and agents.",
+          "note": "Directly matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide is now in beta",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "now in beta",
+          "source_span": "ai_decide is now available on Databricks in Beta.",
+          "note": "Directly matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Structured classification workflows that paid language-model latency now route through a sub-second decision function instead.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Structured classification workflows that paid language-model latency now route through a sub-second decision function instead.",
+          "source_span": "using LLMs for these smaller, structured decisions means paying for additional latency and cost... ai_decide is a new Databricks AI Function powered by a decision model. It evaluates one or more questions against text in a fraction of a second",
+          "note": "'Sub-second' is a fair paraphrase of 'a fraction of a second', and the routing-away-from-LLMs framing matches the source's stated purpose."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Databricks' ai_decide is SQL-native.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "SQL-native classification",
+          "source_span": "Call it from SQL to make structured decisions at scale on your data or through the REST API for real-time applications and agents.",
+          "note": "digest: 'SQL-native' is a plain-English paraphrase of the function being callable from SQL as a native Databricks AI Function."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide cuts model costs.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "cuts model costs",
+          "source_span": "it yields lower latency and cost than an LLM on similar tasks.",
+          "note": "digest: The source explicitly states ai_decide yields lower cost than an LLM on similar tasks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide is a Databricks product.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Databricks' ai_decide",
+          "source_span": "ai_decide is a native Databricks AI Function",
+          "note": "digest: The source confirms ai_decide is a native Databricks AI Function."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide returns a score or category.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "returns a score or category",
+          "source_span": "it returns either a probability, a choice from named criteria, or a score on an ordered scale.",
+          "note": "digest: 'Score or category' is a valid compression of 'probability, a choice from named criteria, or a score on an ordered scale'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide returns a result in a fraction of a second.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "in a fraction of a second",
+          "source_span": "It evaluates one or more questions against text in a fraction of a second",
+          "note": "digest: The source uses the identical phrase 'a fraction of a second'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ai_decide skips full language-model overhead.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "skipping full language-model overhead",
+          "source_span": "using LLMs for these smaller, structured decisions means paying for additional latency and cost that compounds at enterprise scale. A decision model like TypeSafe AI's Jev closes that gap: instead of generating text, it takes unstructured input and a set of questions and returns decisions and their probabilities directly.",
+          "note": "digest: 'Skipping full language-model overhead' is a fair plain-English paraphrase of avoiding LLM latency/cost by using a decision model instead of text generation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_782c3f55ee1a6862",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Allen AI open-sources training infrastructure that scales to a trillion parameters",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Allen AI open-sources training infrastructure that scales to a trillion parameters",
+          "source_span": "The same infrastructure has been benchmarked at over one trillion total parameters.",
+          "note": "The source confirms open release and trillion-parameter scale; 'Allen AI' is a common shorthand for the Allen Institute for AI (AI2), the releasing organization."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Allen Institute's OLMo-Core 3 brings mixture-of-experts training into the open",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Allen Institute's OLMo-Core 3 brings mixture-of-experts training into the open",
+          "source_span": "Today we're releasing Olmo-core 3, a significant upgrade to our framework for developing large language models featuring a redesigned open mixture-of-experts (MoE) training system.",
+          "note": "Source confirms OLMo-Core 3 is an open MoE training system; Allen Institute is the releasing organization per context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OLMo-Core 3 scales to 1.2 trillion total parameters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scaling to 1.2 trillion total parameters",
+          "source_span": "We've benchmarked Olmo-core 3 across a range of configurations on NVIDIA B300 GPUs, including a 1.2-trillion-parameter model",
+          "note": "Source explicitly states a 1.2-trillion-parameter benchmark configuration."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OLMo-Core 3 keeps active computation fixed at around 3.2 billion per token",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "keeping active computation fixed at around 3.2 billion per token",
+          "source_span": "a 1.2-trillion-parameter model with 58.36 billion parameters active per token across 512 GPUs",
+          "note": "The 3.2B active parameters per token applies to a smaller benchmark configuration; the 1.2T model has 58.36B active parameters per token, so the claim is misleading when paired with the 1.2T figure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A redesigned parallelism stack lifted throughput 2.7 times over the previous version on the same hardware",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A redesigned parallelism stack lifted throughput 2.7 times over the previous version on the same hardware",
+          "source_span": "a 47-billion-parameter MoE processed 52,000 tokens per second per GPU with the new stack, compared with 19,400 using our earlier implementation—about 2.7× the throughput",
+          "note": "Source confirms ~2.7x throughput improvement on the same hardware (eight NVIDIA B300 GPUs)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Code and benchmarks are on Hugging Face",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Code and benchmarks are on Hugging Face",
+          "source_span": "",
+          "note": "The source excerpt does not mention Hugging Face as the hosting platform for code or benchmarks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Large-model training infrastructure was a closed advantage; AI2's stack is now public and benchmarked.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Large-model training infrastructure was a closed advantage; AI2's stack is now public and benchmarked.",
+          "source_span": "Training large AI models takes a lot of compute, driving up costs and energy use and putting advanced model development out of reach for many academic researchers and smaller labs... part of our ongoing commitment to open up the tools and training infrastructure behind each new model.",
+          "note": "Source supports both the framing of training infrastructure as previously inaccessible and AI2's commitment to making it open and benchmarked."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_868da1f2d9e2ea9f",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's computer-use agents now outpace average humans at some tasks",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "OpenAI's computer-use agents now outpace average humans at some tasks",
+          "source_span": "Why Computer Use can now complete some tasks faster than the average human",
+          "note": "Source confirms agents can complete some tasks faster than the average human, matching the headline's claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ari Weinstein led Sky Software before OpenAI acquired it",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ari Weinstein, who led Sky Software before OpenAI acquired it",
+          "source_span": "close to the OpenAI-Sky Software acquisition that now powers the complete domination of computer use that Codex enjoys today... Ari Weinstein, cofounder of Sky and now leading all the amazing CUA progress",
+          "note": "Source confirms Ari Weinstein was cofounder of Sky and OpenAI acquired Sky; 'led' is a reasonable paraphrase of 'cofounder'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "computer use is '180 degrees different' from six months ago",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "computer use is '180 degrees different' from six months ago",
+          "source_span": "Ari explains why Computer Use is now \"180 degrees different\" from where it was months ago",
+          "note": "Source says 'months ago' (and the intro says 'three months ago' in context), not specifically 'six months ago' as the body claims."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Combining screenshots, accessibility trees, and generated code, agents now complete some tasks faster than average humans",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Combining screenshots, accessibility trees, and generated code, agents now complete some tasks faster than average humans",
+          "source_span": "why combining screenshots with accessibility data, the DOM, Playwright, and generated code changes the speed equation... Why Computer Use can now complete some tasks faster than the average human",
+          "note": "Source confirms both the combination of inputs and the speed advantage; omission of DOM/Playwright is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the Agents API now exposes the same stack powering Codex",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the Agents API now exposes the same stack powering Codex",
+          "source_span": "Agents API, which now has Computer Use in it, which is really cool, 'cause now developers can build on the same Computer Use, that is part of Codex, and ChatGPT",
+          "note": "Source confirms the Agents API gives developers access to the same Computer Use stack that powers Codex."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Computer-use was a research curiosity; OpenAI's agents now complete tasks faster than average humans.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Computer-use was a research curiosity; OpenAI's agents now complete tasks faster than average humans.",
+          "source_span": "",
+          "note": "The second half (faster than average humans) is supported, but 'research curiosity' characterisation of the past is an editorial framing not present in the source excerpt; the take as a whole is partially editorial and partially unverifiable from this excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Computer-use maturity sits among today's items because the evidence is real but downstream implications are still being mapped.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Computer-use maturity, diffusion failure modes, pricing shifts, and memorisation leakage all sit here because the evidence is real but the downstream implications are still being mapped.",
+          "source_span": "",
+          "note": "synthesis: This is editorial framing characterising the thematic grouping of stories; no checkable factual assertion is made about computer-use maturity specifically."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Diffusion failure modes are among the topics covered in today's items.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "diffusion failure modes",
+          "source_span": "Kavish found that DDPM, while theoretically ideal for denoising in diffusion models, diverged, and that flow matching performed much better. But the headline result was that fully continuous diffusion did not lend itself to the jaggedness of real market data.",
+          "note": "synthesis: The source excerpt on the intern project explicitly documents diffusion failure modes (DDPM divergence, continuous diffusion breaking down on market data)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pricing shifts are among the topics covered in today's items.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "pricing shifts",
+          "source_span": "GPT-6.1 Sol, which is this amazing new model... a fifth of the cost of Astra and a seventh of the cost if you're looking at Computer Use specifically",
+          "note": "synthesis: The OpenAI DevDay sources discuss new model pricing (GPT-6.1 Sol at a fraction of Astra's cost), supporting the claim that pricing shifts are covered."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Memorisation leakage is among the topics covered in today's items.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "memorisation leakage",
+          "source_span": "measure when LLMs are succeeding merely by regurgitating memorized facts from pretraining... find ways to prevent this behavior.",
+          "note": "synthesis: The Jane Street intern post is explicitly about LLM memorisation leakage and how to detect and mitigate it."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Practitioners are discovering where their models break before those breaks reach production.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "practitioners are discovering where their models break before those breaks reach production",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming synthesising across stories; no single source span confirms or denies this framing as a factual assertion."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9e0afc66a835dff7",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Jane Street finds continuous diffusion breaks on market data's jagged structure",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Jane Street finds continuous diffusion breaks on market data's jagged structure",
+          "source_span": "the headline result was that fully continuous diffusion did not lend itself to the jaggedness of real market data",
+          "note": "The source confirms the finding; the intern is identified as working at Jane Street via the intern project series context, and the core claim matches the source's headline result."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Market data sits between continuous and discrete, and that gap breaks standard diffusion models.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Market data sits between continuous and discrete, and that gap breaks standard diffusion models.",
+          "source_span": "market data is neither fully continuous nor fully discrete... the headline result was that fully continuous diffusion did not lend itself to the jaggedness of real market data",
+          "note": "Accurate paraphrase of the source's core framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A Jane Street intern tested four years of US equities data",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A Jane Street intern tested four years of US equities data",
+          "source_span": "Kavish looked at four years of US equities data",
+          "note": "The source confirms four years of US equities data and identifies Kavish as a research intern; Jane Street is the employer per the intern project series context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the denoising approach sent 88-95% of generated values beyond eight standard deviations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the denoising approach sent 88-95% of generated values beyond eight standard deviations",
+          "source_span": "88-95% of values over 8 standard deviations away from the distribution mean on all 7 continuous targets",
+          "note": "Exact figures match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Flow matching stabilised generation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Flow matching stabilised generation",
+          "source_span": "Kavish found that a rectified flows approach performed well out-of-the-box. So he switched to a flow-matching model.",
+          "note": "Source confirms flow matching resolved the instability issue."
+        },
+        {
+          "schema_version": 1,
+          "claim": "fully continuous diffusion still couldn't capture market data's spiky distributions",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "fully continuous diffusion still couldn't capture market data's spiky distributions",
+          "source_span": "the headline result was that fully continuous diffusion did not lend itself to the jaggedness of real market data... In practice the distributions are spiky",
+          "note": "Accurate paraphrase combining two source statements."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Flow matching now stands as the documented fallback.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Flow matching now stands as the documented fallback.",
+          "source_span": "Kavish found that a rectified flows approach performed well out-of-the-box. So he switched to a flow-matching model.",
+          "note": "'Documented fallback' is a reasonable editorial compression of the source's account of switching to flow matching after DDPM failure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Continuous diffusion fails on market data's mixed structure; quant teams now have a documented failure mode.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Continuous diffusion fails on market data's mixed structure; quant teams now have a documented failure mode.",
+          "source_span": "the headline result was that fully continuous diffusion did not lend itself to the jaggedness of real market data... market data is neither fully continuous nor fully discrete",
+          "note": "The factual core — continuous diffusion fails on market data's mixed structure — is confirmed by the source; 'documented failure mode' is a supported editorial characterisation of the published intern findings."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e8e2e982a2fc56f2",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI launches a personal AI agent to replace the assistant chatbot",
+          "verdict": "unsupported",
+          "location": "headline",
+          "summary_span": "OpenAI launches a personal AI agent to replace the assistant chatbot",
+          "source_span": "",
+          "note": "The source describes Dots as a personal agent but never frames it as replacing the assistant chatbot; 'replace' is an assertion not found in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's DevDay keynote introduced Dots, a personal agent with its own name, avatar, and identity inside Slack and Teams",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAI's DevDay keynote introduced Dots, a personal agent with its own name, avatar, and identity inside Slack and Teams",
+          "source_span": "It's called \"Dots\"... You get to pick its name, then it's represented by a cute blob-like avatar... Holly has a Dot called \"Dottie\", which has access to ChatGPT, Slack, Teams, and more... People at OpenAI started delegating to their Dots directly in Slack, which have their own identities in OpenAI Slack.",
+          "note": "Source confirms Dots has a name, avatar, and identity in Slack and Teams."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ChatGPT Spaces for team collaboration",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "ChatGPT Spaces for team collaboration",
+          "source_span": "So they are introducing ChatGPT Space.",
+          "note": "The source calls it 'ChatGPT Space' (singular), not 'ChatGPT Spaces' (plural); this is a name-level discrepancy, not mere style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-6.1 Sol launches today at one-fifth the cost of the top-tier model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GPT-6.1 Sol launches today at one-fifth the cost of the top-tier model",
+          "source_span": "Today they're launching GPT-6.1 Sol... \"Near-Astra level intelligence at a fifth of the price\"... 6.1 Sol is launching by today.",
+          "note": "Source confirms GPT-6.1 Sol launches today at a fifth of the price of Astra (the top-tier model)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Available to Pro and Enterprise customers now",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Available to Pro and Enterprise customers now",
+          "source_span": "ChatGPT Pro and Enterprise customers get access to Dots today.",
+          "note": "Source confirms Pro and Enterprise customers get access today."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Near-flagship intelligence now costs a fifth of the flagship price, shifting the default model for production builds",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Near-flagship intelligence now costs a fifth of the flagship price, shifting the default model for production builds",
+          "source_span": "\"Near-Astra level intelligence at a fifth of the price\".",
+          "note": "The 'near-flagship at a fifth of the price' part is supported, but 'shifting the default model for production builds' is an editorial assertion with no factual basis in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's GPT-6.1 Sol launches at one-fifth the top-tier model's price.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAI's GPT-6.1 Sol launches at one-fifth the top-tier model's price",
+          "source_span": "\"Near-Astra level intelligence at a fifth of the price\".",
+          "note": "digest: Source confirms GPT-6.1 Sol is priced at a fifth of Astra (the top-tier model); 'one-fifth the top-tier model's price' is a supported paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-6.1 Sol is available to Pro and Enterprise customers today.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "available to Pro and Enterprise customers today",
+          "source_span": "ChatGPT Pro and Enterprise customers get access to Dots today.",
+          "note": "digest: The source says Pro and Enterprise customers get Dots today, not GPT-6.1 Sol; Sol is described as 'launching by today' in the API context, with no explicit Pro/Enterprise customer restriction stated for Sol itself — the Pro/Enterprise framing is applied to Dots, making this attribution to Sol unsupported."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": true,
+      "headline_flagged": true
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_ed5a85fdb159687e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Jane Street's trick stops language models cheating on financial forecasts",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Jane Street's trick stops language models cheating on financial forecasts",
+          "source_span": "Divergence decoding reduced pre-cutoff performance without harming post-cutoff performance, evidence that it mitigates the effect of memorization.",
+          "note": "'Stops cheating' is a fair plain-English compression of mitigating memorisation-driven over-performance; 'financial forecasts' is a reasonable generalisation of the cricket-as-proxy-for-financial work described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Jane Street's ML Research intern found that larger language models predict historical financial outcomes partly by recalling memorised training data, not by reasoning.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Jane Street's ML Research intern found that larger language models predict historical financial outcomes partly by recalling memorised training data, not by reasoning.",
+          "source_span": "Bigger models in general performed better and were also more memorized, which made them suitable for the study... A model may perform well on a historical benchmark by consulting its memorized knowledge of past outcomes, but fail miserably when presented with new scenarios in production.",
+          "note": "Source confirms larger models are more memorised and that memorisation drives historical performance; 'financial outcomes' is a supported generalisation given the stated financial motivation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Divergence decoding, an inference-time technique steering outputs away from memorised knowledge, reduced pre-cutoff over-performance without hurting post-cutoff accuracy.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Divergence decoding, an inference-time technique steering outputs away from memorised knowledge, reduced pre-cutoff over-performance without hurting post-cutoff accuracy.",
+          "source_span": "Divergence decoding attempts to remove later years of knowledge from frontier models by doing inference-time steering in logits space... divergence decoding reduced pre-cutoff performance without harming post-cutoff performance, evidence that it mitigates the effect of memorization.",
+          "note": "All elements of this claim are directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Before benchmarking a language model on historical market data, test for memorisation first.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Before benchmarking a language model on historical market data, test for memorisation first.",
+          "source_span": "",
+          "note": "This is a prescriptive recommendation; the source describes the research but does not explicitly state this as a conclusion or recommendation, so it cannot be confirmed from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Financial forecasters assumed memorisation was invisible; Jane Street's intern made it measurable and steerable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Financial forecasters assumed memorisation was invisible; Jane Street's intern made it measurable and steerable.",
+          "source_span": "Monte, a summer intern in our ML Research group, had two tasks: first, measure when LLMs are succeeding merely by regurgitating memorized facts from pretraining, and second, find ways to prevent this behavior.",
+          "note": "'Measurable and steerable' accurately compresses Monte's two tasks of measuring and mitigating memorisation; the 'assumed invisible' framing is a reasonable editorial characterisation of the problem setup described."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 12 stories -- factual flags present | digest-bar: digest bullet 1 carries a claim the verifier marked 'contradicted' (story c_dd7a06cd2eedb120): 'Every prior model scored zero on binary exploitation trials.'; digest bullet 2 carries a claim the verifier marked 'contradicted' (story c_9f11e1e9e1dfcdae): 'The drop was caused by adding authority spoofing and injected text.'"
+}

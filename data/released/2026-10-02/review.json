@@ -1,0 +1,591 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-01T21:42:02.355320Z",
+  "computed_verdict": "red",
+  "one_line": "Five blocking/major factual errors dominate; a five-way take frame collision compounds the editorial debt.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_dd7a06cd2eedb120",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "GLM-5.3 (a Chinese lab's model) in 4%",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this 'contradicted': the source says GLM-5.3 develops full control flow hijacks in 4% of trials, which means GLM-5.3 also scored non-zero — it did NOT score zero. The summary's framing implies only Claude Mythos Preview crossed the zero threshold. Revise to make clear that both Claude Mythos Preview (6%) and GLM-5.3 (4%) crossed zero, and that the zero-to-nonzero threshold was crossed by at least two models.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_dd7a06cd2eedb120",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Binary exploitation was a human-only capability; frontier models now succeed at it on Anthropic's own benchmark.",
+      "fix_kind": "text_edit",
+      "instruction": "The take implies only frontier models (plural, but contextually Claude) crossed zero. The verification block confirms GLM-5.3 also scored 4%, meaning at least two models crossed the threshold. Revise to reflect that multiple frontier models now succeed, not just Anthropic's own model, to avoid implying a false exclusivity.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Claude Mythos Preview solved 6% of binary exploitation trials where every prior model scored zero.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks 'every prior model scored zero' as contradicted: GLM-5.3 also scored 4% on the same benchmark. Remove the 'every prior model scored zero' framing or revise to note that both Claude Mythos Preview (6%) and GLM-5.3 (4%) crossed the zero threshold.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_782c3f55ee1a6862",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "keeping active computation fixed at around 3.2 billion per token",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this contradicted: the source states 58.36 billion parameters active per token, not 3.2 billion. Replace '3.2 billion' with '58.36 billion' to match the source.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e8e2e982a2fc56f2",
+        "section": "currents",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "OpenAI launches a personal AI agent to replace the assistant chatbot",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks the headline claim 'unsupported': the source does not state that Dots replaces the assistant chatbot. Remove 'to replace the assistant chatbot' or revise to a supportable framing such as 'OpenAI launches Dots, a personal AI agent with its own identity inside Slack and Teams'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e8e2e982a2fc56f2",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "ChatGPT Spaces for team collaboration",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this contradicted: the source says 'ChatGPT Space' (singular), not 'Spaces'. Correct to 'ChatGPT Space'.",
+      "echo_of": "f005"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e8e2e982a2fc56f2",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "GPT-6.1 Sol launches today at one-fifth the cost of the top-tier model. Available to Pro and Enterprise customers now",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this unsupported: the source says Pro and Enterprise customers get access to Dots today, not GPT-6.1 Sol. Clarify which product (Dots vs GPT-6.1 Sol) is available to which customers today, and do not assert GPT-6.1 Sol availability as fact without source support.",
+      "echo_of": "f005"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "BACKDROP's 3,678-variant study dropped average pass rates from 69.5% to 31.3% by adding authority spoofing and injected text.",
+      "fix_kind": "text_edit",
+      "instruction": "The source plants four hazards, not two. Replace 'by adding authority spoofing and injected text' with 'by planting four real-world hazards including authority spoofing, injected text, boundary violations, and silent write failures'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_3a56f9d9a09985fd",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Hamel Husain's livestreamed trial found a structural flaw",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this unsupported: the source says the livestream was conducted by Isaac Flath and Husain together ('Isaac Flath and I livestreamed'). Revise to credit both: 'Hamel Husain and Isaac Flath's livestreamed trial found a structural flaw'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_868da1f2d9e2ea9f",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "computer use is '180 degrees different' from six months ago",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this contradicted: the source says 'months ago', not 'six months ago'. Remove 'six' so it reads 'from months ago', matching the source's hedged timeframe.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e8e2e982a2fc56f2",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Near-flagship intelligence now costs a fifth of the flagship price, shifting the default model for production builds.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks the pricing claim unsupported: the source quotes 'Near-Astra level intelligence at a fifth of the price' — a marketing claim, not a verified pricing fact. Additionally, 'shifting the default model for production builds' frames this as an investment/adoption directive. Remove the prescriptive framing and hedge the pricing claim to reflect the source: e.g., 'OpenAI positions GPT-6.1 Sol as near-flagship intelligence at one-fifth the flagship price, reframing the cost calculus for production model selection.'",
+      "echo_of": "f005"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e58ed6dbed278061",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Does your stress-testing framework still assume human-speed reconnaissance?",
+      "fix_kind": "text_edit",
+      "instruction": "The closing strategic question has an obvious answer (no, it should not assume human-speed reconnaissance), making it a rhetorical question with a predetermined answer rather than a genuine decision anchor. Revise to a question that surfaces a real organisational constraint or decision point, e.g. 'Which team in your organisation owns the assumption that contagion reconnaissance runs at human speed — and has it been reviewed since agents entered your data environment?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_674ed6df50b88a6f",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Does your chain-of-thought monitoring assume this failure mode is too costly to train?",
+      "fix_kind": "text_edit",
+      "instruction": "The closing question has an obvious implied answer and is close to a prescription ('you should not assume this'). Revise to anchor to a specific organisational decision or role: e.g. 'Which team owns the cost assumption embedded in your chain-of-thought monitoring policy, and when was it last stress-tested against a convenient-cover-task scenario?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9f11e1e9e1dfcdae",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "When your procurement team evaluates benchmark scores, which adversarial test standard does your organisation actually require?",
+      "fix_kind": "text_edit",
+      "instruction": "The question is directionally sound but the 'actually' implies the obvious answer is 'none', making it rhetorical. Sharpen to a genuine decision anchor: e.g. 'Which adversarial test standard does your procurement policy name, and who in your organisation is accountable for enforcing it before a model contract is signed?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f016",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d896ff7a7e4e23d1",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Which shared writable surfaces has your security architecture actually reviewed before granting agents cross-channel access?",
+      "fix_kind": "text_edit",
+      "instruction": "'Actually reviewed' implies the obvious answer is 'none', making this rhetorical. Revise to surface a genuine organisational constraint: e.g. 'Which team in your security architecture owns the review of shared writable surfaces, and does that review gate agent cross-channel access grants?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f017",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_3a56f9d9a09985fd",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Eval workflows defaulted to manual setup; Claude Code's builder automates grading but skips the data-first step.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's finding rather than adding the publication's position. The body already says the tool 'proposes failure categories and asks for approval before you've examined the data yourself'. The take should state what the publication holds true about the consequence: e.g. 'Claude Code's eval builder accelerates grading scaffolding but embeds a sequencing flaw that manual data review must precede.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f018",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_868da1f2d9e2ea9f",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Computer-use was a research curiosity; OpenAI's agents now complete tasks faster than average humans.",
+      "fix_kind": "text_edit",
+      "instruction": "The take shares the same 'X was Y; it is now Z' scaffold as the Pulse take ('Binary exploitation was a human-only capability; frontier models now succeed at it'). File as a minor frame collision on the later story. Revise to a different syntactic structure: e.g. 'OpenAI's computer-use stack has crossed the average-human speed threshold for some tasks, making deployment scoping a live question.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f019",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_674ed6df50b88a6f",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Chain-of-thought monitoring assumed hidden reasoning was out of reach; a convenient cover task brings it within reach.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the 'X assumed Y was Z; now it is not Z' scaffold with the Pulse take and the computer-use take. Three stories sharing the same frame triggers a major under the criterion, but only two are exact matches with this one — flag as minor on this story. Revise to a different structure: e.g. 'Hidden reasoning in chain-of-thought outputs is now achievable with a convenient cover task, narrowing the gap between concealment cost and deployment risk.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f020",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e58ed6dbed278061",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Systemic risk surveillance assumed human analysts held the contagion map; agents can now search it faster.",
+      "fix_kind": "text_edit",
+      "instruction": "This take also uses the 'X assumed Y; agents/models now Z' scaffold, making it a fourth instance of the same frame across the issue (Pulse, contagion, hidden reasoning, computer-use). With four instances this rises to a pattern. Revise to break the frame: e.g. 'Agents can now traverse contagion networks faster than human analysts, making the reconnaissance assumption in stress-testing frameworks obsolete.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f021",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "synthesis_shape",
+      "severity": "minor",
+      "quote": "Each story today exposes a different assumed boundary that agents now cross without triggering a control: contagion maps, sandbox walls, reasoning traces, benchmark scores.",
+      "fix_kind": "text_edit",
+      "instruction": "The first sentence is close to an aphorism — a detachable slogan-shaped fragment listing four items without grounding them in the specific stories' actors or stakes. Revise to open with a sentence that names the pattern across the actual stories: e.g. 'A Bank of England scenario, a cryptographer's worm analysis, an arXiv concealment study, and an adversarial benchmark all arrived the same week, each showing a monitoring layer that was designed before agents could cross the boundary it was meant to hold.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f022",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ed5a85fdb159687e",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Financial forecasters assumed memorisation was invisible; Jane Street's intern made it measurable and steerable.",
+      "fix_kind": "text_edit",
+      "instruction": "This take again uses the 'X assumed Y; Z made it not-Y' scaffold, extending the frame-collision pattern to a fifth instance. Revise: e.g. 'Divergence decoding gives quant teams a practical handle on memorisation bias without degrading post-cutoff forecast accuracy.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f023",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d896ff7a7e4e23d1",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Security architects treating sandbox isolation as sufficient now own a second attack surface: agent-to-agent instruction poisoning.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's conclusion ('Sandbox boundaries stop code execution, not instruction propagation') rather than adding the publication's position beyond what the body already states. Revise to add the editorial position: e.g. 'Agent-to-agent instruction poisoning is now a documented attack class, requiring security architects to extend their threat model beyond code-execution boundaries.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f024",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e8e2e982a2fc56f2",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "scope your agent architecture around the new pricing tier before renewing model contracts",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body close should end on a presence-form maturity signal (what exists and what it is worth today), not a prescription. Remove the imperative close and replace with a maturity signal: e.g. 'The pricing tier is live today for Pro and Enterprise customers, making it an active variable in current model contract negotiations.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f025",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9e0afc66a835dff7",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Continuous diffusion fails on market data's mixed structure; quant teams now have a documented failure mode.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is a minor restatement of the body's last sentence ('Flow matching now stands as the documented fallback'). The take should add the publication's position: e.g. 'Flow matching is now the documented fallback for market-data generation, with continuous diffusion's failure mode quantified and reproducible.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f026",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_782c3f55ee1a6862",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Clone it before scoping your next large training run.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On imperative close should be sharpened to a specific artefact and trigger. 'Clone it' is generic. Revise to name the specific artefact and the trigger condition: e.g. 'Before scoping your next MoE training run, clone the OLMo-Core 3 repo on Hugging Face and run the parallelism benchmarks against your target hardware configuration.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f027",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_2008bcd948d20d21",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Run it against your next document-triage pipeline before extending your language model budget.",
+      "fix_kind": "text_edit",
+      "instruction": "The imperative close names a pipeline type but not a specific artefact or trigger. Sharpen: e.g. 'Before extending your language-model budget for document triage, call ai_decide via the REST API on a sample of your current classification workload and compare latency and cost against your existing model call.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f028",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_3a56f9d9a09985fd",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "inspect your traces manually first, then use the commands to scaffold graders",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On close is a two-step prescription but lacks a specific artefact trigger. Sharpen: e.g. 'Before running build_eval, export your conversation traces from the leasing assistant (or equivalent), manually label at least one failure category, then invoke hill-climb to scaffold graders against your labelled set.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f029",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ed5a85fdb159687e",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Before benchmarking a language model on historical market data, test for memorisation first.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body close is a prescription rather than a presence-form maturity signal. Replace with a maturity signal: e.g. 'Divergence decoding is available as an inference-time technique today, with Jane Street's results providing a reproducible baseline for pre- and post-cutoff accuracy comparison.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f030",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_868da1f2d9e2ea9f",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "If you're scoping a computer-use deployment, the Agents API now exposes the same stack powering Codex.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body close is a conditional prescription rather than a presence-form maturity signal. Revise: e.g. 'The Agents API now exposes the same screenshot-plus-accessibility-tree-plus-code stack that powers Codex, making the computer-use capability available for deployment scoping today.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f031",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e8e2e982a2fc56f2",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "section_routing",
+      "severity": "note",
+      "quote": "GPT-6.1 Sol launches today at one-fifth the cost of the top-tier model. Available to Pro and Enterprise customers now",
+      "fix_kind": "human",
+      "instruction": "GPT-6.1 Sol is a concrete product launch with a specific pricing tier and availability date — this has the character of a Hands-On story (tool/version/config) rather than a Currents signal. The Dots personal agent framing is more speculative and fits Currents. Consider whether to split into two stories or route the GPT-6.1 Sol pricing element to Hands-On. Flag for Arman's judgement.",
+      "echo_of": "f005"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f032",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_dd7a06cd2eedb120",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "Anthropic's Frontier Red Team reports a clean capability jump",
+      "fix_kind": "carry_forward",
+      "instruction": "Agent security and capability-jump framing has appeared in the Pulse for three consecutive issues (agent collaboration hacks 09-30, OpenAI sandbox escape 09-29, Pentagon blacklist 09-28). This issue's Pulse is genuinely novel (zero-to-nonzero binary exploitation threshold) and the source is new, so no action today. Monitor: if the next issue's Pulse is again an Anthropic or OpenAI safety/capability story, flag the recurrence explicitly.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9f11e1e9e1dfcdae",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "The drop was caused by adding authority spoofing and injected text.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this contradicted: BACKDROP plants four hazards (authority spoofing, injected text, boundary violations, and silent write failures), not just two. The digest sentence also only names two. Revise the summary to name all four hazards as the cause of the performance drop.",
+      "echo_of": null
+    }
+  ],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "42b634f9489329d94460fa931a4459441520a886d78782d526e2846843198a33",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 6 echo(es) not counted: the same defect filed again in another field or under another criterion | 1 finding(s) dropped: quote not found verbatim in the target text, or criterion inapplicable to this issue"
+}
