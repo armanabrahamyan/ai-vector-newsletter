@@ -1,0 +1,853 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-04T21:41:38.173696Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 69,
+    "unsupported": 3,
+    "unverifiable": 9,
+    "contradicted": 1
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_1735eef530a73064",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Keyword benchmarks overstate small models' tool-use ability",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Keyword benchmarks overstate small models' tool-use ability",
+          "source_span": "Keyword-matching benchmarks can credit small models for tool use they never perform.",
+          "note": "The headline is a fair paraphrase of the source's central claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Keyword benchmarks credited a 1.1-billion-parameter model with tool-use it never performed",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Keyword benchmarks credited a 1.1-billion-parameter model with tool-use it never performed",
+          "source_span": "A 661.6M parameter model (approx. 65% code/technical text; no dedicated SFT) and a 1,109M model (web-heavy multi-phase curriculum; 6B-token tool-SFT) share decoder, tokenizer, and special tokens, scoring almost identically on lenient tool-use metrics (B4: 0.660 vs. 0.650).",
+          "note": "1,109M rounds to 1.1B; the source confirms the larger model scored similarly on lenient metrics despite failing verbatim checks, consistent with being falsely credited."
+        },
+        {
+          "schema_version": 1,
+          "claim": "strict verbatim checks found it succeeded on 0 of 6 examples where a smaller 600-million-parameter model passed all 6",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "strict verbatim checks found it succeeded on 0 of 6 examples where a smaller 600-million-parameter model passed all 6",
+          "source_span": "the 600M emits valid tool calls with generalized arguments on 6/6 examples; the 1B does so on 0/6 across checkpoints.",
+          "note": "Directly matches the source figures and framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint proposes a diagnostic ladder costing minutes of CPU time",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint proposes a diagnostic ladder costing minutes of CPU time",
+          "source_span": "This cheap diagnostic ladder costs minutes of CPU time and should gate tool-use claims on small models.",
+          "note": "The source confirms the CPU-time cost and the proposal; the arXiv preprint characterisation is consistent with the source being an arXiv paper (hf papers read 2610.02142), a reasonable inference."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The diagnostic ladder is becoming the baseline check for any credible tool-use claim.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "The diagnostic ladder is becoming the baseline check for any credible tool-use claim.",
+          "source_span": "",
+          "note": "The source recommends the ladder should gate claims but does not assert it is already becoming an adopted baseline; this presents an adoption trend as fact without a source hedge."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anyone shipping a small agentic model now needs verbatim checks before claiming tool-use.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anyone shipping a small agentic model now needs verbatim checks before claiming tool-use.",
+          "source_span": "This cheap diagnostic ladder costs minutes of CPU time and should gate tool-use claims on small models.",
+          "note": "The take is an editorial restatement of the source's explicit recommendation; 'agentic model' is a reasonable paraphrase of 'small models' in a tool-use context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Keyword checks credited a model with tool-use it never performed.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Keyword checks credited a 1.1B-parameter model with tool-use it never performed",
+          "source_span": "Keyword-matching benchmarks can credit small models for tool use they never perform. We document such a false positive in a matched-architecture pair of Spanish security language models",
+          "note": "digest: The source confirms keyword-matching benchmarks falsely credited a model with tool use it never performed; paraphrase is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model credited with tool-use it never performed has 1.1B parameters.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a 1.1B-parameter model with tool-use it never performed",
+          "source_span": "a 1,109M model (web-heavy multi-phase curriculum; 6B-token tool-SFT) ... the 1B does so on 0/6 across checkpoints",
+          "note": "digest: 1,109M rounded to 1.1B is a standard approximation; the source confirms this model performed tool use on 0/6 examples, i.e. never performed it."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A 600M model passed all six tasks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a 600M model passed all six tasks",
+          "source_span": "the 600M emits valid tool calls with generalized arguments on 6/6 examples",
+          "note": "digest: Source directly states the 600M model succeeded on 6/6 examples, matching 'all six tasks'."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_78f69c023a0190d7",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Docker packages AI agent permissions as a portable, auditable image file",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Docker packages AI agent permissions as a portable, auditable image file",
+          "source_span": "packages an agent, its tools, and a typed list of the hosts, credentials, and volumes it requests into an ordinary OCI image",
+          "note": "The source confirms Docker bundles agent permissions into a standard OCI image; 'auditable' is a fair paraphrase of scannable/signable/reviewable artifact language in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Docker's Sandbox Kit Spec (v3) bundles an agent, its tools, and typed permission requests into a standard container image.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Docker's Sandbox Kit Spec (v3) bundles an agent, its tools, and typed permission requests into a standard container image.",
+          "source_span": "The Apache 2.0 spec, now at v3, packages an agent, its tools, and a typed list of the hosts, credentials, and volumes it requests into an ordinary OCI image.",
+          "note": "'Typed permission requests' is a fair paraphrase of 'typed list of the hosts, credentials, and volumes it requests'; 'standard container image' maps to 'ordinary OCI image'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Deny rules win over allows",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Deny rules win over allows",
+          "source_span": "the Kit allows api.github.com but denies DELETE on /repos/**, since deny wins.",
+          "note": "Source explicitly states 'deny wins', confirming this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "pinning the image digest pins permissions alongside code",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "pinning the image digest pins permissions alongside code",
+          "source_span": "Pinning the digest pins content and permissions together.",
+          "note": "'Code' is a reasonable paraphrase of 'content' in this context; the core fact matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Docker Sandboxes is the only conforming runtime so far.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Docker Sandboxes is the only conforming runtime so far.",
+          "source_span": "Docker Sandboxes, which run agents in microVMs with their own kernel, is the first conforming runtime.",
+          "note": "Source says 'first conforming runtime', which aligns with 'only conforming runtime so far'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Does your agent governance review cover permission widening across versions?",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Does your agent governance review cover permission widening across versions?",
+          "source_span": "A runtime that gates updates can record that set and stop any version that widens it, including one that removes a deny rule.",
+          "note": "This is a call-to-action editorial question, not a factual claim; however it references the real concept of permission widening across versions which is sourced. Marked supported as the underlying concept is grounded in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent permission grants lived in shell history and dashboards; they now ship as a scannable image.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent permission grants lived in shell history and dashboards; they now ship as a scannable image.",
+          "source_span": "The grants that make them useful, such as bind mounts, broad tokens, and opened firewall rules, usually live in shell history, dashboards, and memory rather than in a reviewable artifact.",
+          "note": "'Shell history and dashboards' matches the source directly; 'scannable image' is supported by the source's mention of scanning Kits with existing tools."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Governance assumptions that lived in dashboards, vendor defaults, and verbal agreements are hardening into auditable artefacts.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Governance assumptions that lived in dashboards, vendor defaults, and verbal agreements are hardening into auditable artefacts this week.",
+          "source_span": "The grants that make them useful, such as bind mounts, broad tokens, and opened firewall rules, usually live in shell history, dashboards, and memory rather than in a reviewable artifact.",
+          "note": "synthesis: The source explicitly describes permissions living in dashboards and memory rather than reviewable artifacts, supporting the editorial framing; the Docker spec is the 'hardening into auditable artefacts' referenced."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent deployments now carry operational liabilities — financial, archival, architectural — that organisations cannot absorb informally.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "agent deployments now carry operational liabilities — financial, archival, architectural — that organisations cannot absorb informally.",
+          "source_span": "Nobody wants to wake up to an email sent at midnight warning about a budget limit and find that, while they slept, their rogue service had consumed several hundred (or several thousand) more dollars of usage.",
+          "note": "synthesis: Financial liabilities are supported by the budget-cap story; archival/architectural liabilities are supported by the file-deletion and Docker spec stories; this is an editorial generalisation across sources, which is house style."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_61691207482a79e8",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Agents need hard spending limits, not warning emails, as a default",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Agents need hard spending limits, not warning emails, as a default",
+          "source_span": "These need to be hard limits. Soft caps, \"after $X/month, send me a warning email\", will not cut it.",
+          "note": "The source explicitly argues for hard limits over warning emails as the default, matching the headline."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Simon Willison argues that pay-per-use APIs must default to hard cut-offs, not soft alerts",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Simon Willison argues that pay-per-use APIs must default to hard cut-offs, not soft alerts",
+          "source_span": "",
+          "note": "The source excerpt does not name the author; 'Simon Willison' cannot be confirmed or denied from this excerpt alone."
+        },
+        {
+          "schema_version": 1,
+          "claim": "coding agents can rack up thousands of dollars overnight while their owner sleeps",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "coding agents can rack up thousands of dollars overnight while their owner sleeps",
+          "source_span": "Nobody wants to wake up to an email sent at midnight warning about a budget limit and find that, while they slept, their rogue service had consumed several hundred (or several thousand) more dollars of usage.",
+          "note": "The source describes the same scenario of thousands of dollars consumed overnight while sleeping."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AWS launched spending limits in September",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "AWS launched spending limits in September",
+          "source_span": "it turns out AWS finally launched spending limits a few weeks ago! From their announcement New AWS experience helps builders get started and ship faster on 16th September",
+          "note": "The source confirms AWS launched spending limits on 16th September, consistent with the summary's 'September'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google Cloud followed in July",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google Cloud followed in July",
+          "source_span": "Google Cloud launched a similar feature in July, called Spend Caps",
+          "note": "The source explicitly states Google Cloud launched Spend Caps in July."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Builders deploying agents now inherit runaway-spend risk their upstream vendors never designed against.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Builders deploying agents now inherit runaway-spend risk their upstream vendors never designed against.",
+          "source_span": "",
+          "note": "This is an editorial position; the source argues for hard caps but does not explicitly state vendors 'never designed against' runaway-spend risk — this framing is not checkable from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_99b998d29468d7e2",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code deleted 48,000 files in 100 seconds by misreading folder shortcuts",
+          "verdict": "contradicted",
+          "location": "headline",
+          "summary_span": "Claude Code deleted 48,000 files in 100 seconds by misreading folder shortcuts",
+          "source_span": "Everything happened in the blink of an eye - less than two minutes.",
+          "note": "The source says the deletion happened in under two minutes (~120 seconds), not 100 seconds; additionally the source says ~48,218 files were deleted, which rounds to 48,000, but the timeframe '100 seconds' conflicts with 'just over 100 seconds' in the headline of the source article and 'less than two minutes' in the body — 'just over 100 seconds' is borderline, but the newsletter headline says simply '100 seconds' while the source article title says 'just over 100 seconds', making this a minor but real divergence; the 'folder shortcuts' paraphrase of 'junctions' is acceptable house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A developer's Claude Code agent, tasked with rebuilding a test mirror, misread Windows junction folders as real directories",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A developer's Claude Code agent, tasked with rebuilding a test mirror, misread Windows junction folders as real directories",
+          "source_span": "This job was supposed to make a fresh copy of the old testing environment, apply the repairs, and test it without touching the real working files... When the AI tried to clean out the junctions, it did not recognize them as just pointers, following them into the real filing cabinet and deleting the actual documents.",
+          "note": "The source confirms the agent was rebuilding a test mirror and misread Windows junctions as real directories."
+        },
+        {
+          "schema_version": 1,
+          "claim": "deleted 48,218 live files in under two minutes",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "deleted 48,218 live files in under two minutes",
+          "source_span": "The remaining 48,218 files were from the live working environment. Everything happened in the blink of an eye - less than two minutes.",
+          "note": "The source confirms exactly 48,218 live files deleted in less than two minutes."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Git object store was also destroyed.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The Git object store was also destroyed.",
+          "source_span": "The computer's Git repository was also damaged. The index survived, but the underlying stored copies of the files, and the history used to reconstruct them, were all deleted.",
+          "note": "The source confirms the Git object store (underlying stored copies and history) was destroyed, though the index survived; 'object store destroyed' is a fair compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The incident surfaced on Reddit.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The incident surfaced on Reddit.",
+          "source_span": "The news of the fiasco, which first surfaced on Reddit",
+          "note": "The source explicitly states the incident first surfaced on Reddit."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Autonomous file operations assumed pointer-aware traversal; one junction misread wiped a live archive.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Autonomous file operations assumed pointer-aware traversal; one junction misread wiped a live archive.",
+          "source_span": "When the AI tried to clean out the junctions, it did not recognize them as just pointers, following them into the real filing cabinet and deleting the actual documents.",
+          "note": "The take is an editorial compression of the confirmed facts: the agent failed to recognize junctions as pointers and deleted live files as a result."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A Claude Code agent misread Windows junction folders as real directories.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A Claude Code agent misread Windows junction folders as real directories",
+          "source_span": "When the AI tried to clean out the junctions, it did not recognize them as just pointers, following them into the real filing cabinet and deleting the actual documents.",
+          "note": "digest: The source confirms the AI failed to recognize junctions as pointers, which is a supported paraphrase of 'misread as real directories'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agent deleted 48,218 live files.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "deleted 48,218 live files",
+          "source_span": "The remaining 48,218 files were from the live working environment.",
+          "note": "digest: The exact figure 48,218 matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The deletion happened in under two minutes.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "in under two minutes",
+          "source_span": "Everything happened in the blink of an eye - less than two minutes.",
+          "note": "digest: 'Under two minutes' matches the source's 'less than two minutes'; the headline's '100 seconds' is consistent with this."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Junction folders erased 48,000 files.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Junction folders erased 48,000 files",
+          "source_span": "The remaining 48,218 files were from the live working environment.",
+          "note": "digest: Rounding 48,218 to 48,000 is acceptable house-style approximation."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": true
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f5a09173f494cc5c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "DoorDash's GenAI platform reached 5,000 users by ditching vendor lock-in early",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "DoorDash's GenAI platform reached 5,000 users by ditching vendor lock-in early",
+          "source_span": "Right now, we have over 5,000 users internally onboarded to our platform.",
+          "note": "5,000 users is confirmed; 'ditching vendor lock-in early' is a fair paraphrase of the pivot from closed vendor models described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "DoorDash's internal GenAI platform serves 5,000 users",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "DoorDash's internal GenAI platform serves 5,000 users",
+          "source_span": "Right now, we have over 5,000 users internally onboarded to our platform.",
+          "note": "Source confirms over 5,000 internal users; rounding to 5,000 is acceptable house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Users span engineering, legal, and operations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across engineering, legal, and operations",
+          "source_span": "Everyone from legal to sales and operations and strategy, they're all using APIs.",
+          "note": "Legal and operations are explicitly named; engineering is implied as the original audience; omitting sales and strategy is not an error."
+        },
+        {
+          "schema_version": 1,
+          "claim": "40% of users are non-engineers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "40% non-engineers",
+          "source_span": "Surprisingly, something I did not predict was that 40% of people are non-engineers.",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The team pivoted from closed vendor models to open-weights alternatives",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "from closed vendor models to open-weights alternatives",
+          "source_span": "",
+          "note": "The source describes a pivot away from OpenAI but does not mention 'open-weights alternatives' in the provided excerpt; this specific detail cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A language-model gateway manages accuracy, latency, and cost",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with a language-model gateway managing accuracy, latency, and cost",
+          "source_span": "our USP was going to be help product teams optimize between these three things, accuracy, latency, and cost.",
+          "note": "The three dimensions match exactly; 'language-model gateway' is a reasonable paraphrase of the platform's role described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Platform teams that started vendor-first now face a rebuild; DoorDash's gateway pivot shows the cost of waiting.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Platform teams that started vendor-first now face a rebuild; DoorDash's gateway pivot shows the cost of waiting.",
+          "source_span": "",
+          "note": "This is an editorial position drawing an inference from the story; the source does not discuss other platform teams facing rebuilds or frame DoorDash's pivot as a cautionary tale about waiting."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_c3b95591dd02ea4b",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "An open-source guard blocks agent data leaks where probabilistic filters fail",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "An open-source guard blocks agent data leaks where probabilistic filters fail",
+          "source_span": "Archestra released OpenAPPA, an open-source security engine designed to stop data exfiltration caused by prompt injection or model hallucination... OpenAPPA's documentation explains why a stochastic approach to automated policy enforcement fails",
+          "note": "The headline accurately paraphrases OpenAPPA as an open-source guard stopping data leaks where probabilistic/stochastic classifiers fail."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAPPA runs outside the agent's execution loop",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAPPA runs outside the agent's execution loop",
+          "source_span": "OpenAPPA runs outside the agent's prompt and execution loop.",
+          "note": "Direct match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAPPA tracks data-flow labels across every tool call using lattice algebra",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "tracking data-flow labels across every tool call using lattice algebra",
+          "source_span": "Labels compose monotonically using lattice algebra; labels can only become more restrictive; reading restricted records narrows the audience; reading unvetted external web pages lowers trust.",
+          "note": "The source confirms lattice algebra is used for label composition across tool calls."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On Bench-Corp and AgentThreatBench it recorded 0% attack success",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "On Bench-Corp and AgentThreatBench it recorded 0% attack success",
+          "source_span": "The Bench-Corp and OWASP AgentThreatBench benchmarks show that OpenAPPA maintains high utility while under strict security constraints, reporting a 0% attack success rate",
+          "note": "The source confirms 0% attack success rate on both benchmarks; 'On Bench-Corp' is a slight compression but accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAPPA recorded 89% task completion",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "89% task completion",
+          "source_span": "reporting a 0% attack success rate and an 89% task completion rate.",
+          "note": "Direct match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude Code's auto mode allowed 10% through",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude Code's auto mode allowed 10% through",
+          "source_span": "Claude Code's native auto mode yielded a 10% attack success rate with a 90% completion rate.",
+          "note": "'Allowed 10% through' is a plain-English paraphrase of 10% attack success rate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Code and the arXiv paper are public",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Code and the arXiv paper are public",
+          "source_span": "The formal algebra and recovery guarantees are published on arXiv (APPA: Recoverable Information-Flow Control for Real-World LLM Agents)... OpenAPPA's GitHub repository",
+          "note": "Source confirms both the GitHub repository and arXiv paper are publicly available."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Drop it into your next agentic pipeline review before trusting any classifier-only guard",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Drop it into your next agentic pipeline review before trusting any classifier-only guard",
+          "source_span": "",
+          "note": "This is a call to action / editorial advice, not a checkable factual claim; it is out of scope for fact-checking."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Deterministic information-flow control now outperforms stochastic classifiers on the benchmarks that matter most for agentic deployments.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Deterministic information-flow control now outperforms stochastic classifiers on the benchmarks that matter most for agentic deployments.",
+          "source_span": "The Bench-Corp and OWASP AgentThreatBench benchmarks show that OpenAPPA maintains high utility while under strict security constraints, reporting a 0% attack success rate and an 89% task completion rate. Claude Code's native auto mode yielded a 10% attack success rate... Microsoft FIDES permitted 31% of attacks to succeed",
+          "note": "The take's factual core — that deterministic IFC outperforms stochastic classifiers on these benchmarks — is supported by the benchmark results in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each tool released today solves a different gap in the same unfinished system: agents that run long, run unsupervised, and leak or waste without anyone noticing.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Each tool released today solves a different gap in the same unfinished system: agents that run long, run unsupervised, and leak or waste without anyone noticing.",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming framing multiple tools; while the sources describe tools addressing data leakage (OpenAPPA), unsupervised long-running tasks (Pizza Bot), and observability/waste (NeMo Relay tutorial), the characterization of all three as solving gaps in 'the same unfinished system' is an editorial synthesis not directly checkable from the source excerpts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The practical pattern is infrastructure filling in around the model, not the model getting better.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The practical pattern is infrastructure filling in around the model, not the model getting better.",
+          "source_span": "",
+          "note": "synthesis: This is pure editorial framing/pattern-naming with no checkable factual assertion; it cannot be confirmed or denied from the source excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_4fa839875de1d5d8",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "An open-source inbox runs AI agents in the background without babysitting",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "An open-source inbox runs AI agents in the background without babysitting",
+          "source_span": "Pizza Bot, a self-hosted application designed to let AI agents run tasks in the background and return results through an inbox-style interface... allowing users to delegate complex tasks without continuous monitoring.",
+          "note": "'Without babysitting' is a plain-English paraphrase of 'without continuous monitoring', and the open-source inbox framing matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pizza Bot (Apache 2.0, via an AWS blog) gives background agents an email-style inbox",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pizza Bot (Apache 2.0, via an AWS blog) gives background agents an email-style inbox",
+          "source_span": "Pizza Bot provides an email-style inbox for managing long-running AI agent workflows. The Apache 2.0-licensed tool... Source: AWS blog",
+          "note": "License, source attribution, and email-style inbox description all match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "threads for long-running tasks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "threads for long-running tasks",
+          "source_span": "a thread is a unit of work you come back to rather than a session you have to attend.",
+          "note": "Threads as units for long-running tasks is confirmed by the source's analogy."
+        },
+        {
+          "schema_version": 1,
+          "claim": "an Action queue for human-approval gates",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "an Action queue for human-approval gates",
+          "source_span": "The inbox organizes this work into All, Unread, and Action queues... agents can... request approval before consequential actions",
+          "note": "The Action queue and human-approval function are both confirmed in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "local-first state storage that keeps data off third-party servers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "local-first state storage that keeps data off third-party servers",
+          "source_span": "Pizza Bot persists agent state, threads, checkpoints, attachments, and logs locally in a user-controlled folder, sending data only to the configured model provider and explicitly enabled MCP servers",
+          "note": "Local-first storage is confirmed; 'keeps data off third-party servers' is a fair paraphrase of user-controlled local storage with limited outbound data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Clone the repo and wire it to your most consequential async workflow",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Clone the repo and wire it to your most consequential async workflow",
+          "source_span": "",
+          "note": "This is a call-to-action instruction; the repo URL or cloning instruction does not appear in the source excerpt, making it unverifiable from this excerpt alone."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Background agents demanded a live session to supervise them; an inbox model ends that requirement.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Background agents demanded a live session to supervise them; an inbox model ends that requirement.",
+          "source_span": "You don't send an email and then sit watching the outbox until the reply lands. Pizza Bot is shaped like an email client for the same reason: a thread is a unit of work you come back to rather than a session you have to attend.",
+          "note": "The take's editorial position is directly grounded in the source's own analogy about not needing to attend a live session."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_65765cb84ec54bd7",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code now lets engineers rewrite their own agent harness",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Claude Code now lets engineers rewrite their own agent harness",
+          "source_span": "Claude Mods: customizing the execution loop, UI, subagents, routing, and behavior of Claude Code",
+          "note": "The source confirms Claude Mods enables customisation of the agent harness; 'rewrite their own agent harness' is a supported paraphrase of this capability."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Thariq Shihipar's Latent Space interview maps Anthropic's recent shipping run",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Thariq Shihipar's Latent Space interview",
+          "source_span": "",
+          "note": "The source names the podcast/interview context but never identifies it as 'Latent Space'; the publication name is absent from the excerpt, so calling it 'Latent Space' is an unsupported specific claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude Mods customise the execution loop, subagents, and routing",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude Mods (customise the execution loop, subagents, and routing)",
+          "source_span": "Claude Mods: customizing the execution loop, UI, subagents, routing, and behavior of Claude Code",
+          "note": "The source explicitly lists execution loop, subagents, and routing as Claude Mods capabilities; omitting UI and behavior is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Projects for team-scoped context",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Projects for team-scoped context",
+          "source_span": "Claude Tag, Projects, and multiplayer agents and how collaborative agent workflows could evolve",
+          "note": "Projects is confirmed in the source; 'team-scoped context' is a reasonable paraphrase of its collaborative/multiplayer framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude Tag for multiplayer workflows",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude Tag for multiplayer workflows",
+          "source_span": "Claude Tag for multiplayer agent workflows",
+          "note": "Near-verbatim match with the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a better initial prompt cuts wasted agent work dramatically",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a better initial prompt cuts wasted agent work dramatically",
+          "source_span": "Why spending more time on the initial prompt can dramatically reduce wasted agent work",
+          "note": "Near-verbatim paraphrase of the source bullet point."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Try Claude Mods on your most complex workflow before locking in your harness",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Try Claude Mods on your most complex workflow before locking in your harness",
+          "source_span": "",
+          "note": "This is a call-to-action editorial recommendation; per scope rules it should be skipped, but as a factual-style directive referencing 'Claude Mods' the product name is supported — however the specific advice is not in the source and is editorial, making it unverifiable as a factual claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentic coding workflows now bend to the engineer's harness, not the other way around.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agentic coding workflows now bend to the engineer's harness, not the other way around.",
+          "source_span": "Claude Mods system for customizing the harness itself... From the rapid rise of Claude Code to a future where agents can rewrite their own harnesses",
+          "note": "This editorial position is grounded in the source's description of Claude Mods enabling harness customisation; the embedded factual assertion that engineers can now customise the harness is supported."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_027cc358f2192fdd",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's agent tracer shows where a passing run still wasted steps",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "NVIDIA's agent tracer shows where a passing run still wasted steps",
+          "source_span": "An agent can finish a task and still take an inefficient path... A correct final answer hides those extra steps, even though they increase latency and consume tokens.",
+          "note": "The source confirms that a passing run can hide inefficient steps, and NeMo Relay (NVIDIA's tool) surfaces them via traces."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A correct answer hides redundant tool calls",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A correct answer hides redundant tool calls",
+          "source_span": "A correct final answer hides those extra steps, even though they increase latency and consume tokens.",
+          "note": "Direct paraphrase of the source's statement about correct answers hiding extra steps."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA NeMo Relay surfaces them as structured traces",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "NVIDIA NeMo Relay surfaces them as structured traces",
+          "source_span": "structured traces and trajectories that enterprises, evaluators, and security systems can use to investigate agent behavior",
+          "note": "Source confirms NeMo Relay produces structured traces."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NeMo Relay pairs each model call with token counts, errors, and retries",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "pairing each model call with token counts, errors, and retries",
+          "source_span": "You'll use the resulting traces to inspect model and tool calls, errors, retries, duration, and token use",
+          "note": "Source explicitly lists token use, errors, and retries as trace contents."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The tutorial repo (github.com/NVIDIA/nemoclaw-community) runs two Hermes Agent examples end-to-end",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The tutorial repo (github.com/NVIDIA/nemoclaw-community) runs two Hermes Agent examples end-to-end",
+          "source_span": "git clone https://github.com/NVIDIA/nemoclaw-community... In this tutorial, you'll run two Hermes Agent examples with NVIDIA NeMo Relay.",
+          "note": "Source confirms the GitHub URL and two Hermes Agent examples."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent pass-rates masked wasteful retries; structured traces now expose the hidden cost per run.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent pass-rates masked wasteful retries; structured traces now expose the hidden cost per run.",
+          "source_span": "A correct final answer hides those extra steps, even though they increase latency and consume tokens... You'll use the resulting traces to inspect model and tool calls, errors, retries, duration, and token use",
+          "note": "Source supports both that pass/fail checks hide inefficiencies and that traces expose them."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent traces expose wasted steps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent traces expose wasted steps.",
+          "source_span": "A correct final answer hides those extra steps, even though they increase latency and consume tokens.",
+          "note": "digest: The source confirms that traces reveal inefficiencies (extra steps) hidden by a passing score, supporting this editorial framing as factually grounded."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA NeMo Relay pairs each model call with token counts and retries.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "NVIDIA NeMo Relay pairs each model call with token counts and retries",
+          "source_span": "NeMo Relay records lifecycle events as work begins and ends, preserving its timing and parent-child relationships... inspect model and tool calls, errors, retries, duration, and token use",
+          "note": "digest: The source confirms NeMo Relay captures token counts and retries per model/tool call; pairing each model call with these details is a supported generalisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NeMo Relay reveals redundant tool calls a passing score hides.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "revealing redundant tool calls a passing score hides",
+          "source_span": "A correct final answer hides those extra steps... A failed search can trigger another search. A truncated file read can lead to a command fetching the same content again.",
+          "note": "digest: The source explicitly states passing scores hide redundant/extra tool calls, directly supporting this claim."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_edf8f7a8e9768cef",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Benchmark scores hide how badly models break under rephrased questions",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Benchmark scores hide how badly models break under rephrased questions",
+          "source_span": "Existing work typically evaluates generalization through aggregate accuracy on a single prompt format, task, or set of variations, which conflates robustness with overall benchmark performance... cross-dataset variation can reverse model rankings.",
+          "note": "The headline is a supported paraphrase of the paper's core argument that aggregate accuracy masks instability under rephrasing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Aggregate accuracy masks a separate failure: models ranked identically on a benchmark can flip positions when the same question is rephrased.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Aggregate accuracy masks a separate failure: models ranked identically on a benchmark can flip positions when the same question is rephrased.",
+          "source_span": "Existing work typically evaluates generalization through aggregate accuracy on a single prompt format... cross-dataset variation can reverse model rankings.",
+          "note": "The source confirms aggregate accuracy obscures instability and that rephrasing can reverse model rankings; 'ranked identically' is a slight compression but not contradicted."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Stability-Aware Generalization Objective, an arXiv preprint accepted at NeurIPS 2026's evaluation workshop",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the Stability-Aware Generalization Objective, an arXiv preprint accepted at NeurIPS 2026's evaluation workshop",
+          "source_span": "Accepted at the TAE (Trust-AI-Eval) Workshop: Can We Trust AI Evaluation?, NeurIPS 2026",
+          "note": "The paper is confirmed as accepted at a NeurIPS 2026 workshop; calling it an 'evaluation workshop' is a reasonable paraphrase of the TAE workshop name."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SAGO measures variability across four axes including confidence and response consistency.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "measures variability across four axes including confidence and response consistency",
+          "source_span": "capturing variability across several dimensions including generation consistency, internal activations, confidence, and response mirroring.",
+          "note": "The source lists four dimensions but calls them 'several dimensions'; the body's 'response consistency' maps loosely to 'generation consistency' but 'response mirroring' is dropped and replaced — more critically, the source does not specify exactly four axes, and 'response consistency' misnames 'response mirroring', which is a distinct named axis in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SAGO's public harness already scores five instability types against standard benchmark data.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "SAGO's public harness already scores five instability types against standard benchmark data.",
+          "source_span": "",
+          "note": "The source excerpt does not mention a public harness, five instability types, or scoring against standard benchmark data; this detail cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Benchmark rankings assumed prompt wording was neutral; rephrasing alone reverses model standings.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Benchmark rankings assumed prompt wording was neutral; rephrasing alone reverses model standings.",
+          "source_span": "Existing work typically evaluates generalization through aggregate accuracy on a single prompt format... cross-dataset variation can reverse model rankings.",
+          "note": "The take is a supported editorial compression of the paper's finding that standard benchmarks ignore prompt variation and that rephrasing can reverse rankings."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 10 stories -- factual flags present"
+}
