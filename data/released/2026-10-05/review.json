@@ -1,0 +1,267 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-04T21:42:38.344161Z",
+  "computed_verdict": "red",
+  "one_line": "One blocking duration error names Claude Code; three unsupported claims and a three-way take-frame collision need fixes before publish.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1735eef530a73064",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "The diagnostic ladder is becoming the baseline check for any credible tool-use claim.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as unsupported — the source does not assert the diagnostic ladder is becoming an industry baseline. Rewrite to stay within what the preprint claims: e.g., 'The diagnostic ladder costs minutes of CPU time and surfaces failures keyword checks miss.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1735eef530a73064",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Anyone shipping a small agentic model now needs verbatim checks before claiming tool-use.",
+      "fix_kind": "text_edit",
+      "instruction": "The take opens on an imperative-adjacent universal ('Anyone … needs') and reads as a prescription rather than a declarative position. Rewrite as a present-tense factual claim the publication holds, e.g., 'Keyword benchmarks overstate small-model tool-use; verbatim checks reverse the ranking.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_99b998d29468d7e2",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Claude Code deleted 48,000 files in 100 seconds by misreading folder shortcuts",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as contradicted: the source says 'less than two minutes', not 100 seconds. The headline names a specific firm (Anthropic/Claude Code) and a specific duration; the duration is wrong. Change '100 seconds' to 'under two minutes' to match the source.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_65765cb84ec54bd7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Thariq Shihipar's Latent Space interview maps Anthropic's recent shipping run",
+      "fix_kind": "sourcing",
+      "instruction": "The verification flags this as unsupported — the source does not confirm Thariq Shihipar is the interviewee or that the interview maps Anthropic's shipping run in those terms. Verify the interviewee's name and the interview's framing against the source before publishing; correct or remove the attribution if unconfirmed.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_edf8f7a8e9768cef",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "SAGO's public harness already scores five instability types against standard benchmark data.",
+      "fix_kind": "text_edit",
+      "instruction": "This is a Currents story; the body must close on a presence-form maturity signal (what exists and what it is worth today). The current close does state what exists, but 'five instability types' is a bare count without a maturity read. Sharpen to signal what the harness is worth now, e.g., 'SAGO's public harness scores five instability types against standard benchmark data, giving teams a drop-in complement to accuracy-only eval suites today.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_61691207482a79e8",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Builders deploying agents now inherit runaway-spend risk their upstream vendors never designed against.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's central claim (vendors didn't design for this) rather than adding the position the body stopped short of. The body already establishes the risk; the take should state what follows — e.g., 'Hard spending limits are now a deployment prerequisite, not a vendor courtesy.' Revise to advance beyond the body's conclusion.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f5a09173f494cc5c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Platform teams that started vendor-first now face a rebuild; DoorDash's gateway pivot shows the cost of waiting.",
+      "fix_kind": "text_edit",
+      "instruction": "The take shares a syntactic frame with c_99b998d29468d7e2's take ('X assumed Y; one Z did W') — both use a semicolon to split a prior assumption from a single-event consequence. Minor frame collision. Rewrite to a different structure, e.g., 'DoorDash's gateway pivot proves that vendor-first GenAI platforms require a rebuild once non-engineer users arrive.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "NVIDIA NeMo Relay pairs each model call with token counts and retries, revealing redundant tool calls a passing score hides.",
+      "fix_kind": "text_edit",
+      "instruction": "This sentence restates the story's take ('Agent pass-rates masked wasteful retries; structured traces now expose the hidden cost per run') in reshuffled words. The digest should compress the story's concrete facts, not echo the take's proposition. Rewrite to anchor on a specific artefact or finding, e.g., 'NVIDIA NeMo Relay's tutorial repo traces two Hermes Agent examples end-to-end, surfacing token counts and retries per model call.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c3b95591dd02ea4b",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Drop it into your next agentic pipeline review before trusting any classifier-only guard.",
+      "fix_kind": "text_edit",
+      "instruction": "Hands-On closing shape requires an imperative action sharpened to a specific artefact + trigger. 'Drop it into your next agentic pipeline review' is generic — it names no specific artefact (which repo, which config step?) and no concrete trigger condition. Sharpen to e.g., 'Clone the OpenAPPA repo and run it against your highest-privilege tool call before your next pipeline review.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_027cc358f2192fdd",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agent pass-rates masked wasteful retries; structured traces now expose the hidden cost per run.",
+      "fix_kind": "text_edit",
+      "instruction": "The take shares a semicolon-split 'X masked Y; Z now exposes W' frame with c_99b998d29468d7e2 ('Autonomous file operations assumed pointer-aware traversal; one junction misread wiped a live archive') and c_f5a09173f494cc5c. Three stories sharing this scaffold triggers a major frame-collision flag. Rewrite to a different syntactic structure, e.g., 'Structured traces from NeMo Relay reveal that a passing agent run can still carry significant hidden retry costs.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_99b998d29468d7e2",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Autonomous file operations assumed pointer-aware traversal; one junction misread wiped a live archive.",
+      "fix_kind": "text_edit",
+      "instruction": "Part of a three-way semicolon-split frame collision (see c_027cc358f2192fdd finding). Rewrite to break the pattern, e.g., 'Junction-unaware agents now carry a documented path to irreversible data loss in any Windows environment with symlinks.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_65765cb84ec54bd7",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agentic coding workflows now bend to the engineer's harness, not the other way around.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's central claim without advancing to a position. The body already establishes that Claude Mods lets engineers customise the loop; the take should state what that means for deployment decisions. Rewrite to add the publication's position, e.g., 'Claude Mods makes the execution loop a first-class engineering artefact, removing the last reason to accept a vendor-default harness.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_78f69c023a0190d7",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Does your agent governance review cover permission widening across versions?",
+      "fix_kind": "text_edit",
+      "instruction": "The strategic question is present and role-anchored, which is correct. However, 'permission widening across versions' has a near-obvious answer (no, most orgs don't track this yet) that reduces it to a rhetorical prompt rather than a genuine decision fork. Sharpen to a question that surfaces a real constraint, e.g., 'Which team in your org owns the image-digest pin when an agent's permission set changes between releases?'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_edf8f7a8e9768cef",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "SAGO measures variability across four axes including confidence and response consistency.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flags this as unsupported: the source lists 'generation consistency, internal activations, confidence, and response mirroring' — not 'response consistency'. Replace 'response consistency' with 'response mirroring' to match the source's language.",
+      "echo_of": null
+    }
+  ],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "a0d613cd31c3e52006a838859a8bdf4854e508068b37efed39b680194049720e",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 1 finding(s) dropped: quote not found verbatim in the target text, or criterion inapplicable to this issue | 1 finding(s) dropped: malformed shape"
+}
