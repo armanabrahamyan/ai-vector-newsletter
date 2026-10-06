@@ -811,3 +811,159 @@ class TestAuxPromptAndParse:
         )
         out = verify.verify_aux_rich("synthesis", "text", "source")
         assert out and out[0].verdict == "unsupported"
+
+
+# ---------------------------------------------------------------------------
+# Feed-item headers: title + publisher prefixed onto the verifier's excerpt.
+# ---------------------------------------------------------------------------
+
+class TestItemHeaders:
+    """Headline facts often sit only in the page title or byline, which the
+    body extractor drops. verify_day prefixes each excerpt with its feed
+    item's title and publisher so the verifier can see them."""
+
+    def _run(
+        self, monkeypatch: pytest.MonkeyPatch, items: list[dict] | None,
+        excerpts: dict[str, str],
+    ) -> dict[str, str]:
+        _write_staged_issue(_make_staged_issue())
+        _write_excerpts(FIXED_DATE, [
+            {"schema_version": 1, "url": url, "excerpt": text,
+             "fetched_at": FIXED_NOW.isoformat(), "story_id": sid}
+            for (url, sid), text in zip(
+                [(_PULSE_URL, _PULSE_ID), (_BP_URL, _BP_ID)],
+                [excerpts[_PULSE_URL], excerpts[_BP_URL]],
+            )
+        ])
+        if items is not None:
+            path = paths.items_path(FIXED_DATE, canonical=False)
+            path.write_text(
+                "".join(json.dumps(i) + "\n" for i in items), encoding="utf-8"
+            )
+        seen: dict[str, str] = {}
+
+        def _stub_verify_rich(headline, body, source_excerpt, **kw):
+            seen[headline] = source_excerpt
+            return [ClaimVerdict(
+                claim="ok", verdict="supported", location="body",
+            )]
+
+        monkeypatch.setattr(verify, "verify_rich", _stub_verify_rich)
+        verify.verify_day(FIXED_DATE)
+        return seen
+
+    def test_excerpt_is_prefixed_with_title_and_publisher(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        seen = self._run(
+            monkeypatch,
+            items=[{"url": _PULSE_URL, "title": "Three labs all cosign AEF-1",
+                    "source": "Latent Space"}],
+            excerpts={_PULSE_URL: "Body text.", _BP_URL: "Bank body."},
+        )
+        pulse = seen["A new model runs on a single consumer GPU"]
+        assert pulse.startswith(
+            "Title: Three labs all cosign AEF-1\nPublisher: Latent Space\n\n"
+        )
+        assert pulse.endswith("Body text.")
+        # A URL with no feed item keeps its excerpt exactly.
+        assert seen["A bank ships an agent into production"] == "Bank body."
+
+    def test_empty_excerpt_stays_empty(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A title alone is not a source body: the empty-excerpt policy
+        (every claim unverifiable) must still apply."""
+        seen = self._run(
+            monkeypatch,
+            items=[{"url": _PULSE_URL, "title": "Some title", "source": "X"}],
+            excerpts={_PULSE_URL: "", _BP_URL: "Bank body."},
+        )
+        assert seen["A new model runs on a single consumer GPU"] == ""
+
+    def test_missing_items_file_verifies_without_headers(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        seen = self._run(
+            monkeypatch, items=None,
+            excerpts={_PULSE_URL: "Body text.", _BP_URL: "Bank body."},
+        )
+        assert seen["A new model runs on a single consumer GPU"] == "Body text."
+
+    def test_malformed_items_line_costs_only_its_own_header(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """One unparseable line is skipped; every other url keeps its header.
+        A corrupt line for one story must not strip titles from the issue."""
+        _write_staged_issue(_make_staged_issue())
+        _write_excerpts(FIXED_DATE, [
+            {"schema_version": 1, "url": _PULSE_URL, "excerpt": "Body text.",
+             "fetched_at": FIXED_NOW.isoformat(), "story_id": _PULSE_ID},
+            {"schema_version": 1, "url": _BP_URL, "excerpt": "Bank body.",
+             "fetched_at": FIXED_NOW.isoformat(), "story_id": _BP_ID},
+        ])
+        path = paths.items_path(FIXED_DATE, canonical=False)
+        path.write_text(
+            json.dumps({"url": _PULSE_URL, "title": "Good title",
+                        "source": "X"}) + "\n"
+            + "{not valid json\n",
+            encoding="utf-8",
+        )
+        seen: dict[str, str] = {}
+
+        def _stub_verify_rich(headline, body, source_excerpt, **kw):
+            seen[headline] = source_excerpt
+            return [ClaimVerdict(
+                claim="ok", verdict="supported", location="body",
+            )]
+
+        monkeypatch.setattr(verify, "verify_rich", _stub_verify_rich)
+        verify.verify_day(FIXED_DATE)
+        assert seen["A new model runs on a single consumer GPU"] == (
+            "Title: Good title\nPublisher: X\n\nBody text."
+        )
+        assert seen["A bank ships an agent into production"] == "Bank body."
+
+
+class TestItemHeadersAfterRefetch:
+    """The header enrichment call sits AFTER the sidecar-missing refetch
+    fallback in verify_day, so it must apply to re-fetched excerpts too --
+    not just excerpts loaded straight from an existing sidecar. A future
+    reordering (e.g. enriching before the fallback, whose fresh dict then
+    overwrites the enrichment) would silently drop headers on every
+    re-verify that has no sidecar, which is exactly the checkout-after-
+    revise path DESIGN.md calls out."""
+
+    def test_refetched_excerpt_is_still_prefixed_with_title(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from src import summarise
+
+        _write_staged_issue(_make_staged_issue())
+        # Sidecar intentionally absent -> triggers _refetch_source_excerpts.
+        monkeypatch.setattr(summarise, "_SOURCE_EXCERPT_CACHE", {})
+        monkeypatch.setattr(
+            summarise, "_fetch_source_excerpt",
+            lambda url: "Fresh body." if url == _PULSE_URL else "Fresh bank.",
+        )
+        path = paths.items_path(FIXED_DATE, canonical=False)
+        path.write_text(
+            json.dumps({"url": _PULSE_URL, "title": "Three labs cosign",
+                        "source": "Latent Space"}) + "\n",
+            encoding="utf-8",
+        )
+        seen: dict[str, str] = {}
+
+        def _stub_verify_rich(headline, body, source_excerpt, **kw):
+            seen[headline] = source_excerpt
+            return [ClaimVerdict(
+                claim="ok", verdict="supported", location="body",
+            )]
+
+        monkeypatch.setattr(verify, "verify_rich", _stub_verify_rich)
+        verify.verify_day(FIXED_DATE)
+        pulse = seen["A new model runs on a single consumer GPU"]
+        assert pulse.startswith(
+            "Title: Three labs cosign\nPublisher: Latent Space\n\n"
+        )
+        assert pulse.endswith("Fresh body.")

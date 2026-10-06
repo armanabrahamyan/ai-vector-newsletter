@@ -1148,6 +1148,14 @@ def verify_day(run_date: _dt.date) -> VerificationReport:
     if not url_to_excerpt:
         url_to_excerpt = _refetch_source_excerpts(run_date, blocks, excerpts_path)
 
+    # Headline facts often live only in the page title or byline, which the
+    # body extractor drops (triage 2026-09-22: 4 of 16 false contradictions,
+    # e.g. "Three frontier labs back a common standard" against a page titled
+    # "... as Xai, OpenAI, and Anthropic all cosign"). The feed item already
+    # carries both, so this costs no fetch. Verify-side only: summarise's
+    # prompt input is unchanged.
+    url_to_excerpt = _with_item_headers(run_date, url_to_excerpt)
+
     stories: list[StoryVerification] = []
     for block in blocks:
         story_id = block.get("story_id")
@@ -1615,6 +1623,48 @@ def _load_source_excerpts(path: Path) -> dict[str, str]:
             )
         out[url] = str(rec.get("excerpt", "") or "")
     return out
+
+
+def _with_item_headers(
+    run_date: _dt.date, url_to_excerpt: dict[str, str]
+) -> dict[str, str]:
+    """Prefix each non-empty excerpt with its feed item's title and publisher.
+
+    Reads the staged ``items.jsonl``. An empty excerpt stays empty so the
+    empty-excerpt policy (every claim unverifiable) is untouched -- a title
+    alone is not a source body. Failure-soft: an unreadable items file
+    returns the excerpts unchanged, and a malformed line costs only its own
+    url's header.
+    """
+    try:
+        items_file = paths.items_path(run_date, canonical=False)
+        headers: dict[str, str] = {}
+        for line in items_file.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(rec, dict):
+                continue
+            url, title = rec.get("url"), rec.get("title")
+            if isinstance(url, str) and isinstance(title, str) and title:
+                header = f"Title: {title}"
+                source = rec.get("source")
+                if isinstance(source, str) and source:
+                    header += f"\nPublisher: {source}"
+                headers[url] = header
+    except Exception:  # noqa: BLE001 -- headers are an enrichment, never a failure
+        _LOG.warning(
+            "verify: could not read items.jsonl for %s -- verifying without "
+            "title/publisher headers", run_date.isoformat(),
+        )
+        return url_to_excerpt
+    return {
+        url: f"{headers[url]}\n\n{text}" if text and url in headers else text
+        for url, text in url_to_excerpt.items()
+    }
 
 
 def _refetch_source_excerpts(
