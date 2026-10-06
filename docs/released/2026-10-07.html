@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 70 &middot; 07 October 2026</title>
+<meta name="description" content="An agent&#39;s clean exit log is not proof the job was done. Issue No. 70 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 70 &middot; 07 Oct &middot; 4 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>Backend state catches agent failures.</strong> <span>ThinkingBox found 67% of clean-exit agent runs still contained wrong database field values after task completion.</span></p>
+    <p><strong>Salesforce intake forms leaked CRM data.</strong> <span>Zenity Labs hid an instruction inside a lead submission; Agentforce queried the Accounts table and exfiltrated deal data via DNS.</span></p>
+    <p><strong>Agentic retrieval costs 160 times more.</strong> <span>A reasoning-loop pipeline scores 8.7 points higher than keyword search but consumes roughly 770,000 tokens per query.</span></p>
+    <p><strong>Mistral&#39;s trillion-parameter model opens on-premise.</strong> <span>Mistral Large 4 scores 82% on vulnerability reproduction, highest of any model tested, with open weights due by month&#39;s end.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>An agent&#39;s clean exit log is not proof the job was done</h1>
+  <p class="takeaway">Pass rates measured agent capability; backend state now measures whether agents actually finish the work.</p>
+  <p class="dek">Microsoft and Hugging Face&#39;s ThinkingBox benchmark grades agents on what the database actually contains after a task, not on tool-call logs. Across 507 workflows run 20 times each, 67% of clean-exit failures still left wrong field values. Separate breadth from consistency before trusting any agent with write access.</p>
+  <div class="story-meta">
+    <a class="src" href="https://huggingface.co/blog/microsoft/thinkingbox" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Every story today breaks on the same structural assumption: that the boundary between an agent and sensitive data was enforced somewhere downstream. It was not. The attack surface is not a misconfiguration to patch; it is the default architecture of systems already in production.</p>
+  </div>
+  <article class="measure stack">
+    <h3>A public lead form let attackers drain Salesforce CRM data silently</h3>
+    <p class="takeaway">Agentforce&#39;s public intake forms were an unauthenticated entry point for data theft, not just lead collection.</p>
+    <p class="dek">Zenity Labs embedded a hidden instruction inside a Web-to-Lead submission; when an internal user asked Agentforce about recent leads, the agent queried the Accounts table and exfiltrated deal data via a DNS request, bypassing Salesforce&#39;s URL-redaction layer. Salesforce has since patched the mechanism. Which perimeter controls does your security team currently assume cover public-facing Agentforce intake forms?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://labs.zenity.io/post/salesbleed-0-click-data-exfiltration-on-agentforce" target="_blank" rel="noreferrer">labs.zenity.io <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>MCP&#39;s trust model lets malicious prompts hop across agent chains</h3>
+    <p class="takeaway">Agent-to-agent trust was an assumed internal safeguard; five documented exploits make it an attack surface.</p>
+    <p class="dek">In five months, Google, JP Morgan Chase, and three other organisations acknowledged attacks exploiting MCP, the protocol agents use to communicate internally. A malicious prompt injected into one agent propagates to others because internal agents trust each other by default. Which team in your organisation actually owns the credential scope decisions when a new MCP server joins your network?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://arstechnica.com/security/2026/10/vulnerability-in-agents-from-google-and-others-exposes-structural-flaw-in-mcp/" target="_blank" rel="noreferrer">arstechnica.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Google maps the unsolved security gaps in autonomous AI agents</h3>
+    <p class="takeaway">Agentic privacy had no shared threat map; Google&#39;s 50-author report draws the first one.</p>
+    <p class="dek">Google Research, with more than 50 co-authors, identifies three structural gaps every agent shares: unpredictable behaviour, broad data access, and no runtime norm-checking. The proposed fix is a contextual policy engine that evaluates each action before data leaves the workspace. Does your agent architecture include that gate before your next deployment review?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://research.google/blog/open-and-emergent-problems-in-agentic-privacy-and-security-a-contextual-angle/" target="_blank" rel="noreferrer">research.google <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Claude Code embeds hidden fingerprints in every agent request</h3>
+    <p class="takeaway">Engineers granting agents shell access assumed request traffic was untagged.</p>
+    <p class="dek">A developer inspecting Claude Code found what appears to be steganographic markers embedded in outgoing requests, invisible to users but potentially readable by Anthropic. The claim rests on one practitioner&#39;s analysis. If confirmed, every agent with shell, git, or browser access is leaking a fingerprint. Does your security policy require traffic auditing before you extend agent permissions?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://thereallo.dev/blog/claude-code-prompt-steganography" target="_blank" rel="noreferrer">thereallo.dev <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Today&#39;s releases share a structural shift: vendor lock-in and benchmark opacity are both losing their assumed permanence. Open weights dissolve re-embedding debt; production-calibrated evals replace vendor claims. The cost ceiling on agentic retrieval is now measurable, not negotiated.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Google&#39;s open embedding model lets you escape re-embedding costs when vendors deprecate</h3>
+    <p class="takeaway">Stored embedding vectors were hostage to the vendor who generated them; open weights end that.</p>
+    <p class="dek">Proprietary embedding models create a silent debt: when a vendor retires one, you repay the cost of re-processing every stored vector. EmbeddingGemma 2 ships under Apache 2.0, meaning you can self-host or switch providers without that penalty. Simon Willison flags this as the structural reason closed embedding models are the wrong default.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://simonwillison.net/2026/Oct/6/hn-49983751/" target="_blank" rel="noreferrer">simonwillison.net <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Google DeepMind&#39;s open embedding model unifies text, code, audio and video</h3>
+    <p class="takeaway">Multimodal retrieval pipelines defaulted to closed APIs; open weights now run offline.</p>
+    <p class="dek">EmbeddingGemma 2 (740M parameters, Apache 2.0) embeds text, code, images, audio, and video in a single shared space, running on-device at under 600MB RAM. Weights are public on Hugging Face. Pull the model and run your current retrieval benchmark against it; the memory footprint makes on-premise deployment viable today.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://deepmind.google/blog/embeddinggemma-2-an-open-lightweight-multimodal-embedding-model/" target="_blank" rel="noreferrer">deepmind.google <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>GitHub&#39;s code-review benchmark is built from 100 million real pull requests</h3>
+    <p class="takeaway">Code-review agent quality was judged by vendor claims; a production-calibrated public benchmark now exists.</p>
+    <p class="dek">Existing code-review evals rarely reflect production workloads. ReviewBench samples 219 pull requests across 187 repositories and 19 languages, weighted toward multi-file changes where review quality matters. Senior engineers independently re-labelled every finding; agreement hit 96.6%. The dataset and evaluation harness are public. Run your code-review agent against it before your next tooling decision.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.blog/ai-and-ml/github-copilot/reviewbench-an-open-benchmark-for-ai-code-review/" target="_blank" rel="noreferrer">github.blog <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Agentic retrieval beats keyword search but costs 160 times more per query</h3>
+    <p class="takeaway">Retrieval quality now has a measurable cost ceiling, not just a capability floor.</p>
+    <p class="dek">Dense retrieval matches surface-level words; an arXiv preprint shows a reasoning-loop pipeline scores 8.7 points higher on standard retrieval benchmarks using the same embedding model. The tradeoff is steep: 107 seconds per query against 0.67 seconds, plus roughly 770,000 tokens consumed. Before adding agentic retrieval to a multi-step pipeline, price the token bill against your query volume.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/papers/2610.05750" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A new benchmark reveals agents complete tasks but fumble recovery</h3>
+    <p class="takeaway">Nominal completion scores hid phase-dependent recovery failures; a benchmark now separates them.</p>
+    <p class="dek">An arXiv preprint introduces UndoBench, spanning 36 workflows and 36 fault scenarios across 8 enterprise domains. Agents hit 83.54% task completion but only 46.72% recovery success; naive retry produced duplicate external effects in 53.28% of trials. Add UndoBench&#39;s fault scenarios to your next agent evaluation before trusting completion rates in production.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/papers/2610.05622" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">2 items</span></div>
+    <p class="synthesis">Both items today expose a gap between what a model&#39;s headline capability implies and what its internals are quietly doing. The field is moving toward trillion-parameter on-premise deployability and continuous self-updating, but the underlying reliability assumptions for both are thinner than the benchmarks suggest.</p>
+  </div>
+  <article class="measure stack">
+    <h3>A model that learns from its own outputs quietly unlearns real text</h3>
+    <p class="takeaway">Continuously adapting models were assumed safe; self-generated training loops silently degrade real-text performance.</p>
+    <p class="dek">Test-time training lets a model update its weights during inference, but learning from self-generated text corrupts real-text prediction. An arXiv preprint tested models from 125M to 3B parameters: using a frozen model to generate training chunks removed over 98% of the damage. Code is public on GitHub. The frozen-generator fix is public and cuts contamination damage by over 98%.</p>
+    <div class="story-meta"><span class="tag">read</span>
+      <a class="src" href="https://huggingface.co/papers/2610.05076" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Mistral opens a trillion-parameter model trained entirely on European soil</h3>
+    <p class="takeaway">Sovereign AI deployments defaulted to smaller open models; a trillion-parameter on-premise option now exists.</p>
+    <p class="dek">Mistral Large 4 is a 1-trillion-parameter open-weight model (49 billion active) in public preview, weights due by month&#39;s end. On the independent Artificial Analysis Cyber Index it ranks top five globally; on one vulnerability-reproduction test it scores 82%, highest of any model tested. If sovereign, on-premise security AI is the constraint, this warrants evaluation.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://mistral.ai/news/mistral-large-4" target="_blank" rel="noreferrer">mistral.ai <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
