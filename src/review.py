@@ -2424,7 +2424,9 @@ def _write_machine_state(
     fallback for a crash.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    one_line = f"{verdict}: {reason}"[:200].replace(":", " -", 1)
+    # Replace before truncating: the replace grows the string by one, so the
+    # other order produced 201 chars and crashed this fallback (2026-08-13).
+    one_line = f"{verdict}: {reason}".replace(":", " -", 1)[:200]
     model = llm_model or _resolve_review_model()
 
     report = ReviewReport(

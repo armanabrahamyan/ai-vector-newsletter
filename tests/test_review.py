@@ -1374,6 +1374,26 @@ class TestRunReview:
             encoding="utf-8"
         )
 
+    def test_long_llm_error_still_writes_unavailable_review_json(
+        self, tmp_data_root: Path,
+    ) -> None:
+        """Regression (2026-08-13): a long provider error overflowed the
+        200-char one_line by one, the fallback crashed, no review.json was
+        written, and the gate held on review-missing."""
+        date = _dt.date(2026, 5, 29)
+        self._stage_issue(date)
+
+        def _boom(*_args: Any, **_kwargs: Any) -> str:
+            raise RuntimeError("credit balance is too low " + "x" * 300)
+
+        with patch("src.review._call_review_llm", side_effect=_boom):
+            artifact = run_review(date=date)
+        assert artifact.verdict == "unavailable"
+        report = json.loads(
+            review_mod.review_json_path(date).read_text(encoding="utf-8")
+        )
+        assert report["computed_verdict"] == "unavailable"
+
     def test_dry_run_writes_nothing(self, tmp_data_root: Path) -> None:
         date = _dt.date(2026, 5, 29)
         artifact = run_review(date=date, dry_run=True)
