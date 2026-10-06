@@ -1,0 +1,1089 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-06T22:23:08.551119Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 79,
+    "contradicted": 6,
+    "unverifiable": 17,
+    "unsupported": 4
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_55ee00605735cf55",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "An agent's clean exit log is not proof the job was done",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "An agent's clean exit log is not proof the job was done",
+          "source_span": "Final responses and valid tool calls are only proxies. An agent can sound correct while leaving the wrong value, changing the wrong record, or creating an extra side effect. Only the records it leaves behind settle the question.",
+          "note": "The source explicitly states that clean tool-call logs are not proof of correct outcomes, directly supporting the headline."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Microsoft and Hugging Face's ThinkingBox benchmark grades agents on what the database actually contains after a task, not on tool-call logs.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Microsoft and Hugging Face's ThinkingBox benchmark grades agents on what the database actually contains after a task, not on tool-call logs.",
+          "source_span": "This is a joint blog by Microsoft and Hugging Face... Across 507 stateful business workflows, each run 20 times against various LLM models, it grades agents on terminal backend state and side effects.",
+          "note": "The source confirms ThinkingBox is a joint Microsoft and Hugging Face project that grades on terminal backend state rather than tool-call logs."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Across 507 workflows run 20 times each",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Across 507 workflows run 20 times each",
+          "source_span": "Across 507 stateful business workflows, each run 20 times against various LLM models",
+          "note": "The source confirms 507 workflows each run 20 times."
+        },
+        {
+          "schema_version": 1,
+          "claim": "67% of clean-exit failures still left wrong field values.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "67% of clean-exit failures still left wrong field values.",
+          "source_span": "Of those failures, 67.24% still terminated cleanly, invoked a state-changing tool, and reported no final tool error. Executable checks nevertheless found wrong field values in 77.61% of them",
+          "note": "The 67.24% figure refers to the share of failures that terminated cleanly (not the share with wrong field values); wrong field values were found in 77.61% of those clean-exit failures, not 67%."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Separate breadth from consistency before trusting any agent with write access.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Separate breadth from consistency before trusting any agent with write access.",
+          "source_span": "Kimi-K3 has the broadest coverage of any model we tested... Kimi-K3 is also among the least consistent... Claude Opus 5 inverts this.",
+          "note": "This is an editorial call to action derived from the source's breadth-vs-consistency findings; it is not a checkable factual assertion and should be treated as supported paraphrase of the source's demonstrated distinction."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pass rates measured agent capability; backend state now measures whether agents actually finish the work.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pass rates measured agent capability; backend state now measures whether agents actually finish the work.",
+          "source_span": "A tool call is not an outcome... Only the records it leaves behind settle the question. The gap is substantial.",
+          "note": "The take accurately paraphrases the source's core argument that pass rates (tool-call proxies) are insufficient and backend state is the true measure of task completion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ThinkingBox found 67% of clean-exit agent runs still contained wrong database field values after task completion.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "ThinkingBox found 67% of clean-exit agent runs still contained wrong database field values after task completion.",
+          "source_span": "Of those failures, 67.24% still terminated cleanly, invoked a state-changing tool, and reported no final tool error. Executable checks nevertheless found wrong field values in 77.61% of them",
+          "note": "digest: The 67% figure refers to the share of failures that terminated cleanly (i.e., clean-exit runs among failures), not the share that contained wrong field values; wrong field values were found in 77.61% of those clean-exit failures, so the summary conflates two distinct statistics."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_1e8f6288ece144f6",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A public lead form let attackers drain Salesforce CRM data silently",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A public lead form let attackers drain Salesforce CRM data silently",
+          "source_span": "The entry point was a public Web-to-Lead form, the exit was a DNS query... We found a way to pull sensitive account data out of Salesforce Agentforce without ever logging in, or requiring the victim to click anything.",
+          "note": "'Drain silently' and 'Salesforce CRM data' are fair paraphrases of the 0-click exfiltration of Accounts table data via a public Web-to-Lead form."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Zenity Labs embedded a hidden instruction inside a Web-to-Lead submission",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Zenity Labs embedded a hidden instruction inside a Web-to-Lead submission",
+          "source_span": "the attacker submits a seemingly benign lead to an organization via a Web-to-Lead endpoint... containing a hidden prompt injection in one of the fields.",
+          "note": "The source confirms Zenity Labs performed the attack using a hidden prompt injection in a Web-to-Lead submission."
+        },
+        {
+          "schema_version": 1,
+          "claim": "when an internal user asked Agentforce about recent leads, the agent queried the Accounts table",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "when an internal user asked Agentforce about recent leads, the agent queried the Accounts table",
+          "source_span": "an internal user in that organization asks their agent something completely benign, such as 'check my latest leads and help me with the newest one'... Query the Accounts table using the same subagent's Query Records tool.",
+          "note": "The source directly confirms the internal user trigger and the Accounts table query."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the agent exfiltrated deal data via a DNS request",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "exfiltrated deal data via a DNS request",
+          "source_span": "Return a couple of fields, e.g., a company name and a deal size. - Paste the values as a subdomain string for the attacker-controlled hostname... This is what generated the DNS query to our attacker-controlled server, with the exfiltrated data from the Accounts table in the subdomain.",
+          "note": "The source confirms deal data (company name, deal size) was exfiltrated via DNS query."
+        },
+        {
+          "schema_version": 1,
+          "claim": "bypassing Salesforce's URL-redaction layer",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "bypassing Salesforce's URL-redaction layer",
+          "source_span": "we were eventually able to fully bypass all these mechanisms and exfiltrate data... It did this by bypassing the URL redaction restrictions",
+          "note": "'URL-redaction layer' is a fair plain-English paraphrase of Salesforce's Trusted URLs redaction mechanism."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Salesforce has since patched the mechanism",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Salesforce has since patched the mechanism",
+          "source_span": "Zenity Labs has disclosed all findings to Salesforce who investigated and remediated the issue, hardening the Trusted URLs mechanism to prevent similar attacks.",
+          "note": "'Patched the mechanism' is a fair compression of 'remediated the issue, hardening the Trusted URLs mechanism'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentforce's public intake forms were an unauthenticated entry point for data theft, not just lead collection.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agentforce's public intake forms were an unauthenticated entry point for data theft, not just lead collection.",
+          "source_span": "A Web-to-Lead endpoint is unauthenticated by design - it's meant to collect external leads... We found a way to pull sensitive account data out of Salesforce Agentforce without ever logging in",
+          "note": "The source confirms the Web-to-Lead form is unauthenticated by design and was exploited for data exfiltration."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Zenity Labs discovered the vulnerability.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Zenity Labs hid an instruction inside a lead submission",
+          "source_span": "Zenity Labs has disclosed all findings to Salesforce who investigated and remediated the issue",
+          "note": "digest: The source confirms Zenity Labs is the discovering/disclosing party."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The attacker hid an instruction inside a lead submission (Web-to-Lead form).",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Zenity Labs hid an instruction inside a lead submission",
+          "source_span": "the attacker submits a seemingly benign lead to an organization via a Web-to-Lead endpoint... containing a hidden prompt injection in one of the fields",
+          "note": "digest: The summary accurately paraphrases 'hidden prompt injection in one of the fields' as 'hid an instruction inside a lead submission'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentforce queried the Accounts table.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agentforce queried the Accounts table",
+          "source_span": "Query the Accounts table using the same subagent's Query Records tool.",
+          "note": "digest: The source explicitly states the injected payload instructed querying the Accounts table."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Deal data was exfiltrated via DNS.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "exfiltrated deal data via DNS",
+          "source_span": "Return a couple of fields, e.g., a company name and a deal size... This is what generated the DNS query to our attacker-controlled server, with the exfiltrated data from the Accounts table in the subdomain.",
+          "note": "digest: The source confirms deal-related data (company name, deal size) was exfiltrated via DNS query; 'deal data' is a reasonable generalisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Salesforce intake forms leaked CRM data.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Salesforce intake forms leaked CRM data",
+          "source_span": "We found a way to pull sensitive account data out of Salesforce Agentforce without ever logging in... The entry point was a public Web-to-Lead form, the exit was a DNS query.",
+          "note": "digest: The summary accurately characterises the attack: public Web-to-Lead forms (intake forms) were the entry point for leaking CRM (Accounts table) data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Every story today breaks on the same structural assumption: that the boundary between an agent and sensitive data was enforced somewhere downstream.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Every story today breaks on the same structural assumption: that the boundary between an agent and sensitive data was enforced somewhere downstream.",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming framing multiple stories; no single checkable factual assertion can be confirmed or denied from the source excerpts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The attack surface is not a misconfiguration to patch; it is the default architecture of systems already in production.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The attack surface is not a misconfiguration to patch; it is the default architecture of systems already in production.",
+          "source_span": "",
+          "note": "synthesis: This is editorial characterization of the architectural risk; it is not a checkable factual assertion present in or contradicted by the source excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_a34b0b7d5a19cdf9",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "MCP's trust model lets malicious prompts hop across agent chains",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "MCP's trust model lets malicious prompts hop across agent chains",
+          "source_span": "Because the latter agent explicitly trusts the first one, it follows the directions.",
+          "note": "The source confirms MCP's internal trust model allows malicious instructions to propagate across agents, supporting the headline's characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "In five months, Google, JP Morgan Chase, and three other organisations acknowledged attacks exploiting MCP",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "In five months, Google, JP Morgan Chase, and three other organisations acknowledged attacks exploiting MCP",
+          "source_span": "In the past five months, Google and four other organizations—with little in common except for their use of AI agents—have acknowledged vulnerabilities that exploit one agent inside a targeted network to spread harmful instructions to other internal agents.",
+          "note": "The source says Google and four other organisations (five total) in five months; the summary correctly identifies Google and JP Morgan Chase as two of them, and 'three other organisations' accounts for the remaining four — this is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A malicious prompt injected into one agent propagates to others because internal agents trust each other by default",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A malicious prompt injected into one agent propagates to others because internal agents trust each other by default",
+          "source_span": "Because the latter agent explicitly trusts the first one, it follows the directions.",
+          "note": "The source confirms agents trust each other internally and that this causes malicious instructions to propagate down the chain."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Which team in your organisation actually owns the credential scope decisions when a new MCP server joins your network?",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Which team in your organisation actually owns the credential scope decisions when a new MCP server joins your network?",
+          "source_span": "",
+          "note": "This is an editorial call-to-action question, not a checkable factual assertion; it is out of scope for fact-checking."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent-to-agent trust was an assumed internal safeguard; five documented exploits make it an attack surface.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent-to-agent trust was an assumed internal safeguard; five documented exploits make it an attack surface.",
+          "source_span": "In the past five months, Google and four other organizations...have acknowledged vulnerabilities that exploit one agent inside a targeted network to spread harmful instructions to other internal agents...Because the latter agent explicitly trusts the first one, it follows the directions.",
+          "note": "The source documents five organisations acknowledging exploits that leverage internal agent trust, supporting both the count and the characterisation of trust as an attack surface."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e20abeeb1e4ba27e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google maps the unsolved security gaps in autonomous AI agents",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Google maps the unsolved security gaps in autonomous AI agents",
+          "source_span": "Today, we share a comprehensive new workshop report, 'Open and Emergent Problems in Agentic Privacy and Security: A Contextual Angle,' the result of a collaborative effort bringing together more than 50 academic and industry leaders from numerous institutions.",
+          "note": "The headline is a fair paraphrase of Google Research publishing a report identifying open privacy and security challenges in autonomous agents."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google Research, with more than 50 co-authors, identifies three structural gaps every agent shares",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google Research, with more than 50 co-authors, identifies three structural gaps every agent shares",
+          "source_span": "the result of a collaborative effort bringing together more than 50 academic and industry leaders from numerous institutions... agents differ in three critical dimensions that lead to challenges the research community must address together",
+          "note": "Source confirms more than 50 collaborators and three critical dimensions; 'structural gaps' is a fair paraphrase of 'critical dimensions'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "unpredictable behaviour, broad data access, and no runtime norm-checking",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "unpredictable behaviour, broad data access, and no runtime norm-checking",
+          "source_span": "",
+          "note": "The source references three critical dimensions but does not enumerate them explicitly in the excerpt, so the specific labels cannot be confirmed or denied."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The proposed fix is a contextual policy engine that evaluates each action before data leaves the workspace",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The proposed fix is a contextual policy engine that evaluates each action before data leaves the workspace",
+          "source_span": "Our report advocates for complementing model and user interaction advances with a contextual policy engine that forms part of a supervisor layer to monitor and enforce the appropriateness of actions... This allows the system to evaluate whether a requested data flow is appropriate before any information leaves the user's workspace.",
+          "note": "Source directly describes a contextual policy engine that evaluates actions before information leaves the workspace."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Does your agent architecture include that gate before your next deployment review?",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Does your agent architecture include that gate before your next deployment review?",
+          "source_span": "",
+          "note": "This is a call-to-action editorial question, not a checkable factual claim; no source span exists to verify it."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentic privacy had no shared threat map; Google's 50-author report draws the first one.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Agentic privacy had no shared threat map; Google's 50-author report draws the first one.",
+          "source_span": "",
+          "note": "The source does not claim this is the first shared threat map for agentic privacy, nor does it frame the report as filling a previously total absence; 'first one' is an assertion not grounded in the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_0f029b87a6f2fa4e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code embeds hidden fingerprints in every agent request",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Claude Code embeds hidden fingerprints in every agent request",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source material exists to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A developer inspecting Claude Code found what appears to be steganographic markers embedded in outgoing requests",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "A developer inspecting Claude Code found what appears to be steganographic markers embedded in outgoing requests",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the existence or nature of this finding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Steganographic markers are invisible to users but potentially readable by Anthropic",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "invisible to users but potentially readable by Anthropic",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source material exists to confirm or deny this characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The claim rests on one practitioner's analysis",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The claim rests on one practitioner's analysis",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the number or identity of analysts behind the claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Every agent with shell, git, or browser access is leaking a fingerprint",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "every agent with shell, git, or browser access is leaking a fingerprint",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the scope or mechanism of any alleged fingerprinting."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Engineers granting agents shell access assumed request traffic was untagged",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Engineers granting agents shell access assumed request traffic was untagged",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source material exists to confirm or deny this editorial position's embedded factual premise."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_004014f109f13c31",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google's open embedding model lets you escape re-embedding costs when vendors deprecate",
+          "verdict": "unsupported",
+          "location": "headline",
+          "summary_span": "Google's open embedding model lets you escape re-embedding costs when vendors deprecate",
+          "source_span": "",
+          "note": "The source never names Google as the maker of EmbeddingGemma 2; attributing it to Google is a specific factual assertion not present in the excerpt (though plausible), and 'Google' is absent from the source text."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Proprietary embedding models create a silent debt: when a vendor retires one, you repay the cost of re-processing every stored vector.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Proprietary embedding models create a silent debt: when a vendor retires one, you repay the cost of re-processing every stored vector.",
+          "source_span": "If your model is proprietary, the vendor is likely someday going to decide to stop offering that model. They'll have a better model to replace it, but you still need to pay to re-calculate those millions of stored existing vectors.",
+          "note": "The body accurately paraphrases the source's core argument about re-embedding costs when a proprietary model is retired."
+        },
+        {
+          "schema_version": 1,
+          "claim": "EmbeddingGemma 2 ships under Apache 2.0",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "EmbeddingGemma 2 ships under Apache 2.0",
+          "source_span": "I really appreciate that EmbeddingGemma 2 is under the Apache 2.0 license.",
+          "note": "The source explicitly confirms EmbeddingGemma 2 is under the Apache 2.0 license."
+        },
+        {
+          "schema_version": 1,
+          "claim": "you can self-host or switch providers without that penalty",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "meaning you can self-host or switch providers without that penalty",
+          "source_span": "I'd much rather pay a provider for a hosted model while knowing that if they ever stop hosting it I can run the open weights version myself - or find another vendor who can do that for me.",
+          "note": "The source supports the ability to self-host or switch providers as the benefit of open weights."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Simon Willison flags this as the structural reason closed embedding models are the wrong default.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Simon Willison flags this as the structural reason closed embedding models are the wrong default.",
+          "source_span": "",
+          "note": "The source never names Simon Willison; attributing the post to him is a specific factual assertion absent from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Stored embedding vectors were hostage to the vendor who generated them; open weights end that.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Stored embedding vectors were hostage to the vendor who generated them; open weights end that.",
+          "source_span": "If your model is proprietary, the vendor is likely someday going to decide to stop offering that model. They'll have a better model to replace it, but you still need to pay to re-calculate those millions of stored existing vectors.",
+          "note": "The take accurately captures the source's argument that proprietary models lock stored vectors to the vendor, and open weights resolve this dependency."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Open weights dissolve re-embedding debt.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Open weights dissolve re-embedding debt",
+          "source_span": "If your model is proprietary, the vendor is likely someday going to decide to stop offering that model. They'll have a better model to replace it, but you still need to pay to re-calculate those millions of stored existing vectors.",
+          "note": "synthesis: The source explicitly discusses re-embedding cost as a problem with proprietary models, and open weights (Apache 2.0 EmbeddingGemma 2) are presented as the solution; 'dissolve re-embedding debt' is a supported paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Production-calibrated evals replace vendor claims.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "production-calibrated evals replace vendor claims",
+          "source_span": "offline evaluation of Copilot code review (CCR) has become more effective at anticipating the direction of production experiments, giving us greater confidence that measured improvements reflect meaningful gains for users",
+          "note": "synthesis: ReviewBench is explicitly described as production-calibrated and designed to replace reliance on less rigorous or vendor-only signals; the paraphrase is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The cost ceiling on agentic retrieval is now measurable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The cost ceiling on agentic retrieval is now measurable, not negotiated",
+          "source_span": "agentic retrieval takes 107.4 seconds, compared to 0.67 seconds for standard retrieval, and consumes 764.1K input and 5.8K output tokens per query",
+          "note": "synthesis: The agentic retrieval paper provides concrete, quantified cost figures (latency and token consumption), supporting the claim that costs are now measurable."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": true
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_a81bf3d6d181ea12",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google DeepMind's open embedding model unifies text, code, audio and video",
+          "verdict": "unsupported",
+          "location": "headline",
+          "summary_span": "Google DeepMind's open embedding model unifies text, code, audio and video",
+          "source_span": "",
+          "note": "The source attributes EmbeddingGemma 2 to Google (not specifically Google DeepMind); 'Google DeepMind' does not appear in the source excerpt, and the model also unifies images, which are omitted from the headline — but the attribution to DeepMind specifically is the unsupported claim since the source never names that division."
+        },
+        {
+          "schema_version": 1,
+          "claim": "EmbeddingGemma 2 (740M parameters, Apache 2.0) embeds text, code, images, audio, and video in a single shared space",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "EmbeddingGemma 2 (740M parameters, Apache 2.0) embeds text, code, images, audio, and video in a single shared space",
+          "source_span": "EmbeddingGemma 2, expanding beyond text to unify code, images, video, and audio in a shared embedding space. Built on the Gemma 4 architecture and released under a commercially permissive Apache 2.0 license, EmbeddingGemma 2 has 740 million parameters",
+          "note": "All three facts — modalities, parameter count, and licence — are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "running on-device at under 600MB RAM",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "running on-device at under 600MB RAM",
+          "source_span": "With quantization, on a Google Pixel 11 Pro, EmbeddingGemma 2 requires as little as ~191MB active RAM for text-only weights and ~567MB for the full multimodal model.",
+          "note": "567MB for the full multimodal model rounds to 'under 600MB RAM'; this is a legitimate approximation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights are public on Hugging Face.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights are public on Hugging Face.",
+          "source_span": "Find the model weights on Hugging Face and Kaggle",
+          "note": "Source confirms weights are available on Hugging Face."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Multimodal retrieval pipelines defaulted to closed APIs; open weights now run offline.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Multimodal retrieval pipelines defaulted to closed APIs; open weights now run offline.",
+          "source_span": "",
+          "note": "The claim that multimodal retrieval pipelines 'defaulted to closed APIs' is an editorial position about the prior landscape not addressed in the source excerpt; the offline capability is supported but the full take is primarily an editorial framing that cannot be fully verified from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": true
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_a5dad42559390f06",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "GitHub's code-review benchmark is built from 100 million real pull requests",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "GitHub's code-review benchmark is built from 100 million real pull requests",
+          "source_span": "It follows the language, repo size, and size distribution of pull requests, modeled after over 100 million real pull requests on GitHub.",
+          "note": "The source confirms the benchmark is modeled after over 100 million real GitHub pull requests; 'built from' is a reasonable paraphrase of 'modeled after'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Existing code-review evals rarely reflect production workloads.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Existing code-review evals rarely reflect production workloads.",
+          "source_span": "Existing benchmarks often make tradeoffs between label quality, coverage, and how well they represent real-world code review, leaving a gap for a rigorous and reproducible evaluation methodology",
+          "note": "The source states existing benchmarks fall short of real-world representation, supporting this paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ReviewBench samples 219 pull requests",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ReviewBench samples 219 pull requests across 187 repositories and 19 languages",
+          "source_span": "ReviewBench contains 219 pull requests from 187 public open source licensed repositories spanning 19 languages",
+          "note": "Exact figures match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ReviewBench samples pull requests across 187 repositories",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ReviewBench samples 219 pull requests across 187 repositories and 19 languages",
+          "source_span": "ReviewBench contains 219 pull requests from 187 public open source licensed repositories spanning 19 languages",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ReviewBench samples pull requests across 19 languages",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ReviewBench samples 219 pull requests across 187 repositories and 19 languages",
+          "source_span": "ReviewBench contains 219 pull requests from 187 public open source licensed repositories spanning 19 languages",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ReviewBench is weighted toward multi-file changes where review quality matters.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "weighted toward multi-file changes where review quality matters",
+          "source_span": "pull request size is weighted toward the reviewable middle and tail. This reduces the overrepresentation of tiny, single-file changes while preserving more substantive, multi-file pull requests where review quality matters most.",
+          "note": "The source confirms the weighting toward multi-file changes."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Senior engineers independently re-labelled every finding.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Senior engineers independently re-labelled every finding",
+          "source_span": "we asked senior engineers who had not participated in building the benchmark dataset to independently re-label every ground-truth finding from scratch.",
+          "note": "Matches the source description of the validation process."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agreement hit 96.6%.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "agreement hit 96.6%",
+          "source_span": "Their true/false-positive judgments agreed with ReviewBench 96.6% of the time.",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The dataset and evaluation harness are public.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The dataset and evaluation harness are public.",
+          "source_span": "The complete benchmark dataset is publicly available.",
+          "note": "The source confirms the dataset is public; 'evaluation harness' is supported by the source's mention of the ReviewBench website for evaluation and submission."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Code-review agent quality was judged by vendor claims; a production-calibrated public benchmark now exists.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Code-review agent quality was judged by vendor claims; a production-calibrated public benchmark now exists.",
+          "source_span": "the quality of existing AI reviewers can be hard to measure... ReviewBench's research preview version is now available... It follows the language, repo size, and size distribution of pull requests, modeled after over 100 million real pull requests on GitHub.",
+          "note": "The source supports both the gap in prior measurement and the existence of a new production-calibrated public benchmark; 'vendor claims' is a reasonable editorial compression of the implied prior state."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_095076a0c52c174f",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Agentic retrieval beats keyword search but costs 160 times more per query",
+          "verdict": "contradicted",
+          "location": "headline",
+          "summary_span": "Agentic retrieval beats keyword search but costs 160 times more per query",
+          "source_span": "agentic retrieval takes 107.4 seconds, compared to 0.67 seconds for standard retrieval",
+          "note": "107.4 / 0.67 ≈ 160x is approximately correct for the time ratio, but the source describes dense/standard retrieval (semantic similarity), not 'keyword search'; however the more significant issue is that '160 times more' is a reasonable rounding of ~160x, so the keyword-search characterisation is the real divergence — dense retrieval is not keyword search."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Dense retrieval relies on surface-level semantic similarity",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Dense retrieval matches surface-level words",
+          "source_span": "dense retrieval relies on surface-level semantic similarity",
+          "note": "Direct paraphrase of the source; 'matches surface-level words' captures the same idea."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint shows a reasoning-loop pipeline scores 8.7 points higher on standard retrieval benchmarks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "an arXiv preprint shows a reasoning-loop pipeline scores 8.7 points higher on standard retrieval benchmarks",
+          "source_span": "agentic retrieval is more effective than standard retrieval, improving nDCG@10 by 8.7 points",
+          "note": "The 8.7-point improvement matches the source; 'reasoning-loop pipeline' is a fair paraphrase of the ReAct agentic loop; the paper is on arXiv (hf papers reference confirms this)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The reasoning-loop pipeline uses the same embedding model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "using the same embedding model",
+          "source_span": "improving nDCG@10 by 8.7 points using the same embedding model",
+          "note": "Exact match to source wording."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentic retrieval takes 107 seconds per query",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "107 seconds per query",
+          "source_span": "agentic retrieval takes 107.4 seconds",
+          "note": "107 is a standard rounding of 107.4."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Standard retrieval takes 0.67 seconds per query",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "0.67 seconds",
+          "source_span": "compared to 0.67 seconds for standard retrieval",
+          "note": "Exact figure from source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentic retrieval consumes roughly 770,000 tokens per query",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "roughly 770,000 tokens consumed",
+          "source_span": "consumes 764.1K input and 5.8K output tokens per query",
+          "note": "The source gives 764.1K input + 5.8K output = ~769.9K total; rounding to 770K is acceptable, but presenting it as a single undifferentiated token count omits the input/output split — however as a rounding this is within house-style tolerance, so supported is more appropriate; re-evaluating: 770K rounds 769.9K correctly, verdict supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Retrieval quality now has a measurable cost ceiling, not just a capability floor.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Retrieval quality now has a measurable cost ceiling, not just a capability floor.",
+          "source_span": "",
+          "note": "This is an editorial position; the source provides cost data but does not frame it as a 'ceiling' — no factual assertion to verify against the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentic retrieval costs 160 times more.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "Agentic retrieval costs 160 times more.",
+          "source_span": "agentic retrieval takes 107.4 seconds, compared to 0.67 seconds for standard retrieval",
+          "note": "digest: The source implies roughly 160x slower in time (107.4/0.67 ≈ 160), but the text frames this as a cost claim; however, the token cost ratio is not 160x — the summary conflates time ratio with cost, and the 160x figure specifically refers to latency, not token consumption cost, making this a misleading assertion about 'cost' when the source only supports it as a time ratio."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A reasoning-loop pipeline scores 8.7 points higher than keyword search.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scores 8.7 points higher than keyword search",
+          "source_span": "agentic retrieval is more effective than standard retrieval, improving nDCG@10 by 8.7 points using the same embedding model",
+          "note": "digest: The 8.7 point improvement is confirmed; 'keyword search' is a reasonable plain-English paraphrase of 'standard retrieval' (dense retrieval based on surface-level semantic similarity)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The pipeline consumes roughly 770,000 tokens per query.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "consumes roughly 770,000 tokens per query",
+          "source_span": "consumes 764.1K input and 5.8K output tokens per query",
+          "note": "digest: 764.1K input + 5.8K output ≈ 769.9K total tokens, which rounds to roughly 770,000; this is an acceptable approximation."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": true
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_00b0d96e7668d586",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A new benchmark reveals agents complete tasks but fumble recovery",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A new benchmark reveals agents complete tasks but fumble recovery",
+          "source_span": "nominal competence reached 83.54% while conditional recovery success rate (CRSR) fell to 46.72%",
+          "note": "The headline accurately paraphrases the core finding that task completion is high but recovery is poor."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint introduces UndoBench",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint introduces UndoBench",
+          "source_span": "UndoBench: Separating Task Competence from Recovery Capability in Tool-Using AI Agents",
+          "note": "The source is an arXiv preprint introducing UndoBench; 'arXiv' is confirmed by the hf papers CLI reference to paper ID 2610.05622."
+        },
+        {
+          "schema_version": 1,
+          "claim": "UndoBench spans 36 workflows and 36 fault scenarios",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "spanning 36 workflows and 36 fault scenarios",
+          "source_span": "a benchmark spanning 36 base workflows and 36 fault scenarios across 8 enterprise domains",
+          "note": "Exact numbers match the source; 'base workflows' compressed to 'workflows' is acceptable paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "UndoBench spans 8 enterprise domains",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across 8 enterprise domains",
+          "source_span": "36 fault scenarios across 8 enterprise domains",
+          "note": "Exact match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents hit 83.54% task completion",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agents hit 83.54% task completion",
+          "source_span": "nominal competence reached 83.54%",
+          "note": "Exact figure matches; 'task completion' is an acceptable plain-English paraphrase of 'nominal competence'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents hit only 46.72% recovery success",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "only 46.72% recovery success",
+          "source_span": "conditional recovery success rate (CRSR) fell to 46.72%",
+          "note": "Exact figure matches; 'recovery success' paraphrases CRSR acceptably."
+        },
+        {
+          "schema_version": 1,
+          "claim": "naive retry produced duplicate external effects in 53.28% of trials",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "naive retry produced duplicate external effects in 53.28% of trials",
+          "source_span": "naive retry producing duplicate external effects in 53.33% of trials",
+          "note": "The source states 53.33%, not 53.28%; this is a genuine numerical discrepancy, not a rounding convention."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Add UndoBench's fault scenarios to your next agent evaluation before trusting completion rates in production.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Add UndoBench's fault scenarios to your next agent evaluation before trusting completion rates in production.",
+          "source_span": "",
+          "note": "This is a call to action / editorial recommendation; no factual claim to check against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nominal completion scores hid phase-dependent recovery failures; a benchmark now separates them.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Nominal completion scores hid phase-dependent recovery failures; a benchmark now separates them.",
+          "source_span": "evaluating nominal completion alone masks critical, phase-dependent recovery vulnerabilities in autonomous agents",
+          "note": "The take accurately reflects the paper's stated finding about phase-dependent recovery and the benchmark's separating role."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_67368e0e79dd6157",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A model that learns from its own outputs quietly unlearns real text",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A model that learns from its own outputs quietly unlearns real text",
+          "source_span": "When the model learns from its own output, however, each update also changes the model that generates the next training example. Across 128K-token streams, retaining generated-text updates worsens prediction on independent human-written text",
+          "note": "'Quietly unlearns real text' is a fair paraphrase of worsening prediction on independent human-written text via self-generated feedback."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Test-time training lets a model update its weights during inference",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Test-time training lets a model update its weights during inference",
+          "source_span": "Test-time training (TTT) lets a model store information in its weights during inference.",
+          "note": "Direct paraphrase of the source's definition of TTT."
+        },
+        {
+          "schema_version": 1,
+          "claim": "learning from self-generated text corrupts real-text prediction",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "learning from self-generated text corrupts real-text prediction",
+          "source_span": "retaining generated-text updates worsens prediction on independent human-written text",
+          "note": "'Corrupts real-text prediction' is a fair paraphrase of worsening prediction on independent human-written text."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint tested models from 125M to 3B parameters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint tested models from 125M to 3B parameters",
+          "source_span": "three TTT-E2E model configurations (labeled 125M, 760M, and 3B)",
+          "note": "The source is an arXiv preprint and confirms the 125M to 3B parameter range."
+        },
+        {
+          "schema_version": 1,
+          "claim": "using a frozen model to generate training chunks removed over 98% of the damage",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "using a frozen model to generate training chunks removed over 98% of the damage",
+          "source_span": "Fixed Generation removes over 98% of the damage at 125M and 760M by using a frozen model to generate training chunks.",
+          "note": "Near-verbatim match with the source; the body omits the '125M and 760M' qualifier but does not assert it applies universally, so this is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Code is public on GitHub",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Code is public on GitHub",
+          "source_span": "Code: https://github.com/lingjivoo/ttt-ouroboros",
+          "note": "The source explicitly links to a public GitHub repository."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The frozen-generator fix is public and cuts contamination damage by over 98%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The frozen-generator fix is public and cuts contamination damage by over 98%",
+          "source_span": "Fixed Generation removes over 98% of the damage at 125M and 760M by using a frozen model to generate training chunks. Code: https://github.com/lingjivoo/ttt-ouroboros",
+          "note": "'Contamination damage' is a reasonable paraphrase of the damage from self-generated feedback; the >98% figure and public code are both confirmed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Continuously adapting models were assumed safe; self-generated training loops silently degrade real-text performance.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Continuously adapting models were assumed safe; self-generated training loops silently degrade real-text performance.",
+          "source_span": "",
+          "note": "The 'assumed safe' framing is an editorial position not stated in the source; the degradation claim is supported but the take as a whole is partly editorial and partly paraphrase, with the assumption-of-safety element unverifiable from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The field is moving toward trillion-parameter on-premise deployability.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The field is moving toward trillion-parameter on-premise deployability",
+          "source_span": "ML4 is a 1 trillion-parameter natively multimodal model with 49 billion active parameters... For organisations that need sovereign, auditable AI for security operations, it will be able to run on private cloud or on-premise.",
+          "note": "synthesis: The source confirms a 1-trillion-parameter model with on-premise deployment capability, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The field is moving toward continuous self-updating.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "continuous self-updating",
+          "source_span": "Test-time training (TTT) lets a model store information in its weights during inference. When the model learns from its own output, however, each update also changes the model that generates the next training example.",
+          "note": "synthesis: TTT with self-generated feedback is a form of continuous self-updating, which the source paper directly addresses."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The underlying reliability assumptions for trillion-parameter on-premise deployability and continuous self-updating are thinner than the benchmarks suggest.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the underlying reliability assumptions for both are thinner than the benchmarks suggest",
+          "source_span": "",
+          "note": "synthesis: This is an editorial interpretive claim about reliability assumptions relative to benchmarks; while the TTT paper shows instability issues, the comparative framing ('thinner than benchmarks suggest') is not directly stated in either source and cannot be verified from the excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_399f8bcf2a439c0b",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Mistral opens a trillion-parameter model trained entirely on European soil",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Mistral opens a trillion-parameter model trained entirely on European soil",
+          "source_span": "ML4 was trained from scratch on 3,800 NVIDIA Grace Blackwell GPUs in Mistral's own datacenters in Europe.",
+          "note": "'Trained entirely on European soil' is a fair paraphrase of trained from scratch in Mistral's own European datacenters."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4 is a 1-trillion-parameter open-weight model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Mistral Large 4 is a 1-trillion-parameter open-weight model",
+          "source_span": "ML4 is a 1 trillion-parameter natively multimodal model with 49 billion active parameters.",
+          "note": "Source confirms 1 trillion parameters and open-weight nature."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4 has 49 billion active parameters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "(49 billion active)",
+          "source_span": "ML4 is a 1 trillion-parameter natively multimodal model with 49 billion active parameters.",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4 is in public preview",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "in public preview",
+          "source_span": "we're launching a public preview of Mistral Large 4.",
+          "note": "Source explicitly states public preview launch."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights are due by month's end",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "weights due by month's end",
+          "source_span": "We will release the weights by the end of the month.",
+          "note": "'Month's end' is a direct paraphrase of 'end of the month'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On the independent Artificial Analysis Cyber Index it ranks top five globally",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "On the independent Artificial Analysis Cyber Index it ranks top five globally",
+          "source_span": "On the Artificial Analysis Cyber Index, an independent evaluation of how well AI models find and fix security flaws in real software, it ranks among the top five models globally",
+          "note": "Claim matches source exactly, including the 'independent' qualifier."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On one vulnerability-reproduction test it scores 82%, highest of any model tested",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "on one vulnerability-reproduction test it scores 82%, highest of any model tested",
+          "source_span": "On one of the index's tests, which asks a model to reproduce a real vulnerability in open-source software and then patch it, ML4 scores 82%, the highest of any model.",
+          "note": "'Vulnerability-reproduction test' is a fair compression of the source description; 82% and 'highest of any model' match exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Sovereign AI deployments defaulted to smaller open models; a trillion-parameter on-premise option now exists.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Sovereign AI deployments defaulted to smaller open models; a trillion-parameter on-premise option now exists.",
+          "source_span": "",
+          "note": "The claim that sovereign AI deployments previously defaulted to smaller open models is an editorial assertion not addressed in the source excerpt; the on-premise availability of ML4 is supported but the 'defaulted to smaller' framing is unverifiable from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4 is a trillion-parameter model.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Mistral's trillion-parameter model",
+          "source_span": "ML4 is a 1 trillion-parameter natively multimodal model with 49 billion active parameters.",
+          "note": "digest: Source confirms ML4 is a 1 trillion-parameter model; rounding to 'trillion-parameter' is acceptable house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4 supports on-premise deployment.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "opens on-premise",
+          "source_span": "it will be able to run on private cloud or on-premise.",
+          "note": "digest: Source explicitly states ML4 can run on-premise."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4 scores 82% on vulnerability reproduction.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Mistral Large 4 scores 82% on vulnerability reproduction",
+          "source_span": "On one of the index's tests, which asks a model to reproduce a real vulnerability in open-source software and then patch it, ML4 scores 82%, the highest of any model.",
+          "note": "digest: Source confirms the 82% score on the vulnerability reproduction test."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4's 82% score is the highest of any model tested.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "highest of any model tested",
+          "source_span": "ML4 scores 82%, the highest of any model.",
+          "note": "digest: Source directly states this is the highest score of any model on that test."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mistral Large 4's open weights are due by month's end.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "open weights due by month's end",
+          "source_span": "We will release the weights by the end of the month.",
+          "note": "digest: Source confirms weights will be released by end of the month."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 12 stories -- factual flags present | digest-bar: digest bullet 1 carries a claim the verifier marked 'contradicted' (story c_55ee00605735cf55): '67% of clean-exit failures still left wrong field values.'; digest bullet 1 carries a claim the verifier marked 'contradicted' (story c_55ee00605735cf55): 'ThinkingBox found 67% of clean-exit agent runs still contained wrong database field values after task completion.'; digest bullet 3 carries a claim the verifier marked 'contradicted' (story c_095076a0c52c174f): 'Agentic retrieval beats keyword search but costs 160 times more per query'; digest bullet 3 carries a claim the verifier marked 'contradicted' (story c_095076a0c52c174f): 'Agentic retrieval consumes roughly 770,000 tokens per query'; digest bullet 3 carries a claim the verifier marked 'contradicted' (story c_095076a0c52c174f): 'Agentic retrieval costs 160 times more.'"
+}
