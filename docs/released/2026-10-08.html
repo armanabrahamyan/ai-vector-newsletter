@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 71 &middot; 08 October 2026</title>
+<meta name="description" content="OpenAI&#39;s AI solves 90 of the 500 hardest open problems in mathematics. Issue No. 71 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 71 &middot; 08 Oct &middot; 4 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>OpenAI&#39;s maths manuscripts go public.</strong> <span>Seven hundred twenty-two papers address roughly 90 unsolved problems, with proof artefacts on GitHub awaiting independent verification.</span></p>
+    <p><strong>Cloud-native agent orchestration arrives.</strong> <span>Stacklok&#39;s open-source tool separates reasoning, tool execution, and session state so organisations govern agents centrally, not per laptop.</span></p>
+    <p><strong>Coding agents struggle with checkers.</strong> <span>A public benchmark testing 21 model configurations finds the best agent builds reusable security tools only 45% of the time.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>OpenAI&#39;s AI solves 90 of the 500 hardest open problems in mathematics</h1>
+  <p class="takeaway">Frontier mathematics was a human-only domain; OpenAI&#39;s proof artefacts put 90 open problems in the solved column.</p>
+  <p class="dek">OpenAI released 722 mathematical manuscripts from an internal model, covering roughly 90 of the 500 hardest open problems in the field, including a quasi-Riemann Hypothesis result described by one mathematician as &#34;the most significant moment in mathematical history.&#34; Papers and proof artefacts are public on GitHub; the model is not released. Independent verification will determine which results hold.</p>
+  <div class="story-meta">
+    <a class="src" href="https://www.latent.space/p/ainews-quasi-riemann-hypothesis-openai" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Auditability is becoming the organising pressure across agent infrastructure this week, pulling compliance, orchestration, and deployment architecture toward the same structural requirement: every agent action needs a named owner, a fixed record, and organisational rather than individual control.</p>
+  </div>
+  <article class="measure stack">
+    <h3>A structured test says which agent logs actually satisfy a compliance claim</h3>
+    <p class="takeaway">Agent compliance claims lacked a defined record set; auditors had no fixed standard to check against.</p>
+    <p class="dek">An arXiv preprint proposes that agent claims like &#39;every action is logged&#39; are unauditable unless they name a policy, scope, the settling records, and who writes them. The paper stress-tests six common claims against NIST, IETF, and OWASP drafts. When your auditor arrives, which of your agent claims can actually produce those records?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2610.07459" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Releasing process steps one at a time makes agents predictable and auditable</h3>
+    <p class="takeaway">Process automation teams got a final answer from agents; now each step is a structured, auditable record.</p>
+    <p class="dek">Standard agent orchestration buries the procedure in the system prompt and returns only a final answer, with no step log. This arXiv preprint proposes delivering each step via the Model Context Protocol instead: process adherence rises to 95-99% across 15,475 trials, and ungrounded answers near-vanish. Does your regulated workflow&#39;s audit requirement extend to individual agent steps, or only outcomes?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2610.07817" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Jump Trading runs multi-source quant research workflows with AI agents</h3>
+    <p class="takeaway">Quant research scaled on human intuition alone; named trading firms now delegate data synthesis to agents.</p>
+    <p class="dek">Jump Trading&#39;s case study, published by OpenAI, describes longer-running agentic workflows that pull from multiple data sources before a human researcher reviews the output. The workflow is the mechanism: agents synthesise; humans decide. If you are scoping agentic research infrastructure, how much of your review layer is staffed for that handoff?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://openai.com/index/jump-trading" target="_blank" rel="noreferrer">openai.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Kubernetes creators redesign agent infrastructure to run in the cloud</h3>
+    <p class="takeaway">Enterprise agent sessions lived on developer laptops; cloud-native orchestration shifts control to the organisation.</p>
+    <p class="dek">Desktop-first agent harnesses tangle the reasoning loop, tool execution, and session state inside one process, ungovernable at enterprise scale. Stacklok&#39;s Mecatl (open-source, from two Kubernetes co-creators) separates those layers so enterprises can run agents centrally, the way they manage email. The company raised $17.5 million in 2023. Does your agent infrastructure assume a developer&#39;s laptop stays open?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.latent.space/p/stacklok" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">This week&#39;s practical releases cluster around a single structural shift: the friction points practitioners had quietly accepted as fixed are being removed at the infrastructure layer. Open weights, drop-in training harnesses, and public benchmarks are all moving the decision boundary closer to the practitioner&#39;s own environment rather than the vendor&#39;s.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Liquid AI open-sources multimodal decision models built for edge deployment</h3>
+    <p class="takeaway">Edge inference defaulted to single-modality models; open multimodal decision weights change the calculus.</p>
+    <p class="dek">Liquid AI has published open multimodal decision models (the d1 series) on Hugging Face, targeting edge inference rather than cloud-hosted deployment. Weights are public. The post is the vendor&#39;s own framing, so treat any benchmark claims accordingly. Pull the weights and run them against your current edge-inference baseline before committing to the architecture.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/LiquidAI/open-d1" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Microsoft&#39;s reinforcement learning tool trains agents without rebuilding them</h3>
+    <p class="takeaway">Reinforcement learning training required rebuilding agents from scratch; the deployment harness now trains directly.</p>
+    <p class="dek">Microsoft Research Asia&#39;s Agent Lightning v1.0 places a proxy between the training framework and the existing agent harness, so the deployed agent is the trained agent. The open-sourced 3,500-line codebase raised one language model&#39;s coding benchmark score by 14.6 percentage points on roughly 6,000 samples. Clone it and run your own harness through the proxy before rebuilding anything.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.microsoft.com/en-us/research/blog/agent-lightning-v1-0-a-3500-line-lightweight-agentic-rl-framework-for-training-agents-with-real-harnesses/" target="_blank" rel="noreferrer">microsoft.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Mistral&#39;s open trillion-parameter model closes six months of ground on the frontier</h3>
+    <p class="takeaway">Open-weight models sat a year behind the frontier; Mistral Large 4 cuts that gap to roughly six months.</p>
+    <p class="dek">Mistral Large 4 is a 1-trillion-parameter mixture-of-experts model with 49 billion parameters active at once, now in API preview with open weights promised by end of October. It scores 38 on Artificial Analysis, just behind a 552-billion-parameter DeepSeek model. Simon Willison&#39;s read: competitive, not frontier-class. Try the API before the weights land.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://simonwillison.net/2026/Oct/6/le-chonk/" target="_blank" rel="noreferrer">simonwillison.net <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>OpenAI publishes machine-verifiable proofs for unsolved maths problems</h3>
+    <p class="takeaway">Formal proof artefacts give independent researchers a checkable record, not just a claimed result.</p>
+    <p class="dek">OpenAI&#39;s frontier model has produced Lean proof formalisations for open mathematics problems, with code and research details published on GitHub. Lean proofs are machine-checkable, meaning any researcher can verify the results independently. Clone the repository and run the proof checker against a problem in your domain before treating the results as settled.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://openai.com/index/sharing-ai-progress-in-mathematics" target="_blank" rel="noreferrer">openai.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Coding agents still fail most attempts to build reusable security checkers</h3>
+    <p class="takeaway">Coding agents were tested on patches; a public benchmark now measures whether they build lasting security tools.</p>
+    <p class="dek">CheckerBench (an arXiv preprint) tasks agents with building reusable static-analysis checkers from real CVEs, not just patching code. Across 21 model configurations, the best hits 45.33% Pass@1; the mean sits at 32.30%. Dataset and tooling are public. Run CheckerBench against your current coding agent; the gap between patch performance and checker synthesis is wider than most evaluations reveal.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/papers/2610.07557" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">1 item</span></div>
+  </div>
+  <article class="measure stack">
+    <h3>Cloudflare used AI to find gaps in its own firewall defences</h3>
+    <p class="takeaway">Security teams ran static rule-sets; AI-driven mutation testing now surfaces obfuscation gaps before attackers do.</p>
+    <p class="dek">Cloudflare ran frontier language models inside a Python harness against its web application firewall, using blocked attacks as seeds for iterative mutations. Across 45 scenarios the system generated 1,107 attempts; human triage produced 49 findings, leading to three ruleset changes. Before signing off on any WAF vendor, demand mutation-testing results, not just blocked-traffic counts.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://www.infoq.com/news/2026/10/cloudflare-sec-harness/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
