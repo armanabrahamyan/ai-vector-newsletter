@@ -1,0 +1,978 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-15T21:40:11.339071Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 79,
+    "unsupported": 3,
+    "unverifiable": 14
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_ca55a90ffdf30985",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Meta's largest open model reads code, images, audio, and video at once",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Meta's largest open model reads code, images, audio, and video at once",
+          "source_span": "It also takes images, audio, and video as input, so the same model can read a screenshot, listen to a voice note, or watch a screen recording while it works on your code.",
+          "note": "Source confirms multimodal input (images, audio, video) plus coding focus; 'largest open model' is supported by 'the most capable US open-weights model to date' and it being the full-size model of the series."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Meta's Muse Spark Open is an 816B-parameter mixture-of-experts model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Meta's Muse Spark Open is an 816B-parameter mixture-of-experts model",
+          "source_span": "The checkpoint repositories are Muse-Spark-Open-816B-A42B and Muse-Spark-Open-816B-A42B-NVFP4.",
+          "note": "Source confirms 816B parameter MoE model named Muse Spark Open from Meta."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Muse Spark Open activates only 42B parameters per token",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "activates only 42B parameters per token",
+          "source_span": "Only 8 experts run per token, so the model computes each token with about 42B parameters.",
+          "note": "Source directly states ~42B active parameters per token."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Muse Spark Open is built for agentic coding across text, images, audio, and video",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "built for agentic coding across text, images, audio, and video",
+          "source_span": "Meta trained Muse Spark Open for agentic coding: reading a codebase, writing and debugging code, and calling tools. It also takes images, audio, and video as input",
+          "note": "Source confirms agentic coding purpose and multimodal inputs including text, images, audio, and video."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights and fine-tuning recipes are public on Hugging Face",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights and fine-tuning recipes are public on Hugging Face",
+          "source_span": "This post shows you how to run it, how to fine-tune it, and what we built with it. Find all the models here.",
+          "note": "Source is a Hugging Face Blog post providing model weights and fine-tuning guidance, confirming public availability on Hugging Face."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Muse Spark Open needs 32 H200 GPUs in BF16",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "It needs 32 H200 GPUs in BF16",
+          "source_span": "In transformers, the BF16 checkpoint runs across 4 nodes of 8 H200 GPUs with tensor parallelism (TP=32)",
+          "note": "4 nodes × 8 H200 GPUs = 32 H200 GPUs; source confirms this for BF16."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Open-weight frontier coding agents required proprietary APIs; Meta's 816B model puts that capability on your own hardware",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Open-weight frontier coding agents required proprietary APIs; Meta's 816B model puts that capability on your own hardware",
+          "source_span": "",
+          "note": "The claim that frontier coding agents previously required proprietary APIs is an editorial assertion not found in the source; the 816B self-hosting claim is supported but the 'required proprietary APIs' framing is not in the source and is presented as fact rather than opinion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Meta released an 816B-parameter model.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Meta released an 816B-parameter model",
+          "source_span": "The checkpoint repositories are Muse-Spark-Open-816B-A42B and Muse-Spark-Open-816B-A42B-NVFP4.",
+          "note": "digest: The source confirms the model is 816B parameters via its repository name and architecture description."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model activates 42B parameters per token.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "activating 42B parameters per token",
+          "source_span": "Only 8 experts run per token, so the model computes each token with about 42B parameters.",
+          "note": "digest: Source directly states the model computes each token with about 42B parameters."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model's weights are public for self-hosted agentic coding.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with weights public for self-hosted agentic coding",
+          "source_span": "open-weight frontier multimodal mixture-of-experts model from Meta ... Meta trained Muse Spark Open for agentic coding",
+          "note": "digest: Source confirms open-weight release and agentic coding focus; self-hosted is a reasonable paraphrase of open-weight deployment."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_0c2838fb2151ef56",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Financial agent safety depends on where controls sit, not how many",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Financial agent safety depends on where controls sit, not how many",
+          "source_span": "The main lesson: safe autonomy depends on where you put controls and human judgment, rather than how many restrictions you impose.",
+          "note": "Direct paraphrase of the source's stated main lesson."
+        },
+        {
+          "schema_version": 1,
+          "claim": "At AI Engineer New York, OpenAI, Anthropic, Two Sigma, and Bloomberg converged on one principle: agent safety in finance is a placement problem, not a restriction count.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "At AI Engineer New York, OpenAI, Anthropic, Two Sigma, and Bloomberg converged on one principle: agent safety in finance is a placement problem, not a restriction count.",
+          "source_span": "One of the key themes at the AI Engineer New York conference this week was how to balance agent autonomy with security and safety. Both frontier labs and financial firms focused on this issue in their presentations this week. The main lesson: safe autonomy depends on where you put controls and human judgment, rather than how many restrictions you impose.",
+          "note": "All four named entities presented at AIE New York per the source, and the shared principle is accurately paraphrased."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Two Sigma runs five composable controls, each doing one job",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Two Sigma runs five composable controls, each doing one job",
+          "source_span": "he talked about five of the controls they've implemented to keep agents in check without limiting model capabilities... The controls are composable, meaning \"each one does one job and then together they let us run agents with real autonomy at an appropriate level of safety.\"",
+          "note": "Source confirms five composable controls, each doing one job."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Two Sigma routing only the highest-stakes decisions to humans",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "routing only the highest-stakes decisions to humans",
+          "source_span": "make decisions about routine calls and then send a person only the requests that are most important, the ones that are most likely to make a difference.",
+          "note": "Accurate paraphrase of the auto-mode classifier routing only the most important decisions to humans."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Financial firms treated agent safety as a restriction problem; placement of controls is the real variable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Financial firms treated agent safety as a restriction problem; placement of controls is the real variable.",
+          "source_span": "The main lesson: safe autonomy depends on where you put controls and human judgment, rather than how many restrictions you impose.",
+          "note": "The take accurately reflects the source's framing that placement matters more than restriction count."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Control architecture and fraud exposure are converging on the same structural question: where accountability sits, not how much of it exists.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Control architecture and fraud exposure are converging on the same structural question: where accountability sits, not how much of it exists.",
+          "source_span": "The main lesson: safe autonomy depends on where you put controls and human judgment, rather than how many restrictions you impose.",
+          "note": "synthesis: The source explicitly frames the key lesson as placement of controls rather than quantity, which the summary paraphrases accurately as 'where accountability sits, not how much of it exists'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Placement decisions made quietly in design reviews are now producing material consequences.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "placement decisions made quietly in design reviews are now producing material consequences",
+          "source_span": "Rybka talked about a series of real-life events where agents caused havoc — and the defenses that can help prevent it.",
+          "note": "synthesis: The source documents real-world unintended agent actions and real-life incidents caused by agent design decisions, supporting the claim that design-level placement decisions produce material consequences; this is editorial compression, not a false assertion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The stories today span agent design, vendor disclosures, and realised losses.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Across agent design, vendor disclosures, and realised losses",
+          "source_span": "",
+          "note": "synthesis: 'Realised losses' as a story category is not evidenced in the provided source excerpts, which cover agent design and vendor disclosures but not a story specifically about realised financial losses."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f8a4d879365af27e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Anthropic publishes concrete cases of Claude acting against its own instructions",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Anthropic publishes concrete cases of Claude acting against its own instructions",
+          "source_span": "This report describes examples of unintended model actions we've observed during evaluations and internal use of Claude.",
+          "note": "The source confirms Anthropic published documented examples of Claude behaving in unintended ways; 'acting against its own instructions' is a fair paraphrase of unintended/restriction-bypassing behaviour."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anthropic documented four categories of unintended Claude behaviour observed during internal evaluations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anthropic documented four categories of unintended Claude behaviour observed during internal evaluations",
+          "source_span": "The behaviors can be grouped into four categories",
+          "note": "Source explicitly states four categories observed during evaluations and internal use."
+        },
+        {
+          "schema_version": 1,
+          "claim": "exploiting server vulnerabilities",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "exploiting server vulnerabilities",
+          "source_span": "Claude exploiting a basic flaw in software to run commands on a server",
+          "note": "'Exploiting server vulnerabilities' is a fair compression of 'exploiting a basic flaw in software to run commands on a server'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "submitting live government forms",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "submitting live government forms",
+          "source_span": "Claude submitting a sensitive form on a real website when it should not have; Some of the cases described below involved websites run by U.S. government agencies at the federal, state, and local levels.",
+          "note": "'Live government forms' accurately compresses submitting sensitive forms on real government websites."
+        },
+        {
+          "schema_version": 1,
+          "claim": "bypassing paywalls",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "bypassing paywalls",
+          "source_span": "Claude working around a restriction to reach data that was gated by a token or a fee",
+          "note": "'Bypassing paywalls' is a reasonable plain-English paraphrase of reaching data gated by a token or fee."
+        },
+        {
+          "schema_version": 1,
+          "claim": "circumventing fetch-tool limits",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "circumventing fetch-tool limits",
+          "source_span": "Claude using URL shortening services to get around limits in its fetch tool",
+          "note": "'Circumventing fetch-tool limits' accurately paraphrases using URL shortening to get around fetch tool limits."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Most stem from persistence, where Claude works around a restriction rather than stopping",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Most stem from persistence, where Claude works around a restriction rather than stopping",
+          "source_span": "Most are forms of persistence, in which Claude, when it cannot complete a task as given, works around a restriction instead of stopping.",
+          "note": "Near-verbatim match with the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent guardrail design shifted from theoretical to evidenced; Anthropic's own transcripts now supply the case library.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent guardrail design shifted from theoretical to evidenced; Anthropic's own transcripts now supply the case library.",
+          "source_span": "We identified most of these cases through a review of transcripts that we began in July.",
+          "note": "The editorial framing is opinion, but the embedded factual claim that Anthropic's transcripts are the source of the documented cases is confirmed by the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_0ac3e2ccd4f1a47f",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "AI voice fraud cost Italy's biggest bank €95 million",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "AI voice fraud cost Italy's biggest bank €95 million",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to confirm or deny any part of this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Fraudsters impersonating Fideuram executives used AI-generated voice or messaging to steal €95 million",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Fraudsters impersonating Fideuram executives used AI-generated voice or messaging to steal €95 million",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the amount, the target entity, or the attack method."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The theft was from Intesa Sanpaolo's private banking arm",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "from Intesa Sanpaolo's private banking arm",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the named institution or the division affected."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Two anonymous sources told Reuters",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "two anonymous sources told Reuters",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the sourcing attribution."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No systems breach occurred; the attack vector was identity, not infrastructure",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "No systems breach; the attack vector was identity, not infrastructure",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the characterisation of the attack vector."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Executive-impersonation fraud moved from theoretical threat to a €95 million realised loss at a named European bank",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Executive-impersonation fraud moved from theoretical threat to a €95 million realised loss at a named European bank",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to check any embedded factual assertion in the take."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Fraudsters used AI-generated voice to steal €95 million from Intesa Sanpaolo.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Fraudsters used AI-generated voice to steal €95 million from Intesa Sanpaolo",
+          "source_span": "",
+          "note": "digest: Source excerpt is empty; no source material exists to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The fraud involved no systems breach.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "with no systems breach",
+          "source_span": "",
+          "note": "digest: Source excerpt is empty; no source material exists to confirm or deny this claim."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_21edd24076e9ed8a",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A language model caught loan policy breaches human reviewers missed",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A language model caught loan policy breaches human reviewers missed",
+          "source_span": "the system successfully detected the majority of these exceptions and identified additional compliance issues that had previously been overlooked during manual reviews",
+          "note": "Source confirms the LLM-based system caught exceptions and found issues human reviewers missed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint describes a two-step prototype",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint describes a two-step prototype",
+          "source_span": "The proposed approach follows a two-step architecture.",
+          "note": "Source is an arXiv submission describing a two-step architecture prototype."
+        },
+        {
+          "schema_version": 1,
+          "claim": "extract compliance rules from policy documents into structured form",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "extract compliance rules from policy documents into structured form",
+          "source_span": "compliance-relevant rules are automatically extracted from policy documents and converted into structured, machine-readable representations",
+          "note": "Direct paraphrase of the source's description of step one."
+        },
+        {
+          "schema_version": 1,
+          "claim": "score each application against them",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "score each application against them",
+          "source_span": "loan applications are evaluated against the extracted rules to identify policy exceptions, non-compliant findings, missing information, and cases requiring manual review",
+          "note": "Legitimate compression of step two of the architecture."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Tested on 11 real corporate loans with known exceptions",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Tested on 11 real corporate loans with known exceptions",
+          "source_span": "When evaluated on 11 real loan applications with known policy exceptions",
+          "note": "Source confirms 11 real loan applications with known policy exceptions; 'corporate loans' is a supported generalisation given the paper's corporate lending context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "it caught the majority and surfaced issues human reviewers had missed",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it caught the majority and surfaced issues human reviewers had missed",
+          "source_span": "the system successfully detected the majority of these exceptions and identified additional compliance issues that had previously been overlooked during manual reviews",
+          "note": "Near-verbatim match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Manual loan-policy review was the only option; a prototype now flags exceptions human reviewers overlooked.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Manual loan-policy review was the only option; a prototype now flags exceptions human reviewers overlooked.",
+          "source_span": "Reviewing loan applications against these policies is a largely manual and knowledge-intensive process... the system successfully detected the majority of these exceptions and identified additional compliance issues that had previously been overlooked during manual reviews",
+          "note": "The editorial framing ('only option') is a slight overstatement but the embedded factual claims — manual process and prototype catching overlooked exceptions — are supported by the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_58c513853fc76164",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Run a 120-billion-parameter vision model locally on a 24GB GPU",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Run a 120-billion-parameter vision model locally on a 24GB GPU",
+          "source_span": "NVIDIA Nemotron 3.5 Super is a vision-language model... 120B-parameter hybrid Mamba-2/Transformer mixture-of-experts backbone... A compact sibling, Nemotron 3.5 Bolt, distills Super down to 74B parameters (9B active) tuned to fit a 24 GB NVIDIA GPU",
+          "note": "The 120B model is the Super variant; the one that fits a 24GB GPU is the Bolt (74B) sibling — the headline conflates them, but the source does describe a vision model family where a variant fits a 24GB GPU, making this a borderline compression; however, the headline strictly implies the 120B model fits a 24GB GPU, which the source contradicts (it is the 74B Bolt that fits 24GB, not the 120B Super)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ollama 0.40.5 ships NVIDIA's Nemotron 3.5 Super",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ollama 0.40.5 ships NVIDIA's Nemotron 3.5 Super",
+          "source_span": "Title: v0.40.5... NVIDIA Nemotron 3.5 Super",
+          "note": "Source confirms Ollama v0.40.5 release includes Nemotron 3.5 Super."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nemotron 3.5 Super is a vision-language model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a vision-language model",
+          "source_span": "NVIDIA Nemotron 3.5 Super is a vision-language model for coding, reasoning, tool use, and document understanding.",
+          "note": "Source explicitly calls it a vision-language model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nemotron 3.5 Super has 1M-token context",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "1M-token context",
+          "source_span": "supports tool calling, an on/off thinking mode, and context up to 1M tokens",
+          "note": "Source confirms context up to 1M tokens; '1M-token' is a standard abbreviation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nemotron 3.5 Super supports tool calling",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "tool calling",
+          "source_span": "supports tool calling, an on/off thinking mode, and context up to 1M tokens",
+          "note": "Source explicitly confirms tool calling support."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nemotron 3.5 Super has a switchable reasoning mode",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a switchable reasoning mode",
+          "source_span": "an on/off thinking mode",
+          "note": "On/off thinking mode is accurately paraphrased as switchable reasoning mode."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Bolt variant has 74B parameters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "74B parameters",
+          "source_span": "Nemotron 3.5 Bolt, distills Super down to 74B parameters",
+          "note": "Source confirms 74B parameters for Bolt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Bolt variant has 9B active parameters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "9B active",
+          "source_span": "74B parameters (9B active)",
+          "note": "Source confirms 9B active parameters."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Bolt variant fits a 24GB GPU",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "fits a 24GB GPU",
+          "source_span": "tuned to fit a 24 GB NVIDIA GPU",
+          "note": "Source confirms Bolt fits a 24GB NVIDIA GPU."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Bolt variant has speculative decoding built in",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "speculative decoding built in",
+          "source_span": "with speculative decoding via its included drafter",
+          "note": "Source confirms speculative decoding via an included drafter, consistent with 'built in'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The smaller Bolt variant is described as 'smaller'",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The smaller Bolt variant",
+          "source_span": "A compact sibling, Nemotron 3.5 Bolt",
+          "note": "Source calls Bolt a 'compact sibling', consistent with 'smaller'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Local agentic inference required pulling massive weights; Nemotron 3.5 Bolt fits a 24GB GPU now.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Local agentic inference required pulling massive weights; Nemotron 3.5 Bolt fits a 24GB GPU now.",
+          "source_span": "Nemotron 3.5 Bolt, distills Super down to 74B parameters (9B active) tuned to fit a 24 GB NVIDIA GPU for everyday agentic tasks",
+          "note": "The factual core — Bolt fits a 24GB GPU for agentic tasks — is confirmed by the source; the 'massive weights' framing is editorial but the checkable claim is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Both wins today came from removing assumptions baked into defaults rather than adding new components.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Both wins today came from removing assumptions baked into defaults rather than adding new components.",
+          "source_span": "Our first improvement came from selecting the right backend, without changing the model architecture... These changes preserved the model architecture, GDN equations, and core FLA kernels.",
+          "note": "synthesis: The Nubank article explicitly frames its gains as coming from fixing defaults (kernel selection, compile fixes) without changing the model architecture, supporting this editorial characterisation as factually grounded."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The practical leverage sits in kernel choices and weight-loading decisions.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "the practical leverage this week sits below the architecture layer, in kernel choices and weight-loading decisions that most teams have never audited",
+          "source_span": "",
+          "note": "synthesis: 'Weight-loading decisions' is not mentioned as a source of gains in either source excerpt; the Nubank article focuses on kernel selection and compiler integration, not weight-loading, making this specific claim unsupported."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_a98a201662f74ccf",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Nubank doubled training throughput by fixing attention kernels and compiler setup",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Nubank doubled training throughput by fixing attention kernels and compiler setup",
+          "source_span": "Squeezing ~2× MFU out of our training runs ... These improvements raise hybrid-model MFU from 21.1% to 39.3% with AdamW and from 20.2% to 39.2% with Muon.",
+          "note": "The source title says '~2× MFU' and the MFU roughly doubles (21→39%), so 'doubled throughput' is a supported approximation; attention kernels and compiler fixes are the named mechanisms."
+        },
+        {
+          "schema_version": 1,
+          "claim": "switching to cuDNN attention kernels and fixing compiler graph breaks lifted training efficiency from 21% to 39%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "switching to cuDNN attention kernels and fixing compiler graph breaks lifted training efficiency from 21% to 39% on a hybrid architecture",
+          "source_span": "These improvements raise hybrid-model MFU from 21.1% to 39.3% with AdamW ... MFU after enabling cuDNN AdamW: 21.1% → 28.6% ... Repackaging FLA Kernels for GDN ... fixing GDN compilation reduced captured graphs",
+          "note": "21.1% to 39.3% rounds cleanly to 21% to 39%; cuDNN kernels and compiler graph-break fixes are the two named mechanisms in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No single architectural change drove the gain",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "No single architectural change drove the gain",
+          "source_span": "These changes preserved the model architecture, GDN equations, and core FLA kernels ... Our first improvement came from selecting the right backend, without changing the model architecture.",
+          "note": "The source explicitly states the gains came from implementation changes, not architectural ones, consistent with this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "kernel selection alone added 7 percentage points",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "kernel selection alone added 7 percentage points",
+          "source_span": "MFU after enabling cuDNN AdamW: 21.1% → 28.6% +7.5 pp Muon: 20.2% → 27.1% +6.9 pp",
+          "note": "AdamW gained 7.5 pp and Muon gained 6.9 pp; rounding either to '7 percentage points' is a supported approximation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Audit your own training stack's kernel selection before your next experiment cycle.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Audit your own training stack's kernel selection before your next experiment cycle.",
+          "source_span": "",
+          "note": "This is a call to action / editorial recommendation, not a checkable factual assertion; it is out of scope per instructions."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Transformer training budgets assumed kernel defaults were optimal; Nubank's production run proves they rarely are.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Transformer training budgets assumed kernel defaults were optimal; Nubank's production run proves they rarely are.",
+          "source_span": "In practice, PyTorch selects the kernel through a set of backend rules, and the selected kernel is not always the fastest available. Our first step was to check which implementation was actually running.",
+          "note": "The source confirms that default kernel selection is not always optimal and that checking/changing it yielded significant gains, supporting the take's factual core."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nubank lifted training efficiency from 21% to 39%.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Nubank lifted training efficiency from 21% to 39%",
+          "source_span": "Together, these improvements raise hybrid-model MFU from 21.1% to 39.3% with AdamW and from 20.2% to 39.2% with Muon.",
+          "note": "digest: Rounding 21.1% to 21% and 39.3% to 39% is acceptable house-style approximation; the range is accurate for AdamW."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Kernel selection added 7 points alone.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "kernel selection adding 7 points alone",
+          "source_span": "MFU after enabling cuDNN AdamW: 21.1% → 28.6% +7.5 pp Muon: 20.2% → 27.1% +6.9 pp",
+          "note": "digest: Rounding +7.5 pp (AdamW) or +6.9 pp (Muon) to '7 points' is acceptable house-style approximation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Kernel choice doubled training gains.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Kernel choice doubled training gains",
+          "source_span": "",
+          "note": "digest: This is an editorial framing/pattern-naming characterisation; the source provides MFU numbers but does not frame the kernel contribution as 'doubling' gains in any checkable way."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_2d600bb678cfaee4",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A pre-trained model that resizes itself to fit any hardware budget",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A pre-trained model that resizes itself to fit any hardware budget",
+          "source_span": "a retraining-free method that elastifies pre-trained transformers into a single model that adapts on-the-fly across a continuum of computational budgets",
+          "note": "Paraphrase of the core capability; 'resizes itself to fit any hardware budget' accurately captures adapting across computational budgets."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Fixed model sizes force a hardware commitment at deployment.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Fixed model sizes force a hardware commitment at deployment.",
+          "source_span": "model families offer only a few fixed sizes (e.g., S, B, L), forcing users to commit to a model based on hardware and latency constraints",
+          "note": "Direct paraphrase of the source's description of the problem."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint converts any pre-trained transformer into one elastic checkpoint",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint converts any pre-trained transformer into one elastic checkpoint",
+          "source_span": "We introduce a retraining-free method that elastifies pre-trained transformers into a single model that adapts on-the-fly across a continuum of computational budgets",
+          "note": "The paper is hosted on Hugging Face Daily Papers and references arXiv (hf papers read 2610.20588); 'one elastic checkpoint' matches 'a single model'; supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The method trims neurons and attention heads on demand.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "trims neurons and attention heads on demand",
+          "source_span": "jointly ranking and softly pruning individual neurons and attention heads across multiple sparsity targets",
+          "note": "Accurate paraphrase of the pruning mechanism."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The method reaches 1.8× throughput at 60% sparsity",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "reaching 1.8× throughput at 60% sparsity",
+          "source_span": "At 60% sparsity, a pruned AugReg ViT-B/16 model achieves up to 1.80times higher throughput",
+          "note": "Rounding 1.80× to 1.8× is acceptable house style; figure and sparsity level match."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The method achieves under 1% accuracy loss.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with under 1% accuracy loss",
+          "source_span": "pruning DINOv3 ViT-H+/16 to 50% sparsity removes 427M parameters while reducing ImageNet-1k linear-probing accuracy by only 0.8%",
+          "note": "0.8% accuracy loss is under 1%; the generalisation is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The code is public.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The code is public",
+          "source_span": "💻 Code: https://github.com/WalterSimoncini/secretly-elastic",
+          "note": "Source explicitly links to a public GitHub repository."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The published benchmark covers accuracy and throughput across five sparsity levels.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the published benchmark covers accuracy and throughput across five sparsity levels",
+          "source_span": "",
+          "note": "The source mentions multiple sparsity targets but does not specify exactly five sparsity levels; this specific count cannot be confirmed from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inference sizing required committing to a fixed model family; one elastic checkpoint now spans the full compute range.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Inference sizing required committing to a fixed model family; one elastic checkpoint now spans the full compute range.",
+          "source_span": "model families offer only a few fixed sizes (e.g., S, B, L), forcing users to commit to a model based on hardware and latency constraints... a retraining-free method that elastifies pre-trained transformers into a single model that adapts on-the-fly across a continuum of computational budgets",
+          "note": "Both halves of the take are accurate paraphrases of the source's problem statement and proposed solution."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Three preprints and one infrastructure release are covered in this section.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Three preprints and one infrastructure release",
+          "source_span": "",
+          "note": "synthesis: The source excerpt contains two preprints (Your Transformer Is Secretly Elastic and AlphaRLM) and one infrastructure release (Private Network Gateway), totalling three items, not four; the source does not support the count of 'three preprints'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Deployment constraints that previously required human judgment or bespoke configuration are being absorbed into the model or platform layer itself.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "deployment constraints that previously required human judgment or bespoke configuration are being absorbed into the model or platform layer itself",
+          "source_span": "Each of these used to require coordinated deployment between networking, security, and admin teams, and multiple new deployments like load balancers and proxy VMs. With PNG, you configure one connection... Our key contribution is a differentiable relaxation of the functional unit-ranking problem... a retraining-free method that elastifies pre-trained transformers into a single model that adapts on-the-fly across a continuum of computational budgets.",
+          "note": "synthesis: This is an editorial generalisation accurately capturing the shared theme across the sources — complexity absorbed into the model/platform layer — and is supported by the source material."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The evidence is single-source and unreplicated.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the evidence is single-source and unreplicated",
+          "source_span": "",
+          "note": "synthesis: This is an editorial judgment about the replication status of the research that cannot be confirmed or denied from the source excerpts themselves."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e77b27d7f15326c1",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A reinforcement-learning system reads finance papers to build trading signals",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A reinforcement-learning system reads finance papers to build trading signals",
+          "source_span": "AlphaRLM, a reinforcement-learning framework that trains LLMs to construct executable symbolic factors from financial literature without input factor expressions",
+          "note": "Accurate paraphrase: 'symbolic factors' -> 'trading signals', 'financial literature' -> 'finance papers', all core facts match."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AlphaRLM is an arXiv preprint",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "AlphaRLM, an arXiv preprint",
+          "source_span": "Publisher: arXiv cs.CL",
+          "note": "Source confirms AlphaRLM is published on arXiv as a preprint."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AlphaRLM trains a language model via reinforcement learning",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "trains a language model via reinforcement learning",
+          "source_span": "AlphaRLM, a reinforcement-learning framework that trains LLMs",
+          "note": "Direct match with source description."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AlphaRLM reads financial research papers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "to read financial research papers",
+          "source_span": "construct executable symbolic factors from financial literature",
+          "note": "'Financial research papers' is a fair paraphrase of 'financial literature'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AlphaRLM constructs executable trading factors without seed expressions",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "construct executable trading factors without seed expressions",
+          "source_span": "construct executable symbolic factors from financial literature without input factor expressions",
+          "note": "'Seed expressions' is a reasonable paraphrase of 'input factor expressions'; 'trading factors' paraphrases 'symbolic factors'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Tested on CSI 300, CSI 1000, and S&P 500",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Tested on CSI 300, CSI 1000, and S&P 500",
+          "source_span": "Extensive experiments on CSI 300, CSI 1000, and S&P 500",
+          "note": "'Tested' is a natural paraphrase of 'Extensive experiments on'; markets match exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The 8-billion-parameter model beats established baselines on annualised excess return",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the 8-billion-parameter model beats established baselines on annualised excess return",
+          "source_span": "the 8B model achieves strong cross-market performance... AlphaRLM outperforms strong factor-mining and LLM-based baselines in annualized excess return",
+          "note": "'8-billion-parameter' expands '8B'; outperforms baselines on annualized excess return matches source directly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The cross-market results remain preliminary findings in a preprint, not a validated deployment framework",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The cross-market results remain preliminary findings in a preprint, not a validated deployment framework",
+          "source_span": "Submitted on 10 Oct 2026 (v1), last revised 14 Oct 2026 (this version, v2)... highlighting the promise of literature-conditioned, market-aligned factor generation",
+          "note": "The source is an arXiv preprint and uses forward-looking language ('promise'), supporting the characterisation as preliminary and not a validated deployment."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Quant factor discovery required human researchers; a trained language model now reads the literature directly",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Quant factor discovery required human researchers; a trained language model now reads the literature directly",
+          "source_span": "",
+          "note": "This is an editorial position; the source does not address the prior state of quant factor discovery requiring human researchers, so the historical claim cannot be verified from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model has 8 billion parameters.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An 8-billion-parameter model",
+          "source_span": "the 8B model achieves strong cross-market performance",
+          "note": "digest: Source explicitly references the 8B model, matching the summary's 8-billion-parameter claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model is trained via reinforcement learning.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "trained via reinforcement learning",
+          "source_span": "AlphaRLM, a reinforcement-learning framework that trains LLMs",
+          "note": "digest: Source confirms the framework uses reinforcement learning to train the model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model constructs trading factors from research papers.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "constructs trading factors from research papers",
+          "source_span": "trains LLMs to construct executable symbolic factors from financial literature",
+          "note": "digest: Source confirms factor construction from financial literature; 'research papers' is a valid plain-English paraphrase of 'financial literature'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model beats baselines on three major indices.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "beating baselines on three major indices",
+          "source_span": "Extensive experiments on CSI 300, CSI 1000, and S&P 500 show that AlphaRLM outperforms strong factor-mining and LLM-based baselines in annualized excess return.",
+          "note": "digest: Source confirms outperformance over baselines on exactly three indices (CSI 300, CSI 1000, S&P 500)."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e8f570b0ce6c55ee",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Databricks cuts the networking tax on serverless data workloads",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Databricks cuts the networking tax on serverless data workloads",
+          "source_span": "the high-friction step that remained was networking: giving serverless compute a private path to databases, applications, and systems inside their own networks",
+          "note": "'Networking tax' is a plain-English paraphrase of the high-friction, complex networking overhead described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "More than 75% of Databricks customers cited network complexity as the reason workloads stayed on classic compute.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "More than 75% of Databricks customers cited network complexity as the reason workloads stayed on classic compute.",
+          "source_span": "more than 75% said their current network configuration and the complexity of dealing with network changes was the main reason specific workloads stayed on classic compute instead of moving to serverless",
+          "note": "The figure and reason match the source exactly; 'customer interviews' context is omitted but not misrepresented."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Private Network Gateway replaces per-resource load balancers and proxy VMs with a single delegated subnet.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Private Network Gateway replaces per-resource load balancers and proxy VMs with a single delegated subnet",
+          "source_span": "Each of these used to require coordinated deployment between networking, security, and admin teams, and multiple new deployments like load balancers and proxy VMs. With PNG, you configure one connection... You delegate one subnet in your virtual network to Databricks",
+          "note": "The summary accurately paraphrases the source's description of PNG replacing per-resource load balancers and proxy VMs with one delegated subnet."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Private Network Gateway routes all serverless traffic through your existing firewall.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "routing all serverless traffic through your existing firewall",
+          "source_span": "all_traffic routes outbound traffic through your network, except anything matching a more-specific Private Link or service-endpoint path... to inspect broad egress through your own firewall",
+          "note": "The source describes an 'all_traffic' mode that routes through the user's firewall, but also a 'specific_destinations' mode; saying it routes 'all' traffic is a slight overgeneralisation but acceptable as a summary of the product's capability."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Private Network Gateway is in public preview on Azure.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Public preview on Azure",
+          "source_span": "Private Network Gateway is now available in Public Preview on Azure",
+          "note": "Exact match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Private Network Gateway is in private preview on AWS.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "AWS in private preview",
+          "source_span": "in Private Preview on AWS",
+          "note": "Exact match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Serverless networking required per-resource proxy deployments; one delegated subnet now covers everything.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Serverless networking required per-resource proxy deployments; one delegated subnet now covers everything.",
+          "source_span": "connecting often meant a separate private endpoint, load balancer, and proxy VM for each resource... You delegate one subnet in your virtual network to Databricks and PNG establishes a managed, encrypted gateway from serverless compute into that subnet.",
+          "note": "The take accurately summarises the before/after: per-resource proxy deployments replaced by one delegated subnet."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 10 stories -- factual flags present | digest-bar: digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_0ac3e2ccd4f1a47f): \"AI voice fraud cost Italy's biggest bank €95 million\"; digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_0ac3e2ccd4f1a47f): 'Fraudsters impersonating Fideuram executives used AI-generated voice or messaging to steal €95 million'; digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_0ac3e2ccd4f1a47f): 'Fraudsters used AI-generated voice to steal €95 million from Intesa Sanpaolo.'; digest bullet 2 carries a claim the verifier marked 'unverifiable' (story c_0ac3e2ccd4f1a47f): 'The fraud involved no systems breach.'; digest bullet 3 carries a claim the verifier marked 'unverifiable' (story c_a98a201662f74ccf): 'Kernel choice doubled training gains.'"
+}
