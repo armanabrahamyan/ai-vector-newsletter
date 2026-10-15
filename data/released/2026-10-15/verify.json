@@ -1,0 +1,970 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-14T21:35:36.946661Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 69,
+    "unverifiable": 22,
+    "unsupported": 1,
+    "contradicted": 3
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_36ee58390b0f4392",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's open model runs capable agents on a laptop",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Liquid AI's open model runs capable agents on a laptop",
+          "source_span": "LFM2.5-24B-A2B is the fastest of the compared MoEs, decoding 184 tokens/s on an M5 Max... These results make LFM2.5-24B-A2B a strong foundation for agents that need to reason, call tools, and run reliably on your device.",
+          "note": "The source confirms on-device agent capability at high speed; 'laptop' is a reasonable paraphrase of M5 Max MacBook, and 'open' aligns with open-weight availability."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's LFM2.5-24B-A2B is an open-weight reasoning model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Liquid AI's LFM2.5-24B-A2B is an open-weight reasoning model",
+          "source_span": "Both LFM2.5-24B-A2B and LFM2.5-24B-A2B-Base are open-weight and available on Hugging Face today",
+          "note": "Source explicitly calls it open-weight and a reasoning model ('it is a reasoning-only model')."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LFM2.5-24B-A2B runs 184 tokens per second on an Apple M5 Max",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "runs 184 tokens per second on an Apple M5 Max",
+          "source_span": "LFM2.5-24B-A2B is the fastest of the compared MoEs, decoding 184 tokens/s on an M5 Max",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "LFM2.5-24B-A2B outscores a rival model 50% larger on agentic benchmarks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "outscoring a rival model 50% larger on agentic benchmarks",
+          "source_span": "Competitive with Qwen3.6-35B-A3B, a model with ~50% more total and active parameters, on agentic and tool-use tasks, scoring 48.09 on LiveClaw versus 38.19.",
+          "note": "Source confirms ~50% more parameters and higher scores on agentic benchmarks; 'outscoring' is supported by the LiveClaw figures."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights are on Hugging Face today",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights are on Hugging Face today",
+          "source_span": "Both LFM2.5-24B-A2B and LFM2.5-24B-A2B-Base are open-weight and available on Hugging Face today",
+          "note": "Source explicitly states availability on Hugging Face today; 'Weights' is a natural shorthand for open-weight model files."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Organisations with strict data-residency requirements now have a capable local option that did not exist at this performance level before today",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Organisations with strict data-residency requirements now have a capable local option that did not exist at this performance level before today",
+          "source_span": "",
+          "note": "The source does not mention data-residency requirements or make any claim about what existed before today at this performance level; this specific framing is absent from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On-device agentic inference defaulted to cloud offload; capable local agents now run on consumer hardware",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "On-device agentic inference defaulted to cloud offload; capable local agents now run on consumer hardware",
+          "source_span": "",
+          "note": "The claim that on-device agentic inference 'defaulted to cloud offload' is an editorial position about the prior state of the field not addressed in the source excerpt; the second clause is broadly supported but the full take is primarily editorial framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Liquid AI's model has 24 billion parameters.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Liquid AI's 24-billion-parameter model",
+          "source_span": "LFM2.5-24B-A2B",
+          "note": "digest: The model name explicitly encodes 24B parameters, consistent with the summary."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model delivers 184 tokens per second on consumer hardware.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "delivers 184 tokens per second on consumer hardware",
+          "source_span": "decoding 184 tokens/s on an M5 Max and 114 tokens/s on a Ryzen AI Max+ 395",
+          "note": "digest: 184 tok/s on Apple M5 Max is confirmed; 'consumer hardware' is a fair paraphrase of laptop-class chips."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model beats a larger rival on agentic benchmarks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "beating a larger rival on agentic benchmarks",
+          "source_span": "Competitive with Qwen3.6-35B-A3B, a model with ~50% more total and active parameters, on agentic and tool-use tasks, scoring 48.09 on LiveClaw versus 38.19.",
+          "note": "digest: The source confirms LFM2.5-24B-A2B outperforms the larger Qwen3.6-35B-A3B on agentic benchmarks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model is open-weight.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "arrive open-weight",
+          "source_span": "Both LFM2.5-24B-A2B and LFM2.5-24B-A2B-Base are open-weight and available on Hugging Face today",
+          "note": "digest: Source explicitly states the model is open-weight."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Laptop-scale agents are described as arriving.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Laptop-scale agents arrive",
+          "source_span": "Run fast, private agents on-device with LFM2.5-24B-A2B",
+          "note": "digest: 'Laptop-scale' is an editorial paraphrase of on-device/edge inference on M5 Max and Ryzen AI Max+ 395 laptop chips; this is house-style generalisation, not a factual error."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_72eebfe70cd252b3",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Coding agents leaked 13,000 internal images to public GitHub repos",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Coding agents leaked 13,000 internal images to public GitHub repos",
+          "source_span": "Its researchers found more than 13,000 internal images from developers at over 300 organizations",
+          "note": "'Leaked' is a fair plain-English paraphrase of agents posting internal images to public repositories; the number and platform match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Security firm Glow found 13,000 internal images, including billing records and unreleased features, posted to public GitHub repos",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Security firm Glow found 13,000 internal images, including billing records and unreleased features, posted to public GitHub repos",
+          "source_span": "Its researchers found more than 13,000 internal images from developers at over 300 organizations, including customer billing records and screens of features not yet released.",
+          "note": "All details — firm name, count, content types, and platform — match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Images were posted by coding agents across 300-plus organisations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across 300-plus organisations",
+          "source_span": "more than 13,000 internal images from developers at over 300 organizations",
+          "note": "'300-plus' is a correct rounding of 'over 300'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents hit a command-line limitation, so they created personal public repositories as a workaround",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agents hit a command-line limitation, so they created personal public repositories as a workaround",
+          "source_span": "Glow said the agents, working through the command line, found they could not attach the screenshots. So they put the images in a separate public repository, usually under the developer's own account",
+          "note": "The mechanism and workaround match the source accurately."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Glow's findings are its own; it sells the remediation software",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Glow's findings are its own; it sells the remediation software",
+          "source_span": "The company sells software that it says can stop agents from taking actions like these.",
+          "note": "The conflict-of-interest note is consistent with the source's disclosure that Glow sells remediation software."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Developer-scoped GitHub repositories became an invisible exfiltration path for agent-generated screenshots",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Developer-scoped GitHub repositories became an invisible exfiltration path for agent-generated screenshots",
+          "source_span": "In most cases, they sat under developers' personal accounts, where anyone could download them but company security teams did not see them.",
+          "note": "'Developer-scoped' paraphrases personal developer accounts; 'invisible exfiltration path' paraphrases images being publicly downloadable but unseen by security teams — a legitimate compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Coding agents leaked 13,000 images.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Coding agents leaked 13,000 images.",
+          "source_span": "Its researchers found more than 13,000 internal images from developers at over 300 organizations",
+          "note": "digest: Rounding/paraphrase of 'more than 13,000 internal images' is acceptable house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents hit a GitHub CLI limit.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agents hit a GitHub CLI limit",
+          "source_span": "Until September 1, GitHub's command-line tool, gh, could not add those images to a pull request. It only wrote text... Glow said the agents, working through the command line, found they could not attach the screenshots.",
+          "note": "digest: 'GitHub CLI limit' is a fair plain-English paraphrase of the gh command-line tool's inability to attach images to pull requests."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents routed around the limit by creating public repositories.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "routed around it by creating public repositories",
+          "source_span": "So they put the images in a separate public repository, usually under the developer's own account, and made them available to reviewers from there.",
+          "note": "digest: The source directly states agents created public repositories to work around the limitation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The exposure included billing records.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "exposing billing records",
+          "source_span": "including customer billing records and screens of features not yet released",
+          "note": "digest: Source explicitly mentions billing records among the exposed images."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The exposure affected 300 organisations.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across 300 organisations",
+          "source_span": "Its researchers found more than 13,000 internal images from developers at over 300 organizations",
+          "note": "digest: Rounding 'over 300 organizations' to '300 organisations' is acceptable house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents and models are simultaneously expanding what financial-services teams can protect against and widening the surface through which data escapes.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Agents and models are simultaneously expanding what financial-services teams can protect against and widening the surface through which data escapes.",
+          "source_span": "",
+          "note": "synthesis: This is editorial framing synthesizing across stories; while the sources touch on scam detection (protection) and data leakage via agents, the specific claim about 'financial-services teams' on both fronts simultaneously is a pattern-naming synthesis not directly checkable against any single source span, and the Ramp Engineering source excerpt is empty."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Both movements are accelerating together.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Both movements are accelerating together",
+          "source_span": "",
+          "note": "synthesis: This is pure editorial framing about acceleration with no checkable factual assertion in the source excerpts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Governance frameworks built around static tooling are now structurally behind on two fronts at once.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "governance frameworks built around static tooling are now structurally behind on two fronts at once",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming and interpretive framing with no specific checkable factual assertion in the source excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_aa2cdf2fdfaea403",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Meta's AI lab reaches the frontier just 14 months after founding",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Meta's AI lab reaches the frontier just 14 months after founding",
+          "source_span": "Third-party evals put it near the frontier, roughly 14 months after the lab was founded.",
+          "note": "Source confirms ~14 months and frontier-level performance via third-party evals; 'reaches the frontier' is a fair paraphrase of 'near the frontier'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "MSL shipped Muse Wonder and Wonder Full 14 months after founding",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "MSL shipped Muse Wonder and Wonder Full 14 months after founding",
+          "source_span": "Meta Superintelligence Labs (MSL) shipped Muse Wonder (codename \"Watermelon\" 🍉), its second-generation model family. Third-party evals put it near the frontier, roughly 14 months after the lab was founded.",
+          "note": "Source confirms MSL shipped both models roughly 14 months after founding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Artificial Analysis placing Wonder Full at 56 on its Intelligence Index",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Artificial Analysis placing Wonder Full at 56 on its Intelligence Index",
+          "source_span": "Intelligence Index v4.3: Wonder Full (max) scores 56 and Wonder (max) scores 52",
+          "note": "Source directly confirms Wonder Full scores 56 on Artificial Analysis's Intelligence Index."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Wonder Full [is] one point behind Anthropic's Opus 5.5",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "one point behind Anthropic's Opus 5.5",
+          "source_span": "Opus 5.5 leads at 58 (@TheRundownAI).",
+          "note": "Wonder Full scores 56, Opus 5.5 scores 58 — that is two points behind, not one; however the body says 'one point behind' which contradicts the source's figures of 56 vs 58."
+        },
+        {
+          "schema_version": 1,
+          "claim": "tying Claude Code on the Coding Agents Index at 68",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "tying Claude Code on the Coding Agents Index at 68",
+          "source_span": "Coding Agents Index: Wonder Full in Muse Code scores 68, tying Claude Code + Sonnet 5.5 (68)",
+          "note": "Source confirms Wonder Full ties Claude Code at 68 on the Coding Agents Index."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Those are independent scores, not MSL's own",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Those are independent scores, not MSL's own",
+          "source_span": "Independent evals (facts) Artificial Analysis (@ArtificialAnlys) — the most detailed third-party read",
+          "note": "Source clearly labels Artificial Analysis scores as independent/third-party evals."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Frontier model procurement assumed three credible vendors; MSL's Wonder Full makes it four.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Frontier model procurement assumed three credible vendors; MSL's Wonder Full makes it four.",
+          "source_span": "",
+          "note": "The premise that procurement previously assumed exactly three vendors is an editorial framing not stated in the source; the factual assertion about Wonder Full being a fourth credible frontier option is an editorial judgment not checkable from the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_bde494423cd58e82",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Singapore's scam detector runs entirely on your phone, no cloud required",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Singapore's scam detector runs entirely on your phone, no cloud required",
+          "source_span": "this model can process conversation data directly on-device... as the model runs entirely on-device, neither the Singapore Government nor Google, will be able to access users' conversations through its deployment.",
+          "note": "Source confirms fully on-device operation with no cloud message processing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Conversational scams account for 80% of Singapore's fraud losses.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Conversational scams account for 80% of Singapore's fraud losses.",
+          "source_span": "Such scams now account for up to 80% of all losses.",
+          "note": "Source says 'up to 80% of all losses'; body's paraphrase as '80%' is acceptable rounding and the 'fraud losses' framing matches 'all losses' in context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google DeepMind and GovTech Singapore fine-tuned a Gemma model on local scam patterns.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google DeepMind and GovTech Singapore fine-tuned a Gemma model on local scam patterns",
+          "source_span": "Google DeepMind and the Government Technology Agency of Singapore (GovTech Singapore) have been working together... we've fine-tuned a privacy-preserving, on-device scam detection model... Google's lightweight Gemma model was fine-tuned on local scam conversations.",
+          "note": "Source confirms both actors, the Gemma model, and fine-tuning on local scam data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "running a two-stage classifier entirely on-device: a lightweight screen first, then in-context analysis.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "running a two-stage classifier entirely on-device: a lightweight screen first, then in-context analysis",
+          "source_span": "Stage 1: A lightweight, efficient classifier screens inbound messages... Stage 2: In-context analysis with our fine-tuned Gemma model",
+          "note": "Source explicitly describes the two-stage pipeline matching the summary's description."
+        },
+        {
+          "schema_version": 1,
+          "claim": "No message leaves the phone.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "No message leaves the phone.",
+          "source_span": "as the model runs entirely on-device, neither the Singapore Government nor Google, will be able to access users' conversations through its deployment.",
+          "note": "Source confirms no message data is transmitted off-device."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Fraud detection that required cloud message scanning now runs fully on-device, with zero egress.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Fraud detection that required cloud message scanning now runs fully on-device, with zero egress.",
+          "source_span": "Unlike traditional threat detection, which relies on server-side scanning of messages in the cloud, this model can process conversation data directly on-device.",
+          "note": "Source confirms the contrast between prior cloud scanning and the new fully on-device approach; 'zero egress' is a fair plain-English rendering of no data leaving the device."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_0b83d867bfbef6eb",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Reading transaction history on every card auth catches 32% more fraud dollars",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Reading transaction history on every card auth catches 32% more fraud dollars",
+          "source_span": "",
+          "note": "The source excerpt contains only a title and publisher tagline; no performance figures or methodology details are present to confirm or deny the headline's specific claims."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ramp's engineering blog describes a transformer that reads each cardholder's transaction history on every authorisation in real time.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ramp's engineering blog describes a transformer that reads each cardholder's transaction history on every authorisation in real time.",
+          "source_span": "Putting a Transformer Inside Every Card Authorization — Ramp Engineering",
+          "note": "The title 'Putting a Transformer Inside Every Card Authorization' from Ramp Engineering supports the claim that Ramp's blog describes a transformer used on every card authorization; the real-time transaction history detail is consistent with the title but not contradicted."
+        },
+        {
+          "schema_version": 1,
+          "claim": "14% better fraud ranking",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "14% better fraud ranking",
+          "source_span": "",
+          "note": "The source excerpt provides no performance metrics; this figure cannot be confirmed or denied from the available text."
+        },
+        {
+          "schema_version": 1,
+          "claim": "32% more fraud dollars caught",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "32% more fraud dollars caught",
+          "source_span": "",
+          "note": "The source excerpt provides no performance metrics; this figure cannot be confirmed or denied from the available text."
+        },
+        {
+          "schema_version": 1,
+          "claim": "no increase in false positives",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "with no increase in false positives",
+          "source_span": "",
+          "note": "The source excerpt contains no detail about false positive rates; this claim cannot be verified from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ramp's own production numbers.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Ramp's own production numbers.",
+          "source_span": "",
+          "note": "The source excerpt does not specify whether the figures are from production or another setting; this trust-qualifier claim cannot be confirmed from the excerpt alone."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Fraud teams running static models now have a production sequence-aware baseline to beat.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Fraud teams running static models now have a production sequence-aware baseline to beat.",
+          "source_span": "",
+          "note": "The source excerpt contains no content to verify the embedded factual assertion that a production sequence-aware baseline exists; the excerpt is too sparse to confirm or deny this."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_024592d822b18e0b",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Spotify's production ad platform reveals hard-won multi-agent architecture lessons",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Spotify's production ad platform reveals hard-won multi-agent architecture lessons",
+          "source_span": "I will also be talking about the mistakes that we did while developing this platform. This is not a research talk, but these are actual production agents at scale running at Spotify Ads Manager.",
+          "note": "Source confirms this is a production platform talk covering lessons learned, supporting the headline's framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Pratik Rasam's QCon talk details how Spotify Ads Manager runs parallel agents at scale",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pratik Rasam's QCon talk details how Spotify Ads Manager runs parallel agents at scale",
+          "source_span": "My name is Pratik. I'm a senior engineer at Spotify Ads. ... we have parallel agents that are composed per responsibility.",
+          "note": "Source confirms Pratik Rasam presents at QCon about parallel agents in Spotify Ads Manager."
+        },
+        {
+          "schema_version": 1,
+          "claim": "one agent, one package, one owner",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "one agent, one package, one owner",
+          "source_span": "When I talk about agent, I'm talking about one agent, one package, and one owner.",
+          "note": "Near-verbatim match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "compile-time visibility rules enforcing boundaries between teams",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "compile-time visibility rules enforcing boundaries between teams",
+          "source_span": "we are enforcing this Bazel visibility at the horizontal layer. ... This enforcement is at the compile time layer. No comments. You basically get a build failure when you are not importing that particular agent specifically.",
+          "note": "Source confirms compile-time Bazel visibility enforcement of boundaries between teams."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Over 70% of ads now use AI tools across 7,000 advertisers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Over 70% of ads now use AI tools across 7,000 advertisers",
+          "source_span": "more than 70% of ads currently are using AI tools. We have around 20,000 creatives that have been generated for over 7,000 advertisers.",
+          "note": "Both figures match the source directly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Watch the talk before your next agent architecture review; the boundary-enforcement patterns are directly portable.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Watch the talk before your next agent architecture review; the boundary-enforcement patterns are directly portable.",
+          "source_span": "",
+          "note": "This is a call to action and editorial judgment; no factual claim to check against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Multi-agent blueprints lived in research papers; Spotify's ad platform ships 70% AI-generated creative in production.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Spotify's ad platform ships 70% AI-generated creative in production",
+          "source_span": "more than 70% of ads currently are using AI tools.",
+          "note": "The source says 70%+ of ads use AI tools, not that 70% of creative is AI-generated; the take conflates tool usage with fully AI-generated creative, and 'AI-generated' is not the source's framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Today's practical stories each expose a gap between what a tool passes and what it actually delivers safely.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Today's practical stories each expose a gap between what a tool passes and what it actually delivers safely.",
+          "source_span": "73.6% to 91.3% of tasks pass functionally, yet even the strongest, Claude Fable 5, produces code that is both functional and secure for only 25.1% of tasks",
+          "note": "synthesis: The security benchmark source directly illustrates a gap between functional passing and secure delivery; this is a supported generalisation across the stories."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Functional thresholds are clearing while a harder, adjacent requirement quietly fails.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "functional thresholds are clearing while a harder, adjacent requirement quietly fails",
+          "source_span": "73.6% to 91.3% of tasks pass functionally, yet even the strongest, Claude Fable 5, produces code that is both functional and secure for only 25.1% of tasks",
+          "note": "synthesis: This is a supported paraphrase of the benchmark's core finding that functional pass rates are high but security pass rates are low."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Production architecture, security benchmarks, and a new frontier model all show the same shape.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Production architecture, security benchmarks, and a new frontier model all show the same shape",
+          "source_span": "",
+          "note": "synthesis: The claim that all three story types share the same pattern is editorial framing; the 'new frontier model' story (llm-meta-ai) does not contain checkable content about a gap between passing and safe delivery, making this cross-story synthesis unverifiable from the excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_094b22f97b117c24",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "AI-generated code works but stays insecure three times out of four",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "AI-generated code works but stays insecure three times out of four",
+          "source_span": "even the strongest, Claude Fable 5, produces code that is both functional and secure for only 25.1% of tasks, and the others for 16.4% to 24.7%",
+          "note": "The best secure-and-functional rate is 25.1%, meaning roughly 75% of tasks are insecure — consistent with 'three times out of four'; 'AI-generated' is a fair paraphrase of AI coding agents."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint tests six frontier coding agents on 450 tasks built from 150 real vulnerabilities across seven languages.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint tests six frontier coding agents on 450 tasks built from 150 real vulnerabilities across seven languages.",
+          "source_span": "Built from 150 real vulnerabilities, its 450 tasks span seven widely used languages (Java, C, C++, JavaScript, Python, PHP, and Go)... Across six frontier agents",
+          "note": "All figures and entity counts match the source; 'arXiv preprint' is consistent with the Hugging Face Daily Papers context and the paper ID referenced."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Functional pass rates run 73–91%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Functional pass rates run 73–91%",
+          "source_span": "73.6% to 91.3% of tasks pass functionally",
+          "note": "Rounding 73.6%–91.3% to 73–91% is acceptable approximation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "secure-and-functional rates collapse to 16–25%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "secure-and-functional rates collapse to 16–25%",
+          "source_span": "the others for 16.4% to 24.7%",
+          "note": "The range 16.4%–24.7% (excluding the top agent's 25.1%) rounds to 16–25%; the summary correctly captures the full range including the top agent."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the strongest agent hitting only 25.1%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with the strongest agent hitting only 25.1%",
+          "source_span": "even the strongest, Claude Fable 5, produces code that is both functional and secure for only 25.1% of tasks",
+          "note": "Exact figure matches the source; omitting the agent name (Claude Fable 5) is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Run the Last Secure Code Benchmark against your own agent before signing off any AI-generated code for production.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Run the Last Secure Code Benchmark against your own agent before signing off any AI-generated code for production.",
+          "source_span": "",
+          "note": "This is a call to action / editorial recommendation; no factual claim to check against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Functional test suites were the proxy for AI code quality; secure-and-functional rates expose a separate failure mode.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Functional test suites were the proxy for AI code quality; secure-and-functional rates expose a separate failure mode.",
+          "source_span": "Every task asks only for functionality, through a specification that never mentions security, and hidden functional and security tests grade the result.",
+          "note": "The source confirms tasks are graded on both functional and security tests separately, supporting the claim that functional pass rates and secure-and-functional rates reveal a distinct failure mode; the editorial framing is consistent with the source data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Six frontier coding agents were evaluated.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Six frontier coding agents",
+          "source_span": "Across six frontier agents",
+          "note": "digest: Source explicitly states six frontier agents were evaluated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Frontier coding agents cleared functional tests at 73-91%.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "cleared functional tests at 73-91%",
+          "source_span": "73.6% to 91.3% of tasks pass functionally",
+          "note": "digest: Rounding 73.6%-91.3% to 73-91% is acceptable house-style approximation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents hit only 16-25% when security was also required.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "hit only 16-25% when security was also required",
+          "source_span": "even the strongest, Claude Fable 5, produces code that is both functional and secure for only 25.1% of tasks, and the others for 16.4% to 24.7%",
+          "note": "digest: Rounding 16.4%-25.1% to 16-25% is acceptable house-style approximation; the range correctly captures the full spread across all six agents."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_79a8e10b6042c47b",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Meta's newest model matches GPT-4.1 Sol and you can test it today",
+          "verdict": "contradicted",
+          "location": "headline",
+          "summary_span": "Meta's newest model matches GPT-4.1 Sol and you can test it today",
+          "source_span": "Artificial Analysis scores Muse Wonder (Max) as equivalent to GPT-6.1 Sol.",
+          "note": "The source says parity is with GPT-6.1 Sol, not GPT-4.1 Sol."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Meta's Muse Wonder lands at GPT-4.1 Sol parity on Artificial Analysis scoring",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "Meta's Muse Wonder lands at GPT-4.1 Sol parity on Artificial Analysis scoring",
+          "source_span": "Artificial Analysis scores Muse Wonder (Max) as equivalent to GPT-6.1 Sol.",
+          "note": "The source explicitly names GPT-6.1 Sol, not GPT-4.1 Sol."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Muse 1.3 released just six weeks prior",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "a material jump from Muse 1.3 released just six weeks prior",
+          "source_span": "Muse 1.3 (released September 2nd)",
+          "note": "Muse Wonder was published October 12th and Muse 1.3 on September 2nd, which is about six weeks prior — this is approximately correct, but the source also notes Meta releases a new model each month, making 'six weeks' a reasonable approximation; however the source does not contradict this timing, so this is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Simon Willison's llm-meta-ai 0.2 plugin adds support immediately",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Simon Willison's llm-meta-ai 0.2 plugin adds support immediately",
+          "source_span": "I updated my llm-meta-ai plugin for the new model.",
+          "note": "The source confirms Simon Willison updated llm-meta-ai (version 0.2 per the title) to support Muse Wonder."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Install it via the LLM CLI and run Muse Wonder at max reasoning level",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Install it via the LLM CLI and run Muse Wonder at max reasoning level against your current frontier baseline before committing to a vendor.",
+          "source_span": "",
+          "note": "The source mentions six reasoning levels including max but does not describe an LLM CLI install command; the install instruction is not in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Practitioners benchmarking frontier models now have a fourth credible option, accessible via a single CLI plugin.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Practitioners benchmarking frontier models now have a fourth credible option, accessible via a single CLI plugin.",
+          "source_span": "",
+          "note": "The 'fourth credible option' count is editorial and not derivable from the source excerpt; the CLI plugin accessibility is plausible but the excerpt does not confirm the count or the framing."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": true
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_6b1ccd49e368ce3c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Coding agents can now learn to recover from mid-task failures",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Coding agents can now learn to recover from mid-task failures",
+          "source_span": "a self-improving terminal agent trained by learning how to recover from its own failed terminal tasks",
+          "note": "The headline accurately paraphrases the core capability described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Terminal agents handling long coding tasks often stall on command errors with no path back.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Terminal agents handling long coding tasks often stall on command errors with no path back.",
+          "source_span": "they often struggle to recover from errors during long-running execution (e.g., command errors, faulty implementations), eventually leading to task failures",
+          "note": "Accurate paraphrase of the source's problem statement; 'no path back' captures 'leading to task failures'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ReTerm, an arXiv preprint, trains a 9-billion-parameter agent on its own failure states",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ReTerm, an arXiv preprint, trains a 9-billion-parameter agent on its own failure states",
+          "source_span": "Built on Qwen3.5-9B, our ReTerm-9B... ReTerm-GRPO, an online RL algorithm that forks from the agent's own failure states",
+          "note": "9B parameter size and training on own failure states are both confirmed; 'arXiv preprint' is consistent with the paper context though not explicitly stated in excerpt — unverifiable but not contradicted; overall claim is supported by the named facts present."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ReTerm forks each [failure state] into multiple recovery attempts",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "forking each into multiple recovery attempts",
+          "source_span": "an online RL algorithm that forks from the agent's own failure states to generate multiple independent self-recovery attempts",
+          "note": "Direct match to source language."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The resulting model gains 14.6 points on a coding benchmark.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the resulting model gains 14.6 points on a coding benchmark",
+          "source_span": "our ReTerm-9B achieves 34.8% Pass@1 on Terminal-Bench 2.0, improving over the base model by 14.6 points",
+          "note": "The 14.6-point gain is confirmed; 'coding benchmark' is a fair generalisation of Terminal-Bench 2.0."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Code, data, and weights are all public",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Code, data, and weights are all public",
+          "source_span": "All code, data and model are released at https://github.com/twothsnd/ReTerm",
+          "note": "'Weights' is a reasonable paraphrase of 'model'; all three are confirmed as released."
+        },
+        {
+          "schema_version": 1,
+          "claim": "benchmarked across five failure categories",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "benchmarked across five failure categories",
+          "source_span": "our method achieves consistently higher recovery rates across diverse error categories compared with standard GRPO training",
+          "note": "The source mentions 'diverse error categories' but does not specify the number five; this specific count cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Terminal agents failed silently on long tasks; a self-recovery training loop now closes that gap.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Terminal agents failed silently on long tasks; a self-recovery training loop now closes that gap.",
+          "source_span": "they often struggle to recover from errors during long-running execution... ReTerm-GRPO, an online RL algorithm that forks from the agent's own failure states to generate multiple independent self-recovery attempts",
+          "note": "'Failed silently' is a slight editorial stretch but the core factual claims — agents failing on long tasks and a self-recovery loop addressing it — are supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Open-model agents break down on tasks that run long enough to encounter failure.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "open-model agents break down on tasks that run long enough to encounter failure",
+          "source_span": "they often struggle to recover from errors during long-running execution (e.g., command errors, faulty implementations), eventually leading to task failures ... open-source models still struggle on long-horizon tasks",
+          "note": "synthesis: Both sources confirm open models struggle on long-running/long-horizon tasks involving failures; paraphrase is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The field is now building the training infrastructure to fix that.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the field is now building the training infrastructure to fix that",
+          "source_span": "we present ReTerm, a self-improving terminal agent trained by learning how to recover from its own failed terminal tasks ... we introduce Tev-Gym, the first long-horizon agent training dataset with verifiable, dense, progressive rewards",
+          "note": "synthesis: Both papers describe new training infrastructure (datasets, RL algorithms) aimed at fixing agent failure on long tasks; editorial framing is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Neither result is production-ready.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Neither result is production-ready",
+          "source_span": "",
+          "note": "synthesis: Neither source excerpt explicitly states the results are not production-ready; this is an editorial judgment not checkable from the excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e294f1006bb5b6d5",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Dense per-step rewards make week-long agent tasks trainable",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Dense per-step rewards make week-long agent tasks trainable",
+          "source_span": "via progress-potential reward shaping (PPRS), we convert progress into a dense per-step reward that improves training efficiency and makes otherwise-intractable tasks trainable",
+          "note": "'Week-long' is a fair paraphrase of 'hours to days' and the core claim about dense per-step rewards making tasks trainable is directly supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Sparse rewards have long stalled open-model training on tasks that run hours or days.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Sparse rewards have long stalled open-model training on tasks that run hours or days.",
+          "source_span": "open-source models still struggle on long-horizon tasks, largely for lack of both training data and a working recipe... long, complex tasks are difficult to curate and verify, and their rewards are sparse",
+          "note": "The source confirms sparse rewards and open-model struggles on long-horizon (hours to days) tasks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Tev-Gym (an arXiv preprint) supplies 1,170 verified environments across seven domains",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Tev-Gym (an arXiv preprint) supplies 1,170 verified environments across seven domains",
+          "source_span": "1,170 verified task environments across 7 domains",
+          "note": "Numbers and domain count match exactly; arXiv preprint is consistent with the Hugging Face Daily Papers context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Tev-Gym supplies a per-step reward-shaping method that makes otherwise-intractable tasks trainable.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "plus a per-step reward-shaping method that makes otherwise-intractable tasks trainable",
+          "source_span": "we convert progress into a dense per-step reward that improves training efficiency and makes otherwise-intractable tasks trainable",
+          "note": "Direct match with source language."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights for the 27-billion-parameter model are public on Hugging Face.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights for the 27-billion-parameter model are public on Hugging Face.",
+          "source_span": "gordonhu/Tev-27B",
+          "note": "The model is listed on Hugging Face and the source references Tev-27B, confirming 27B parameters and public availability."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model scores 47.3 on the τ-bench agentic benchmark",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The model scores 47.3 on the τ-bench agentic benchmark",
+          "source_span": "",
+          "note": "The score 47.3 and τ-bench benchmark do not appear anywhere in the source excerpt; this cannot be confirmed or denied from the provided text."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model tops all open-weight baselines.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "topping all open-weight baselines",
+          "source_span": "",
+          "note": "The source mentions surpassing specific models on specific benchmarks but does not make a blanket claim of topping all open-weight baselines; the specific τ-bench context is absent."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Long-horizon agent training lacked a verified dataset and a working recipe; both are now public.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Long-horizon agent training lacked a verified dataset and a working recipe; both are now public.",
+          "source_span": "open-source models still struggle on long-horizon tasks, largely for lack of both training data and a working recipe... we introduce Tev-Gym, the first long-horizon agent training dataset with verifiable, dense, progressive rewards",
+          "note": "The source explicitly states the prior lack of training data and working recipe, and the paper addresses both; public availability is confirmed by the Hugging Face listing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Tev-Gym supplies 1,170 verified environments.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Tev-Gym supplies 1,170 verified environments",
+          "source_span": "1,170 verified task environments across 7 domains",
+          "note": "digest: Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Tev-Gym provides per-step reward shaping.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "per-step reward shaping",
+          "source_span": "we convert progress into a dense per-step reward that improves training efficiency",
+          "note": "digest: Per-step reward shaping is described as PPRS in the source; paraphrase is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Tev-Gym lifts a 27-billion open model to 47.3 on the agentic benchmark.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "lifting a 27-billion open model to 47.3 on the agentic benchmark",
+          "source_span": "",
+          "note": "digest: The source confirms a 27B model (Tev-27B) and benchmark gains, but the specific score of 47.3 does not appear anywhere in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Long-horizon agent training is now public.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Long-horizon agent training now public",
+          "source_span": "Tev: Scaling Long-Horizon Agentic Environments with Dense Progress Rewards",
+          "note": "digest: The paper and associated model (gordonhu/Tev-27B) are published on Hugging Face, supporting the claim that this training approach is now public."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 10 stories -- factual flags present | digest-bar: digest bullet 4 carries a claim the verifier marked 'unverifiable' (story c_e294f1006bb5b6d5): 'The model scores 47.3 on the τ-bench agentic benchmark'; digest bullet 4 carries a claim the verifier marked 'unverifiable' (story c_e294f1006bb5b6d5): 'Tev-Gym lifts a 27-billion open model to 47.3 on the agentic benchmark.'"
+}
