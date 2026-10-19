@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 74 &middot; 19 October 2026</title>
+<meta name="description" content="Own and fine-tune a 501B open frontier model without vendor lock-in. Issue No. 74 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 74 &middot; 19 Oct &middot; 3 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>Open frontier model, full stack.</strong> <span>Reflection AI&#39;s 501B mixture-of-experts model ships weights, fine-tuning recipes, and a Rust inference harness under Apache 2.0.</span></p>
+    <p><strong>Automated red-teaming finds monitor gaps.</strong> <span>Redwood&#39;s pipeline ran 252 transcript edits across 94 samples and found six attacks that slipped past a frontier monitor.</span></p>
+    <p><strong>Universal inference parser ships now.</strong> <span>vLLM v0.32.0 replaces per-model parser forks with a universal template reader, lifting throughput 43-85% on short inputs.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>Own and fine-tune a 501B open frontier model without vendor lock-in</h1>
+  <p class="takeaway">Teams building on frontier-scale open weights previously had no RL and fine-tuning recipes on day one.</p>
+  <p class="dek">Beam is a 501-billion-parameter mixture-of-experts model for coding and agentic work; only 23 billion parameters activate per token, so it runs at roughly the speed of a much smaller model. Weights, fine-tuning recipes, and a Rust-based inference harness are public under Apache 2.0. The FP8 checkpoint is available now for teams ready to move on infrastructure.</p>
+  <div class="story-meta">
+    <a class="src" href="https://huggingface.co/blog/reflection-beam" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Three of today&#39;s four stories share a structural move: something previously assumed to be a permanent constraint turns out to be a soluble engineering problem. The outlier, on open-weight supply-chain risk, runs the opposite direction, and that asymmetry is worth holding.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Four AI agents cut bank earnings season to espresso time</h3>
+    <p class="takeaway">Bank earnings analysis ran on analyst hours; a four-agent workflow now delivers it in minutes.</p>
+    <p class="dek">Marc Rubinstein describes four named agents parsing 250-plus pages and eight hours of calls from the six largest US banks last quarter. One agent delivers a five-page report in the time it takes to brew an espresso. When earnings season compresses analyst time this sharply, which parts of your process still require a human?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.netinterest.co/p/me-and-my-agents" target="_blank" rel="noreferrer">netinterest.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Agents may have cracked AI&#39;s hardest interpretability problem</h3>
+    <p class="takeaway">Interpretability research assumed tangled weights were permanent; one essay challenges that baseline.</p>
+    <p class="dek">Nick Cammarata at Goodfire argues in a new essay that polysemanticity, the &#39;tangled weights&#39; problem blocking neural-network interpretability, largely dissolves under agentic analysis. The claim is a single researcher&#39;s working theory, with no accompanying paper or replication. If it holds, the field&#39;s core assumption about weight entanglement needs revisiting. Does your interpretability roadmap treat superposition as a fixed constraint?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.latent.space/p/ainews-agents-disprove-polysemanticity" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Edited open-model weights can carry silent backdoors undetected</h3>
+    <p class="takeaway">Open-weight model vetting assumed weight editing was a safety concern, not a supply-chain one.</p>
+    <p class="dek">Abliteration — subtracting the refusal direction from a model&#39;s weights — is now routine on Hugging Face, and Schneier flags it as a supply-chain backdoor vector. Any fine-tuned, merged, or abliterated build can carry silent malicious edits. If your model-risk process doesn&#39;t include cryptographic weight verification, who in your org actually owns that check?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://www.schneier.com/blog/archives/2026/10/backdooring-open-weight-ai-models.html" target="_blank" rel="noreferrer">schneier.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Redwood Research automates the search for gaps in agent safety monitors</h3>
+    <p class="takeaway">Agent monitor red-teaming shifted from expert hours to an automated transcript-editing loop.</p>
+    <p class="dek">Monitors that watch AI agents for harmful behaviour can be fooled, and finding those gaps manually takes 2-3 hours per attack. Redwood&#39;s Screwtape pipeline edits real transcripts iteratively until a monitor fails; 252 runs on 94 transcripts found six confirmed attacks that evaded a frontier developer&#39;s monitor. Before your team certifies a monitor, who owns the red-teaming decision?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://blog.redwoodresearch.org/p/screwtape-adversarial-transcript" target="_blank" rel="noreferrer">blog.redwoodresearch.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Each story today removes a layer that previously required specialist custody: a proprietary API, a per-model parser, a closed agent harness, a human with a disassembler. The practical question for this week is which of your current workflows still assumes that custody is unavoidable.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Vercel adds a free open reasoning model for agentic coding</h3>
+    <p class="takeaway">Frontier-scale open reasoning models required self-hosting or a paid API; Beam lands managed and free.</p>
+    <p class="dek">Reflection AI&#39;s Beam is live on Vercel AI Gateway, free during launch, weights under Apache 2.0. The mixture-of-experts model activates only 23B of its 501B parameters per token for low latency. It supports tool-calling, structured outputs, and a 1M-token context window. Point Claude Code or Cursor at <code>reflection/beam</code> via the Vercel CLI now.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://vercel.com/changelog/reflection-ai-beam-now-available-on-ai-gateway-for-free" target="_blank" rel="noreferrer">vercel.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>vLLM now routes structured decisions without model-specific glue code</h3>
+    <p class="takeaway">Inference engineers maintaining per-model parser forks now inherit a universal one from the checkpoint itself.</p>
+    <p class="dek">vLLM v0.32.0 ships a /v1/systemone endpoint for structured choice, score, and null questions, plus a universal tool and reasoning parser that reads each model&#39;s own response template, eliminating bespoke per-model code. Multiple connection handling delivers 43-85% more requests per second on short inputs. Upgrade and retire your parser forks before the next model onboarding.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/vllm-project/vllm/releases/tag/v0.32.0" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Alibaba open-sources a computer-use agent stack that cuts task steps in half</h3>
+    <p class="takeaway">Computer-use agent internals were proprietary; builders now have a fully open reference stack to inspect and extend.</p>
+    <p class="dek">Frontier computer-use agents have stayed closed, blocking systematic study. OpenGCUA, from Alibaba&#39;s MAI-UI team, publishes the full stack: harness design, prompts, evaluation trajectories across eight models, a macOS real-device harness, and a cross-device SDK. On OSWorld-v2, mean task score rose 19.6 points while steps per task fell 53%. Clone the GitHub repo and run it against your automation baseline.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/papers/2610.22200" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Claude Code can now reverse-engineer compiled binaries using open-source tools</h3>
+    <p class="takeaway">Binary analysis required a human expert with a disassembler; agents can now run that loop autonomously.</p>
+    <p class="dek">REA (MIT-licensed, 200K GitHub stars) connects Claude Code and Codex to Ghidra, Hopper, and IDA via Model Context Protocol servers, letting agents query disassemblers, trace function calls, and test hypotheses against a binary. One showcase reconstructed a sound-panning function matching all 3,205 original x86 test cases. Star it and run it against a binary you&#39;ve been avoiding.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.infoq.com/news/2026/10/reverse-engineer-anything/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">1 item</span></div>
+  </div>
+  <article class="measure stack">
+    <h3>Halve agent serving costs by letting a small model do the drafting</h3>
+    <p class="takeaway">Agent serving assumed one large model decoding every step; SpecAgent&#39;s reviewer pattern halves that decoding load.</p>
+    <p class="dek">SpecAgent (an arXiv preprint, code public on GitHub) splits agent work: a small model drafts tool-use steps and runs read-only calls, while a large model reviews the whole segment in one parallel pass. On τ²-Bench, it matches the large model&#39;s success rate at 41–54% of its wall time. The preprint and code are public on GitHub today.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://huggingface.co/papers/2610.21463" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

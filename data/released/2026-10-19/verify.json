@@ -1,0 +1,853 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-18T21:31:07.696701Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 65,
+    "unverifiable": 15,
+    "contradicted": 1,
+    "unsupported": 1
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_d3c1dbe5bfb3022e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Own and fine-tune a 501B open frontier model without vendor lock-in",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Own and fine-tune a 501B open frontier model without vendor lock-in",
+          "source_span": "Beam is a 501B open model you can own, customize, and scale... Apache 2.0... for teams that want a frontier-scale model on their own hardware, infrastructure, or cloud, and want to customize it to their own use cases.",
+          "note": "Source confirms 501B, open, ownable/customizable on own infrastructure, Apache 2.0 — 'without vendor lock-in' is a fair paraphrase of running on own hardware with open weights."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam is a 501-billion-parameter mixture-of-experts model for coding and agentic work",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Beam is a 501-billion-parameter mixture-of-experts model for coding and agentic work",
+          "source_span": "501B-parameter MoEs LLM... Beam is focused on coding and agentic use cases.",
+          "note": "Source directly confirms all three facts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "only 23 billion parameters activate per token",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "only 23 billion parameters activate per token",
+          "source_span": "Only 8 experts run per token, so the model computes each token with about 23B parameters.",
+          "note": "Source confirms ~23B active parameters per token."
+        },
+        {
+          "schema_version": 1,
+          "claim": "it runs at roughly the speed of a much smaller model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it runs at roughly the speed of a much smaller model",
+          "source_span": "it runs at the speed of a much smaller model while keeping the capacity of a large one",
+          "note": "Near-verbatim match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights, fine-tuning recipes, and a Rust-based inference harness are public under Apache 2.0",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights, fine-tuning recipes, and a Rust-based inference harness are public under Apache 2.0",
+          "source_span": "Ships with a Rust-based custom harness... Apache 2.0... inference, SFT (supervised fine tuning), and RL (reinforcement learning) recipes",
+          "note": "Source confirms all three components and Apache 2.0 licence."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The FP8 checkpoint is available now for teams ready to move on infrastructure",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The FP8 checkpoint is available now for teams ready to move on infrastructure",
+          "source_span": "There are also FP8 checkpoints on the hub which are ideal for Hopper and Ampere series chips.",
+          "note": "Source confirms FP8 checkpoints exist on the hub; 'available now' is a fair reading of their presence; editorial tail about 'teams ready to move' is not a factual claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Teams building on frontier-scale open weights previously had no RL and fine-tuning recipes on day one.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Teams building on frontier-scale open weights previously had no RL and fine-tuning recipes on day one.",
+          "source_span": "",
+          "note": "The source describes Beam's day-0 RL and fine-tuning recipes but makes no comparative claim about what other frontier open-weight models previously lacked; this historical comparison cannot be verified from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Reflection AI's model is a 501B mixture-of-experts model.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Reflection AI's 501B mixture-of-experts model",
+          "source_span": "TL;DR - 501B-parameter MoEs LLM with 23B active per token.",
+          "note": "digest: 'Reflection AI' is a paraphrase of 'Reflection' (the team named in the source), and 501B MoE is directly confirmed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model ships weights under Apache 2.0.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ships weights, fine-tuning recipes, and a Rust inference harness under Apache 2.0",
+          "source_span": "Apache 2.0.",
+          "note": "digest: Apache 2.0 licence is explicitly stated in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model ships fine-tuning recipes.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "fine-tuning recipes",
+          "source_span": "We've worked with the Reflection team to bring you inference, SFT (supervised fine tuning), and RL (reinforcement learning) recipes for you to build with this model for your needs.",
+          "note": "digest: SFT and RL recipes are explicitly mentioned in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The model ships a Rust inference harness.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a Rust inference harness",
+          "source_span": "Ships with a Rust-based custom harness.",
+          "note": "digest: The source confirms a Rust-based custom harness ships with the model."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_bcfb51692aa30298",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Four AI agents cut bank earnings season to espresso time",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Four AI agents cut bank earnings season to espresso time",
+          "source_span": "I've trained four AI agents to parse earnings materials... delivering a five-page report and a two-page brief in the time it takes me to brew an espresso.",
+          "note": "Source confirms four agents and the espresso-time delivery; 'cut bank earnings season to espresso time' is a fair compression of the described workflow."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Marc Rubinstein describes four named agents parsing 250-plus pages and eight hours of calls from the six largest US banks last quarter.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Marc Rubinstein describes four named agents parsing 250-plus pages and eight hours of calls from the six largest US banks last quarter.",
+          "source_span": "the six largest US banks reported third-quarter earnings. Collectively, they poured over 250 pages of financial information into the market and hosted over eight hours of calls to explain it... I've trained four AI agents to parse earnings materials",
+          "note": "All details — author, agent count, page count, call hours, bank count, and quarter — are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "One agent delivers a five-page report in the time it takes to brew an espresso.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "One agent delivers a five-page report in the time it takes to brew an espresso.",
+          "source_span": "Ernie incorporates it, delivering a five-page report and a two-page brief in the time it takes me to brew an espresso.",
+          "note": "Source confirms the five-page report and espresso-time delivery; omitting the two-page brief is an acceptable omission, not a false assertion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Bank earnings analysis ran on analyst hours; a four-agent workflow now delivers it in minutes.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Bank earnings analysis ran on analyst hours; a four-agent workflow now delivers it in minutes.",
+          "source_span": "the period – which kicked off this week in the banks sector – meant early starts and late nights... I've trained four AI agents to parse earnings materials... delivering a five-page report and a two-page brief in the time it takes me to brew an espresso.",
+          "note": "'Analyst hours' fairly paraphrases the described early starts and late nights; 'minutes' is a reasonable compression of espresso-brew time, and four agents is confirmed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Three of today's four stories share a structural move: something previously assumed to be a permanent constraint turns out to be a soluble engineering problem.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Three of today's four stories share a structural move: something previously assumed to be a permanent constraint turns out to be a soluble engineering problem.",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming across four stories; the source excerpts do not confirm or deny this framing, and the fourth story is not provided, making the count and pattern unverifiable from the excerpts alone."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The outlier story is on open-weight supply-chain risk.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The outlier, on open-weight supply-chain risk",
+          "source_span": "",
+          "note": "synthesis: None of the three provided source excerpts is explicitly framed as being about open-weight supply-chain risk; the fourth story referenced is not included in the source excerpts, making this unverifiable."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The outlier runs the opposite direction to the other three stories.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "runs the opposite direction",
+          "source_span": "",
+          "note": "synthesis: Pure editorial framing comparing story directions; cannot be confirmed or denied from the provided source excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_7db446cff5b084c3",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Agents may have cracked AI's hardest interpretability problem",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Agents may have cracked AI's hardest interpretability problem",
+          "source_span": "Nick Cammarata at Goodfire has an important essay out stating his working theory that 'Neural Networks Are Already Clean' — showing that many known cases of polysemanticity and superposition - causing tangled 'knots' of weights that resist human interpretation - simply fall to further agentic analysis",
+          "note": "The source supports the claim that agentic analysis dissolves polysemanticity/interpretability problems; 'may have cracked' is an appropriate hedge matching the source's framing of a working theory."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nick Cammarata at Goodfire argues in a new essay that polysemanticity, the 'tangled weights' problem blocking neural-network interpretability, largely dissolves under agentic analysis.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Nick Cammarata at Goodfire argues in a new essay that polysemanticity, the 'tangled weights' problem blocking neural-network interpretability, largely dissolves under agentic analysis.",
+          "source_span": "Nick Cammarata at Goodfire has an important essay out stating his working theory that 'Neural Networks Are Already Clean' — showing that many known cases of polysemanticity and superposition - causing tangled 'knots' of weights that resist human interpretation - simply fall to further agentic analysis",
+          "note": "The source directly supports this claim, including the author, affiliation, essay format, and the core argument about polysemanticity dissolving under agentic analysis."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The claim is a single researcher's working theory, with no accompanying paper or replication.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The claim is a single researcher's working theory, with no accompanying paper or replication.",
+          "source_span": "Nick Cammarata at Goodfire has an important essay out stating his working theory",
+          "note": "The source describes it as a 'working theory' in an essay (not a paper), and the body's trust qualifier is consistent with the source's framing; no replication is mentioned in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Does your interpretability roadmap treat superposition as a fixed constraint?",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Does your interpretability roadmap treat superposition as a fixed constraint?",
+          "source_span": "",
+          "note": "This is a rhetorical call-to-action/editorial prompt with no factual content to check against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Interpretability research assumed tangled weights were permanent; one essay challenges that baseline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Interpretability research assumed tangled weights were permanent; one essay challenges that baseline.",
+          "source_span": "Nick Cammarata at Goodfire has an important essay out stating his working theory that 'Neural Networks Are Already Clean' — showing that many known cases of polysemanticity and superposition - causing tangled 'knots' of weights that resist human interpretation - simply fall to further agentic analysis",
+          "note": "The source supports that an essay by Cammarata challenges the prevailing assumption about tangled weights resisting interpretation; the take is a fair editorial compression of the source's framing."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_28e2ab1c8366d6cd",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Edited open-model weights can carry silent backdoors undetected",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Edited open-model weights can carry silent backdoors undetected",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Abliteration subtracts the refusal direction from a model's weights",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Abliteration — subtracting the refusal direction from a model's weights",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this mechanistic description."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Abliteration is now routine on Hugging Face",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "is now routine on Hugging Face",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this prevalence claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Schneier flags abliteration as a supply-chain backdoor vector",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Schneier flags it as a supply-chain backdoor vector",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify attribution to Schneier."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Any fine-tuned, merged, or abliterated build can carry silent malicious edits",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Any fine-tuned, merged, or abliterated build can carry silent malicious edits",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this capability claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Open-weight model vetting assumed weight editing was a safety concern, not a supply-chain one",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Open-weight model vetting assumed weight editing was a safety concern, not a supply-chain one",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this editorial-embedded factual framing."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e6439a68d090302e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Redwood Research automates the search for gaps in agent safety monitors",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Redwood Research automates the search for gaps in agent safety monitors",
+          "source_span": "We introduce Screwtape, a pipeline that turns agent transcripts into realistic attacks that evade action-only monitors... by inserting an attack into a transcript and repeatedly refining it until a monitor no longer catches it.",
+          "note": "The source confirms Redwood Research built an automated pipeline to find monitor evasions, supporting the headline's characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Monitors that watch AI agents for harmful behaviour can be fooled",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Monitors that watch AI agents for harmful behaviour can be fooled",
+          "source_span": "a pipeline that turns agent transcripts into realistic attacks that evade action-only monitors",
+          "note": "The source confirms monitors can be evaded, supporting this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "finding those gaps manually takes 2-3 hours per attack",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "finding those gaps manually takes 2-3 hours per attack",
+          "source_span": "each one takes hours of human work (2–3 hours per attack in SLEIGHT-Bench)",
+          "note": "The source states 2–3 hours per attack for human red-teaming, matching the body's claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Redwood's Screwtape pipeline edits real transcripts iteratively until a monitor fails",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Redwood's Screwtape pipeline edits real transcripts iteratively until a monitor fails",
+          "source_span": "a pipeline that turns agent transcripts into realistic attacks that evade action-only monitors by inserting an attack into a transcript and repeatedly refining it until a monitor no longer catches it",
+          "note": "The source directly describes iterative transcript editing until the monitor fails."
+        },
+        {
+          "schema_version": 1,
+          "claim": "252 runs on 94 transcripts found six confirmed attacks that evaded a frontier developer's monitor",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "252 runs on 94 transcripts found six confirmed attacks that evaded a frontier developer's monitor",
+          "source_span": "We ran the pipeline 252 times on 94 unique transcripts. This produced 35 attacks that evaded our monitors. Six of these 35 attacks also evaded the frontier developer's monitor, and we confirmed them as valid through human review.",
+          "note": "All three figures (252 runs, 94 transcripts, six confirmed attacks against frontier developer's monitor) match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Before your team certifies a monitor, who owns the red-teaming decision?",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Before your team certifies a monitor, who owns the red-teaming decision?",
+          "source_span": "",
+          "note": "This is a rhetorical call-to-action question; no factual claim to check against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent monitor red-teaming shifted from expert hours to an automated transcript-editing loop.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent monitor red-teaming shifted from expert hours to an automated transcript-editing loop.",
+          "source_span": "These attacks are strong, but each one takes hours of human work (2–3 hours per attack in SLEIGHT-Bench)... Screwtape represents a specific tradeoff: it edits real transcripts to keep the transcripts and attacks realistic, and it also iterates against the monitor",
+          "note": "The source contrasts hours of human expert work with Screwtape's automated iterative transcript-editing approach, supporting the take's characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Redwood's pipeline ran 252 transcript edits across 94 samples.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Redwood's pipeline ran 252 transcript edits across 94 samples",
+          "source_span": "We ran the pipeline 252 times on 94 unique transcripts.",
+          "note": "digest: '252 transcript edits across 94 samples' accurately paraphrases '252 times on 94 unique transcripts'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The pipeline found six attacks that slipped past a frontier monitor.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "found six attacks that slipped past a frontier monitor",
+          "source_span": "Six of these 35 attacks also evaded the frontier developer's monitor, and we confirmed them as valid through human review.",
+          "note": "digest: 'Slipped past a frontier monitor' accurately paraphrases 'evaded the frontier developer's monitor'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Automated red-teaming finds monitor gaps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Automated red-teaming finds monitor gaps",
+          "source_span": "a pipeline that turns agent transcripts into realistic attacks that evade action-only monitors",
+          "note": "digest: This is an editorial framing/generalisation of the Screwtape pipeline's purpose, consistent with the source; no factual divergence."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_cc0464ab65b39362",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Vercel adds a free open reasoning model for agentic coding",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Vercel adds a free open reasoning model for agentic coding",
+          "source_span": "Beam from Reflection AI, previously available in stealth as stealth/cat-jam, is now available on AI Gateway. Beam is free to use for a limited time during the launch period when serviced by Reflection AI.",
+          "note": "Source confirms Beam is a free open-weight reasoning model for agentic tasks available on Vercel's AI Gateway; 'open reasoning model' is a supported paraphrase of 'open-weight reasoning model'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Reflection AI's Beam is live on Vercel AI Gateway",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Reflection AI's Beam is live on Vercel AI Gateway",
+          "source_span": "Beam from Reflection AI, previously available in stealth as stealth/cat-jam, is now available on AI Gateway.",
+          "note": "Source confirms Beam from Reflection AI is now available on AI Gateway."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam is free during launch",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "free during launch",
+          "source_span": "Beam is free to use for a limited time during the launch period when serviced by Reflection AI.",
+          "note": "Source confirms Beam is free during the launch period."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam weights are under Apache 2.0",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "weights under Apache 2.0",
+          "source_span": "with weights released under Apache 2.0",
+          "note": "Source directly confirms Apache 2.0 licence for weights."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam is a mixture-of-experts model",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The mixture-of-experts model",
+          "source_span": "",
+          "note": "The source describes the sparse activation behaviour but never uses the term 'mixture-of-experts'; this architectural label cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam activates only 23B of its 501B parameters per token",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "activates only 23B of its 501B parameters per token",
+          "source_span": "activating only 23B of its 501B parameters per token",
+          "note": "Source uses identical figures."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam activates only 23B of its 501B parameters per token for low latency",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "for low latency",
+          "source_span": "Beam is designed for speed, activating only 23B of its 501B parameters per token",
+          "note": "'Low latency' is a supported paraphrase of 'designed for speed'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam supports tool-calling",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "It supports tool-calling",
+          "source_span": "Beam supports tool calling and structured outputs",
+          "note": "Source directly confirms tool calling support."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam supports structured outputs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "structured outputs",
+          "source_span": "Beam supports tool calling and structured outputs",
+          "note": "Source directly confirms structured outputs support."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Beam supports a 1M-token context window",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a 1M-token context window",
+          "source_span": "with a 1M-token context window for code, documents, and conversation history",
+          "note": "Source directly confirms the 1M-token context window."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Point Claude Code or Cursor at `reflection/beam` via the Vercel CLI now",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Point Claude Code or Cursor at `reflection/beam` via the Vercel CLI now",
+          "source_span": "To use it in Claude Code, Codex, Cursor, and more, install the latest Vercel CLI and run setup",
+          "note": "Source confirms Claude Code and Cursor are supported agents accessed via the Vercel CLI using the reflection/beam slug; omitting Codex is not an error."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Frontier-scale open reasoning models required self-hosting or a paid API; Beam lands managed and free.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Frontier-scale open reasoning models required self-hosting or a paid API; Beam lands managed and free.",
+          "source_span": "",
+          "note": "The claim that frontier-scale open reasoning models previously required self-hosting or a paid API is an editorial contextual assertion not addressed in the source excerpt; 'managed and free' for Beam is supported but the broader comparative claim is unverifiable from this excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each story today removes a layer that previously required specialist custody: a proprietary API, a per-model parser, a closed agent harness, a human with a disassembler.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a proprietary API, a per-model parser, a closed agent harness, a human with a disassembler",
+          "source_span": "AI Gateway provides a unified API for calling models ... the new hf tool and reasoning parser ... reads the checkpoint's response_template, so models that ship it need no model-specific parser ... We introduce Open Generalist CUA (OpenGCUA), an ongoing project to develop and open the full stack for GCUAs ... REA uses MCP servers to expose reverse-engineering tools to agents",
+          "note": "synthesis: Each element maps to one of the four stories: unified API (Vercel/Beam), per-model parser removal (vLLM hf parser), open agent harness (OpenGCUA), and AI-assisted disassembly (REA); this is editorial generalisation/paraphrase and is supported."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_b631594dde8c7067",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "vLLM now routes structured decisions without model-specific glue code",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "vLLM now routes structured decisions without model-specific glue code",
+          "source_span": "the new POST /v1/systemone endpoint answers choice, noul and score questions over a structured state... The new hf tool and reasoning parser... reads the checkpoint's response_template, so models that ship it need no model-specific parser",
+          "note": "The headline accurately paraphrases the two headline features: structured endpoint and universal parser eliminating per-model code."
+        },
+        {
+          "schema_version": 1,
+          "claim": "vLLM v0.32.0 ships a /v1/systemone endpoint for structured choice, score, and null questions",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "vLLM v0.32.0 ships a /v1/systemone endpoint for structured choice, score, and null questions",
+          "source_span": "the new POST /v1/systemone endpoint answers choice, noul and score questions over a structured state",
+          "note": "'null' is a plain-English rendering of 'noul' (likely a token for null), and the three question types match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "vLLM v0.32.0 ships a universal tool and reasoning parser that reads each model's own response template",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a universal tool and reasoning parser that reads each model's own response template",
+          "source_span": "The new hf tool and reasoning parser (--tool-call-parser hf, --reasoning-parser hf) reads the checkpoint's response_template",
+          "note": "'universal' is a fair paraphrase of the hf parser that works for any model shipping a response_template."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The universal parser eliminates bespoke per-model code",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "eliminating bespoke per-model code",
+          "source_span": "models that ship it need no model-specific parser",
+          "note": "Direct paraphrase of the source's 'no model-specific parser'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Multiple connection handling delivers 43-85% more requests per second on short inputs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Multiple connection handling delivers 43-85% more requests per second on short inputs",
+          "source_span": "with --api-server-count above 1 each connection goes to the least-loaded API worker, for 43-85% more req/s on short requests (Qwen3-0.6B, 32 input / 1 output tokens) in the PR's benchmark",
+          "note": "'Multiple connection handling' is a reasonable plain-English paraphrase of the least-loaded API worker routing; the 43-85% figure matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Upgrade and retire your parser forks before the next model onboarding",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Upgrade and retire your parser forks before the next model onboarding",
+          "source_span": "",
+          "note": "This is an editorial call to action; no factual claim to check against the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inference engineers maintaining per-model parser forks now inherit a universal one from the checkpoint itself",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Inference engineers maintaining per-model parser forks now inherit a universal one from the checkpoint itself",
+          "source_span": "The new hf tool and reasoning parser... reads the checkpoint's response_template, so models that ship it need no model-specific parser",
+          "note": "'Universal one from the checkpoint itself' accurately reflects that the parser reads the model's own response_template, eliminating per-model forks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "vLLM v0.32.0 is the version being released.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "vLLM v0.32.0",
+          "source_span": "v0.32.0 Highlights",
+          "note": "digest: The source excerpt is explicitly titled v0.32.0."
+        },
+        {
+          "schema_version": 1,
+          "claim": "vLLM v0.32.0 replaces per-model parser forks with a universal template reader.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "replaces per-model parser forks with a universal template reader",
+          "source_span": "The new hf tool and reasoning parser (--tool-call-parser hf, --reasoning-parser hf) reads the checkpoint's response_template, so models that ship it need no model-specific parser",
+          "note": "digest: The source describes a new hf parser that reads a template so models need no model-specific parser, which the summary paraphrases as 'universal template reader replacing per-model parser forks' — a supported generalisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The throughput lift is 43-85% on short inputs.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "lifting throughput 43-85% on short inputs",
+          "source_span": "with --api-server-count above 1 each connection goes to the least-loaded API worker, for 43-85% more req/s on short requests (Qwen3-0.6B, 32 input / 1 output tokens) in the PR's benchmark",
+          "note": "digest: The 43-85% figure in the source refers to a load-balancing multi-API-server feature, not to the hf parser/template reader; the summary incorrectly attributes this throughput gain to the universal parser."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_b73f694a264fa2ba",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Alibaba open-sources a computer-use agent stack that cuts task steps in half",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Alibaba open-sources a computer-use agent stack that cuts task steps in half",
+          "source_span": "reducing reported steps per task by an average of 53.0% relative to batched GUI-only execution",
+          "note": "53% reduction is a legitimate rounding of 'half', and Alibaba's MAI-UI team is confirmed as the source; open-sourcing is confirmed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Frontier computer-use agents have stayed closed, blocking systematic study.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Frontier computer-use agents have stayed closed, blocking systematic study.",
+          "source_span": "frontier implementations, such as GPT-6 Astra's computer-use system, remain largely closed, limiting systematic study of their design",
+          "note": "Direct paraphrase of the source's statement about closed frontier implementations limiting systematic study."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenGCUA is from Alibaba's MAI-UI team.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenGCUA, from Alibaba's MAI-UI team",
+          "source_span": "The MAI-UI team at Alibaba introduces OpenGCUA",
+          "note": "Source explicitly names the MAI-UI team at Alibaba as the creator of OpenGCUA."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenGCUA publishes harness design, prompts, evaluation trajectories across eight models, a macOS real-device harness, and a cross-device SDK.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "publishes the full stack: harness design, prompts, evaluation trajectories across eight models, a macOS real-device harness, and a cross-device SDK",
+          "source_span": "We release our implementation and prompts, evaluation trajectories from all eight models, and preliminary versions of a real-device harness and a cross-device SDK.",
+          "note": "All listed components match the source; 'harness design' is a fair paraphrase of 'implementation and prompts' plus harness."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On OSWorld-v2, mean task score rose 19.6 points.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "On OSWorld-v2, mean task score rose 19.6 points",
+          "source_span": "raising mean partial score by +19.6 points",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Steps per task fell 53%.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "steps per task fell 53%",
+          "source_span": "reducing reported steps per task by an average of 53.0%",
+          "note": "53% is a direct rounding of 53.0% from the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Clone the GitHub repo and run it against your automation baseline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Clone the GitHub repo and run it against your automation baseline.",
+          "source_span": "💻 GitHub: github.com/Tongyi-MAI/OpenGCUA",
+          "note": "This is a call to action referencing the GitHub repo, which is confirmed to exist in the source; editorial framing is not a factual claim to check."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Computer-use agent internals were proprietary; builders now have a fully open reference stack to inspect and extend.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Computer-use agent internals were proprietary; builders now have a fully open reference stack to inspect and extend.",
+          "source_span": "frontier implementations, such as GPT-6 Astra's computer-use system, remain largely closed, limiting systematic study of their design. We introduce Open Generalist CUA (OpenGCUA), an ongoing project to develop and open the full stack for GCUAs with the community.",
+          "note": "The take's factual assertions — that internals were proprietary and that an open stack is now released — are both supported by the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_df22ac5e895b0c0c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code can now reverse-engineer compiled binaries using open-source tools",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Claude Code can now reverse-engineer compiled binaries using open-source tools",
+          "source_span": "Reverse Engineer Anything (REA) is an open-source project with over 200K GitHub stars that connects coding agents such as Claude Code and Codex to reverse-engineering tools like Ghidra, Hopper, and IDA.",
+          "note": "The source confirms Claude Code connects to open-source reverse-engineering tools via REA; the headline is a fair compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "REA (MIT-licensed, 200K GitHub stars) connects Claude Code and Codex to Ghidra, Hopper, and IDA via Model Context Protocol servers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "REA (MIT-licensed, 200K GitHub stars) connects Claude Code and Codex to Ghidra, Hopper, and IDA via Model Context Protocol servers",
+          "source_span": "Released under the permissive MIT license, REA supports legitimate reverse engineering... Reverse Engineer Anything (REA) is an open-source project with over 200K GitHub stars that connects coding agents such as Claude Code and Codex to reverse-engineering tools like Ghidra, Hopper, and IDA. REA uses MCP servers to expose reverse-engineering tools to agents",
+          "note": "MIT license, 200K stars, named tools, and MCP servers are all confirmed; 'Model Context Protocol' is a standard expansion of MCP, which the source uses."
+        },
+        {
+          "schema_version": 1,
+          "claim": "letting agents query disassemblers, trace function calls, and test hypotheses against a binary",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "letting agents query disassemblers, trace function calls, and test hypotheses against a binary",
+          "source_span": "which can query disassemblers, inspect functions and cross-references, trace program behavior, and iteratively test hypotheses against the binary",
+          "note": "Direct paraphrase of the source; all three capabilities are confirmed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "One showcase reconstructed a sound-panning function matching all 3,205 original x86 test cases",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "One showcase reconstructed a sound-panning function matching all 3,205 original x86 test cases",
+          "source_span": "reconstruct a sound-panning function from the classic game DX-Ball with tests matching all 3205 original x86 cases and all 63 compiled function bytes",
+          "note": "The 3,205 x86 test cases figure matches the source exactly; omitting the 63 compiled function bytes is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Binary analysis required a human expert with a disassembler; agents can now run that loop autonomously.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Binary analysis required a human expert with a disassembler; agents can now run that loop autonomously.",
+          "source_span": "REA uses MCP servers to expose reverse-engineering tools to agents, which can query disassemblers, inspect functions and cross-references, trace program behavior, and iteratively test hypotheses against the binary.",
+          "note": "The take is editorial framing but the embedded factual claim — that agents can now autonomously run the binary analysis loop — is supported by the source's description of REA's capabilities."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_8dfda849d30f8126",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Halve agent serving costs by letting a small model do the drafting",
+          "verdict": "unsupported",
+          "location": "headline",
+          "summary_span": "Halve agent serving costs by letting a small model do the drafting",
+          "source_span": "",
+          "note": "The source reports halving of wall time and memory traffic, not serving costs broadly; API cost figures (59–81% of Strong-only) do not straightforwardly equal 'halving costs', and the source notes estimated FLOPs rise — the bare 'halve costs' claim drops the nuance and is not directly stated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "SpecAgent (an arXiv preprint, code public on GitHub) splits agent work",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "SpecAgent (an arXiv preprint, code public on GitHub) splits agent work",
+          "source_span": "Code: https://github.com/LARK-AI-Lab/SpecAgent",
+          "note": "The source confirms SpecAgent is a preprint with code on GitHub."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a small model drafts tool-use steps and runs read-only calls",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a small model drafts tool-use steps and runs read-only calls",
+          "source_span": "The weak model executes read-only tool calls while drafting, so every step is grounded in real observations",
+          "note": "Directly matches the source description of the weak model's role."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a large model reviews the whole segment in one parallel pass",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a large model reviews the whole segment in one parallel pass",
+          "source_span": "The Strong model then reads the whole drafted segment in one prefill pass",
+          "note": "'One parallel pass' is a fair paraphrase of 'one prefill pass' (prefill is parallel by nature)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "On τ²-Bench, it matches the large model's success rate at 41–54% of its wall time",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "On τ²-Bench, it matches the large model's success rate at 41–54% of its wall time",
+          "source_span": "τ²-Bench: within 1 point of Strong-only success, at 43–57% of its memory traffic and 41–54% of its wall time.",
+          "note": "'Within 1 point' is reasonably paraphrased as 'matches', and the 41–54% wall time figure is exact."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The preprint and code are public on GitHub today.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The preprint and code are public on GitHub today.",
+          "source_span": "Code: https://github.com/LARK-AI-Lab/SpecAgent",
+          "note": "The source confirms code is publicly available on GitHub; the preprint is published on Hugging Face Daily Papers."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent serving assumed one large model decoding every step; SpecAgent's reviewer pattern halves that decoding load.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent serving assumed one large model decoding every step; SpecAgent's reviewer pattern halves that decoding load.",
+          "source_span": "the prevailing design has a single strong model generate every step... Because verification replaces autoregressive decoding with parallel prefill, the strong model decodes only short verdicts and occasional repairs rather than every step... roughly halving memory traffic and wall time",
+          "note": "'Halves that decoding load' is a reasonable compression of the source's 'roughly halving memory traffic and wall time' combined with the strong model generating at most half as many tokens."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": true
+    }
+  ],
+  "note": "verified 10 stories -- factual flags present | digest-bar: digest bullet 3 carries a claim the verifier marked 'contradicted' (story c_b631594dde8c7067): 'The throughput lift is 43-85% on short inputs.'"
+}
