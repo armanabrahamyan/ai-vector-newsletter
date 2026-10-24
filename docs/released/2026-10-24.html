@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 76 &middot; 24 October 2026</title>
+<meta name="description" content="OpenAI&#39;s AI found critical flaws threatening 70% of the web&#39;s servers. Issue No. 76 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 76 &middot; 24 Oct &middot; 4 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>PHP memory flaws, AI-found.</strong> <span>GPT-5.6 Sol uncovered two unauthenticated remote-code-execution bugs affecting servers running WordPress, Drupal, and Joomla.</span></p>
+    <p><strong>Cryptographic proof replaces vendor trust.</strong> <span>Cohere&#39;s hardware enclave lets regulated customers cryptographically verify the inference environment before sending sensitive data.</span></p>
+    <p><strong>Agentic memory systems lose out.</strong> <span>Raw-RAG ranked first in six of seven benchmark settings, beating the strongest agentic memory system by 5.5 points.</span></p>
+    <p><strong>Banking agents hide procedural failures.</strong> <span>A 1,000-task benchmark found up to 12% of sessions pass outcome checks despite skipping required steps.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>OpenAI&#39;s AI found critical flaws threatening 70% of the web&#39;s servers</h1>
+  <p class="takeaway">Critical web infrastructure now gets AI-driven security audits at a scale manual research never reached.</p>
+  <p class="dek">OpenAI&#39;s Patch the Planet programme used GPT-5.6 Sol to discover PHP2Shell: two memory-corruption vulnerabilities in PHP&#39;s core engine, with demonstrated unauthenticated remote code execution against WordPress, Drupal, and Joomla. Wiz independently found the same bugs. Two months of coordinated remediation preceded disclosure; these are researcher-reported exploit results, not confirmed mass exploitation.</p>
+  <div class="story-meta">
+    <a class="src" href="https://latent.space/p/ainews-openais-patch-the-planet-program/" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Each story today moves the same lever: something a financial-services firm previously accepted on trust now has a verifiable, auditable, or publicly benchmarked substitute. The strategic implication is that &#39;we rely on the vendor&#39;s word&#39; is becoming a harder position to defend internally.</p>
+  </div>
+  <article class="measure stack">
+    <h3>DeepSeek open-sources its inference engine, revealing 80% margins at scale</h3>
+    <p class="takeaway">Self-hosted inference economics now have a public benchmark, where only closed-vendor claims existed before.</p>
+    <p class="dek">DeepSeek released DeepInfer, the inference stack behind its production service, reporting 155 trillion tokens per day per cluster at over 80% margin. The code is public under Apache 2.0, though KV-cache management and load balancing remain internal. Crucially, vLLM reproduced within 6% of DeepSeek&#39;s throughput figures. Does your build-vs-buy calculus still hold at those margins?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://latent.space/p/ainews-deepseek-deepinfer-open-source/" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Ramp&#39;s agent reads financial statements and makes credit decisions autonomously</h3>
+    <p class="takeaway">Credit underwriting previously required human analysts to read statements; Ramp&#39;s pipeline does it autonomously.</p>
+    <p class="dek">Ramp&#39;s engineering team describes a pipeline that ingests financial statements, extracts semantic signals, and issues a credit decision without human review. The key mechanism: a semantic layer converts unstructured document data into structured judgements the agent acts on. When your underwriting pipeline hits a document it wasn&#39;t trained on, does the agent adapt or fail?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://builders.ramp.com/post/credit-analysis-using-semantics" target="_blank" rel="noreferrer">builders.ramp.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Cohere lets enterprises verify their AI inference environment before trusting it</h3>
+    <p class="takeaway">Regulated enterprises previously had to trust managed AI vendors contractually; cryptographic proof now replaces that.</p>
+    <p class="dek">Cohere&#39;s Model Vault now runs inference inside a hardware-isolated enclave spanning CPU and GPU, with remote attestation letting customers cryptographically verify the environment before sending sensitive data. The trust model shifts from contractual promises to verifiable proof. Which workloads are currently excluded from your AI stack because your organisation cannot verify what happens inside the inference environment?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://cohere.com/blog/introducing-confidential-computing-on-cohere-model-vault" target="_blank" rel="noreferrer">cohere.com <span class="arw">&rarr;</span></a>
+      <a class="src" href="https://cohere.com/blog/inside-cohere-model-vault-building-verifiable-confidential-ai-inference" target="_blank" rel="noreferrer">cohere.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>NVIDIA embeds agent security enforcement in silicon, outside the host</h3>
+    <p class="takeaway">Agent security enforcement previously ran on the host an agent controls.</p>
+    <p class="dek">Agents can complete their task and still cross a security boundary. NVIDIA Sentry runs on a BlueField-4 network processor, sitting on the only path between agent and model, inspecting every request in under a millisecond using an on-chip policy engine. The question for your architecture: if the host is compromised, where does your enforcement layer live?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://developer.nvidia.com/blog/inside-nvidia-sentry-secure-ai-agents-at-runtime/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Today&#39;s practical wins share a structural move: complexity removed rather than added. The gains come from local consolidation, vocabulary trimming, and raw retrieval beating elaborate pipelines. The week&#39;s most actionable question is where your own stack is carrying overhead that a simpler default would shed.</p>
+  </div>
+  <article class="measure stack">
+    <h3>A drop-in coding agent model handles repo-wide tasks on a Mac</h3>
+    <p class="takeaway">Repo-level coding agents previously needed a cloud API; Flint runs the same workload locally on a Mac.</p>
+    <p class="dek">Recursive&#39;s Flint is now available via <code>ollama run flint</code>, a 40-billion-parameter mixture-of-experts model with a 262K-token context window built for repo-level coding agents: bug tracing, feature work, test writing. Recursive&#39;s own release evals put it at 74.2% on SWE-bench Verified. Mac-only for now; broader GPU support follows. Pull it and run it against your current agentic coding loop.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/ollama/ollama/releases/tag/v0.40.8" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Ollama adds local text-to-speech and routing models in one update</h3>
+    <p class="takeaway">Local inference pipelines previously needed separate tools for speech and routing.</p>
+    <p class="dek">Ollama 0.40.9 ships two additions: Phonon text-to-speech on Apple Silicon, streaming audio via the OpenAI-compatible endpoint, and d3 decision models (2B to 27B) for classification and yes/no routing. Both run locally. Upgrade to 0.40.9 and wire d3 into your next routing layer before reaching for a hosted classifier.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/ollama/ollama/releases/tag/v0.40.9" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Simple retrieval beats complex agentic memory across four benchmarks</h3>
+    <p class="takeaway">Memory pipeline architects defaulted to complex transformations; raw evidence retrieval now outperforms them on standard conversation tasks.</p>
+    <p class="dek">An arXiv preprint pits Raw-RAG, dense retrieval and reranking over unprocessed conversation history, against elaborate agentic memory systems. It ranked first in six of seven benchmark-model settings across four benchmarks, beating the strongest agentic system by up to 5.5 points. Before investing in a custom memory architecture, run Raw-RAG as your baseline.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/papers/2610.30755" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Moonshot AI matches frontier model quality at half the price</h3>
+    <p class="takeaway">Frontier-quality output now has an open-weight price point, where closed models held that tier alone.</p>
+    <p class="dek">Kimi K3.1 Pro scores 55 on Artificial Analysis benchmarks, one point behind Claude Opus 5.5 and ahead of GPT-6 Astra, at $2/$10 per million tokens input/output. Weights ship by 4 November. Available now via Vercel AI Gateway. Route your next long-context agentic workload through it and compare cost per completed task against your current contract.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://simonwillison.net/2026/Oct/23/kimi-k31-pro/" target="_blank" rel="noreferrer">simonwillison.net <span class="arw">&rarr;</span></a>
+      <a class="src" href="https://vercel.com/changelog/kimi-k3-1-pro-and-kimi-k3-1-pro-highspeed-are-available-now-in-ai-gateway" target="_blank" rel="noreferrer">vercel.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Trimming a small model&#39;s vocabulary cuts inference costs by 77%</h3>
+    <p class="takeaway">Domain-specific small models carry vocabulary built for every language; trimming it to the task slashes the bill.</p>
+    <p class="dek">General-purpose tokenisers fragment domain-specific text and score tens of thousands of irrelevant tokens on every generated word. VocabX, a Hugging Face blog previewing an upcoming paper, rebuilt the tokeniser for a Portuguese essay-grader on Qwen3-4B and cut measured inference cost by 77%. The paper is still under review. Map your highest-volume domain model&#39;s token distribution before the paper lands.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/Dharma-AI/vocabx-vocabulary-specialization" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">2 items</span></div>
+    <p class="synthesis">Both items today document the same quiet problem: AI systems in financial contexts are passing the tests they were set while failing the ones nobody thought to run. The field is moving toward a harder question about what evaluation frameworks are actually measuring.</p>
+  </div>
+  <article class="measure stack">
+    <h3>No leading AI model beats a simple equal-weight quant portfolio</h3>
+    <p class="takeaway">Quant AI deployments now have documented failure modes: benchmark collapse and adversarial fragility on the record.</p>
+    <p class="dek">Derek Snow&#39;s ML Quant Finance newsletter flags two findings: no leading language model outperforms an equal-weight allocation strategy in benchmark tests, and language-model traders collapse under information attacks. Neural filters cut arbitrage uncertainty eightfold, but machine-learning value-at-risk models conceal regime-shift failures. Both findings are now on the public record, with Snow&#39;s harness covering five attack types on benchmark data.</p>
+    <div class="story-meta"><span class="tag">read</span>
+      <a class="src" href="https://blog.ml-quant.com/p/quant-letter-oct-2026-week-3" target="_blank" rel="noreferrer">blog.ml-quant.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A banking-agent benchmark finds outcome scoring misses up to 12% of failures</h3>
+    <p class="takeaway">Banking agent evals scored only final records; procedure checking exposes a separate failure layer.</p>
+    <p class="dek">Standard agent benchmarks judge only the final state of a conversation. An arXiv preprint introduces TauIndianBankBench, 1,000 Indian retail-banking tasks where both procedure and outcome are scored. Between 6.5% and 12% of sessions pass outcome-only checks despite skipping required steps. Before signing off on a banking agent, demand procedure-aware evals.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2610.30161" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

@@ -1,0 +1,1053 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-24T00:32:55.841000Z",
+  "prompt_version": "v0.7",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "contradicted": 2,
+    "supported": 89,
+    "unverifiable": 10,
+    "unsupported": 1
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_f83013cadc2526aa",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's AI found critical flaws threatening 70% of the web's servers",
+          "verdict": "contradicted",
+          "location": "headline",
+          "summary_span": "OpenAI's AI found critical flaws threatening 70% of the web's servers",
+          "source_span": "major vulnerabilities in PHP were independently discovered by two parties: Ryan Austin, a researcher at the security firm Calif, as part of the OpenAI \"Patch the Planet\" project in August 2026 using GPT 5.6 Sol… as well as Wiz",
+          "note": "The headline attributes sole discovery to OpenAI's AI, but the source explicitly states it was a multi-party discovery (OpenAI/Calif and Wiz independently), and the source notes 'This is a multi-party discovery story, not evidence that one vendor alone found and fixed the issue.'"
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's Patch the Planet programme used GPT-5.6 Sol to discover PHP2Shell",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAI's Patch the Planet programme used GPT-5.6 Sol to discover PHP2Shell",
+          "source_span": "Ryan Austin, a researcher at the security firm Calif, as part of the OpenAI \"Patch the Planet\" project in August 2026 using GPT 5.6 Sol",
+          "note": "Source confirms Patch the Planet and GPT-5.6 Sol were used to discover the vulnerabilities, though the researcher was from Calif; this is a supported paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "two memory-corruption vulnerabilities in PHP's core engine",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "two memory-corruption vulnerabilities in PHP's core engine",
+          "source_span": "Researchers disclosed two PHP-engine memory-corruption vulnerabilities… Their technical description places the defects in PHP's internal handling of out-of-memory conditions and fatal errors",
+          "note": "Source confirms two memory-corruption vulnerabilities in PHP's core engine."
+        },
+        {
+          "schema_version": 1,
+          "claim": "demonstrated unauthenticated remote code execution against WordPress, Drupal, and Joomla",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with demonstrated unauthenticated remote code execution against WordPress, Drupal, and Joomla",
+          "source_span": "The disclosed demonstrations included pre-authentication RCE against WordPress, Drupal, and Joomla.",
+          "note": "Source directly confirms pre-authentication RCE demonstrations against all three named CMSs."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Wiz independently found the same bugs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Wiz independently found the same bugs",
+          "source_span": "OpenAI says Calif researchers used its models to discover the flaws, while secondary reporting says Wiz independently found the same bugs.",
+          "note": "Source confirms Wiz independently found the same bugs."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Two months of coordinated remediation preceded disclosure",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Two months of coordinated remediation preceded disclosure",
+          "source_span": "OpenAI describes approximately two months of coordinated remediation before disclosure.",
+          "note": "Source confirms approximately two months of coordinated remediation before disclosure; 'approximately' dropped is acceptable rounding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "these are researcher-reported exploit results, not confirmed mass exploitation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "these are researcher-reported exploit results, not confirmed mass exploitation",
+          "source_span": "These are researcher-reported exploit results; they should not be silently expanded into a claim that every deployment has an identical, immediately exploitable RCE path.",
+          "note": "Source explicitly frames results as researcher-reported and cautions against assuming confirmed mass exploitation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Critical web infrastructure now gets AI-driven security audits at a scale manual research never reached.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Critical web infrastructure now gets AI-driven security audits at a scale manual research never reached.",
+          "source_span": "it is good to know that our critical software is generally getting the biggest security audit it has ever had in human history.",
+          "note": "The take paraphrases the source's editorial claim that AI-enabled audits represent an unprecedented scale; 'AI-driven' is a reasonable paraphrase given the context of AI model use throughout the story."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-5.6 Sol uncovered two unauthenticated remote-code-execution bugs.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GPT-5.6 Sol uncovered two unauthenticated remote-code-execution bugs",
+          "source_span": "Posts identify GPT-5.6 Sol on the Calif/OpenAI side... The disclosed demonstrations included pre-authentication RCE against WordPress, Drupal, and Joomla.",
+          "note": "digest: Source confirms GPT-5.6 Sol was used to discover the flaws and that pre-authentication RCE was demonstrated; 'uncovered' is a reasonable paraphrase of the multi-party discovery story, and two bugs matches CVE-2026-109618 and CVE-2026-109619."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The bugs affect servers running WordPress, Drupal, and Joomla.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "affecting servers running WordPress, Drupal, and Joomla",
+          "source_span": "The disclosed demonstrations included pre-authentication RCE against WordPress, Drupal, and Joomla.",
+          "note": "digest: Source explicitly names WordPress, Drupal, and Joomla as targets of the demonstrated exploits."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The bugs are unauthenticated remote-code-execution bugs.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "two unauthenticated remote-code-execution bugs",
+          "source_span": "The disclosed demonstrations included pre-authentication RCE against WordPress, Drupal, and Joomla. The researchers named the vulnerabilities PHP2Shell... They report demonstrations of full remote code execution.",
+          "note": "digest: Source confirms pre-authentication (unauthenticated) RCE demonstrations; paraphrase is accurate."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The bugs were AI-found (framed as AI-found in the digest lead).",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "PHP memory flaws, AI-found",
+          "source_span": "OpenAI says Calif researchers used its models to discover the flaws... Posts identify GPT-5.6 Sol on the Calif/OpenAI side; a Wiz-affiliated account credits Gemini 4 Argon with discovery.",
+          "note": "digest: Source confirms AI models (GPT-5.6 Sol and Gemini 4 Argon) were used in discovery; 'AI-found' is a supported generalisation, though the source notes it is a multi-party story."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": true
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_17e4b1b97e98586c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "DeepSeek open-sources its inference engine, revealing 80% margins at scale",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "DeepSeek open-sources its inference engine, revealing 80% margins at scale",
+          "source_span": "DeepSeek released DeepInfer, the inference engine behind V4.1 Flash... with all-in costs $5-8 per card per hour that is an >80% inference margin!",
+          "note": "Source confirms DeepSeek open-sourced DeepInfer and reports >80% inference margin, matching the headline."
+        },
+        {
+          "schema_version": 1,
+          "claim": "DeepSeek released DeepInfer, the inference stack behind its production service",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "DeepSeek released DeepInfer, the inference stack behind its production service",
+          "source_span": "DeepSeek released DeepInfer, the inference engine behind V4.1 Flash, alongside production-serving details that make the engineering report as important as the code.",
+          "note": "Source confirms DeepInfer is DeepSeek's production inference engine, released publicly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "DeepSeek reported 155 trillion tokens per day per cluster",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "reporting 155 trillion tokens per day per cluster",
+          "source_span": "DeepSeek's engineering report... reports 155 trillion tokens/day from one cluster",
+          "note": "Source confirms the 155T tokens/day per cluster figure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "DeepSeek reported over 80% margin",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "at over 80% margin",
+          "source_span": "with all-in costs $5-8 per card per hour that is an >80% inference margin!",
+          "note": "Source confirms >80% inference margin figure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The code is public under Apache 2.0",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The code is public under Apache 2.0",
+          "source_span": "After acknowledging that DeepInfer was initially built primarily on vLLM and released under Apache 2.0",
+          "note": "Source confirms Apache 2.0 licence."
+        },
+        {
+          "schema_version": 1,
+          "claim": "KV-cache management and load balancing remain internal",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "though KV-cache management and load balancing remain internal",
+          "source_span": "the KV-cache management and load-balancing components are not yet fully released, because they remain coupled to internal infrastructure.",
+          "note": "Source confirms KV-cache management and load balancing are not yet fully released."
+        },
+        {
+          "schema_version": 1,
+          "claim": "vLLM reproduced within 6% of DeepSeek's throughput figures",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Crucially, vLLM reproduced within 6% of DeepSeek's throughput figures",
+          "source_span": "the vLLM team reported decode throughput within 6% of DeepInfer's published results on GB200 under a matched configuration.",
+          "note": "Source confirms vLLM achieved decode throughput within 6% of DeepInfer's published results; 'Crucially' is editorial framing, not a factual claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Self-hosted inference economics now have a public benchmark, where only closed-vendor claims existed before.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Self-hosted inference economics now have a public benchmark, where only closed-vendor claims existed before.",
+          "source_span": "historically most of the advances have been closed source decacorns from Fireworks to Baseten to Modal. Well, time for the open source response... These are first-party production claims, not independently audited measurements.",
+          "note": "Source supports the framing that inference advances were previously closed-source; 'self-hosted' is a reasonable paraphrase of open-source deployment, and the take's editorial thrust is backed by the source context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each story today moves the same lever: something a financial-services firm previously accepted on trust now has a verifiable, auditable, or publicly benchmarked substitute.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Each story today moves the same lever: something a financial-services firm previously accepted on trust now has a verifiable, auditable, or publicly benchmarked substitute.",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming framing multiple stories under a single theme; no single checkable factual assertion is made that can be confirmed or denied from the source excerpts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "'We rely on the vendor's word' is becoming a harder position to defend internally.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the strategic implication is that 'we rely on the vendor's word' is becoming a harder position to defend internally.",
+          "source_span": "",
+          "note": "synthesis: This is an editorial strategic inference, not a checkable factual assertion; no source span can confirm or deny it."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_612505817d3181da",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Ramp's agent reads financial statements and makes credit decisions autonomously",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Ramp's agent reads financial statements and makes credit decisions autonomously",
+          "source_span": "",
+          "note": "The source excerpt only provides the title 'Agentic Credit Analysis' and a tagline; it contains no detail to confirm or deny the specific capabilities described in the headline."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ramp's engineering team describes a pipeline that ingests financial statements, extracts semantic signals, and issues a credit decision without human review.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Ramp's engineering team describes a pipeline that ingests financial statements, extracts semantic signals, and issues a credit decision without human review.",
+          "source_span": "",
+          "note": "The source excerpt does not describe the pipeline's mechanics; only the title and a brief publisher tagline are provided."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A semantic layer converts unstructured document data into structured judgements the agent acts on.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "a semantic layer converts unstructured document data into structured judgements the agent acts on",
+          "source_span": "",
+          "note": "The source excerpt contains no information about a semantic layer or its function."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Credit underwriting previously required human analysts to read statements; Ramp's pipeline does it autonomously.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Credit underwriting previously required human analysts to read statements; Ramp's pipeline does it autonomously.",
+          "source_span": "",
+          "note": "The source excerpt provides only a title and tagline with no content to verify claims about prior human analyst requirements or Ramp's autonomous pipeline."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_9d715314631052e0",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Cohere lets enterprises verify their AI inference environment before trusting it",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Cohere lets enterprises verify their AI inference environment before trusting it",
+          "source_span": "customers can verify the environment that will process their data before they send it",
+          "note": "The headline accurately paraphrases the core capability described in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cohere's Model Vault now runs inference inside a hardware-isolated enclave spanning CPU and GPU",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cohere's Model Vault now runs inference inside a hardware-isolated enclave spanning CPU and GPU",
+          "source_span": "Inference runs within a hardware-backed confidential environment spanning the CPU and GPU. Hardware-enforced isolation protects workload memory from everything outside the confidential boundary",
+          "note": "'Hardware-isolated enclave' is a fair plain-English paraphrase of 'hardware-backed confidential environment' with hardware-enforced isolation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "remote attestation letting customers cryptographically verify the environment before sending sensitive data",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with remote attestation letting customers cryptographically verify the environment before sending sensitive data",
+          "source_span": "Before sensitive data is sent, customer-side software verifies cryptographically signed evidence about the environment that will process it",
+          "note": "The body accurately describes remote attestation as cryptographic verification before sending sensitive data."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The trust model shifts from contractual promises to verifiable proof",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The trust model shifts from contractual promises to verifiable proof",
+          "source_span": "This changes the trust model from \"trust us\" to \"verify it yourself.\" ... Enterprises need confidence that their most sensitive AI workloads are protected by more than contractual promises.",
+          "note": "The body's phrasing is a supported compression of the source's 'trust us' vs 'verify it yourself' and the explicit mention of contractual promises."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Regulated enterprises previously had to trust managed AI vendors contractually; cryptographic proof now replaces that",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Regulated enterprises previously had to trust managed AI vendors contractually; cryptographic proof now replaces that",
+          "source_span": "Enterprises need confidence that their most sensitive AI workloads are protected by more than contractual promises. Our work with Cohere on Model Vault demonstrates how confidential computing can combine the simplicity of managed AI with independently verifiable technical controls.",
+          "note": "'Regulated enterprises' is a reasonable generalisation given the source's focus on regulated workloads; the contractual-to-cryptographic-proof framing is directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cohere's hardware enclave lets regulated customers cryptographically verify the inference environment before sending sensitive data.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cohere's hardware enclave lets regulated customers cryptographically verify the inference environment before sending sensitive data.",
+          "source_span": "Before sensitive data is sent, customer-side software verifies cryptographically signed evidence about the environment that will process it, including its hardware, firmware, and software configuration.",
+          "note": "digest: 'Hardware enclave' is a plain-English paraphrase of 'confidential virtual machine / hardware-backed confidential environment', and 'regulated customers' is a reasonable generalisation of the enterprise/sensitive-workload audience described; the core capability of cryptographic verification before sending data is directly supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cryptographic proof replaces vendor trust.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cryptographic proof replaces vendor trust.",
+          "source_span": "This changes the trust model from \"trust us\" to \"verify it yourself.\"",
+          "note": "digest: The summary's 'cryptographic proof replaces vendor trust' is a supported paraphrase of the source's explicit statement about shifting from 'trust us' to 'verify it yourself' via cryptographic attestation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e1d58348124c25f7",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA embeds agent security enforcement in silicon, outside the host",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "NVIDIA embeds agent security enforcement in silicon, outside the host",
+          "source_span": "enforcing granular security controls on agent access in silicon... running on BlueField-4, beyond the agent's reach and knowledge... By operating outside the host in its own isolated trust domain",
+          "note": "Source confirms enforcement runs in silicon on BlueField-4 outside the host trust domain."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents can complete their task and still cross a security boundary.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agents can complete their task and still cross a security boundary.",
+          "source_span": "An AI agent can complete its assignment and still cross a security boundary. Recent incidents show that agents can circumvent security controls while using tools, credentials, and services to pursue their assigned goals.",
+          "note": "Near-verbatim match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA Sentry runs on a BlueField-4 network processor",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "NVIDIA Sentry runs on a BlueField-4 network processor",
+          "source_span": "runs on NVIDIA BlueField-4 DPUs",
+          "note": "Source confirms Sentry runs on BlueField-4; 'network processor' is a reasonable plain-English paraphrase of DPU."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA Sentry sits on the only path between agent and model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "sitting on the only path between agent and model",
+          "source_span": "BlueField-4 sits on the node's only path to the model",
+          "note": "Source directly states BlueField-4 sits on the only path to the model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA Sentry inspects every request in under a millisecond using an on-chip policy engine",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "inspecting every request in under a millisecond using an on-chip policy engine",
+          "source_span": "OPA runs locally in memory and can evaluate requests in under a millisecond, depending on policy complexity and configuration.",
+          "note": "Source confirms sub-millisecond evaluation; 'on-chip policy engine' is a reasonable compression of OPA running on BlueField-4 in silicon."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent security enforcement previously ran on the host an agent controls.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent security enforcement previously ran on the host an agent controls.",
+          "source_span": "Monitoring and enforcement need to operate outside the agent's reach so that it can't alter or disable them... NVIDIA Sentry adds an independent hardware safeguard out of band, running on BlueField-4, beyond the agent's reach and knowledge.",
+          "note": "Source implies prior enforcement was host-based (reachable by the agent), which Sentry is designed to overcome."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_1d9ae1e097d3e864",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A drop-in coding agent model handles repo-wide tasks on a Mac",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A drop-in coding agent model handles repo-wide tasks on a Mac",
+          "source_span": "Flint brings Recursive's coding model to Ollama. It is designed for the work coding agents do across a repository... Note: Flint is supported on MacOS.",
+          "note": "'Drop-in' paraphrases 'ollama run flint' availability; repo-wide tasks and Mac-only support are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Recursive's Flint is now available via `ollama run flint`",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Recursive's Flint is now available via `ollama run flint`",
+          "source_span": "ollama run flint",
+          "note": "Source confirms the exact command and Recursive as the creator."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Flint is a 40-billion-parameter mixture-of-experts model",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a 40-billion-parameter mixture-of-experts model",
+          "source_span": "Flint is an Apache 2.0-licensed, 40B-parameter mixture-of-experts model",
+          "note": "Source confirms 40B-parameter MoE architecture."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Flint has a 262K-token context window",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a 262K-token context window",
+          "source_span": "a 262K-token context window support longer tasks across files and tool interactions",
+          "note": "Source confirms 262K-token context window exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Flint is built for repo-level coding agents: bug tracing, feature work, test writing",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "built for repo-level coding agents: bug tracing, feature work, test writing",
+          "source_span": "designed for the work coding agents do across a repository: understanding unfamiliar code, tracing bugs, implementing features, and adding tests",
+          "note": "Summary compresses the list but all three named tasks are present in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Recursive's own release evals put it at 74.2% on SWE-bench Verified",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Recursive's own release evals put it at 74.2% on SWE-bench Verified",
+          "source_span": "In its release evaluations, Recursive reports 54.9% on Terminal-Bench 2.1 and 74.2% on SWE-bench Verified.",
+          "note": "The 74.2% SWE-bench Verified figure is correctly attributed to Recursive's own release evaluations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Mac-only for now; broader GPU support follows",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Mac-only for now; broader GPU support follows",
+          "source_span": "Note: Flint is supported on MacOS. Other GPU support will be enabled in a subsequent release.",
+          "note": "Source confirms MacOS-only current support with broader GPU support in a subsequent release."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Repo-level coding agents previously needed a cloud API; Flint runs the same workload locally on a Mac.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Repo-level coding agents previously needed a cloud API; Flint runs the same workload locally on a Mac.",
+          "source_span": "",
+          "note": "The source confirms Flint runs locally on Mac but never states that repo-level coding agents previously required a cloud API; that comparative claim is not in the source and is presented as bare fact."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Today's practical wins share a structural move: complexity removed rather than added.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Today's practical wins share a structural move: complexity removed rather than added.",
+          "source_span": "Raw retrieval-augmented generation over unprocessed conversation history outperforms complex agentic memory systems across multiple benchmarks",
+          "note": "synthesis: Editorial framing supported by the RAG paper's finding that simpler retrieval beats complex pipelines, and the VocabX paper's vocabulary trimming reducing cost; this is a generalisation across sources."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Vocabulary trimming produces gains.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "vocabulary trimming",
+          "source_span": "how we specialized the vocabulary around the cost of each token rather than its frequency, and cut measured inference cost by 77% without changing the base model",
+          "note": "synthesis: The VocabX article directly describes vocabulary specialisation/trimming as the mechanism for cost reduction."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Raw retrieval beats elaborate pipelines.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "raw retrieval beating elaborate pipelines",
+          "source_span": "Raw-RAG ranks first among the compared memory systems in six of seven benchmark-model settings, outperforming the strongest compared agentic memory system by 0.13-5.53 points",
+          "note": "synthesis: The RAG paper directly supports the claim that naive/raw retrieval outperforms complex agentic memory systems."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Local consolidation produces gains.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "local consolidation",
+          "source_span": "",
+          "note": "synthesis: No source excerpt explicitly describes 'local consolidation' as a mechanism producing gains; this specific claim cannot be confirmed or denied from the provided excerpts."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_58935a3cd359327e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Ollama adds local text-to-speech and routing models in one update",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Ollama adds local text-to-speech and routing models in one update",
+          "source_span": "Ollama can now generate speech with Phonon on Apple Silicon... d3 brings vLLM Semantic Router's decision models to Ollama.",
+          "note": "Both additions (speech via Phonon and d3 routing/decision models) are confirmed in the source as part of v0.40.9; 'local' is supported by the nature of Ollama as a local inference tool and the source describing local run commands."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ollama 0.40.9 ships two additions: Phonon text-to-speech on Apple Silicon",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ollama 0.40.9 ships two additions: Phonon text-to-speech on Apple Silicon",
+          "source_span": "Ollama can now generate speech with Phonon on Apple Silicon.",
+          "note": "Source confirms Phonon text-to-speech on Apple Silicon in v0.40.9."
+        },
+        {
+          "schema_version": 1,
+          "claim": "streaming audio via the OpenAI-compatible endpoint",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "streaming audio via the OpenAI-compatible endpoint",
+          "source_span": "apps can stream audio through the OpenAI-compatible /v1/audio/speech endpoint.",
+          "note": "Source explicitly confirms streaming audio via the OpenAI-compatible endpoint."
+        },
+        {
+          "schema_version": 1,
+          "claim": "d3 decision models (2B to 27B) for classification and yes/no routing",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "d3 decision models (2B to 27B) for classification and yes/no routing",
+          "source_span": "ask it to classify, answer yes or no, or score options with probabilities. The family includes 2B, 4B, 9B, and 27B sizes.",
+          "note": "'2B to 27B' is a supported generalisation of the 2B, 4B, 9B, 27B family; classification and yes/no are confirmed capabilities."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Both run locally.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Both run locally.",
+          "source_span": "ollama run phonon \"Hello from Ollama.\"... ollama run d3 \"A customer says their card was charged twice.\"",
+          "note": "Ollama is a local inference platform and the source shows both run via local 'ollama run' commands."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Local inference pipelines previously needed separate tools for speech and routing.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Local inference pipelines previously needed separate tools for speech and routing.",
+          "source_span": "",
+          "note": "This is an editorial position about the prior state of local inference pipelines; the source excerpt does not address what tools were previously required."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e070731de418682f",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Simple retrieval beats complex agentic memory across four benchmarks",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Simple retrieval beats complex agentic memory across four benchmarks",
+          "source_span": "Raw retrieval-augmented generation over unprocessed conversation history outperforms complex agentic memory systems across multiple benchmarks",
+          "note": "'Simple retrieval' is a fair plain-English paraphrase of Raw-RAG/naive RAG, and four benchmarks matches the source (LoCoMo, LongMemEval, MEME, MemoryAgentBench)."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint pits Raw-RAG, dense retrieval and reranking over unprocessed conversation history, against elaborate agentic memory systems.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint pits Raw-RAG, dense retrieval and reranking over unprocessed conversation history, against elaborate agentic memory systems.",
+          "source_span": "We study Raw-RAG, a naive RAG baseline using dense retrieval and reranking over raw history to supply evidence to a reader LLM.",
+          "note": "The description of Raw-RAG and the framing as an arXiv preprint (published on Hugging Face Daily Papers with a paper ID) are consistent with the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Raw-RAG ranked first in six of seven benchmark-model settings across four benchmarks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "It ranked first in six of seven benchmark-model settings across four benchmarks",
+          "source_span": "Raw-RAG ranks first among the compared memory systems in six of seven benchmark-model settings",
+          "note": "Exact match to source figures."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Raw-RAG beat the strongest agentic system by up to 5.5 points.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "beating the strongest agentic system by up to 5.5 points",
+          "source_span": "outperforming the strongest compared agentic memory system by 0.13-5.53 points",
+          "note": "'Up to 5.5 points' is a legitimate rounding of the upper bound 5.53 points."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Before investing in a custom memory architecture, run Raw-RAG as your baseline.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Before investing in a custom memory architecture, run Raw-RAG as your baseline.",
+          "source_span": "establishing naive RAG as an essential baseline",
+          "note": "This is a call-to-action/editorial recommendation derived from the source's conclusion; it is not a checkable factual assertion and is consistent with the source's framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Memory pipeline architects defaulted to complex transformations; raw evidence retrieval now outperforms them on standard conversation tasks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Memory pipeline architects defaulted to complex transformations; raw evidence retrieval now outperforms them on standard conversation tasks.",
+          "source_span": "Agentic memory systems often use mutation, structural organization, learned retrieval strategies, or other complex operations... Raw retrieval-augmented generation over unprocessed conversation history outperforms complex agentic memory systems across multiple benchmarks",
+          "note": "'Standard conversation tasks' is a fair paraphrase of 'evaluated conversation tasks'; the rest maps directly to source claims."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Raw-RAG ranked first in six of seven benchmark settings.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Raw-RAG ranked first in six of seven benchmark settings",
+          "source_span": "Raw-RAG ranks first among the compared memory systems in six of seven benchmark-model settings",
+          "note": "digest: Exact match to source wording."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Raw-RAG beat the strongest agentic memory system by 5.5 points.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "beating the strongest agentic memory system by 5.5 points",
+          "source_span": "outperforming the strongest compared agentic memory system by 0.13-5.53 points",
+          "note": "digest: Rounding 5.53 to 5.5 is acceptable house-style approximation; citing the upper bound of the range is a reasonable compression."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_5f4e3018ef07628e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Moonshot AI matches frontier model quality at half the price",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Moonshot AI matches frontier model quality at half the price",
+          "source_span": "Moonshot's own benchmarks show Kimi as approximately level with Opus 5.5 and GPT-6 Astra... the same as GPT-6.1 Sol and half the price of Claude Opus 5.5.",
+          "note": "Source confirms near-frontier quality and that pricing is half that of Claude Opus 5.5, making the headline a fair compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Kimi K3.1 Pro scores 55 on Artificial Analysis benchmarks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Kimi K3.1 Pro scores 55 on Artificial Analysis benchmarks",
+          "source_span": "Artificial Analysis scored Kimi at 55",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "one point behind Claude Opus 5.5",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "one point behind Claude Opus 5.5",
+          "source_span": "Artificial Analysis scored Kimi at 55 - ahead of Claude Fable 5.1, GPT-6 Astra, and Gemini 4 Argon (all at 53) and behind only Claude Opus 5.5 (58).",
+          "note": "Source says Claude Opus 5.5 scored 58, making Kimi three points behind, not one point behind."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ahead of GPT-6 Astra",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "ahead of GPT-6 Astra",
+          "source_span": "Artificial Analysis scored Kimi at 55 - ahead of Claude Fable 5.1, GPT-6 Astra, and Gemini 4 Argon (all at 53)",
+          "note": "Source confirms Kimi scored ahead of GPT-6 Astra."
+        },
+        {
+          "schema_version": 1,
+          "claim": "$2/$10 per million tokens input/output",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "$2/$10 per million tokens input/output",
+          "source_span": "The US dollar pricing is $2.00/million tokens for input and $10/million for output",
+          "note": "Exact pricing figures match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Weights ship by 4 November",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Weights ship by 4 November",
+          "source_span": "Moonshot promise \"Full model weights will be released by Nov 4, 2026\"",
+          "note": "Date matches source; omission of year is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Available now via Vercel AI Gateway",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Available now via Vercel AI Gateway",
+          "source_span": "Kimi K3.1 Pro from Moonshot AI is now available on AI Gateway",
+          "note": "Source confirms availability on Vercel's AI Gateway; 'Vercel AI Gateway' is a fair name for the product described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Route your next long-context agentic workload through it",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Route your next long-context agentic workload through it and compare cost per completed task against your current contract.",
+          "source_span": "",
+          "note": "This is a call to action / editorial recommendation, not a factual claim; skipping as out of scope per instructions."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Frontier-quality output now has an open-weight price point, where closed models held that tier alone.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Frontier-quality output now has an open-weight price point, where closed models held that tier alone.",
+          "source_span": "This is the first time a (soon-to-be) open weight model has scored this highly against the frontier.",
+          "note": "The take's factual core — that this is the first open-weight model at this quality tier — is directly supported by the source."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_dcc3405f2c5afe08",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Trimming a small model's vocabulary cuts inference costs by 77%",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Trimming a small model's vocabulary cuts inference costs by 77%",
+          "source_span": "cut measured inference cost by 77% without changing the base model",
+          "note": "'Trimming' is a plain-English paraphrase of vocabulary specialization/rebuilding, and the 77% figure matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "General-purpose tokenisers fragment domain-specific text",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "General-purpose tokenisers fragment domain-specific text",
+          "source_span": "The first is fragmentation. The tokenizer splits into many pieces exactly what the domain repeats most.",
+          "note": "Directly supported by the source's description of fragmentation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "General-purpose tokenisers score tens of thousands of irrelevant tokens on every generated word",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "score tens of thousands of irrelevant tokens on every generated word",
+          "source_span": "at every generated token the model scored a vocabulary of 151,669 entries, including many this task almost never uses",
+          "note": "'Tens of thousands of irrelevant tokens' is a reasonable generalisation/paraphrase of 151,669 entries with many unused ones."
+        },
+        {
+          "schema_version": 1,
+          "claim": "VocabX is a Hugging Face blog previewing an upcoming paper",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "VocabX, a Hugging Face blog previewing an upcoming paper",
+          "source_span": "This article previews some results from the VocabX paper, which we will publish soon",
+          "note": "The source is a Hugging Face Blog post previewing the forthcoming VocabX paper."
+        },
+        {
+          "schema_version": 1,
+          "claim": "VocabX rebuilt the tokeniser for a Portuguese essay-grader on Qwen3-4B",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "rebuilt the tokeniser for a Portuguese essay-grader on Qwen3-4B",
+          "source_span": "One of the systems we run in production is an automated grader for Portuguese essays, built on Qwen3-4B... We rebuilt that vocabulary with a method we call VocabX",
+          "note": "Directly supported by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "VocabX cut measured inference cost by 77%",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "cut measured inference cost by 77%",
+          "source_span": "cut measured inference cost by 77% without changing the base model",
+          "note": "Exact figure matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The paper is still under review",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The paper is still under review",
+          "source_span": "The numbers in this article come from the current version of the paper, still under review, and may change before publication.",
+          "note": "Directly stated in the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Domain-specific small models carry vocabulary built for every language; trimming it to the task slashes the bill.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Domain-specific small models carry vocabulary built for every language; trimming it to the task slashes the bill.",
+          "source_span": "Models specialized for a domain or a task by fine-tuning general open-source models... inherit a vocabulary built for many domains and general applications... cut measured inference cost by 77% without changing the base model.",
+          "note": "'Built for every language' is a slight generalisation of 'built for many domains and general applications/languages', and 'slashes the bill' paraphrases the 77% cost cut — both are legitimate house-style compressions."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_22c3258bfdbc497b",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "No leading AI model beats a simple equal-weight quant portfolio",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "No leading AI model beats a simple equal-weight quant portfolio",
+          "source_span": "benchmarks show no leading model beats equal-weight",
+          "note": "Source directly states no leading model beats equal-weight, supporting the headline's paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Derek Snow's ML Quant Finance newsletter flags two findings",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Derek Snow's ML Quant Finance newsletter flags two findings",
+          "source_span": "Title: Quant Letter: Oct 2026, Week-3\nPublisher: ML Quant Finance (Derek Snow)",
+          "note": "Source confirms Derek Snow publishes ML Quant Finance newsletter, and the excerpt presents multiple findings."
+        },
+        {
+          "schema_version": 1,
+          "claim": "no leading language model outperforms an equal-weight allocation strategy in benchmark tests",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "no leading language model outperforms an equal-weight allocation strategy in benchmark tests",
+          "source_span": "benchmarks show no leading model beats equal-weight",
+          "note": "Direct paraphrase of the source's statement; 'language model' is a reasonable specification given the LLM context."
+        },
+        {
+          "schema_version": 1,
+          "claim": "language-model traders collapse under information attacks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "language-model traders collapse under information attacks",
+          "source_span": "LLM traders fall to information attacks",
+          "note": "'Collapse' is a reasonable paraphrase of 'fall to'; source confirms LLM traders are vulnerable to information attacks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Neural filters cut arbitrage uncertainty eightfold",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Neural filters cut arbitrage uncertainty eightfold",
+          "source_span": "neural filters cut arbitrage uncertainty eightfold",
+          "note": "Near-verbatim match with the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "machine-learning value-at-risk models conceal regime-shift failures",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "machine-learning value-at-risk models conceal regime-shift failures",
+          "source_span": "ML VaR models hide regime-shift failures",
+          "note": "'Conceal' is a valid paraphrase of 'hide'; 'machine-learning value-at-risk' correctly expands 'ML VaR'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Snow's harness covering five attack types on benchmark data",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Snow's harness covering five attack types on benchmark data",
+          "source_span": "",
+          "note": "The source excerpt does not mention a 'harness' or specify five attack types; this detail cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Quant AI deployments now have documented failure modes: benchmark collapse and adversarial fragility on the record.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Quant AI deployments now have documented failure modes: benchmark collapse and adversarial fragility on the record.",
+          "source_span": "LLM traders fall to information attacks while benchmarks show no leading model beats equal-weight; neural filters cut arbitrage uncertainty eightfold yet ML VaR models hide regime-shift failures",
+          "note": "The take's factual core — that failure modes (benchmark underperformance and adversarial vulnerability) are documented — is supported by the source's explicit statements."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AI systems in financial contexts are passing the tests they were set while failing the ones nobody thought to run.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "AI systems in financial contexts are passing the tests they were set while failing the ones nobody thought to run.",
+          "source_span": "6.5-12.0% of sessions are judged successful when only the final records are checked, although the assistant skipped a required step or made an unrequested change. ... benchmarks show no leading model beats equal-weight; neural filters cut arbitrage uncertainty eightfold yet ML VaR models hide regime-shift failures.",
+          "note": "synthesis: Both sources document AI systems succeeding on standard metrics while failing on untested dimensions (procedure compliance, regime-shift robustness), supporting this as a valid paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The field is moving toward a harder question about what evaluation frameworks are actually measuring.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The field is moving toward a harder question about what evaluation frameworks are actually measuring.",
+          "source_span": "",
+          "note": "synthesis: This is an editorial framing about a directional trend in the field; the sources document specific problems but do not assert this broader movement as a fact."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_50000cc4f324b2f9",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A banking-agent benchmark finds outcome scoring misses up to 12% of failures",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A banking-agent benchmark finds outcome scoring misses up to 12% of failures",
+          "source_span": "For every model, 6.5-12.0% of sessions are judged successful when only the final records are checked, although the assistant skipped a required step or made an unrequested change.",
+          "note": "The source confirms up to 12% of sessions pass outcome-only checks despite failures; 'misses failures' is a fair paraphrase of 'judged successful although the assistant skipped a required step'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Standard agent benchmarks judge only the final state of a conversation.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Standard agent benchmarks judge only the final state of a conversation.",
+          "source_span": "Benchmarks usually judge only the records left at the end of a conversation.",
+          "note": "'Final state' is a fair paraphrase of 'records left at the end of a conversation'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An arXiv preprint introduces TauIndianBankBench",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "An arXiv preprint introduces TauIndianBankBench",
+          "source_span": "Title: TauIndianBankBench: Procedure-Aware, Action-Oriented Evaluation of Tool-Using Conversational Agents\nPublisher: arXiv cs.CL",
+          "note": "The source is an arXiv paper presenting TauIndianBankBench."
+        },
+        {
+          "schema_version": 1,
+          "claim": "TauIndianBankBench covers 1,000 Indian retail-banking tasks",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "1,000 Indian retail-banking tasks",
+          "source_span": "We present TauIndianBankBench, an action-oriented benchmark of 1,000 Indian retail-banking tasks",
+          "note": "Exact match with the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Both procedure and outcome are scored",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "both procedure and outcome are scored",
+          "source_span": "Scoring both procedure and outcome shows more accurately how well language models perform in Indian retail banking.",
+          "note": "Directly confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Between 6.5% and 12% of sessions pass outcome-only checks despite skipping required steps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Between 6.5% and 12% of sessions pass outcome-only checks despite skipping required steps.",
+          "source_span": "For every model, 6.5-12.0% of sessions are judged successful when only the final records are checked, although the assistant skipped a required step or made an unrequested change.",
+          "note": "The range matches exactly; 'pass outcome-only checks despite skipping required steps' accurately paraphrases the source, though the source also includes 'made an unrequested change' as a second failure mode — omitting that detail is not an error."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Banking agent evals scored only final records; procedure checking exposes a separate failure layer.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Banking agent evals scored only final records; procedure checking exposes a separate failure layer.",
+          "source_span": "Benchmarks usually judge only the records left at the end of a conversation... For every model, 6.5-12.0% of sessions are judged successful when only the final records are checked, although the assistant skipped a required step or made an unrequested change.",
+          "note": "Both embedded factual assertions — that evals scored only final records and that procedure checking reveals additional failures — are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A 1,000-task benchmark was used.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A 1,000-task benchmark",
+          "source_span": "an action-oriented benchmark of 1,000 Indian retail-banking tasks",
+          "note": "digest: The source confirms the benchmark contains exactly 1,000 tasks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Up to 12% of sessions pass outcome checks despite skipping required steps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "up to 12% of sessions pass outcome checks despite skipping required steps",
+          "source_span": "For every model, 6.5-12.0% of sessions are judged successful when only the final records are checked, although the assistant skipped a required step or made an unrequested change.",
+          "note": "digest: The source states 6.5–12.0%, so 'up to 12%' is a supported approximation of the upper bound; the summary omits the lower bound and the 'unrequested change' sub-case, which are omissions not false assertions."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Banking agents hide procedural failures.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Banking agents hide procedural failures",
+          "source_span": "an assistant that skips them can still be judged successful",
+          "note": "digest: This is a supported paraphrase of the source's core finding that outcome-only evaluation masks procedural non-compliance."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 12 stories -- factual flags present"
+}
