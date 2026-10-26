@@ -1,0 +1,356 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-26T21:37:17.391942Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual errors (unsupported benchmark attribution), a repeated take scaffold across three Hands-On stories, and several closing-shape failures across both sections.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "a bias confirmed in the model's own benchmarks",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this claim 'unsupported': the source does not assert the bias was confirmed in the model's own benchmarks. Remove that attribution. Rewrite to: 'The model generates 19% more vulnerabilities for US defence prompts than for equivalent Chinese-contractor prompts, a gap documented in independent researcher testing.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_246bdb2d72721f64",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "The researchers' own benchmarks surface this",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as unsupported: the source does not state the bias was surfaced by the researchers' own benchmarks. Remove or rephrase to reflect only what the source asserts — that independent researchers documented the gap — without attributing the discovery to the model's own benchmark suite.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_417ebb97b705ac46",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "TorchTPU (Google + Meta) and TorchNeuron (AWS) both land as native PyTorch backends this week, replacing a six-year-old workaround that required invasive code changes",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags two contradictions: the source says TorchTPU replaces PyTorch/XLA (a lazy-tensor bridge from 2020), not a generic 'six-year-old workaround', and the 'invasive code changes' characterisation is the source's own language for XLA specifically — it does not apply to TorchNeuron in the same framing. Separate the two backends: state TorchTPU replaces PyTorch/XLA (the lazy-tensor bridge introduced in 2020 that required intrusive source-code modifications) and describe TorchNeuron's prior workaround on its own terms. Do not conflate both under a single 'six-year-old workaround' claim.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "TorchTPU and TorchNeuron replace a six-year XLA workaround, letting PyTorch models reach Google and AWS silicon without code rewrites.",
+      "fix_kind": "text_edit",
+      "instruction": "This repeats the contradicted claim from the story body. The source attributes the XLA workaround specifically to TorchTPU/PyTorch/XLA, not to TorchNeuron. Rewrite to: 'TorchTPU replaces PyTorch/XLA's six-year lazy-tensor bridge; TorchNeuron adds a native AWS Trainium backend — both remove the need for invasive code changes.'",
+      "echo_of": "f003"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_69a402eb917279c8",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Which egress controls govern your agent deployment environment?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture closing question must be anchored to a specific role, decision, or constraint in the reader's org. 'Which egress controls govern your agent deployment environment?' is close but generic — it names a control class without anchoring to a decision-maker or a concrete constraint. Sharpen to something like: 'Which team in your org owns egress policy for self-hosted model environments, and have they reviewed it since you added open-weight models?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1500f12058459e58",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Which of your internal agents could do the same, and do your credential hygiene reviews cover them?",
+      "fix_kind": "text_edit",
+      "instruction": "Two questions in the closing sentence violates the single-strategic-question shape. The second question ('do your credential hygiene reviews cover them?') is also a prescription dressed as a question. Collapse to one anchored question, e.g.: 'Which of your internal agents holds credentials scoped beyond its declared task, and who owns that audit?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f48dd45814d67b1c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Which of those four external components does your current compliance framework actually own?",
+      "fix_kind": "text_edit",
+      "instruction": "The question is anchored to the four components named in the body, which is good, but 'actually own' is vague about the decision at stake. Sharpen to name the specific compliance role or gap: e.g., 'Which of those four components — gateway, supervisor, sandbox, or policy prover — falls outside your current compliance team's remit?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_d6e4a46c8086fbb6",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "How much post-coding review capacity does your team actually have?",
+      "fix_kind": "text_edit",
+      "instruction": "This question has an obvious implied answer ('not enough') and functions as a rhetorical nudge rather than a genuine strategic question anchored to a decision. Rewrite to anchor to a specific constraint: e.g., 'If an agent lands four rejected changes for every two accepted ones, does your review process have a defined threshold for pausing agentic runs?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ddbf45639efeddc9",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent task scoring ran in separate infrastructure; Scale AI's eval framework now runs inside Vercel Sandbox.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is two sentences joined by a semicolon, violating the one-declarative-sentence rule. The first clause ('ran in separate infrastructure') restates the prior state rather than the publication's position. Collapse to one sentence stating what is now true: e.g., 'Scale AI's AgentEnv eval framework now runs inside Vercel Sandbox, removing the need for separate eval infrastructure.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_b75a3132530ac076",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Inference routing now ships a public cost-quality tradeoff, where guesswork shipped before.",
+      "fix_kind": "text_edit",
+      "instruction": "The clause 'where guesswork shipped before' is a label construction appended to the declarative core, and the comma-joined contrast reads as two propositions. Rewrite as a single clean declarative: e.g., 'Cloudflare's Auto Router is the first publicly benchmarked inference router to publish a cost-quality tradeoff curve.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_0057b9fd930003e8",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "On-device agentic inference previously required cloud APIs; a capable open model now runs locally.",
+      "fix_kind": "text_edit",
+      "instruction": "Same two-clause semicolon structure as c_ddbf45639efeddc9's take — the first clause restates the prior state rather than the publication's position. This is the second instance of the 'X previously required Y; Z now exists' scaffold in the same section. Rewrite as a single forward-looking declarative: e.g., 'Muse Glimmer is the first open 30B model to run multi-step agentic tasks on a single consumer GPU without cloud dependency.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_417ebb97b705ac46",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "PyTorch shops previously needed a brittle XLA bridge to reach TPU silicon; native backends now exist.",
+      "fix_kind": "text_edit",
+      "instruction": "Third instance of the 'X previously required Y; Z now exists' scaffold across the same section's takes (also c_ddbf45639efeddc9 and c_0057b9fd930003e8). Three or more sharing a frame is a major per criterion, but this is the third — flag as major and rewrite to break the pattern. Rewrite: e.g., 'TorchTPU and TorchNeuron give PyTorch a direct path to Google and AWS accelerators, retiring the XLA lazy-tensor bridge.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8555e95cf2489354",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Point it at your highest-volume document ingestion workflow first.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On closing imperative must be sharpened to a specific artefact plus trigger. 'Point it at your highest-volume document ingestion workflow first' names neither a specific artefact (which endpoint, which SDK call, which config flag?) nor a concrete trigger condition. Rewrite to name the specific integration point and a measurable trigger: e.g., 'Route your highest-volume invoice or form-filling endpoint through Vercel AI Gateway's GPT-6.1 Terra integration and compare token cost against your current OCR pipeline on the same document set.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_0057b9fd930003e8",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Pull the weights and run your own agentic task eval before relying on the benchmark numbers.",
+      "fix_kind": "text_edit",
+      "instruction": "Generic 'test before you trust' fails the Hands-On closing shape. Sharpen to a specific artefact and trigger: name the model hub location, the quantisation flag, and a concrete eval condition — e.g., 'Pull the 4-bit quantised weights from Hugging Face, run the published agentic benchmark harness on your target task type, and compare failure-recovery rate against your current cloud API baseline before switching.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bea6d785a8b75166",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Check licence terms before committing to architecture.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body must end on a presence-form maturity signal (what exists and what it is worth today), not a prescription. 'Check licence terms before committing to architecture' is an imperative instruction. Rewrite the closing sentence to characterise the current state of the evidence: e.g., 'Weights are promised for 4 November; until then, the Highspeed API is the only way to test whether the benchmark gains hold on production workloads.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f016",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bea6d785a8b75166",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Open-weight access to near-frontier intelligence now has a confirmed date, not an indefinite promise.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's 'Weights are promised for 4 November' sentence rather than adding the publication's position beyond what the body already says. Rewrite to state the editorial position the body stopped short of: e.g., 'Kimi K3.1 Pro is the first near-frontier open-weight model to publish a release date while already ranking fourth on an independent intelligence index.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f017",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f48dd45814d67b1c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agent governance placed inside the model is now the architecture to retire.",
+      "fix_kind": "text_edit",
+      "instruction": "Minor register collision: the section synthesis opens with 'governance placed inside the agent… does not hold under live conditions', which is the same proposition in adjacent registers. The take should advance beyond the synthesis rather than restate it. Rewrite to name the replacement architecture specifically: e.g., 'NVIDIA's OpenShell establishes external enforcement — gateway, supervisor, sandbox, policy prover — as the reference architecture for production agent governance.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f018",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_246bdb2d72721f64",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "Coding pipelines built on Qwen3-Coder now carry a documented geopolitical attack-surface risk, not a theoretical one.",
+      "fix_kind": "carry_forward",
+      "instruction": "The Qwen3 model family has now appeared across multiple consecutive issues (Qwen3.8-Flash-Next in today's Big Picture, Kimi K3.1 Pro in Currents referencing the same open-weight frontier race). If Qwen3-Coder returns tomorrow, the Pulse should explicitly reference today's coverage and show progression rather than treating it as a fresh story.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f019",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "governance placed inside the agent, whether as a model assumption, a task boundary, or a data-residency rule, does not hold under live conditions",
+      "fix_kind": "carry_forward",
+      "instruction": "The 2026-10-26 Big Picture synthesis used 'governance frameworks built around human-speed review cycles are now the common exposure' as its unifying frame. Today's synthesis uses 'governance placed inside the agent does not hold under live conditions' — a closely adjacent frame. Both are legitimate, but if tomorrow's Big Picture again centres on agent governance failure, the synthesis must name the progression explicitly rather than restating the same structural diagnosis a third time.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "216151af0aaf2005f7d16bbd6f6ddabce65916b2fc7b6ddb7d6311e6f3478918",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 2 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
