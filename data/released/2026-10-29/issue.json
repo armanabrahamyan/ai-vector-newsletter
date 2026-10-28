@@ -1,0 +1,1282 @@
+{
+  "schema_version": 9,
+  "issue_number": 79,
+  "revision": 0,
+  "date": "2026-10-29",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_1c8a8b843da06a33",
+        "headline": "Anthropic's agent architecture separates reasoning from code execution",
+        "summary": "Anthropic's Managed Agents split the session harness from the execution sandbox: the harness persists, the sandbox is created on demand and discarded on failure. Credentials attach through a proxy and never enter the sandbox. That boundary — what persists, what executes, where secrets live — is becoming the default starting point for production agent architecture.",
+        "take": "Production agent design now has a named split: reasoning persists, execution stays disposable.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://latent.space/p/opus55/"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_1c8a8b843da06a33",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's agent architecture separates reasoning from code execution",
+              "verdict": "supported",
+              "location": "headline",
+              "summary_span": "Anthropic's agent architecture separates reasoning from code execution",
+              "source_span": "In Managed Agents, Anthropic separates the session log and harness from the sandbox that executes code.",
+              "note": "The source confirms the brain/hands separation; 'reasoning' for 'session log and harness' and 'code execution' for 'sandbox' are fair plain-English paraphrases."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Anthropic's Managed Agents split the session harness from the execution sandbox",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Anthropic's Managed Agents split the session harness from the execution sandbox",
+              "source_span": "In Managed Agents, Anthropic separates the session log and harness from the sandbox that executes code.",
+              "note": "Direct match to source description of Managed Agents architecture."
+            },
+            {
+              "schema_version": 1,
+              "claim": "the harness persists, the sandbox is created on demand and discarded on failure",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "the harness persists, the sandbox is created on demand and discarded on failure",
+              "source_span": "The harness can persist while an execution environment is created when needed; a failed sandbox does not have to take the whole agent session with it.",
+              "note": "'Discarded on failure' is a fair compression of 'a failed sandbox does not have to take the whole agent session with it'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Credentials attach through a proxy and never enter the sandbox",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Credentials attach through a proxy and never enter the sandbox",
+              "source_span": "The episode describes credentials held separately and attached through a proxy, alongside controls on where sandbox traffic can go.",
+              "note": "'Never enter the sandbox' is a fair paraphrase of 'If generated code runs in a sandbox that never receives a service credential, there is no credential in that sandbox for the code to read.'"
+            },
+            {
+              "schema_version": 1,
+              "claim": "Production agent design now has a named split: reasoning persists, execution stays disposable.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Production agent design now has a named split: reasoning persists, execution stays disposable.",
+              "source_span": "Our favorite mental model in the episode is the distinction between an agent's brain and its hands. In Managed Agents, Anthropic separates the session log and harness from the sandbox that executes code. The harness can persist while an execution environment is created when needed; a failed sandbox does not have to take the whole agent session with it.",
+              "note": "The take's editorial framing embeds the factual claim that Anthropic's architecture names a split between persistent reasoning and disposable execution, which the source confirms."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Anthropic isolates secrets from execution.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Anthropic isolates secrets from execution.",
+              "source_span": "If generated code runs in a sandbox that never receives a service credential, there is no credential in that sandbox for the code to read.",
+              "note": "digest: The source explicitly describes keeping credentials out of the execution sandbox, supporting this claim."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The sandbox is created on demand.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "The sandbox is created on demand",
+              "source_span": "The harness can persist while an execution environment is created when needed",
+              "note": "digest: 'Created when needed' is equivalent to 'created on demand' — supported paraphrase."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The sandbox is discarded on failure.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "discarded on failure",
+              "source_span": "a failed sandbox does not have to take the whole agent session with it",
+              "note": "digest: The source says a failed sandbox can be discarded without destroying the session, supporting the claim that it is discarded on failure."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Credentials are kept in a separate proxy.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "keeping credentials in a separate proxy",
+              "source_span": "The episode describes credentials held separately and attached through a proxy",
+              "note": "digest: Source directly states credentials are held separately and attached through a proxy, matching the claim."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_a28f06836721dfb1",
+          "headline": "Pre-deployment safety evals can be defeated by cryptographic backdoors",
+          "summary": "A preprint demonstrates that encrypted neural networks can be embedded inside model weights, activating only on a secret trigger. The hidden circuits resisted fine-tuning, weight noising, and gradient-based searches in tests on a chemical-reaction task. Models are public. If pre-deployment evals anchor your model-risk sign-off, what detection method survives a cryptographically hidden capability?",
+          "take": "Capability audits now have a proven blind spot: encrypted backdoors that full weight access cannot surface.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.schneier.com/blog/archives/2026/10/hiding-capabilities-in-ai-models.html"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a28f06836721dfb1",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Pre-deployment safety evals can be defeated by cryptographic backdoors",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Pre-deployment safety evals can be defeated by cryptographic backdoors",
+                "source_span": "Capability evaluations aim to surface dangerous model behaviors before deployment, but their reliability depends on the assumption that hidden capabilities can be elicited. We show this assumption does not hold under adversarial conditions by constructing backdoor attacks that embed encrypted neural networks within host model weights, decrypting and executing them only upon receiving a secret trigger.",
+                "note": "'Pre-deployment safety evals' is a fair paraphrase of 'capability evaluations before deployment', and the cryptographic backdoor defeat is directly supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "encrypted neural networks can be embedded inside model weights, activating only on a secret trigger",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "encrypted neural networks can be embedded inside model weights, activating only on a secret trigger",
+                "source_span": "constructing backdoor attacks that embed encrypted neural networks within host model weights, decrypting and executing them only upon receiving a secret trigger",
+                "note": "Near-verbatim match with the source abstract."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The hidden circuits resisted fine-tuning, weight noising, and gradient-based searches",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The hidden circuits resisted fine-tuning, weight noising, and gradient-based searches",
+                "source_span": "evaluate elicitation through fine-tuning, weight noising, gradient-based trigger search, and latent adversarial training... Our results demonstrate resistance to these methods",
+                "note": "The summary omits 'latent adversarial training' from the list but does not assert it was absent; omission is not an error."
+              },
+              {
+                "schema_version": 1,
+                "claim": "tests on a chemical-reaction task",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "in tests on a chemical-reaction task",
+                "source_span": "using a small chemical reaction prediction task as a proxy for CBRN-relevant capabilities",
+                "note": "Accurate paraphrase of the source's described evaluation task."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Models are public.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Models are public.",
+                "source_span": "We release our models to support the improvement of defenses.",
+                "note": "The source confirms models are released publicly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Capability audits now have a proven blind spot: encrypted backdoors that full weight access cannot surface.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Capability audits now have a proven blind spot: encrypted backdoors that full weight access cannot surface.",
+                "source_span": "these hidden circuits remain provably hard to elicit and interpret under cryptographic assumptions, even given full access to model weights... reveal a limit of elicitation-based capability audits",
+                "note": "'Proven blind spot' and 'full weight access cannot surface' are supported by the source's cryptographic guarantees and explicit statement about limits of capability audits."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hidden circuits are embedded in model weights.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Hidden circuits embedded in model weights",
+                "source_span": "constructing backdoor attacks that embed encrypted neural networks within host model weights",
+                "note": "digest: 'Hidden circuits embedded in model weights' is a plain-English paraphrase of 'embed encrypted neural networks within host model weights'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hidden circuits survived fine-tuning and gradient searches.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "survived fine-tuning and gradient searches",
+                "source_span": "evaluate elicitation through fine-tuning, weight noising, gradient-based trigger search, and latent adversarial training... Our results demonstrate resistance to these methods",
+                "note": "digest: The summary accurately compresses the paper's finding of resistance to fine-tuning and gradient-based trigger search, omitting weight noising and latent adversarial training (omission is not an error)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Hidden circuits survived in benchmark tests.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "in benchmark tests",
+                "source_span": "using a small chemical reaction prediction task as a proxy for CBRN-relevant capabilities",
+                "note": "digest: 'Benchmark tests' is a reasonable plain-English generalisation of the evaluation methodology described in the abstract."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Encrypted backdoors defeat weight inspection.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Encrypted backdoors defeat weight inspection",
+                "source_span": "hidden circuits remain provably hard to elicit and interpret under cryptographic assumptions, even given full access to model weights",
+                "note": "digest: 'Defeat weight inspection' accurately paraphrases 'provably hard to elicit and interpret...even given full access to model weights'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Weight access reveals hidden behaviour is a load-bearing assumption being stressed.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "that weight access reveals hidden behaviour",
+                "source_span": "hidden circuits remain provably hard to elicit and interpret under cryptographic assumptions, even given full access to model weights",
+                "note": "synthesis: The source explicitly states that full weight access does not reveal hidden capabilities, supporting the claim that this assumption is under stress."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent architectures need no formal separation of concerns is a load-bearing assumption being stressed.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "that agent architectures need no formal separation of concerns",
+                "source_span": "separating the model's \"brain\" from the agent's \"hands,\" scaling APIs, and building reliable managed agents",
+                "note": "synthesis: The Anthropic story is precisely about introducing formal separation (brain vs. hands), implying the prior assumption of no such separation is being challenged."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Software output scales gradually is a load-bearing assumption being stressed.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "that software output scales gradually",
+                "source_span": "merged pull requests tripled in less than a year to 220 million per month. Commits more than tripled to 7.38 billion per month",
+                "note": "synthesis: The Octoverse data shows output tripling in under a year, contradicting a gradual-scaling assumption, so the editorial framing is grounded in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI infrastructure debt stays contained is a load-bearing assumption being stressed.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "that AI infrastructure debt stays contained",
+                "source_span": "Capital expenditure to build artificial intelligence (AI) infrastructure is growing fast, and a rising share is financed with long-term debt and through complex off-balance sheet arrangements",
+                "note": "synthesis: The BIS paper describes growing debt and complex off-balance sheet structures, supporting the claim that the 'debt stays contained' assumption is under pressure."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Four stories today each stress a different load-bearing assumption.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Four stories today each stress a different load-bearing assumption",
+                "source_span": "",
+                "note": "synthesis: There are exactly four source titles provided, so the count of four stories is consistent with the source material; 'Four' is a correct count, not a named entity."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_30bf441b7fbc0822",
+          "headline": "Anthropic separates the thinking layer from the action layer in managed agents",
+          "summary": "Anthropic engineers Katelyn Lesse and Angela Jiang lay out the architecture behind Claude's managed agent platform: the model reasons in an isolated brain layer while a separate harness controls credentials, sandboxes, and tool calls. Does your orchestration layer enforce that boundary, or has your team already collapsed it in the name of shipping faster?",
+          "take": "Agent builders on Claude now have a reference architecture, not just API docs.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://latent.space/p/how_anthropic_ships_the_1_llm_in_the_world_safely_separating_the_brain_from_the_hands/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_30bf441b7fbc0822",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Anthropic separates the thinking layer from the action layer in managed agents",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Anthropic separates the thinking layer from the action layer in managed agents",
+                "source_span": "separating the model's \"brain\" from the agent's \"hands,\" scaling APIs, and building reliable managed agents",
+                "note": "The source confirms the brain/hands separation in managed agents; 'thinking layer' and 'action layer' are plain-English paraphrases of 'brain' and 'hands'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Anthropic engineers Katelyn Lesse and Angela Jiang lay out the architecture behind Claude's managed agent platform",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Anthropic engineers Katelyn Lesse and Angela Jiang lay out the architecture behind Claude's managed agent platform",
+                "source_span": "Katelyn Lesse and Angela Jiang join Latent Space to explain the engineering behind the Claude Platform: launching Opus 5.5, separating the model's \"brain\" from the agent's \"hands,\" scaling APIs, and building reliable managed agents.",
+                "note": "Source confirms both named individuals explain the Claude Platform engineering, including managed agents architecture."
+              },
+              {
+                "schema_version": 1,
+                "claim": "the model reasons in an isolated brain layer",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the model reasons in an isolated brain layer",
+                "source_span": "Scaling Managed Agents — Decoupling the brain, harness and sandbox. How Anthropic contains Claude — Isolation, credentials and network controls.",
+                "note": "Source confirms isolation and the brain/hands decoupling; 'isolated brain layer' is a supported paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a separate harness controls credentials, sandboxes, and tool calls",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a separate harness controls credentials, sandboxes, and tool calls",
+                "source_span": "Decoupling the brain, harness and sandbox. How Anthropic contains Claude — Isolation, credentials and network controls. Protecting credentials and sandboxes",
+                "note": "Source confirms harness, sandbox, and credential control as distinct components; 'tool calls' is a reasonable inference from the harness/hands framing but 'credentials and sandboxes' are explicitly named."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent builders on Claude now have a reference architecture, not just API docs.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agent builders on Claude now have a reference architecture, not just API docs.",
+                "source_span": "",
+                "note": "The source confirms architectural content was discussed but does not characterise it as a 'reference architecture' or contrast it with 'API docs'; this framing is editorial and cannot be confirmed or denied from the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_4f3c0688fedff44a",
+          "headline": "Agentic coding tripled GitHub's pull requests in under a year",
+          "summary": "GitHub's Octoverse 2026 report puts hard numbers on agentic engineering's scale: merged pull requests tripled to 220 million per month, commits surpassed 7.38 billion per month, and new repository creation doubled to 30.3 million per month. These are platform-wide figures from GitHub's own report. If your team's productivity benchmarks still use 2025 baselines, what are you actually measuring?",
+          "take": "Software output metrics that once moved annually now shift within a single quarter.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://simonwillison.net/2026/Oct/28/github-octoverse-2026/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_4f3c0688fedff44a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Agentic coding tripled GitHub's pull requests in under a year",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Agentic coding tripled GitHub's pull requests in under a year",
+                "source_span": "In 2026, merged pull requests tripled in less than a year to 220 million per month.",
+                "note": "'In under a year' is a valid paraphrase of 'in less than a year', and the tripling of pull requests is directly confirmed."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GitHub's Octoverse 2026 report puts hard numbers on agentic engineering's scale",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "GitHub's Octoverse 2026 report puts hard numbers on agentic engineering's scale",
+                "source_span": "GitHub Octoverse 2026... This is a pretty stark representation of the impact of agentic engineering on GitHub.",
+                "note": "The source confirms the Octoverse 2026 report covers agentic engineering's impact with specific figures."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Merged pull requests tripled to 220 million per month",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "merged pull requests tripled to 220 million per month",
+                "source_span": "merged pull requests tripled in less than a year to 220 million per month.",
+                "note": "Exact figures match the source directly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Commits surpassed 7.38 billion per month",
+                "verdict": "contradicted",
+                "location": "body",
+                "summary_span": "commits surpassed 7.38 billion per month",
+                "source_span": "Commits more than tripled to 7.38 billion per month",
+                "note": "The source states commits reached exactly 7.38 billion per month; 'surpassed 7.38 billion' implies the figure exceeded that number, which conflicts with the source's 'to 7.38 billion'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "New repository creation doubled to 30.3 million per month",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "new repository creation doubled to 30.3 million per month",
+                "source_span": "New repository rate doubled this year, to 30.3 million per month.",
+                "note": "Exact figures match the source directly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "These are platform-wide figures from GitHub's own report",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "These are platform-wide figures from GitHub's own report",
+                "source_span": "GitHub Octoverse 2026... EVP Jay Parikh just announced this year's Octoverse report",
+                "note": "The source confirms these are GitHub's own Octoverse report figures; platform-wide scope is consistent with the report's nature."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Software output metrics that once moved annually now shift within a single quarter.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Software output metrics that once moved annually now shift within a single quarter.",
+                "source_span": "",
+                "note": "This is an editorial position; the source does not contain any claim about the cadence of metric shifts (annual vs. quarterly), so it cannot be verified from the excerpt."
+              }
+            ],
+            "has_contradiction": true,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_1142469bb525e9b6",
+          "headline": "AI infrastructure debt now carries spillover risk for bond markets",
+          "summary": "A BIS Financial Stability Institute paper finds a handful of firms use off-balance-sheet structures to upgrade AI debt's credit rating, drawing in institutional capital. Banks lend to both the financing vehicles and the investors. Spillovers to bond markets were small in 2026; sustained issuance changes that calculus. Which risk framework governs your firm's exposure on both sides?",
+          "take": "Banks now sit on both sides of AI infrastructure debt, as lender and as bondholder.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.bis.org/publications/bulletin-140-building-ai-credit--structures-and-spillovers"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "read",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_1142469bb525e9b6",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AI infrastructure debt now carries spillover risk for bond markets",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AI infrastructure debt now carries spillover risk for bond markets",
+                "source_span": "On AI-financing-related news days in 2026, spillovers to US Treasury and investment-grade bond markets were small and short-lived, but sustained issuance at the current pace could change this.",
+                "note": "The source confirms spillover risk exists and could grow; the headline is a reasonable compression of that conditional risk finding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A BIS Financial Stability Institute paper finds a handful of firms use off-balance-sheet structures to upgrade AI debt's credit rating",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A BIS Financial Stability Institute paper finds a handful of firms use off-balance-sheet structures to upgrade AI debt's credit rating",
+                "source_span": "Off-balance sheet commitments from a few large firms help to transform the credit rating of the debt, drawing in institutional capital.",
+                "note": "The source is a BIS FSI paper; 'a handful of firms' paraphrases 'a few large firms'; 'upgrade credit rating' paraphrases 'transform the credit rating' — all legitimate compressions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "off-balance-sheet structures draw in institutional capital",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "drawing in institutional capital",
+                "source_span": "Off-balance sheet commitments from a few large firms help to transform the credit rating of the debt, drawing in institutional capital.",
+                "note": "Directly matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Banks lend to both the financing vehicles and the investors",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Banks lend to both the financing vehicles and the investors.",
+                "source_span": "Banks often lend to both the vehicles and investors holding the debt.",
+                "note": "Near-verbatim match; dropping 'often' is a minor compression, not a factual error."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Spillovers to bond markets were small in 2026",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Spillovers to bond markets were small in 2026",
+                "source_span": "On AI-financing-related news days in 2026, spillovers to US Treasury and investment-grade bond markets were small and short-lived",
+                "note": "Accurate compression; omitting 'short-lived' and the specific market types is acceptable generalisation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "sustained issuance changes that calculus",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "sustained issuance changes that calculus",
+                "source_span": "but sustained issuance at the current pace could change this.",
+                "note": "The body drops the hedge 'could' but the surrounding sentence context ('changes that calculus') reads as conditional; minor compression rather than a dropped trust flag."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Banks now sit on both sides of AI infrastructure debt, as lender and as bondholder.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Banks now sit on both sides of AI infrastructure debt, as lender and as bondholder.",
+                "source_span": "Banks often lend to both the vehicles and investors holding the debt.",
+                "note": "The take accurately characterises the dual exposure described in the source; 'bondholder' is a fair paraphrase of 'investors holding the debt'."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Four stories today each stress a different load-bearing assumption: that weight access reveals hidden behaviour, that agent architectures need no formal separation of concerns, that software output scales gradually, and that AI infrastructure debt stays contained. The assumptions are failing at the same time."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_d81cfaa0be671b4d",
+          "headline": "Run a full coding agent offline on a laptop, no cloud required",
+          "summary": "OpenCode paired with Ollama and a local Qwen model (9B, requiring 12-16 GB of RAM) handles real offline tasks: explaining code, fixing failing tests, refactoring. The setup guide and example project are public on GitHub. Download everything, cut the connection, then run your failing test suite against it.",
+          "take": "Offline coding agents previously required cloud APIs; a local stack now handles real project tasks.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://latent.space/p/offline-coding/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_d81cfaa0be671b4d",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Run a full coding agent offline on a laptop, no cloud required",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Run a full coding agent offline on a laptop, no cloud required",
+                "source_span": "I tried running a coding agent locally on my laptop to see how much work I could actually get done offline.",
+                "note": "Source confirms running a coding agent locally on a laptop with internet disconnected, matching the headline's claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenCode paired with Ollama and a local Qwen model handles real offline tasks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenCode paired with Ollama and a local Qwen model (9B, requiring 12-16 GB of RAM) handles real offline tasks",
+                "source_span": "Ollama handles running the model; OpenCode handles the interaction with the project... We download everything first, then disconnect the internet for the coding task.",
+                "note": "Source confirms the OpenCode + Ollama + Qwen combination running offline tasks."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The local Qwen model is 9B",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a local Qwen model (9B",
+                "source_span": "We're using Qwen3.5 9B for this walkthrough.",
+                "note": "Source explicitly states Qwen3.5 9B is used."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The local Qwen model requires 12-16 GB of RAM",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "requiring 12-16 GB of RAM",
+                "source_span": "Voltti budgets 12–16 GB of memory for a 6.6 GB Qwen3.5 9B build.",
+                "note": "Source states 12–16 GB memory budget for the 9B model, matching the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenCode handles explaining code, fixing failing tests, refactoring",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "handles real offline tasks: explaining code, fixing failing tests, refactoring",
+                "source_span": "We can ask an agent to explain an unfamiliar function, investigate a failing test, refactor a small piece of code, or help finish a feature.",
+                "note": "Source lists these exact task types as doable offline; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The setup guide and example project are public on GitHub",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The setup guide and example project are public on GitHub",
+                "source_span": "follow the complete setup in the GitHub README. It covers installing the tools, downloading the project, and installing OpenCode 1.19.4. The project includes the examples, tests and configuration for using Qwen locally.",
+                "note": "Source confirms a GitHub README with setup guide and example project."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Offline coding agents previously required cloud APIs; a local stack now handles real project tasks.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Offline coding agents previously required cloud APIs; a local stack now handles real project tasks.",
+                "source_span": "These runs used cloud APIs and different models from ours... I tried running a coding agent locally on my laptop to see how much work I could actually get done offline.",
+                "note": "Source contrasts prior cloud-API-based runs with the new local setup handling real tasks, supporting the take's assertion."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Every release today shifts the same constraint: something that previously required cloud access, multi-GPU hardware, or proprietary data now runs locally on commodity kit.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "something that previously required cloud access, multi-GPU hardware, or proprietary data now runs locally on commodity kit",
+                "source_span": "I tried running a coding agent locally on my laptop to see how much work I could actually get done offline. ... the text model fits in about 1 GB at 4-bit precision ... every model fine-tunes on a single GPU ... Claude set up Kev-4B, an open-weight model, locally and wrote the pipeline.",
+                "note": "synthesis: The sources collectively show offline local coding agents (Himalaya article), single-GPU fine-tuning on commodity hardware (LFM3 article), and local open-weight model pipelines (Numerai article), supporting the editorial generalisation that cloud/multi-GPU/proprietary-data constraints are being removed."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_0dcc68e95cb86f2f",
+          "headline": "Liquid AI's smallest model now runs text, images, and audio locally",
+          "summary": "Ollama v0.40.12 ships Liquid AI's LFM3 family: a 1.7B text model with a 256K-token context window, plus image, audio (18 languages), and combined omni variants. A companion 2B decision model can classify inputs like billing disputes from the command line. Apple silicon only for now; Linux and Windows support is pending. Run `ollama run lfm3` against your next tool-calling prototype.",
+          "take": "Local agent builders now have a multimodal tool-calling model small enough to run on a laptop.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://github.com/ollama/ollama/releases/tag/v0.40.12"
+          ],
+          "prior_coverage_ref": "c_95287ff3c36d4ac8",
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0dcc68e95cb86f2f",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Liquid AI's smallest model now runs text, images, and audio locally",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Liquid AI's smallest model now runs text, images, and audio locally",
+                "source_span": "lfm3-omni: text, images, and audio in one model ... Note: lfm3 and d1 2b are supported on Apple hardware in this release.",
+                "note": "The omni variant handles text, images, and audio locally on Apple hardware, supporting the headline's claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Ollama v0.40.12 ships Liquid AI's LFM3 family",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Ollama v0.40.12 ships Liquid AI's LFM3 family",
+                "source_span": "Title: v0.40.12 ... Liquid AI LFM3",
+                "note": "The source confirms LFM3 is introduced in Ollama release v0.40.12."
+              },
+              {
+                "schema_version": 1,
+                "claim": "a 1.7B text model with a 256K-token context window",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a 1.7B text model with a 256K-token context window",
+                "source_span": "lfm3: a 1.7B text model with a 256K-token context window",
+                "note": "Exact match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "plus image, audio (18 languages), and combined omni variants",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "plus image, audio (18 languages), and combined omni variants",
+                "source_span": "lfm3-vl: adds image understanding ... lfm3-audio: speech recognition, translation, and text-to-speech in 18 languages ... lfm3-omni: text, images, and audio in one model",
+                "note": "All three variants and the 18-language detail are confirmed in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A companion 2B decision model can classify inputs like billing disputes from the command line",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A companion 2B decision model can classify inputs like billing disputes from the command line",
+                "source_span": "Liquid AI's d1 models now come in a 2B size, built on LFM3. d1 makes decisions about text and images ... ollama run d1:2b \"I was charged twice for order 4417.\" --ask \"Is this a billing issue?\"",
+                "note": "The source shows a 2B d1 decision model used via CLI with a billing dispute example."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Apple silicon only for now; Linux and Windows support is pending",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Apple silicon only for now; Linux and Windows support is pending",
+                "source_span": "Note: lfm3 and d1 2b are supported on Apple hardware in this release. Support for Linux/Windows coming soon.",
+                "note": "Direct paraphrase of the source note; accurately reflects current and pending platform support."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Local agent builders now have a multimodal tool-calling model small enough to run on a laptop",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Local agent builders now have a multimodal tool-calling model small enough to run on a laptop",
+                "source_span": "LFM3 is Liquid AI's new family of small models built for local agents, tool calling, and structured output ... lfm3-omni: text, images, and audio in one model ... supported on Apple hardware",
+                "note": "The source confirms a small multimodal model for local agents and tool calling running on Apple hardware (laptops), supporting the take's factual content."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_76aed1712eaaa0e2",
+          "headline": "Liquid AI's six-model family fine-tunes on one GPU and fits in 1 GB",
+          "summary": "LFM3 puts text, vision, audio, and decision models on a single 1.7B-parameter backbone. The vision model matches a competitor six times its size across 62 benchmarks; the text model fits in roughly 1 GB at 4-bit precision. Weights and inference code are public. Fine-tune on a single GPU against your domain data before committing to a larger hosted model.",
+          "take": "Specialised multimodal fine-tuning previously demanded multi-GPU rigs; a 1.7B backbone now handles it on one.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/blog/LiquidAI/lfm3"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_76aed1712eaaa0e2",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Liquid AI's six-model family fine-tunes on one GPU and fits in 1 GB",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Liquid AI's six-model family fine-tunes on one GPU and fits in 1 GB",
+                "source_span": "six 2B-class models (text, vision, audio, omni, and decision) trained from LFM3-1.7B-Base... every model fine-tunes on a single GPU... the text model fits in about 1 GB at 4-bit precision",
+                "note": "Source confirms six models, single-GPU fine-tuning, and ~1 GB fit; 'Liquid AI' is the publisher (LiquidAI) of the models, a supported paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "LFM3 puts text, vision, audio, and decision models on a single 1.7B-parameter backbone.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "LFM3 puts text, vision, audio, and decision models on a single 1.7B-parameter backbone.",
+                "source_span": "It brings text, vision, audio, omni, and decision models onto one shared backbone, all in the 2B parameter range... LFM3-1.7B-Base",
+                "note": "The backbone is 1.7B parameters and the modalities listed are a subset of those named in the source; omitting 'omni' is an omission not an error, and '1.7B-parameter' is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The vision model matches a competitor six times its size across 62 benchmarks.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The vision model matches a competitor six times its size across 62 benchmarks",
+                "source_span": "raises the average across 62 vision benchmarks from 57.6 to 71.4, on par with Gemma 4 12B, a model more than six times larger",
+                "note": "Source confirms 62 benchmarks and a competitor more than six times larger; 'matches' is a fair paraphrase of 'on par with'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The text model fits in roughly 1 GB at 4-bit precision.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the text model fits in roughly 1 GB at 4-bit precision",
+                "source_span": "the text model fits in about 1 GB at 4-bit precision",
+                "note": "'Roughly' is a valid paraphrase of 'about'; claim matches source exactly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Weights and inference code are public.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Weights and inference code are public.",
+                "source_span": "",
+                "note": "The source excerpt describes how to use the models and references model cards but does not explicitly state that weights and inference code are publicly released."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Specialised multimodal fine-tuning previously demanded multi-GPU rigs; a 1.7B backbone now handles it on one.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Specialised multimodal fine-tuning previously demanded multi-GPU rigs; a 1.7B backbone now handles it on one.",
+                "source_span": "",
+                "note": "The source confirms single-GPU fine-tuning for LFM3 but does not state that multimodal fine-tuning previously required multi-GPU rigs; the historical claim is not addressed in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "LFM3's 1.7B backbone fits in 1 GB at 4-bit precision.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "LFM3's 1.7B backbone fits in 1 GB at 4-bit precision",
+                "source_span": "the text model fits in about 1 GB at 4-bit precision",
+                "note": "digest: Source confirms the text model fits in about 1 GB at 4-bit precision; 'about 1 GB' rounded to '1 GB' is acceptable house style."
+              },
+              {
+                "schema_version": 1,
+                "claim": "LFM3's 1.7B backbone matches a model six times its size.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "matches a model six times its size",
+                "source_span": "on par with Gemma 4 12B, a model more than six times larger",
+                "note": "digest: Source says LFM3-VL-2B is on par with Gemma 4 12B, described as 'more than six times larger'; 'six times its size' is a supported approximation/rounding."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Multimodal fine-tuning shrinks to one GPU.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Multimodal fine-tuning shrinks to one GPU",
+                "source_span": "every model fine-tunes on a single GPU, so you can adapt it to your data, terminology, and deployment environment",
+                "note": "digest: Source confirms all LFM3 models fine-tune on a single GPU; the summary's framing is a supported generalisation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_c6075e94943e614f",
+          "headline": "An 11-hour coding course covers how reasoning models actually work",
+          "summary": "Sebastian Raschka's eight-video series walks through evaluation, inference-time scaling, reinforcement learning, and distillation using a small Qwen3 model in PyTorch. A companion book ships from Manning. The course is free via his Ahead of AI newsletter. Clone the repo and work through one chapter against your next fine-tuning decision.",
+          "take": "Engineers building reasoning models now have a structured 11-hour implementation path, not just conceptual overviews.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://magazine.sebastianraschka.com/p/building-reasoning-models"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_c6075e94943e614f",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "An 11-hour coding course covers how reasoning models actually work",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "An 11-hour coding course covers how reasoning models actually work",
+                "source_span": "you will find eight reasoning model-from-scratch coding videos (11 hours of content)",
+                "note": "Source confirms 11 hours of coding video content on reasoning models."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Sebastian Raschka's eight-video series walks through evaluation, inference-time scaling, reinforcement learning, and distillation",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Sebastian Raschka's eight-video series walks through evaluation, inference-time scaling, reinforcement learning, and distillation",
+                "source_span": "Starting with a pre-trained model lets us focus on the interesting part: evaluation, inference-time scaling, reinforcement learning, and distillation... you will find eight reasoning model-from-scratch coding videos",
+                "note": "Source confirms eight videos by Sebastian Raschka covering all four listed topics."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Sebastian Raschka's series uses a small Qwen3 model in PyTorch",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "using a small Qwen3 model in PyTorch",
+                "source_span": "The reasoning-from-scratch videos focus on a small pre-trained Qwen3 model, where we implement the reasoning methods ourselves in Python and PyTorch.",
+                "note": "Source directly confirms a small Qwen3 model implemented in PyTorch."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A companion book ships from Manning",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A companion book ships from Manning",
+                "source_span": "The book is available from Manning and Amazon",
+                "note": "Source confirms the companion book is available from Manning (and Amazon)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The course is free via his Ahead of AI newsletter",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The course is free via his Ahead of AI newsletter",
+                "source_span": "Title: Building Reasoning Models from the Ground Up: A Full Video Course\nPublisher: Ahead of AI (Sebastian Raschka)... here are the eight main lecture videos.",
+                "note": "The videos are published freely in the Ahead of AI newsletter; source does not charge for them."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Clone the repo and work through one chapter against your next fine-tuning decision.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Clone the repo and work through one chapter against your next fine-tuning decision.",
+                "source_span": "",
+                "note": "This is a call to action; the repo reference is editorial framing not checkable from the excerpt, and 'fine-tuning decision' framing is not in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Engineers building reasoning models now have a structured 11-hour implementation path, not just conceptual overviews.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Engineers building reasoning models now have a structured 11-hour implementation path, not just conceptual overviews.",
+                "source_span": "you will find eight reasoning model-from-scratch coding videos (11 hours of content)... For a shorter, more conceptual overview, I also recommend my AI Reasoning Models course on LinkedIn Learning",
+                "note": "Source confirms 11 hours of implementation-focused content and explicitly contrasts it with a shorter conceptual overview, supporting the take's distinction."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_b97b67d99161309a",
+          "headline": "Numerai reveals real stock identities so agents can engineer their own features",
+          "summary": "Numerai's Unity dataset replaces ten years of anonymous tickers with real company identifiers and 1,040 ranked features. One internal test built three new signals from SEC filings for $33 in model costs. Existing models must be retrained on Unity by 6 November; the full tournament merger follows on 1 January 2027.",
+          "take": "Quant agents previously worked half the problem; real stock identifiers now unlock full feature engineering.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://blog.numer.ai/unifying-numerai-and-signals/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "act",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_b97b67d99161309a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Numerai reveals real stock identities so agents can engineer their own features",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Numerai reveals real stock identities so agents can engineer their own features",
+                "source_span": "We've built a new dataset called Unity with 1,040 features and real stock identifiers... The Unity dataset allows agents to work on the whole problem. This unlocks the ability for agents to source and engineer new features",
+                "note": "The headline accurately captures that Numerai is revealing real stock identities and that this enables agents to engineer their own features."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Numerai's Unity dataset replaces ten years of anonymous tickers with real company identifiers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Numerai's Unity dataset replaces ten years of anonymous tickers with real company identifiers",
+                "source_span": "For ten years, every row in Numerai's dataset was an anonymous stock... We've built a new dataset called Unity with 1,040 features and real stock identifiers.",
+                "note": "The source confirms ten years of anonymous stocks and that Unity introduces real stock identifiers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Unity dataset has 1,040 ranked features",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "1,040 ranked features",
+                "source_span": "We've built a new dataset called Unity with 1,040 features... The features themselves stay ranked, normalized, binned and unnamed.",
+                "note": "The source confirms 1,040 features and that they are ranked; 'ranked' is a fair compression of 'ranked, normalized, binned'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "One internal test built three new signals from SEC filings for $33 in model costs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "One internal test built three new signals from SEC filings for $33 in model costs",
+                "source_span": "One of our researchers gave Claude a three-step prompt: pull earnings releases from SEC's EDGAR... The result is three new point-in-time features across the US universe, and it cost just $33 in Claude Opus 5.5 tokens to build.",
+                "note": "The source confirms three new features from SEC filings at $33 cost; 'signals' for 'features' and 'model costs' for 'Claude Opus 5.5 tokens' are acceptable paraphrases."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Existing models must be retrained on Unity by 6 November",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Existing models must be retrained on Unity by 6 November",
+                "source_span": "Numerai users can continue to submit their existing models normally until November 6th. By November 6th, be ready with a new model retrained on the Unity dataset.",
+                "note": "The source confirms the November 6th deadline for retraining on Unity."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The full tournament merger follows on 1 January 2027",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the full tournament merger follows on 1 January 2027",
+                "source_span": "on January 1, 2027 they'll merge into one tournament with one Meta Model.",
+                "note": "The source confirms the January 1, 2027 merger date."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Quant agents previously worked half the problem; real stock identifiers now unlock full feature engineering.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Quant agents previously worked half the problem; real stock identifiers now unlock full feature engineering.",
+                "source_span": "On Numerai, these research agents only get to focus on half the problem – modeling... The Unity dataset allows agents to work on the whole problem. This unlocks the ability for agents to source and engineer new features",
+                "note": "The source explicitly states agents previously worked on half the problem (modeling only) and that real identifiers unlock the full problem including feature engineering."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Every release today shifts the same constraint: something that previously required cloud access, multi-GPU hardware, or proprietary data now runs locally on commodity kit. That's a consistent direction, not a coincidence, and it changes which experiments are worth queuing this week."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_7ea3f3e0d7c0da3f",
+          "headline": "Databricks voice agents personalise calls by reading your governed data mid-conversation",
+          "summary": "Most voice agent pilots prove an agent can hold a conversation; few prove it can be trusted with a real customer. Databricks' DIVA blueprint wires a voice agent's brain directly to governed data, making a real-time decision in roughly 200 milliseconds per turn. Pick one high-volume call type and measure it before scaling.",
+          "take": "Voice agents that lack live customer context stay stuck on generic scripts, not real service.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.databricks.com/blog/voice-agents-are-here-context-turns-them-real-customer-value"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_7ea3f3e0d7c0da3f",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks voice agents personalise calls by reading your governed data mid-conversation",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Databricks voice agents personalise calls by reading your governed data mid-conversation",
+                "source_span": "On every turn of the call, it looks up the caller's context, applies your business rules, and chooses the next step... It also records each decision so your teams can review it later. The brain stands on a foundation of three things that already live together on Databricks.",
+                "note": "The source confirms the agent reads governed data mid-call to personalise each turn of the conversation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Most voice agent pilots prove an agent can hold a conversation; few prove it can be trusted with a real customer.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Most voice agent pilots prove an agent can hold a conversation; few prove it can be trusted with a real customer.",
+                "source_span": "Most voice agent pilots prove that an agent can hold a conversation. Far fewer prove that it can be trusted with a real customer.",
+                "note": "Near-verbatim match with the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks' DIVA blueprint wires a voice agent's brain directly to governed data",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Databricks' DIVA blueprint wires a voice agent's brain directly to governed data",
+                "source_span": "On Databricks, the agent's brain sits next to your governed data. Context and ontology ground every answer... use the DIVA blueprint as the starting point for the next one.",
+                "note": "The source confirms the DIVA blueprint and the brain-to-governed-data architecture."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks' DIVA blueprint makes a real-time decision in roughly 200 milliseconds per turn.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "making a real-time decision in roughly 200 milliseconds per turn",
+                "source_span": "today's voice agents can keep pace with the roughly 200 milliseconds it typically takes people to answer each other in conversation",
+                "note": "The source attributes the 200ms figure to human conversational response time that voice agents match, and the body's paraphrase as 'per turn' is a reasonable compression; the figure itself is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pick one high-volume call type and measure it before scaling.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Pick one high-volume call type and measure it before scaling.",
+                "source_span": "Pick one high-volume routine call, measure how well the agent handles it, and use the DIVA blueprint as the starting point for the next one.",
+                "note": "Accurate paraphrase of the source's getting-started advice."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Voice agents that lack live customer context stay stuck on generic scripts, not real service.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Voice agents that lack live customer context stay stuck on generic scripts, not real service.",
+                "source_span": "Without it, even the most natural voice can only give generic answers.",
+                "note": "The take is an editorial position that is directly grounded in the source's assertion that context-free agents can only give generic answers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Both items today sit in Currents because each capability is real but not yet repeatable at scale.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Both items today sit in Currents because each capability is real but not yet repeatable at scale.",
+                "source_span": "",
+                "note": "synthesis: 'Currents' is a newsletter section label not mentioned in any source excerpt; this is editorial framing about newsletter categorization that cannot be confirmed or denied from the source material."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI systems are gaining live context simultaneously.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AI systems are gaining live context and generative environment control simultaneously",
+                "source_span": "On every turn of the call, it looks up the caller's context, applies your business rules, and chooses the next step",
+                "note": "synthesis: The Databricks voice agent article describes real-time live context lookup during calls, supporting this claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AI systems are gaining generative environment control simultaneously.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AI systems are gaining live context and generative environment control simultaneously",
+                "source_span": "With Genie 4, you can use natural language to modify a simulation in real-time — like changing the weather, moving the camera, or introducing a new person or object",
+                "note": "synthesis: Genie 4's real-time generative world simulation with interactive steering supports the claim of generative environment control."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The next wave of financial-services tooling will land where live context and generative environment control converge.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "which is where the next wave of financial-services tooling will land",
+                "source_span": "",
+                "note": "synthesis: Neither source mentions financial services as a target sector; this is an editorial prediction not grounded in the source excerpts."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_0cbf88a16b849ab2",
+          "headline": "DeepMind's world simulator generates physics, audio, and speech in real time",
+          "summary": "Genie 4 generates interactive 3D worlds frame-by-frame in real time, with native audio and lip-synced dialogue, using Gemini 3.8 Flash as an in-loop reasoning agent to maintain scene coherence. Simulations stay consistent for only a couple of minutes before losing context. Access is research-preview only; a developer waitlist is open.",
+          "take": "Simulation environments previously required pre-built game engines; Genie 4 generates them from a text prompt.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://deepmind.google/blog/genie-4-a-new-generation-of-world-simulation/",
+            "https://arstechnica.com/google/2026/10/deepminds-genie-4-world-model-adds-audio-and-more-realistic-people-to-simulations/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_0cbf88a16b849ab2",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "DeepMind's world simulator generates physics, audio, and speech in real time",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "DeepMind's world simulator generates physics, audio, and speech in real time",
+                "source_span": "Genie 4 introduces a new standard of realism to real-time interactive simulation. Built on an advanced physical understanding of the world, Genie 4 simulates real-world physics scenarios... Genie 4 is our first real-time world model to generate audio natively... Genie 4 introduces interactive dialogue that adapts on the fly.",
+                "note": "Source confirms real-time generation of physics simulation, native audio, and interactive speech/dialogue by Google DeepMind's Genie 4."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie 4 generates interactive 3D worlds frame-by-frame in real time",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Genie 4 generates interactive 3D worlds frame-by-frame in real time",
+                "source_span": "it generates the experience frame by frame in real time as you explore it",
+                "note": "Source explicitly confirms frame-by-frame real-time generation of interactive worlds."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie 4 generates worlds with native audio",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with native audio and lip-synced dialogue",
+                "source_span": "Genie 4 is our first real-time world model to generate audio natively.",
+                "note": "Source confirms native audio generation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie 4 generates worlds with lip-synced dialogue",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "with native audio and lip-synced dialogue",
+                "source_span": "",
+                "note": "The source describes interactive dialogue and characters that speak, but never uses the term 'lip-synced' or explicitly confirms lip synchronization as a feature."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie 4 uses Gemini 3.8 Flash as an in-loop reasoning agent to maintain scene coherence",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "using Gemini 3.8 Flash as an in-loop reasoning agent to maintain scene coherence",
+                "source_span": "Gemini 3.8 Flash serves as a guiding agent in the loop: as Genie 4 generates a world in real-time, Gemini continuously observes the scene, breaks down goals into a sequence of steps, and reviews incoming frames to track the progress and verify that each step succeeded.",
+                "note": "Source confirms Gemini 3.8 Flash as an in-loop guiding agent for coherence; paraphrase is accurate."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Simulations stay consistent for only a couple of minutes before losing context",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Simulations stay consistent for only a couple of minutes before losing context",
+                "source_span": "DeepMind notes that Genie 4 worlds still only remain consistent for a couple of minutes before they forget how things started.",
+                "note": "Source directly confirms this limitation in near-identical wording."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Access is research-preview only",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Access is research-preview only; a developer waitlist is open.",
+                "source_span": "We have started rolling Genie 4 out as a research preview for trusted testers",
+                "note": "Source confirms research preview status."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A developer waitlist is open",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Access is research-preview only; a developer waitlist is open.",
+                "source_span": "Join the waitlist for Genie 4 in Project Genie here.",
+                "note": "Source confirms a waitlist exists; 'developer waitlist' is a reasonable paraphrase of the Project Genie waitlist."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Simulation environments previously required pre-built game engines; Genie 4 generates them from a text prompt",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Simulation environments previously required pre-built game engines; Genie 4 generates them from a text prompt.",
+                "source_span": "A world model creates a virtual world, but it doesn't require pre-rendering environments or programming interactive elements. You simply tell the model what you want, and it generates the experience frame by frame in real time... Game developers and creative technologists are testing Genie 4 to go from an initial idea to an explorable prototype in seconds... before writing a single line of engine code.",
+                "note": "Source supports the contrast between traditional engine-based simulation and Genie 4's text-prompt generation; the take is a supported editorial compression of this point."
+              },
+              {
+                "schema_version": 1,
+                "claim": "DeepMind generates interactive worlds live.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "DeepMind generates interactive worlds live.",
+                "source_span": "Genie 4 is natively multimodal, enabling audio-like music, ambient noises, and interactive dialogue to be simultaneously generated with the world.",
+                "note": "digest: The source confirms Genie 4 (by Google DeepMind) generates interactive worlds in real time, supporting this paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie 4 produces 3D scenes with audio and lip-synced dialogue in real time from a text prompt.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Genie 4 produces 3D scenes with audio and lip-synced dialogue in real time from a text prompt.",
+                "source_span": "",
+                "note": "digest: The source confirms real-time generation, audio, and interactive dialogue, but never describes the scenes as '3D' nor mentions 'lip-synced' dialogue specifically; these specific characterizations are not present in the source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Both items today sit in Currents because each capability is real but not yet repeatable at scale. Taken together, they point toward a single direction: AI systems are gaining live context and generative environment control simultaneously, which is where the next wave of financial-services tooling will land."
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Anthropic isolates secrets from execution.",
+      "sentence": "The sandbox is created on demand and discarded on failure, keeping credentials in a separate proxy.",
+      "story_ids": [
+        "c_1c8a8b843da06a33"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Encrypted backdoors defeat weight inspection.",
+      "sentence": "Hidden circuits embedded in model weights survived fine-tuning and gradient searches in benchmark tests.",
+      "story_ids": [
+        "c_a28f06836721dfb1"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Multimodal fine-tuning shrinks to one GPU.",
+      "sentence": "LFM3's 1.7B backbone fits in 1 GB at 4-bit precision and matches a model six times its size.",
+      "story_ids": [
+        "c_76aed1712eaaa0e2",
+        "c_d81cfaa0be671b4d"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "DeepMind generates interactive worlds live.",
+      "sentence": "Genie 4 produces 3D scenes with audio and lip-synced dialogue in real time from a text prompt.",
+      "story_ids": [
+        "c_0cbf88a16b849ab2"
+      ]
+    }
+  ],
+  "generated_at": "2026-10-28T21:27:46.362910Z",
+  "prompt_versions": {
+    "rank": "v0.6.1",
+    "summarise": "v0.23.1",
+    "pulse": "v0.10",
+    "digest": "v1.0"
+  },
+  "notes": "shape: amber -- currents: 2 (tier pool exhausted)"
+}
