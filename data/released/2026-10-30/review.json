@@ -1,0 +1,212 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-29T21:28:06.396990Z",
+  "computed_verdict": "red",
+  "one_line": "Solid sourcing day undercut by frame repetition, a same-release duplicate, and two Hands-On closes that don't meet the artefact-plus-trigger bar.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_4d458324737e38af",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "major",
+      "quote": "If on-prem code generation is on your roadmap, this is the open stack to benchmark against.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body must end on the day's direction in plain editorial prose, not a prescription to the reader. Remove the 'If on-prem…benchmark against' sentence from the summary body; the directional close should state what this release means for the open-weight landscape (e.g. 'Open-weight coding benchmarks now have a European-built trillion-parameter reference point.'). The take field already carries the publication's position.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_4d458324737e38af",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Open-weight coding leadership previously required closed-model scale; Mistral's weights close that gap.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's implicit argument rather than adding the position the body stopped short of. Sharpen to a present-tense declarative that names the consequence: e.g. 'Mistral's trillion-parameter release makes open-weight coding performance a credible closed-model substitute for the first time.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7957a94961e9c0ca",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "Mistral's open frontier model scores 82% on real vulnerability patching",
+      "fix_kind": "structural",
+      "instruction": "This story covers the same Mistral Large 4 release as the Pulse story (c_4d458324737e38af). Running two stories on the same model release in the same issue — one as Pulse, one as Hands-On — creates a duplication that the routing rules exist to prevent. Either consolidate the security-patching angle into the Pulse summary, or hold this story for a follow-up issue once independent replication exists. Do not publish both in the same issue.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "The 1-trillion-parameter model uses 47% fewer tokens per task and resists 97.1% of agent security attacks.",
+      "fix_kind": "text_edit",
+      "instruction": "This sentence restates the Pulse story's take and summary statistics verbatim rather than compressing the story's news value into a distinct proposition. Rewrite to surface the single most consequential fact not already in the lead: e.g. 'Weights are public on Hugging Face with day-one vLLM and llama.cpp support, making it the first open trillion-parameter model available for on-prem deployment.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_b835826d4b909675",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Codebase comprehension previously lived in engineers' heads; at Anthropic it now lives in Claude.",
+      "fix_kind": "text_edit",
+      "instruction": "The take shares the 'X previously lived in Y; now it lives in Z' scaffold with the Delaware take ('AI company ownership previously carried direct liability; Delaware's draft severs that link') and the Pulse take ('Open-weight coding leadership previously required closed-model scale'). Three takes in the same issue using the 'previously X; now Y' frame is a major frame collision. Rewrite this take to break the pattern: e.g. 'Anthropic's 90%-AI codebase makes merge accountability a governance question, not an engineering one.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a87fd5f4b1ae6734",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "AI company ownership previously carried direct liability; Delaware's draft severs that link.",
+      "fix_kind": "text_edit",
+      "instruction": "Third instance of the 'previously X; now Y' scaffold in this issue (see Pulse take and c_b835826d4b909675 take). Rewrite to break the frame: e.g. 'Delaware's draft creates a corporate form where autonomous operation and liability exemption are bundled by design, not by accident.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9e77c0da533b42a7",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agent oversight teams now have a simulation path; real-environment testing was the only credible option before.",
+      "fix_kind": "text_edit",
+      "instruction": "Second instance of the 'previously X; now Y' scaffold (inverted here as 'now Y; X was the only option before'). Rewrite to break the pattern: e.g. 'Redwood's simulation results tracking real-execution results closely enough to treat as equivalent makes monitor sign-off a repeatable process rather than a one-time live test.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_eeca6887249c33c8",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "When your next agent deployment goes wrong, which role in your organisation is accountable for the missing observability records?",
+      "fix_kind": "text_edit",
+      "instruction": "The strategic question is well-anchored to a specific role and decision, which is correct. However 'when your next agent deployment goes wrong' presupposes failure as certain, making the question rhetorical rather than genuinely open. Rewrite the question to preserve the role-anchoring without the presupposition: e.g. 'If an agent deployment produces an unlogged incident, which role in your organisation owns accountability for the missing observability records?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f74987059b2477fb",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Watch the InfoQ talk, then map your own prefill/decode ratio before your next GPU capacity review.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On imperative close must be sharpened to a specific artefact plus trigger. 'Watch the InfoQ talk' is a generic consumption instruction, not an action on a named artefact. Rewrite to name the concrete thing the reader acts on and the trigger: e.g. 'Profile your serving stack's prefill and decode latency split using your inference framework's built-in metrics before your next GPU capacity review, and use the ratio to decide whether disaggregated serving is worth the routing overhead.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9ca611403b7463af",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Engineers targeting Qualcomm edge hardware now have IQ2 quantisation via OpenCL, where only larger formats ran before.",
+      "fix_kind": "text_edit",
+      "instruction": "Another instance of the 'now have X, where only Y before' scaffold echoing the issue's dominant frame. Rewrite: e.g. 'llama.cpp b11986 makes IQ2 quantisation on Adreno GPUs production-viable, removing the format ceiling that previously forced larger model footprints on Qualcomm edge deployments.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "The pattern is cost reclassification, not capability expansion.",
+      "fix_kind": "carry_forward",
+      "instruction": "The 2026-10-27 Hands-On synthesis used 'each one collapses a layer that previously required specialist infrastructure' and the 2026-10-29 synthesis used 'something that previously required cloud access… now runs locally on commodity kit.' Today's synthesis frames the same structural move ('cost reclassification') for the third consecutive issue. The framing is not wrong, but the register is collapsing. Tomorrow, if the pattern recurs, name the specific cost category being reclassified rather than restating the meta-pattern.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "e9fc99f423d4b11eb8b4a2582a0e6222bf2ea3b6501bfd7d5eb8c60559040f1c",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.)"
+}
