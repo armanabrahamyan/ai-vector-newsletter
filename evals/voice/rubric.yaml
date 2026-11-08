@@ -64,7 +64,22 @@ schema_version: 1
 # claude-sonnet-5-5; borderline 16 words / ~105 chars, fail >17 words or
 # >110 chars). Mirrors summarise.py v0.24 and judge/prompts/headline.yaml.
 # No other criterion changes.
-rubric_version: "v0.5-2026-10-31"
+# v0.6 (2026-11-08, PROPOSAL pending ratification -- raised during the
+# claude-sonnet-5-5 / claude-opus-5-5 migration gate). Two alignment
+# changes where the judge graded a contract the writer had been ratified
+# to leave:
+#   (1) summary_quality.decision_tied_close re-scoped per the take v2
+#       contract already recorded under take_quality: Pulse / Big Picture
+#       / Currents assessed over body + take; the Currents stake lives in
+#       the take and the body close is the maturity signal (summarise
+#       v0.23 "CLOSING SHAPE -- CALIBRATED STAKE LIVES IN THE TAKE"). The
+#       v0.5 text still demanded a two-sided stake in the body close. The
+#       summary artifact now carries the take so the judge can see both.
+#   (2) digest_quality.synthesizes_across re-scoped to the story-anchored
+#       digest contract (DIGEST v1.0 designer adjudication): the v0.5
+#       text failed every digest for being what the prompt tells it to
+#       be. bold_is_naming and budget are unchanged.
+rubric_version: "v0.6-2026-11-08"
 corpus_basis:
   ratified_issues: ["2026-05-23 .. 2026-07-03 (23 released issues)"]
   rulings_basis: >
@@ -548,16 +563,27 @@ per_story_criteria:
           attribution already carries the default calibration.
       decision_tied_close:
         check: >
-          Closing sentence honours the section's close TURN-TYPE
-          (unchanged by the 2026-07-04 rulings): Pulse = PLAIN TAKE
-          (declarative editorial position; never a question, never a
-          prescription); Big Picture = STRATEGIC QUESTION anchored to a
-          role/decision/constraint (an imperative here is the R-7
-          turn-type leak, a defect); Hands-On = IMPERATIVE ACTION on a
-          specific artefact with a trigger or condition (generic "just
-          test it" fails); Currents = TWO-SIDED CALIBRATED STAKE (real
-          stakes on both branches; one-sided or placebo branches fail).
-          Tied to a SPECIFIC decision, not a department/group/role.
+          Closing sentence honours the section's close TURN-TYPE, as
+          RE-SCOPED by the take v2 cold-open contract (rubric v0.4 /
+          summarise v0.23; the re-scope was recorded under take_quality
+          and is now applied here, v0.6). Hands-On = IMPERATIVE ACTION
+          in the body close, on a specific artefact with a trigger or
+          condition (generic "just test it" fails). Pulse, Big Picture
+          and Currents are assessed over BODY + TAKE together (the
+          artifact carries both): Pulse = PLAIN TAKE carried by the take
+          field (the body ends on the day's direction and must not
+          restate it; a question or prescription in either is a defect);
+          Big Picture = STRATEGIC QUESTION in the body close, anchored to
+          a role/decision/constraint (an imperative here is the R-7
+          turn-type leak, a defect); Currents = the TWO-SIDED CALIBRATED
+          STAKE lives in the TAKE (real stakes on both branches;
+          one-sided or placebo branches fail THERE) and the body close
+          lands on the MATURITY SIGNAL -- what exists and what it is
+          worth -- never a residual stake, an instruction, or a
+          calibration recap. A Currents body close is NOT failed for
+          lacking a stake; it is failed for duplicating the take's stake
+          or for closing on an instruction. Tied to a SPECIFIC decision,
+          not a department/group/role.
           SURFACE VARIETY is valued: the turn-type is fixed, its grammar
           is not -- one mould repeated across a section ("...before
           [milestone]" every time; "if it replicates / if it doesn't"
@@ -731,12 +757,19 @@ per_story_criteria:
           could not disagree with is a label, not a naming.
       synthesizes_across:
         check: >
-          The digest reads as the editor's synthesis of the day, not a
-          table of contents. Bullets with multi-story provenance
-          genuinely merge their stories' signal; the bullet set covers
-          the day's shape rather than walking the first N stories in
-          display order. Five single-story summaries in section order
-          = fail.
+          RE-SCOPED 2026-11-08 (v0.6) to the ratified digest contract
+          (summarise DIGEST v1.x, designer adjudication): bullets are
+          STORY-ANCHORED by design -- bullet 1 is the Pulse story, then
+          one bullet per section in layout order, each naming one
+          story's specifics -- and section-wide patterns belong to the
+          section SYNTHESIS, not the digest. Do NOT fail a digest for
+          being one story per bullet in section order; that is the
+          contract. What this sub-test still checks: a bullet with
+          MULTI-story provenance genuinely merges its stories' signal
+          (not one story with a second id tacked on); each bullet
+          compresses its story AFRESH (a different angle from the take
+          and the headline) rather than restating the headline; and the
+          set, read alone, leaves the reader with what moved today.
       bullet_one_is_pulse:
         check: >
           Bullet 1 carries the Pulse story's takeaway -- the day's

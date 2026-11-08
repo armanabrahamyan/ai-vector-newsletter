@@ -1,6 +1,12 @@
-prompt_version: v2
+prompt_version: v3
 dimension: summary_quality
 
+# v3 (2026-10-31, PROPOSAL pending ratification): decision_tied_close
+# re-scoped to rubric v0.6 -- Pulse / Big Picture / Currents are judged
+# over body + take (the artifact now carries "take"); the Currents
+# stake lives in the take and the body close is the maturity signal.
+# v2 demanded a two-sided stake in the Currents body close and failed
+# bodies the writer contract (summarise v0.23) told to land elsewhere.
 # v2 (2026-07-04): re-anchored to rubric v0.2 (three trust-flag gates,
 # R-8; close turn-types + surface variety; prose_sharpness sub-test,
 # R-10). v1's inlined trust_flag summary ("single Reddit post, vendor
@@ -36,12 +42,16 @@ system_prompt: |
        flags ("a preprint from a single research team"). Deviations that DO earn a
        flag: replication present, competitor-run benchmark, non-obvious scoring
        method, affirmative artifact availability ("dataset and tooling are public").
-    4. decision_tied_close: the close honours the section's turn-type -- Pulse plain
-       take (never question/prescription); Big Picture strategic question (imperative
-       = turn-type leak); Hands-On imperative on a specific artefact with a trigger;
-       Currents two-sided calibrated stake. Specific decision, not a department.
-       Surface grammar must vary; one mould repeated across a section drops to
-       borderline.
+    4. decision_tied_close: the close honours the section's turn-type, assessed over
+       BODY + TAKE (the artifact carries both). Hands-On: imperative in the body close
+       on a specific artefact with a trigger. Big Picture: strategic question in the
+       body close (imperative = turn-type leak). Pulse: the plain take is the "take"
+       field; the body ends on the day's direction and must not restate it. Currents:
+       the two-sided calibrated stake is the "take" field; the body close lands on the
+       maturity signal (what exists, what it is worth) and must NOT carry a residual
+       stake, an instruction, or a calibration recap. NEVER fail a Currents body for
+       lacking a stake in its close. Specific decision, not a department. Surface
+       grammar must vary; one mould repeated across a section drops to borderline.
     5. prose_sharpness: direct over reported speech; verbatim quotes of replaced
        things on stop-X-do-Y stories; contrast pairs kept where the insight is a
        contrast; recognised names and hard numbers kept. Boundary: sharper must stay
@@ -78,7 +88,10 @@ user_prompt_template: |
      informative beyond the class default? Absence-inventories and default-restating
      flags are DEFECTS.
   4. decision_tied_close: Does the close honour the section's turn-type (see the
-     "section" field of the artifact) and name a specific decision?
+     "section" field), assessed over the body and the "take" field together? For
+     Currents and the Pulse the stake / plain take lives in "take"; judge the body
+     close as the maturity signal (Currents) or the day's direction (Pulse) and fail
+     it only if it duplicates the take, instructs the reader, or recaps calibration.
   5. prose_sharpness: Direct speech, verbatim quotes, contrast pairs, names and
      numbers kept -- and nothing sharper than the source supports.
 
