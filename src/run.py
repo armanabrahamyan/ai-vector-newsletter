@@ -9,6 +9,7 @@ Subcommands:
   aiv revise    -- act on the reviewer's findings (owned by src/revise.py)
   aiv gate      -- decide whether the staged issue may publish unattended
   aiv release   -- promote staging draft to canonical
+  aiv cost      -- LLM spend by day / week / month from data/metrics_log.jsonl
   aiv unrelease -- reverse a release
   aiv check     -- pre-flight checks only
 
@@ -1625,6 +1626,66 @@ def check(
     _setup_logging(verbose)
     _load_env()
     sys.exit(_run_check())
+
+
+# ---------------------------------------------------------------------------
+# `aiv cost` -- LLM spend over data/metrics_log.jsonl. Local-only reporting;
+# the body lives in src/cost.py (Release Engineer), this is the CLI shell.
+# ---------------------------------------------------------------------------
+
+@app.command()
+def cost(
+    by: str = typer.Option(
+        "day", "--by", metavar="UNIT",
+        help="Bucket size: day, week (Monday start) or month.",
+    ),
+    last: Optional[int] = typer.Option(
+        None, "--last", metavar="N",
+        help="Report the last N buckets (default 30 days, 12 weeks or 6 months).",
+    ),
+    from_: Optional[str] = typer.Option(
+        None, "--from", metavar="YYYY-MM-DD",
+        help="First day of the period, inclusive. Wins over --last.",
+    ),
+    to: Optional[str] = typer.Option(
+        None, "--to", metavar="YYYY-MM-DD",
+        help="Last day of the period, inclusive. Default: today.",
+    ),
+    by_run_date: bool = typer.Option(
+        False, "--by-run-date",
+        help="Date each run by when it ran (UTC) instead of by the issue it built.",
+    ),
+    reconcile: bool = typer.Option(
+        False, "--reconcile",
+        help="Add what Anthropic billed per day, from the Usage and Cost "
+             "Analytics API. Needs ANTHROPIC_ADMIN_KEY in .env (an Admin API "
+             "key; not available on individual accounts). Implies "
+             "--by-run-date and requires --by day.",
+    ),
+    json_out: bool = typer.Option(False, "--json", help="Print the report as JSON."),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Report what the LLM stages cost, per day, week or month.
+
+    Reads ``data/metrics_log.jsonl``: every ``aiv run`` records the token
+    counts the API returned for each stage and prices them from the table
+    in ``src/llm_usage.py``. Nothing is estimated and no LLM is called.
+
+    Examples:
+      aiv cost                                  # last 30 days, by day
+      aiv cost --by week --last 12              # last 12 weeks
+      aiv cost --by month --from 2026-07-01     # monthly since July
+      aiv cost --reconcile                      # add Anthropic's billed column
+      aiv cost --json --by month --last 3       # machine-readable
+    """
+    _setup_logging(verbose)
+    _load_env()
+    from src import cost as cost_mod
+
+    sys.exit(cost_mod.run_cost(
+        by=by, last=last, start=from_, end=to,
+        by_run_date=by_run_date, reconcile=reconcile, json_out=json_out,
+    ))
 
 
 # ---------------------------------------------------------------------------
