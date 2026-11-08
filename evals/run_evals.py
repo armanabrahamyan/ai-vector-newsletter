@@ -961,7 +961,7 @@ def eval_voice_adherence(
       - evals/voice/rubric.yaml (Phase A output)
       - dataset_dir/issue.json
       - anthropic SDK + ANTHROPIC_API_KEY (or LLM_API_KEY)
-      - EVAL_JUDGE_MODEL env var (default: claude-opus-4-7)
+      - EVAL_JUDGE_MODEL env var (default: claude-opus-5-5)
 
     PASS threshold: aggregate fail-rate < VOICE_FAIL_THRESHOLD (25% v0).
 
@@ -1111,6 +1111,8 @@ def eval_voice_adherence(
             "section": section_name,
             "headline": story.get("headline", ""),
             "summary": story.get("summary", ""),
+            # rubric v0.6: decision_tied_close is assessed over body + take
+            "take": story.get("take"),
             "source_urls": story.get("source_urls", []),
         }
         summary_result = judge_artifact(
@@ -1333,7 +1335,7 @@ def eval_voice_adherence(
         status="pass" if passed else "fail",
         details={
             "dataset": dataset_name,
-            "judge_model": os.getenv("EVAL_JUDGE_MODEL", "claude-opus-4-7"),
+            "judge_model": os.getenv("EVAL_JUDGE_MODEL", "claude-opus-5-5"),
             "total_artifacts_judged": len(all_judge_results),
             "llm_calls_this_run": llm_call_count,
             "cache_entries_before": cache_before,

@@ -11,7 +11,7 @@ bias at the infrastructure level, not just the model level.
 Judge model selection
 ---------------------
 Reads EVAL_JUDGE_PROVIDER (default: anthropic) and EVAL_JUDGE_MODEL
-(default: claude-opus-4-7). Temperature 0.0 is sent only to models that
+(default: claude-opus-5-5). Temperature 0.0 is sent only to models that
 still accept it (Claude 4.7+ and every Claude 5 model reject sampling
 parameters). Claude 5 models think before every reply and cannot be told
 not to; EVAL_JUDGE_EFFORT (default: low) sets how much, and the
@@ -58,7 +58,7 @@ RUBRIC_PATH = EVALS_DIR / "voice" / "rubric.yaml"
 # Env-var defaults
 # ---------------------------------------------------------------------------
 _DEFAULT_PROVIDER = "anthropic"
-_DEFAULT_MODEL = "claude-opus-4-7"
+_DEFAULT_MODEL = "claude-opus-5-5"
 _DEFAULT_TIMEOUT = 60.0
 
 # Models that reject temperature at the API level (populated at runtime).

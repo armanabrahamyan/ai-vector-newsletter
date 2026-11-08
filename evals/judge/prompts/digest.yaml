@@ -1,6 +1,9 @@
-prompt_version: v1
+prompt_version: v2
 dimension: digest_quality
 
+# v2 (2026-10-31, ratified 2026-11-08): synthesizes_across
+# re-scoped to rubric v0.6 -- story-anchored bullets in section order
+# are the digest contract, not a table-of-contents defect.
 # v1 (2026-08-09, PROPOSAL pending ratification): per-issue judge for
 # "The 30-second read" (Issue v8 digest). The artifact carries the
 # digest bullets, the pulse story, per-section story headlines + takes +
@@ -19,8 +22,12 @@ system_prompt: |
 
   Five sub-tests (rubric anchors at runtime govern):
   - bold_is_naming: each bold lead names a takeaway (a claim), not a topic label.
-  - synthesizes_across: the digest is the editor's synthesis of the day, not a
-    table of contents; multi-story bullets genuinely merge their stories' signal.
+  - synthesizes_across (re-scoped 2026-10-31): bullets are STORY-ANCHORED by
+    contract -- the Pulse first, then one bullet per section in layout order --
+    so single-story bullets in section order are the design, never a defect.
+    Check instead that multi-story bullets genuinely merge their stories' signal,
+    that each bullet compresses its story afresh rather than restating its
+    headline, and that the set read alone says what moved today.
   - bullet_one_is_pulse: bullet 1 carries the Pulse story's takeaway (provenance
     is code-verified and provided as evidence; you judge whether the bullet
     CARRIES the direction, not merely cites the story).
@@ -48,7 +55,8 @@ user_prompt_template: |
   INSTRUCTIONS:
   1. If "digest" is null or absent -- return not_applicable.
   2. Walk each bullet: bold_is_naming (claim vs label), then the bullet set as a
-     whole: synthesizes_across (synthesis vs table of contents).
+     whole: synthesizes_across (fresh compression and genuine multi-story merging;
+     one story per bullet in section order is the contract, not a defect).
   3. bullet_one_is_pulse: read the pulse story provided; does bullet 1 carry its
      takeaway?
   4. no_surface_collision: compare bullets against the provided takes and
