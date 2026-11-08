@@ -1,0 +1,284 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-24T00:33:57.894807Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking attribution errors anchor a day where frame repetition and historical-description takes need systematic repair.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f83013cadc2526aa",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "OpenAI's AI found critical flaws threatening 70% of the web's servers",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this contradicted: the source credits Ryan Austin, a researcher at Calif, as part of the OpenAI programme — not OpenAI's AI alone. Wiz independently found the same bugs. Rewrite to reflect joint discovery, e.g. 'AI-assisted research found critical PHP flaws threatening 70% of the web's servers' or name both parties.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f83013cadc2526aa",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "OpenAI's Patch the Planet programme used GPT-5.6 Sol to discover PHP2Shell",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block contradicts sole AI attribution: the source credits a human researcher (Ryan Austin at Calif) working within the programme, with Wiz independently finding the same bugs. Rewrite to name the human researcher and clarify the AI-assisted role, e.g. 'OpenAI's Patch the Planet programme — with researcher Ryan Austin at Calif using GPT-5.6 Sol — discovered PHP2Shell; Wiz independently found the same bugs.'",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_5f4e3018ef07628e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "one point behind Claude Opus 5.5",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks this contradicted: the source says Kimi scored 55 and Claude Opus 5.5 scored 58 — a three-point gap, not one. Replace 'one point behind' with 'three points behind'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1d9ae1e097d3e864",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Repo-level coding agents previously needed a cloud API; Flint runs the same workload locally on a Mac.",
+      "fix_kind": "sourcing",
+      "instruction": "The verification block flags this claim as unsupported: the source does not assert that repo-level coding agents previously required a cloud API. Either remove the 'previously needed a cloud API' framing or ground it in a source that supports the contrast.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e1d58348124c25f7",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent security enforcement previously ran on the host an agent controls.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is a historical description, not a present-tense editorial position. 'It is now the case that agent security enforcement previously ran on the host' does not parse as a present-state claim. Rewrite to state what is now true, e.g. 'NVIDIA Sentry moves agent security enforcement off the host and into silicon the agent cannot reach.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_50000cc4f324b2f9",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Before signing off on a banking agent, demand procedure-aware evals.",
+      "fix_kind": "text_edit",
+      "instruction": "Currents body must close on a presence-form maturity signal (what exists and what it is worth today), not a prescription. The imperative close belongs in Hands-On. Rewrite the final sentence to characterise the current state of the evidence, e.g. 'TauIndianBankBench is the first public harness to score both procedure and outcome on retail-banking tasks, and its gap figures are now on the record.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_17e4b1b97e98586c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Does your build-vs-buy calculus still hold at those margins?",
+      "fix_kind": "text_edit",
+      "instruction": "Big Picture body must close on a strategic question anchored to a specific role, decision, or constraint in the reader's org. 'Does your build-vs-buy calculus still hold at those margins?' is close but unanchored — it names no role or decision point. Sharpen to anchor it, e.g. 'If your infrastructure team is still quoting cloud-inference costs to justify managed services, do those numbers survive contact with DeepInfer's published margins?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_612505817d3181da",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Credit underwriting previously required human analysts to read statements; Ramp's pipeline does it autonomously.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's opening contrast rather than adding the position the body stopped short of. The body already establishes the before/after; the take should state the publication's editorial position on what this means, e.g. 'Autonomous credit underwriting is now a demonstrated production capability, not a roadmap claim.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_58935a3cd359327e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Local inference pipelines previously needed separate tools for speech and routing.",
+      "fix_kind": "text_edit",
+      "instruction": "Like c_612505817d3181da's take, this is a historical description rather than a present-state editorial position. Rewrite to state what is now true, e.g. 'A single Ollama update now covers text-to-speech and routing without leaving the local environment.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9d715314631052e0",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Regulated enterprises previously had to trust managed AI vendors contractually; cryptographic proof now replaces that.",
+      "fix_kind": "text_edit",
+      "instruction": "Third instance of the 'X previously required Y; Z now replaces that' syntactic frame (also used in c_612505817d3181da and c_58935a3cd359327e takes). Three or more takes sharing a frame is a major pattern; flagged here on the third occurrence. Rewrite to break the frame, e.g. 'Cohere's attestation model makes the inference environment auditable, not just contractually promised.'",
+      "echo_of": "f011"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_9d715314631052e0",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Regulated enterprises previously had to trust managed AI vendors contractually; cryptographic proof now replaces that.",
+      "fix_kind": "text_edit",
+      "instruction": "This is the third take in the issue using the 'X previously required Y; Z now replaces/does that' scaffold (also c_612505817d3181da: 'Credit underwriting previously required…'; c_58935a3cd359327e: 'Local inference pipelines previously needed…'; c_1d9ae1e097d3e864: 'Repo-level coding agents previously needed…'). Four takes sharing the same frame is a major finding. Rewrite this take and at least two others to break the repeated scaffold.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "GPT-5.6 Sol uncovered two unauthenticated remote-code-execution bugs affecting servers running WordPress, Drupal, and Joomla.",
+      "fix_kind": "text_edit",
+      "instruction": "The digest sentence attributes sole discovery to GPT-5.6 Sol, but the verification block marks this contradicted: a human researcher (Ryan Austin at Calif) was the credited discoverer, with Wiz independently finding the same bugs. Rewrite to reflect joint/assisted discovery, e.g. 'AI-assisted research within OpenAI's Patch the Planet programme uncovered two unauthenticated RCE bugs in PHP, independently confirmed by Wiz.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "section_intro",
+      "severity": "minor",
+      "quote": "Each story today moves the same lever: something a financial-services firm previously accepted on trust now has a verifiable, auditable, or publicly benchmarked substitute.",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis frames all four Big Picture stories through a financial-services lens, but c_17e4b1b97e98586c (DeepSeek inference margins) and c_e1d58348124c25f7 (NVIDIA Sentry) are general infrastructure stories with no FS-specific angle in their bodies. The synthesis overfits the FS frame. Broaden to the actual cross-story pattern — verifiability replacing vendor trust — without restricting it to FS firms.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_dcc3405f2c5afe08",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Map your highest-volume domain model's token distribution before the paper lands.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On imperative close must be sharpened to a specific artefact and trigger. 'Map your highest-volume domain model's token distribution' names no specific tool or artefact. Sharpen to name the VocabX script or Hugging Face tokeniser analyser and the trigger condition, e.g. 'Run VocabX's vocabulary-analysis script against your highest-volume domain model before the paper lands and the method gets packaged into a one-click tool.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_22c3258bfdbc497b",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Quant AI deployments now have documented failure modes: benchmark collapse and adversarial fragility on the record.",
+      "fix_kind": "text_edit",
+      "instruction": "The colon construction ('documented failure modes: benchmark collapse and adversarial fragility') reads as a label rather than a single declarative sentence. Rewrite as a clean declarative, e.g. 'Quant AI deployments now have two documented failure modes — benchmark collapse and adversarial fragility — both on the public record.'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "cedd48a3dd818c59099445227278c79e613ebc3d62a36adceb7d54379464d1f1",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 2 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}

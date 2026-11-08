@@ -1,0 +1,284 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-07T21:36:34.784775Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual errors on the Pulse maths story; scaffold repetition across five takes.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_942977bc378e3b8f",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Frontier mathematics was a human-only domain; OpenAI's proof artefacts put 90 open problems in the solved column.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this take on two counts: (1) 'unsupported' — the source does not assert that frontier mathematics was a human-only domain; (2) 'contradicted' — the source says the model was evaluated on ~4,000 research problems and experts agree it solves 'many of the top 500', not a confirmed 90. Rewrite to reflect what the source actually states: e.g. 'OpenAI's model produced machine-checkable proof artefacts across many of the top 500 open mathematics problems; independent verification is ongoing.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_942977bc378e3b8f",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "OpenAI's AI solves 90 of the 500 hardest open problems in mathematics",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks the '90 unsolved problems' figure as contradicted: the source says experts 'seem to agree' it solves 'many of the top 500', drawn from ~4,000 evaluated problems — not a confirmed count of 90. The headline states this as settled fact. Rewrite to hedge: e.g. 'OpenAI's AI claims progress on many of the 500 hardest open problems in mathematics' or 'OpenAI's AI produces machine-checkable proofs for scores of unsolved mathematics problems'.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_942977bc378e3b8f",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "covering roughly 90 of the 500 hardest open problems in the field",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags the '90 of the 500' figure as contradicted by the source, which describes an evaluation of ~4,000 problems and expert agreement that 'many of the top 500' are solved — not a confirmed 90. Change to reflect the source's hedged framing, e.g. 'covering many of the top 500 hardest open problems in the field'.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bb2a79f02be55371",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Mistral Large 4 is a 1-trillion-parameter mixture-of-experts model",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block flags this as unsupported: the source says '1 trillion parameter, 49 billion active parameter model' — the MoE characterisation is not stated in the source excerpt. Either add the sourced qualifier ('with 49 billion parameters active') or remove the MoE label if it is not in the source. The sentence already continues with the active-parameter figure, so integrate: 'Mistral Large 4 is a 1-trillion-parameter model with 49 billion parameters active at once'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f020c0cf47f1c754",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "OpenAI publishes machine-verifiable proofs for unsolved maths problems",
+      "fix_kind": "structural",
+      "instruction": "This story covers the same OpenAI mathematics release as the Pulse story (c_942977bc378e3b8f). Running both in the same issue — one as Pulse, one as Hands-On — duplicates the event without meaningful differentiation beyond the GitHub clone instruction. Either consolidate the Hands-On angle into the Pulse summary and drop this story, or replace it with a distinct Hands-On story. The Pulse story already mentions GitHub proof artefacts and independent verification.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_4ceee131c026cbac",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent compliance claims lacked a defined record set; auditors had no fixed standard to check against.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is past-tense framing of a gap that the paper proposes to fill — it restates the problem the body already describes rather than stating the publication's position on what the paper's proposal means. Rewrite as a present-tense declarative position: e.g. 'A structured record requirement now exists for agent compliance claims; auditors have a fixed standard to check against.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_5839d765d4618c49",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Process automation teams got a final answer from agents; now each step is a structured, auditable record.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the same 'X got Y before; now Z' scaffold as the Pulse take ('Frontier mathematics was a human-only domain; OpenAI's proof artefacts put 90 open problems in the solved column') and the Hands-On takes for c_ad2620cf6246cfe2 and c_ed75470fa3ed1285. Three or more takes in the issue share this frame — flag on this story as the later recurrence. Rewrite to break the scaffold: e.g. 'MCP delivery of individual process steps raises agent adherence to 95-99% and makes each step independently auditable.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ed75470fa3ed1285",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Edge inference defaulted to single-modality models; open multimodal decision weights change the calculus.",
+      "fix_kind": "text_edit",
+      "instruction": "This take uses the same 'X defaulted to Y; Z changes the calculus/column/record' scaffold shared by at least three other takes in this issue. Rewrite to break the frame: e.g. 'Liquid AI's open multimodal decision weights make edge-native multi-sensor inference a testable option today.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ad2620cf6246cfe2",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Reinforcement learning training required rebuilding agents from scratch; the deployment harness now trains directly.",
+      "fix_kind": "text_edit",
+      "instruction": "Same 'X required Y; Z now does it differently' scaffold as multiple other takes in this issue. Rewrite: e.g. 'Agent Lightning's proxy layer lets the deployed harness serve as the training environment, removing the rebuild step from RL workflows.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_1d6a5147d4378656",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Quant research scaled on human intuition alone; named trading firms now delegate data synthesis to agents.",
+      "fix_kind": "text_edit",
+      "instruction": "Same scaffold as multiple other takes in this issue ('X relied on Y alone; Z now delegates/shifts'). Rewrite to break the frame: e.g. 'Jump Trading's published workflow establishes a named pattern for agentic data synthesis with a defined human review handoff.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8e3b272a41e44339",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Before signing off on any WAF vendor, demand mutation-testing results, not just blocked-traffic counts.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body must end on a presence-form maturity signal (what exists and what it is worth today). This closing sentence is a prescription/imperative directed at the reader, which belongs in the take field or is a Hands-On close shape. Rewrite the body's final sentence to characterise the current state of AI-driven WAF mutation testing: e.g. 'Cloudflare's published results establish a reproducible methodology for AI-driven WAF mutation testing, with three ruleset changes traceable to 49 human-triaged findings.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_4ceee131c026cbac",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "When your auditor arrives, which of your agent claims can actually produce those records?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture closing question should be anchored to a specific role, decision, or constraint in the reader's org. 'When your auditor arrives' is a time trigger, not a role or decision anchor. Sharpen: e.g. 'If your compliance team owns the agent audit trail, which of your current claims can produce the named policy, scope, and settling records this framework requires?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Seven hundred twenty-two papers address roughly 90 unsolved problems, with proof artefacts on GitHub awaiting independent verification.",
+      "fix_kind": "text_edit",
+      "instruction": "The '90 unsolved problems' figure is contradicted by the source (see Pulse verification block). The digest sentence propagates the same factual error. Revise to reflect the hedged source claim: e.g. 'Seven hundred twenty-two papers address many of the top 500 unsolved problems, with proof artefacts on GitHub awaiting independent verification.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7f07a792ddb23130",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Enterprise agent sessions lived on developer laptops; cloud-native orchestration shifts control to the organisation.",
+      "fix_kind": "text_edit",
+      "instruction": "Same 'X lived on Y; Z shifts control' scaffold as multiple other takes in this issue. Rewrite to break the frame: e.g. 'Stacklok's Mecatl separates reasoning, tool execution, and session state into centrally governed layers, making enterprise agent control an infrastructure decision rather than a per-developer one.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f016",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bb2a79f02be55371",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "Mistral's open trillion-parameter model closes six months of ground on the frontier",
+      "fix_kind": "carry_forward",
+      "instruction": "Mistral Large 4 appeared as a Currents story in the prior issue (2026-10-07: 'Mistral opens a trillion-parameter model trained entirely on European soil'). Today's story is routed to Hands-On and adds the API-preview / weights-by-October angle, which is genuine progression. The novelty is earned but thin — if tomorrow's issue revisits Mistral Large 4 again, flag it as a recurrence without progression.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "705ff62877c8f946f129bae8bf0ce38f48e8fb6e2a42b57184d861c17b24e953",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 2 echo(es) not counted: the same defect filed again in another field or under another criterion | 1 finding(s) dropped: malformed shape"
+}

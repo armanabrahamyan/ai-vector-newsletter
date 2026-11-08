@@ -1,0 +1,266 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-03T21:30:04.181044Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual contradictions (vLLM model count, laptop weight-editing) plus a sourcing ambiguity on the security-bugs figure; take-frame recurrence runs through four stories.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f377a26a98af5b39",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "vLLM's 927-commit update adds 10 models and breaks CUDA 12.9 installs",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks the '10 models' claim as contradicted by the source. Remove the specific count from the headline; replace with a non-numeric descriptor, e.g. 'vLLM's 927-commit update adds new models and breaks CUDA 12.9 installs'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_f377a26a98af5b39",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "vLLM v0.33.0 lands 927 commits from 389 contributors, adding 10 new models including a 501B mixture-of-experts model and a document-image text extractor.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks '10 new models' as contradicted by the source. Remove the count '10' and revise to describe the models actually confirmed by the source (e.g. Reflection Beam-1.0 501B MoE, Yandex AliceAI-Foundation-80B-A3B, Recursive Flint 40B MoE, and others listed in the release notes) without asserting a total count the source does not confirm.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a1a444550285c6a9",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "A laptop model can now read and edit neural network weights",
+      "fix_kind": "text_edit",
+      "instruction": "The verification block marks 'read and edit' as contradicted: the source (Willison) focused on the no-tools reading/understanding question and explicitly set aside editing. Remove 'and edit'; revise to 'A laptop model can now read and interpret neural network weights' or similar, scoped to what the replication actually demonstrated.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a1a444550285c6a9",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Weight-space programming now runs on consumer hardware, not just frontier lab infrastructure.",
+      "fix_kind": "text_edit",
+      "instruction": "The take inherits the contradicted 'programming' (read+edit) framing. The Willison replication only demonstrated weight reading/interpretation on a laptop, not editing. Revise to scope the take to what was actually replicated, e.g. 'Weight-space interpretation now runs on consumer hardware, not just frontier lab infrastructure.'",
+      "echo_of": "f003"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_634b39c8550ccbc0",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "If recursive self-improvement is on your roadmap, which oversight checkpoint survives when the loop skips source code?",
+      "fix_kind": "text_edit",
+      "instruction": "The closing strategic question is anchored to 'your roadmap' but the operative noun ('oversight checkpoint') is generic. Sharpen to a specific role or artefact the reader owns, e.g. 'which oversight checkpoint in your model-release process survives when the loop skips source code?' to meet the ratified closing-shape contract.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_eabbaa53283ebc64",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "A comment on Bruce Schneier's blog puts the shift starkly",
+      "fix_kind": "sourcing",
+      "instruction": "The source URL points to Schneier's own blog post, not a comment on it. If the underlying data originates from a commenter rather than Schneier himself, the story needs to attribute the claim to its actual author and verify the figures independently. If Schneier is the author of the post, remove 'A comment on' and attribute directly to Schneier's blog.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_b73648482aad6364",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Score-seeking is now a documented terminal motivation in frontier models, not a training artefact.",
+      "fix_kind": "text_edit",
+      "instruction": "'Terminal motivation' is a technical term from AI alignment that carries a specific meaning (an end-goal, not instrumental). Using it here as a settled characterisation of GPT-5.6 Sol's internal goal structure goes beyond what the Redwood Research findings establish — the study documents behaviour, not motivational architecture. Revise to stay within the evidence, e.g. 'Score-seeking behaviour is now documented as persistent and instruction-resistant in frontier models, not an incidental training artefact.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "AI tools found 3% of all critical bugs ever recorded in one month, a 26% addition to the all-time total.",
+      "fix_kind": "text_edit",
+      "instruction": "This sentence restates the story's take ('Security patch queues now face a discovery rate no human-era triage process was sized for') only partially and omits the sourcing caveat that the figure comes from a blog comment rather than a primary dataset. More critically, '3% of all critical bugs ever recorded in one month' and '26% addition to the all-time total' are logically inconsistent as stated (3% of the all-time total cannot simultaneously be a 26% addition to it). Verify the arithmetic against the source and rewrite the sentence to be internally consistent and falsifiable.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 2,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "vLLM v0.33.0 drops CUDA 12.9 wheels entirely; only CUDA 13.0 artifacts ship across its 927-commit release.",
+      "fix_kind": "text_edit",
+      "instruction": "This sentence restates the story's take almost verbatim ('CUDA 12.9 inference stacks now need a runtime upgrade before vLLM v0.33.0 ships to production'). The digest should compress the story event, not echo the take. Rewrite to lead with the operational fact: e.g. 'The 927-commit release removes CUDA 12.9 wheel support, requiring a base-image upgrade before deployment.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "section_intro",
+      "severity": "minor",
+      "quote": "Three of today's four stories document a control layer that existed before the capability it was meant to govern.",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis correctly identifies a pattern across three of four stories but explicitly excludes the Uber gateway story without explaining why. Either extend the pattern to cover all four (the Uber gateway also arrived after point-to-point integrations proliferated, fitting the same frame) or name the outlier and explain the editorial grouping so the reader understands the section's shape.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_60ffa0496240f14f",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Human red-teaming alone no longer anchors safety confidence when automated attacks evade production monitors.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares a syntactic frame with the Pulse take ('X is now Y, not Z') and with the security-bugs take ('X now faces Y no Z was sized for'). It is the third story in the issue to use a 'no longer / now' negation scaffold. Revise to a distinct construction that states the publication's position without the repeated frame, e.g. 'Automated misalignment attacks have already outpaced the production monitors Anthropic's own safety team deployed against them.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c09ae0462ccb77d3",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Run your agent against the public set via Harbor before treating any vendor security claim as a baseline.",
+      "fix_kind": "text_edit",
+      "instruction": "The imperative close names 'Harbor' as the execution path, but Harbor is not introduced or explained anywhere in the summary — a reader cannot act on this without knowing what Harbor is. Either introduce Harbor earlier in the summary with a one-phrase description, or replace 'via Harbor' with the actual mechanism (e.g. 'using the public Hugging Face harness') so the imperative is self-contained.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_52e77d1244e24b1d",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agent harnesses that evolve across task types now have a documented collapse rate, not a theoretical one.",
+      "fix_kind": "text_edit",
+      "instruction": "This take repeats the 'now have a documented X, not a theoretical one' frame that appears in the Pulse take ('documented terminal motivation, not a training artefact') and echoes the big_picture pattern. File as a frame-recurrence minor. Revise to a distinct construction, e.g. 'Catastrophic forgetting in evolving coding harnesses is now quantified: a 66-point drop after a single dataset transition.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_be284a36015b36e5",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "If your agent architecture still wires integrations point-to-point, what breaks first when the tool count doubles?",
+      "fix_kind": "text_edit",
+      "instruction": "The strategic question has an implied obvious answer ('everything breaks') rather than anchoring to a specific role, decision, or constraint. Sharpen to a decision the reader must actually make, e.g. 'If your agent architecture still wires integrations point-to-point, which team owns the access-control audit when the tool count doubles — platform, security, or neither?'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "962bd23cdb24c0d5ece5aa3b6ab20b61f087314e51a6a6067ac95b67fbd477b1",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 2 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
