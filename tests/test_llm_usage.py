@@ -136,6 +136,27 @@ class TestPricingLookup:
         assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(12.00)
         assert snap["stages"]["review"]["cost_usd"] == pytest.approx(24.00)
 
+    def test_sonnet_5_5_cache_read_is_0_05x_base_input(self):
+        """1M cache-read tokens on sonnet-5-5 = $0.10 (pricing page footnote:
+        Sonnet 5.5 and Opus 5.5 cache hits are 0.05x base input; the row
+        carried $0.20 until 2026-11-08)."""
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "claude-sonnet-5-5", 0, 0, cache_read_input_tokens=1_000_000,
+        )
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(0.10)
+
+    def test_haiku_5_5_row_prices_the_small_prompt_tier(self):
+        """1M in + 1M out + 1M cache read on haiku-5-5 = $0.10 + $0.50 + $0.01."""
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "claude-haiku-5-5", 1_000_000, 1_000_000,
+            cache_read_input_tokens=1_000_000,
+        )
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(0.61)
+
     def test_opus_5_5_cache_read_is_0_20_not_0_10x(self):
         """opus-5-5 cache reads are $0.20/mtok per the pricing table -- the
         0.10x rule of thumb the older rows follow would give $0.40."""
