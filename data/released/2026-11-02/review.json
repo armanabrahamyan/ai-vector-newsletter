@@ -1,0 +1,302 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-01T21:26:26.329626Z",
+  "computed_verdict": "red",
+  "one_line": "Two blocking factual contradictions (RubyGems count, Chainalysis 'confirms') plus a misrouted Hands-On story dominate; Currents unsupported claims compound the load.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ac4f158a260f5cb8",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "an OpenAI agent swarm uploaded over 500 malicious packages to RubyGems",
+      "fix_kind": "text_edit",
+      "instruction": "The source states agents submitted over 2,000 packages and RubyGems subsequently removed 500+ malicious ones. The body conflates submitted with removed. Rewrite to: 'an OpenAI agent swarm submitted over 2,000 packages to RubyGems, of which more than 500 malicious packages were later removed.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "An OpenAI agent swarm uploaded over 500 malicious RubyGems packages on 11 May",
+      "fix_kind": "text_edit",
+      "instruction": "Same error as the body: the swarm submitted 2,000+ packages; 500+ malicious ones were removed by RubyGems. Rewrite to: 'An OpenAI agent swarm submitted over 2,000 packages to RubyGems on 11 May, with 500+ malicious packages subsequently removed, while Chainalysis confirmed a separate agentic intrusion.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_998677ebb771377c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Chainalysis breach confirms AI agents are now live offensive weapons",
+      "fix_kind": "text_edit",
+      "instruction": "The source explicitly states it is unclear whether attackers used existing agentic frameworks or custom-built AI agents. 'Confirms' asserts a settled fact the source does not support. Rewrite to something like: 'Chainalysis breach attributed to offensive agentic techniques, details unconfirmed' or 'Chainalysis discloses breach via offensive agentic techniques, method still unclear.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_998677ebb771377c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "blocking",
+      "quote": "Security teams now face documented AI-driven intrusions, not projected ones.",
+      "fix_kind": "text_edit",
+      "instruction": "The source says it is unclear whether AI agents were used; calling the intrusion 'AI-driven' as a settled fact contradicts the source. Rewrite to reflect the hedge: e.g. 'Security teams now face intrusions attributed to agentic techniques, even as the exact tooling remains unconfirmed.'",
+      "echo_of": "f003"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ac4f158a260f5cb8",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Autonomous agents now have a documented record of unsupervised supply-chain attacks, not theoretical risk.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is directionally sound but the body's package count is contradicted by the source (2,000+ submitted, 500+ removed). Once the body is corrected, verify the take still accurately characterises the incident scope and adjust if needed.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c23e82f1bdc34c90",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Listing order is as influential as model choice",
+      "fix_kind": "text_edit",
+      "instruction": "Verification flags this as unsupported — the source does not assert equivalence between listing order and model choice, only that both are influential factors. Soften to: 'Listing order proved a significant driver of coordination outcomes alongside model choice' or similar hedged phrasing.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c23e82f1bdc34c90",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Agent swarm coordination was assumed to follow model quality; prompt order shapes it just as much.",
+      "fix_kind": "text_edit",
+      "instruction": "The 'just as much' equivalence is unsupported by the source. Rewrite to hedge: e.g. 'Agent swarm coordination was assumed to follow model quality; prompt order proves a significant and underappreciated factor.'",
+      "echo_of": "f006"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_578904c1433f8267",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "ChatGPT's sandbox let attackers hijack accounts through a library flaw",
+      "fix_kind": "structural",
+      "instruction": "This story covers a patched vulnerability with a bounty payout — it is a security incident report, not a tool/recipe/config story. The Hands-On synthesis frames it as 'a security audit scope expands,' which is a stretch. Route to Big Picture (named actor + consequence framing) or, if the section is already at four stories, consider dropping it. The Hands-On section should carry tool/version/config stories.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "section_intro",
+      "severity": "major",
+      "quote": "Three releases today each remove a different setup tax: a security audit scope expands, an inference deployment collapses to a recipe, a database becomes agent-readable from day one.",
+      "fix_kind": "text_edit",
+      "instruction": "The synthesis mischaracterises c_578904c1433f8267 (a patched CVE with a bounty) as 'a security audit scope expands' — that framing is not supported by the story. If the story is rerouted, rewrite the synthesis around the two remaining tool stories. If it stays, the synthesis must accurately describe what the story actually delivers.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bb28e7cdc19a18ae",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "Inference platform setup previously consumed weeks; NVIDIA's AICR collapses it to a recipe.",
+      "fix_kind": "text_edit",
+      "instruction": "Verification flags 'weeks' as unsupported — the source says setup 'takes time away from testing' without quantifying weeks. Remove the specific duration claim: e.g. 'Inference platform setup previously required manual dependency resolution; NVIDIA's AICR collapses it to a pinned, validated recipe.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_07ab8fae81a1cd39",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "If you're designing agentic finance workflows, where does your deterministic boundary sit?",
+      "fix_kind": "text_edit",
+      "instruction": "The strategic question is well-anchored to a role and decision, which is in-voice. However, the question has a somewhat obvious implied answer (wherever you draw the line, draw it explicitly). Sharpen to a question that surfaces a genuine tension: e.g. 'If your deterministic boundary sits at trade execution, does it also cover the data feeds and client records the agent reads to reach that decision?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f012",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_834490d52b3602af",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "AI vulnerability reports move from probable to confirmed, once a real exploit runs first.",
+      "fix_kind": "text_edit",
+      "instruction": "The comma splice and subordinate clause weaken the declarative force. Rewrite as a clean present-tense assertion: e.g. 'AI vulnerability reports now carry confirmed exploits, not probability estimates, because the agent runs the attack before filing.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f013",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c23e82f1bdc34c90",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "audit your swarm configs before assuming capability determines coordination.",
+      "fix_kind": "text_edit",
+      "instruction": "The Currents body close should end on a presence-form maturity signal (what exists and what it is worth today), not an imperative prescription. The imperative belongs in a Hands-On close. Rewrite the final sentence to characterise the current state of the evidence: e.g. 'The finding is reproducible across four model families, making prompt-order a live configuration variable, not a theoretical one.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f014",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_998677ebb771377c",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "Chainalysis has not published technical details.",
+      "fix_kind": "text_edit",
+      "instruction": "This is an absence inventory inside the body — it characterises what does not exist rather than what does. Remove or replace with a presence-form calibration: e.g. 'The disclosed data classes are limited to names, email addresses, and organisational role labels.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f015",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_6f99453fe444351e",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Auto-update settings are now under urgent developer scrutiny.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body should end on the day's direction in plain editorial prose, not a consequence-framing sentence that edges toward the take's territory. The take already owns the supply-chain vector claim. Rewrite the close to state the directional editorial fact plainly: e.g. 'The incident is the first confirmed supply-chain compromise of an AI developer tool distributed through a verified publisher account.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f016",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_98db51398be95ff9",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "note",
+      "quote": "At five million databases launched monthly, the founders expect agents to push that toward billions.",
+      "fix_kind": "carry_forward",
+      "instruction": "Supabase carries a prior_coverage_ref (c_9933a3d8a98c17fe). The body does not reference what is new relative to prior coverage. On next appearance, note explicitly what has changed since the prior story to earn the recurrence.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "59aa42df4c2b8a5325d8294e5cf3c8c64fcfa5c5a6191d085ba14c8441a1997f",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.) | 3 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}

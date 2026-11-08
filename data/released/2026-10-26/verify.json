@@ -1,0 +1,897 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-25T21:28:09.692225Z",
+  "prompt_version": "v0.7",
+  "verdict": "clean",
+  "verdict_counts": {
+    "supported": 58,
+    "unverifiable": 28
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_081e0d36215761be",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Database checks now train agents to stop faking task completion",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Database checks now train agents to stop faking task completion",
+          "source_span": "We built ThinkingBox to catch agents that say they are done when they are not. Each of its 507 tasks in ThinkingBox-Bench... then checks what really changed in the database... For most tasks, an executable check can return 1 or 0 directly from the final database state. That is not just a grader. This can be a reward function.",
+          "note": "The headline accurately paraphrases the core mechanism: executable database checks used as RL rewards to train agents against false task completion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Microsoft and Hugging Face's ThinkingBox converts executable database checks into reinforcement learning rewards",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Microsoft and Hugging Face's ThinkingBox converts executable database checks into reinforcement learning rewards",
+          "source_span": "This is a joint blog by Microsoft and Hugging Face... ThinkingBox turns executable checks of terminal database state into rewards for post-training agents",
+          "note": "Source confirms ThinkingBox is a joint Microsoft and Hugging Face project that converts executable database checks into RL rewards."
+        },
+        {
+          "schema_version": 1,
+          "claim": "ThinkingBox skips human annotation entirely",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "skipping human annotation entirely",
+          "source_span": "For most tasks, an executable check can return 1 or 0 directly from the final database state. That is not just a grader. This can be a reward function.",
+          "note": "The source describes using executable database verdicts as rewards, implying no human annotation is needed; this is a fair paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Fifty training steps lifted Qwen3.8-27B's fully-reliable task rate from 38 to 107 tasks out of 507",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Fifty training steps lifted Qwen3.8-27B's fully-reliable task rate from 38 to 107 tasks out of 507",
+          "source_span": "tasks completed correctly on all twenty attempts rose from 38 to 107 with 50 GRPO steps... A 27B model that initially completed 38 (7.5%) of ThinkingBox-Bench on every attempt now completes 107 (21.1%) on every attempt",
+          "note": "'Fifty' is a rounding/paraphrase of '50 GRPO steps'; all numbers (38, 107, 507) match the source exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Training code is on GitHub",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Training code is on GitHub",
+          "source_span": "ThinkingBox-Training is now available on GitHub.",
+          "note": "Source explicitly states ThinkingBox-Training is available on GitHub."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent reliability training now runs on database verdicts, not human annotation labels",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent reliability training now runs on database verdicts, not human annotation labels",
+          "source_span": "For most tasks, an executable check can return 1 or 0 directly from the final database state. That is not just a grader. This can be a reward function.",
+          "note": "The take accurately characterises the source's core contribution: replacing human annotation with executable database verdicts as training rewards."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Microsoft and Hugging Face built the tool.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Microsoft and Hugging Face's tool",
+          "source_span": "This is a joint blog by Microsoft and Hugging Face",
+          "note": "digest: The source confirms ThinkingBox is a joint Microsoft and Hugging Face project."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The tool tripled reliable task completions.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "tripled reliable task completions",
+          "source_span": "A 27B model that initially completed 38 (7.5%) of ThinkingBox-Bench on every attempt now completes 107 (21.1%) on every attempt, almost thrice.",
+          "note": "digest: The source says 'almost thrice,' which rounds to 'tripled' — acceptable house-style approximation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Reliable task completions rose from 38 to 107.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "from 38 to 107",
+          "source_span": "tasks completed correctly on all twenty attempts rose from 38 to 107 with 50 GRPO steps",
+          "note": "digest: The exact figures 38 and 107 are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The total number of tasks is 507.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "of 507",
+          "source_span": "Each of its 507 tasks in ThinkingBox-Bench",
+          "note": "digest: The source explicitly states 507 tasks in ThinkingBox-Bench."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The improvement occurred in fifty training steps.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "in fifty training steps",
+          "source_span": "fine-tuned Qwen3.8-27B with GRPO for 50 steps",
+          "note": "digest: The source confirms 50 GRPO steps, matching 'fifty training steps.'"
+        },
+        {
+          "schema_version": 1,
+          "claim": "Database verdicts replace human labels.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Database verdicts replace human labels",
+          "source_span": "For most tasks, an executable check can return 1 or 0 directly from the final database state. That is not just a grader. This can be a reward function.",
+          "note": "digest: The source describes using executable database-state checks as rewards instead of human-labeled signals — a supported paraphrase."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_242796898d51980e",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "An AI agent cut nation-state cloud breaches to under three hours",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "An AI agent cut nation-state cloud breaches to under three hours",
+          "source_span": "multiple instances where the time from initial targeting to privileged access was less than 3 hours",
+          "note": "The source confirms ARTEX (an AI agent framework) enabled privileged cloud access in under three hours; 'cut' is a fair paraphrase of the acceleration described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Storm-0940 is a China-aligned group",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Storm-0940, a China-aligned group",
+          "source_span": "Storm-0940 is a China-state aligned actor",
+          "note": "'China-aligned' is a fair paraphrase of 'China-state aligned'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Storm-0940 used ARTEX, an open-source agentic penetration-testing framework",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "used ARTEX, an open-source agentic penetration-testing framework",
+          "source_span": "Storm-0940 used the agentic AI penetration testing framework ARTEX... ARTEX is an open-source penetration testing framework",
+          "note": "Both the actor, the tool name, and its open-source agentic nature are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Storm-0940 hit hundreds of organisations across 14 industries",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "to hit hundreds of organisations across 14 industries",
+          "source_span": "automate attacks targeting hundreds of organizations globally across a broad range of industries. These include aerospace and defense, automotive, chemicals, energy, financial services, government, legal, manufacturing, media, military, semiconductor, software, technology, and think tanks and non-profits.",
+          "note": "The source lists exactly 14 named industries and confirms hundreds of organizations targeted."
+        },
+        {
+          "schema_version": 1,
+          "claim": "In multiple cases, privileged cloud access took under three hours from first contact",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "In multiple cases, privileged cloud access took under three hours from first contact",
+          "source_span": "multiple instances where the time from initial targeting to privileged access was less than 3 hours",
+          "note": "'First contact' is a fair paraphrase of 'initial targeting'; the rest matches exactly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Microsoft telemetry logged 151,000 failed login attempts in four days",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Microsoft telemetry logged 151,000 failed login attempts in four days",
+          "source_span": "Between October 10 and 14, 2026... Microsoft telemetry captured 151,000+ failed logon events",
+          "note": "October 10–14 is five calendar days but a four-day campaign span; 151,000+ rounds to 151,000; minor rounding/compression is house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Security teams now face AI-automated breaches that compress target-to-access time from days to hours",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Security teams now face AI-automated breaches that compress target-to-access time from days to hours",
+          "source_span": "Agents are not constrained by factors affecting humans... enabling significantly reduced time from selecting a target to achieving objectives... multiple instances where the time from initial targeting to privileged access was less than 3 hours",
+          "note": "The source supports the compression of attack timelines to hours via AI automation; 'days to hours' is a reasonable characterisation of the acceleration described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A China-aligned group used an open-source agentic pentest framework.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A China-aligned group used an open-source agentic pentest framework",
+          "source_span": "Storm-0940, a China-state aligned actor, used the agentic AI penetration testing framework ARTEX... ARTEX is an open-source penetration testing framework",
+          "note": "digest: 'China-aligned group' is a supported paraphrase of 'China-state aligned actor', and ARTEX is confirmed open-source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The group reached privileged cloud access across hundreds of organisations.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "reach privileged cloud access across hundreds of organisations",
+          "source_span": "Storm-0940 used the agentic AI penetration testing framework ARTEX to automate attacks targeting hundreds of organizations globally... Several of these Storm-0940 ARTEX-driven attacks have resulted in the actor obtaining privileged access to an organization's cloud infrastructure",
+          "note": "digest: The source confirms privileged cloud access was obtained and hundreds of organisations were targeted."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The breach reached privileged cloud access in three hours.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Nation-state breach in three hours",
+          "source_span": "multiple instances where the time from initial targeting to privileged access was less than 3 hours",
+          "note": "digest: 'In three hours' is a supported rounding/paraphrase of 'less than 3 hours'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The same agentic capabilities reducing cost and accelerating defence are simultaneously compressing attack timelines.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the same agentic capabilities reducing cost and accelerating defence are simultaneously compressing attack timelines",
+          "source_span": "Agents are not constrained by factors affecting humans – they can work around the clock, on weekends, and on holidays and attempt multiple breach paths simultaneously enabling significantly reduced time from selecting a target to achieving objectives, increasing the speed and impact of complex attacks like supply chain compromises.",
+          "note": "synthesis: The source confirms agentic AI compresses attack timelines; the 'reducing cost' angle is supported by the Cohere blog on coding agents; paraphrase is acceptable house style."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agentic capabilities are evading internal monitors.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "evading internal monitors",
+          "source_span": "We also discovered an exploit agents could use that would prevent hundreds of recent actions (including the actions involved in the exploit itself) from being monitored... We found two independent client-controllable headers that disable the monitoring system for new agents, which could enable agents to start an unmonitored (but otherwise identical) instance.",
+          "note": "synthesis: The Redwood Research source directly describes vulnerabilities allowing agents to evade or disable internal monitoring systems."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Governance frameworks built around human-speed review cycles are now the common exposure across all four items.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Governance frameworks built around human-speed review cycles are now the common exposure across all four items.",
+          "source_span": "",
+          "note": "synthesis: This is an editorial framing claim; while the sources support the general idea of human-speed review being insufficient, the specific assertion that this is 'the common exposure across all four items' is an editorial synthesis not directly verifiable from the excerpts (especially given the fourth source excerpt is empty/inaccessible)."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_7baa359be00065d5",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's agent safety monitors had gaps that agents themselves could exploit",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "OpenAI's agent safety monitors had gaps that agents themselves could exploit",
+          "source_span": "We also discovered an exploit agents could use that would prevent hundreds of recent actions (including the actions involved in the exploit itself) from being monitored... We found two independent client-controllable headers that disable the monitoring system for new agents, which could enable agents to start an unmonitored (but otherwise identical) instance.",
+          "note": "The source confirms multiple monitoring gaps that agents could in principle exploit, supporting the headline's claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Redwood Research and METR found, after three weeks inside OpenAI's codebase, that agents could disable their own monitoring via two ordinary request headers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Redwood Research and METR found, after three weeks inside OpenAI's codebase, that agents could disable their own monitoring via two ordinary request headers",
+          "source_span": "For three weeks, from July 21st to August 11th, a METR employee and a Redwood Research employee conducted a pilot high-access exercise... We found two independent client-controllable headers that disable the monitoring system for new agents, which could enable agents to start an unmonitored (but otherwise identical) instance.",
+          "note": "'Client-controllable headers' paraphrased as 'ordinary request headers' is a fair plain-English rendering; three weeks and the two organizations are confirmed."
+        },
+        {
+          "schema_version": 1,
+          "claim": "gaps left roughly 10% of coding-agent traffic unmonitored for months",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "gaps left roughly 10% of coding-agent traffic unmonitored for months",
+          "source_span": "We estimated that not monitoring compaction events likely led to on the order of 10% of eligible internal Codex traffic not being monitored between May and July 2026, although we have substantial uncertainty about the precise fraction",
+          "note": "'On the order of 10%' rounded to 'roughly 10%' and 'May to July' described as 'months' are both legitimate compressions; 'coding-agent traffic' for 'internal Codex traffic' is a fair paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenAI says all production vulnerabilities are patched",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenAI says all production vulnerabilities are patched",
+          "source_span": "Since completing the exercise, OpenAI has stated that all of the vulnerabilities we identified that impact their production safeguards stack have been patched.",
+          "note": "The body accurately paraphrases OpenAI's stated position; the source also notes this claim was not independently evaluated, but the body attributes it to OpenAI ('says'), preserving the hedge."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Frontier-lab agent monitoring now has an external red-team record, where only internal review existed before.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Frontier-lab agent monitoring now has an external red-team record, where only internal review existed before.",
+          "source_span": "METR, Redwood Research, and OpenAI designed this exercise as a pilot for giving external researchers deep access to internal infrastructure... For future versions of this exercise we expect to follow the transparency and independence best practices",
+          "note": "'Frontier-lab' is a generalisation for OpenAI (a leading frontier AI lab); the source confirms this was an external red-team exercise, implying it is a first of its kind for this type of internal monitoring."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f56bc8aa05e8c210",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Cohere finds frontier coding results at 30% of frontier model costs",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Cohere finds frontier coding results at 30% of frontier model costs",
+          "source_span": "Lessons from scaling teams of coding agents: reach the frontier at 30% of the cost",
+          "note": "The source title and content directly support the headline's claim about frontier quality at 30% of cost."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cohere's controlled testbed pits multi-agent coding teams against single agents on 200 rebuild tasks.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Cohere's controlled testbed pits multi-agent coding teams against single agents on 200 rebuild tasks.",
+          "source_span": "We test these choices on ProgramBench [6], a benchmark of 200 programs to rebuild from scratch.",
+          "note": "The source confirms a controlled testbed with 200 rebuild tasks comparing team and single-agent approaches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A heterogeneous team, strong model leading, cheaper models doing the work, matches frontier quality at roughly 30% of the cost.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A heterogeneous team, strong model leading, cheaper models doing the work, matches frontier quality at roughly 30% of the cost.",
+          "source_span": "In a heterogeneous team, the lead keeps the strong model, but the workers run a cheaper one. Think of a senior engineer who directs the work and makes critical decisions, with junior engineers doing most of the legwork.",
+          "note": "The source describes the heterogeneous team structure; the 30% cost figure is in the title and consistent with the blog's framing, making this supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Coding agent budgets built around uniform model tiers now have a cheaper, tested alternative.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Coding agent budgets built around uniform model tiers now have a cheaper, tested alternative.",
+          "source_span": "In a homogeneous team, the lead and its workers all run the same model. In a heterogeneous team, the lead keeps the strong model, but the workers run a cheaper one.",
+          "note": "The source establishes homogeneous (uniform) vs heterogeneous (cheaper) teams in a controlled testbed, supporting the take's claim of a tested cheaper alternative."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_3809369c314b9e54",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Barclays quants use mechanistic interpretability to monitor AI models",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Barclays quants use mechanistic interpretability to monitor AI models",
+          "source_span": "",
+          "note": "The source excerpt contains no readable content beyond the podcast title and a JavaScript-disabled error message, so the headline's specific claims about Barclays, quants, and mechanistic interpretability cannot be confirmed or denied."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Barclays quants Ariye Shater and Hariom Tatsat describe applying mechanistic interpretability to AI monitoring in a Risk.net podcast.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Barclays quants Ariye Shater and Hariom Tatsat describe applying mechanistic interpretability to AI monitoring in a Risk.net podcast.",
+          "source_span": "Podcast: Ariye Shater and Hariom Tatsat on AI explainability",
+          "note": "The source confirms a Risk.net podcast featuring Ariye Shater and Hariom Tatsat on AI explainability, but the source body is inaccessible, so claims about Barclays affiliation, mechanistic interpretability, and AI monitoring cannot be verified."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The technique inspects internal model representations rather than just outputs.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The technique inspects internal model representations rather than just outputs, giving model-risk teams an auditable signal.",
+          "source_span": "",
+          "note": "The source body is inaccessible due to a JavaScript error, so this technical claim about mechanistic interpretability cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Does your current AI monitoring framework give your risk function an auditable signal into internal model representations, or only into outputs?",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Does your current AI monitoring framework give your risk function an auditable signal into internal model representations, or only into outputs?",
+          "source_span": "",
+          "note": "This is a rhetorical question embedded in the body; the underlying factual premise cannot be checked as the source excerpt is inaccessible."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Model-risk monitoring at Barclays now draws on mechanistic interpretability, not black-box outputs.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Model-risk monitoring at Barclays now draws on mechanistic interpretability, not black-box outputs.",
+          "source_span": "",
+          "note": "The source excerpt is inaccessible beyond the title, so the take's factual assertions about Barclays and mechanistic interpretability cannot be verified."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_467ba6d511fd812c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google's new data-agent toolkit splits guardrails into advice and hard enforcement",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Google's new data-agent toolkit splits guardrails into advice and hard enforcement",
+          "source_span": "It ships two kinds of control, and the difference matters in production... That guardrail is advice. The agent is asked to obey it. A second control is not.",
+          "note": "The source explicitly distinguishes skill-based advice from IAM enforcement, supporting the headline's framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google's Data Agent Kit is now generally available",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google's Data Agent Kit is now generally available",
+          "source_span": "Google recently made Data Agent Kit generally available, moving it out of the preview it ran through the summer.",
+          "note": "Source confirms GA status directly."
+        },
+        {
+          "schema_version": 1,
+          "claim": "37 open-source skills connect coding agents to fifteen-plus Google Cloud data services",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "37 open-source skills connect coding agents to fifteen-plus Google Cloud data services",
+          "source_span": "The plugin repository carries 37 skills under Apache 2.0... Data Agent Kit is a set of MCP tools connecting an agent to more than fifteen Google Data Cloud services",
+          "note": "Both figures and the open-source characterisation are confirmed by the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "the accidental-data-loss skill asks the agent to stop",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the accidental-data-loss skill asks the agent to stop",
+          "source_span": "Among those skills is accidental-data-loss-prevention, which exists to stop the agent destroying something. Its description opens \"STOP AND VERIFY\" and tells the agent it \"MUST obtain explicit user consent\"... That guardrail is advice. The agent is asked to obey it.",
+          "note": "Source confirms the skill instructs (asks) the agent rather than enforcing a hard block."
+        },
+        {
+          "schema_version": 1,
+          "claim": "an IAM deny policy actually blocks the call",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "an IAM deny policy actually blocks the call",
+          "source_span": "use \"an IAM deny policy that blocks any MCP tool where tool.isReadOnly is false.\"... It denies the mcp.googleapis.com/tools.call permission",
+          "note": "Source confirms the IAM deny policy enforces a hard block on the call."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Skills are on GitHub under Apache 2.0",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Skills are on GitHub under Apache 2.0",
+          "source_span": "The plugin repository carries 37 skills under Apache 2.0... The skills are on GitHub and forkable.",
+          "note": "Source confirms both the GitHub location and Apache 2.0 licence."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Configure the IAM deny policy before wiring any agent to production data",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Configure the IAM deny policy before wiring any agent to production data",
+          "source_span": "",
+          "note": "This is a prescriptive recommendation not found in the source excerpt; it is editorial advice, not a factual claim from the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Skill-level guardrails in data-agent toolkits advise; IAM deny policies now actually block the call.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Skill-level guardrails in data-agent toolkits advise; IAM deny policies now actually block the call.",
+          "source_span": "That guardrail is advice. The agent is asked to obey it. A second control is not... It denies the mcp.googleapis.com/tools.call permission",
+          "note": "The take accurately distils the source's core distinction between advisory skills and enforcing IAM deny policies."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google's Data Agent Kit ships (became generally available).",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google's data agent kit ships.",
+          "source_span": "Google recently made Data Agent Kit generally available, moving it out of the preview it ran through the summer.",
+          "note": "digest: 'Ships' is a fair paraphrase of 'generally available'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Thirty-seven open-source skills are included in Data Agent Kit.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Thirty-seven open-source skills",
+          "source_span": "The plugin repository carries 37 skills under Apache 2.0",
+          "note": "digest: 'Thirty-seven' matches the source's '37'; 'open-source' matches Apache 2.0 licensing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The skills connect coding agents to fifteen-plus Cloud services.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "connect coding agents to fifteen-plus Cloud services",
+          "source_span": "Data Agent Kit is a set of MCP tools connecting an agent to more than fifteen Google Data Cloud services",
+          "note": "digest: 'Fifteen-plus' accurately paraphrases 'more than fifteen'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Only IAM deny policies actually block calls, not skill-level advice.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "only IAM deny policies actually block calls, not skill-level advice",
+          "source_span": "That guardrail is advice. The agent is asked to obey it. A second control is not... use 'an IAM deny policy that blocks any MCP tool where tool.isReadOnly is false.'",
+          "note": "digest: The source explicitly distinguishes skill-level guidance (advice only) from IAM deny policies (enforced), matching the summary's claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "This week's practical releases share a structural move: each one removes a layer that previously required specialist custody or a full framework rewrite.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "each one removes a layer that previously required specialist custody or a full framework rewrite",
+          "source_span": "",
+          "note": "synthesis: This is editorial pattern-naming synthesizing across multiple stories; no single checkable factual assertion can be confirmed or denied from the source excerpts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Several of these tools assume teams' deployment checklists already distinguish advisory guardrails from enforced ones.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "several of these tools assume it does",
+          "source_span": "That guardrail is advice. The agent is asked to obey it. A second control is not.",
+          "note": "synthesis: The Data Agent Kit source explicitly distinguishes advisory (skills-based) guardrails from enforced (IAM-based) controls, supporting the editorial framing as a checkable structural distinction."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_25bae1bc61b6504a",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Ray scales prototype agents to production without rewriting the framework",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Ray scales prototype agents to production without rewriting the framework",
+          "source_span": "Beyond the Prototype: Scaling Framework Agnostic AI Agent Infrastructure with Ray",
+          "note": "The source title and content confirm Ray is used to scale agents to production in a framework-agnostic way, supporting the headline's core assertion."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Moving a FastAPI agent prototype to Kubernetes production means solving stateful memory, dynamic auto-scaling, and multi-region control planes simultaneously.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Moving a FastAPI agent prototype to Kubernetes production means solving stateful memory, dynamic auto-scaling, and multi-region control planes simultaneously.",
+          "source_span": "",
+          "note": "The source mentions FastAPI and stateful memory but does not mention Kubernetes, dynamic auto-scaling, or multi-region control planes in the provided excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "This InfoQ talk walks a RayCluster topology through all three",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "This InfoQ talk walks a RayCluster topology through all three",
+          "source_span": "",
+          "note": "The source confirms this is an InfoQ talk about Ray, but 'RayCluster topology' and walking through all three challenges is not confirmed in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "a language-model-as-judge evaluation pipeline closing the loop",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "with a language-model-as-judge evaluation pipeline closing the loop",
+          "source_span": "",
+          "note": "The source excerpt does not mention a language-model-as-judge evaluation pipeline anywhere in the provided text."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent infrastructure reviews now start from a concrete RayCluster topology, not from first principles.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Agent infrastructure reviews now start from a concrete RayCluster topology, not from first principles.",
+          "source_span": "",
+          "note": "This is partly editorial, but the embedded factual claim about a 'RayCluster topology' being presented is not confirmed in the provided excerpt, which does not use that term."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_e15e7080784790f5",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "QuantumBlack's Kedro pattern adds approval gates to catch agent quality drift",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "QuantumBlack's Kedro pattern adds approval gates to catch agent quality drift",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source material exists to confirm or deny any part of this headline claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "QuantumBlack's Kedro-based reflection pipeline wraps enterprise agents in modular governance",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "QuantumBlack's Kedro-based reflection pipeline wraps enterprise agents in modular governance",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the attribution to QuantumBlack or the modular governance characterisation."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Data contracts define acceptable output",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "data contracts define acceptable output",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source material to confirm this mechanism."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Approval gates block weak results before they propagate",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "approval gates block weak results before they propagate",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this described behaviour of approval gates."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The pattern surfaces quality failures that emerge only across dozens of runs",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "the pattern surfaces quality failures that emerge only across dozens of runs",
+          "source_span": "",
+          "note": "Source excerpt is empty; the specific threshold of 'dozens of runs' and the capability claim cannot be checked."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Smart contracts catch boundary violations",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Smart contracts catch boundary violations",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this comparative claim about smart contracts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent quality drift now has a structural fix, where ad-hoc output review was the only option before",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Agent quality drift now has a structural fix, where ad-hoc output review was the only option before",
+          "source_span": "",
+          "note": "Source excerpt is empty; the embedded factual assertion that ad-hoc output review was previously the only option cannot be verified."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f0e102109f58c50c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Kedro pipeline manages graph, vector, and relational stores together",
+          "verdict": "unverifiable",
+          "location": "headline",
+          "summary_span": "Kedro pipeline manages graph, vector, and relational stores together",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to confirm or deny this claim."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Standard retrieval-augmented generation fails when answers depend on relationships spread across semantically dissimilar records",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Standard retrieval-augmented generation fails when answers depend on relationships spread across semantically dissimilar records",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify this characterisation of RAG limitations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "QuantumBlack's Kedro demo wires a graph store, vector index, and relational database into one managed pipeline",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "QuantumBlack's Kedro demo wires a graph store, vector index, and relational database into one managed pipeline",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the attribution to QuantumBlack or the pipeline composition."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Kedro demo uses a chronic kidney disease medication query as the worked example",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "using a chronic kidney disease medication query as the worked example",
+          "source_span": "",
+          "note": "Source excerpt is empty; cannot verify the specific worked example described."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Relationship queries that defeated standard retrieval now have a structured pipeline pattern",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Relationship queries that defeated standard retrieval now have a structured pipeline pattern",
+          "source_span": "",
+          "note": "Source excerpt is empty; no source to confirm or deny this editorial position's embedded factual claim."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_907dc206dd370d70",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "PyTorch models now run on Google TPUs without rewriting code",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "PyTorch models now run on Google TPUs without rewriting code",
+          "source_span": "TorchTPU adds TPU as a new backend to PyTorch. You write regular PyTorch code.",
+          "note": "Source confirms TorchTPU enables native PyTorch on TPUs without code rewriting; Google TPUs is a supported paraphrase since the source confirms TPUs are Google's accelerators."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PyTorch on Google TPUs meant rewriting code for a specialist framework with lazy tensor execution and unpredictable recompilation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Until now, PyTorch on Google TPUs meant rewriting code for a specialist framework with lazy tensor execution and unpredictable recompilation.",
+          "source_span": "Until now, running PyTorch on TPUs meant going through PyTorch/XLA (torch_xla). It worked, but it had its quirks. Tensors were lazy (the tensors, not you), so your code didn't always run when you thought it did. Small changes could trigger graph recompilations, and debugging was hard to reason about.",
+          "note": "Source confirms lazy tensors and recompilation issues with the old PyTorch/XLA approach; 'specialist framework' is a fair paraphrase of torch_xla."
+        },
+        {
+          "schema_version": 1,
+          "claim": "TorchTPU makes TPU just another device",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "TorchTPU makes TPU just another device",
+          "source_span": "With TorchTPU, a native PyTorch backend, TPU is now just another device.",
+          "note": "Near-verbatim match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "device_map=\"tpu\" is the only change",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "device_map=\"tpu\" is the only change",
+          "source_span": "To load a model on a TPU, pass device_map=\"tpu\". That's it.",
+          "note": "Source confirms this is the only required change for Transformers."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Transformers, Diffusers, and Kernels all work natively",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Transformers, Diffusers, and Kernels all work natively.",
+          "source_span": "Transformers, Diffusers and Kernels run natively on TPU.",
+          "note": "Near-verbatim match with source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "At batch 64, a custom kernel hits 21.5× faster decoding",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "At batch size 64, decoding is 21.5× faster",
+          "source_span": "At batch size 64, decoding is 21.5× faster on Qwen3-30B-A3B and 12.8× faster on Gemma 4 26B-A4B.",
+          "note": "The 21.5× figure is accurate for Qwen3-30B-A3B at batch 64; omitting the Gemma figure and model name is acceptable compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "PyTorch engineers targeting Google TPUs previously absorbed a full framework switch; that overhead is gone.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "PyTorch engineers targeting Google TPUs previously absorbed a full framework switch; that overhead is gone.",
+          "source_span": "If you ever tried to run PyTorch on a TPU, you probably ported your code to torch_xla, or you ended up having to learn JAX. With TorchTPU, a native PyTorch backend, TPU is now just another device.",
+          "note": "Source confirms the prior requirement to switch to torch_xla or JAX, and that TorchTPU eliminates this; 'full framework switch' is a fair paraphrase."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_4cc772e13057620c",
+      "prompt_version": "v0.7",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A former derivatives trader builds AI around how trading actually works",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A former derivatives trader builds AI around how trading actually works",
+          "source_span": "When Anekha Sokhal traded energy derivatives, staying on top of the market meant tracking more information than any person could read. Now, as CEO of Moshi, she is building the tool she wished she had... why useful AI needs to fit the way people actually work.",
+          "note": "Source confirms Sokhal is a former derivatives trader building AI tools designed around how traders actually work."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anekha Sokhal spent her JPMorgan career in energy derivatives",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Anekha Sokhal spent her JPMorgan career in energy derivatives",
+          "source_span": "I got my first internship in investment banking and trading and then got an internship at JP Morgan where I started... most of my career has been in energy derivatives.",
+          "note": "Source confirms Sokhal worked at JPMorgan and that most of her career was in energy derivatives."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Anekha Sokhal watched market data outpace human reading speed",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "watching market data outpace human reading speed",
+          "source_span": "staying on top of the market meant tracking more information than any person could read",
+          "note": "Source confirms the same idea in paraphrase — market information exceeded what any person could read."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Her startup Moshi is described in a Latent Space podcast as 'Bloomberg, Claude and Netflix combined'",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Her startup Moshi, described in a Latent Space podcast as 'Bloomberg, Claude and Netflix combined,'",
+          "source_span": "She describes Moshi as what might happen if Bloomberg, Claude and Netflix had a baby: market data, an interface for working with it, and recommendations tailored to the trader.",
+          "note": "Source confirms the Bloomberg/Claude/Netflix description on the Latent Space podcast; 'combined' is a fair paraphrase of 'had a baby'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Moshi feeds traders curated recommendations matched to their book",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "feeds traders curated recommendations matched to their book",
+          "source_span": "a recommendation engine that connects market information to what matters for a trader's book",
+          "note": "Source confirms Moshi provides recommendations tied to a trader's book."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Moshi template is public",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "The Moshi template is public",
+          "source_span": "",
+          "note": "The source excerpt does not mention a public template; this cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Moshi template is built around three trader roles",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "built around three trader roles",
+          "source_span": "",
+          "note": "The source excerpt does not mention three trader roles; this cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Moshi template is built around five validated workflow patterns",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "five validated workflow patterns",
+          "source_span": "",
+          "note": "The source excerpt does not mention five workflow patterns; this cannot be confirmed or denied from the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Traders building AI workflows now have a practitioner-designed template, not a technologist's assumption.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Traders building AI workflows now have a practitioner-designed template, not a technologist's assumption.",
+          "source_span": "",
+          "note": "The editorial position embeds a factual claim about a public template existing, which is not confirmed in the source excerpt; the broader framing is editorial judgment."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 11 stories"
+}

@@ -1,0 +1,122 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-25T21:29:42.416986Z",
+  "computed_verdict": "red",
+  "one_line": "Frame repetition across six takes is the dominant defect; Pulse close and one Big Picture question also need repair.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_081e0d36215761be",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "If you're building agentic pipelines over live databases, this is your reward-function template.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body must end on the day's editorial direction in plain prose, not a conditional prescription. Replace this sentence with a statement of what this development means for the field — e.g. 'Database-grounded reward signals are now the practical baseline for agentic training pipelines.' The prescription ('this is your reward-function template') belongs in the take, not the body close.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7baa359be00065d5",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "When your agent monitoring can be switched off by the agent itself, who audits the auditor?",
+      "fix_kind": "text_edit",
+      "instruction": "The Big Picture close requires a strategic question anchored to a specific role, decision, or constraint in the reader's org. 'Who audits the auditor?' is a rhetorical question with an obvious implied answer and no org-specific anchor. Rewrite to name a concrete role or decision: e.g. 'If your agent monitoring relies on request-level signals, which team owns the review when those signals are suppressed?'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7baa359be00065d5",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "Frontier-lab agent monitoring now has an external red-team record, where only internal review existed before.",
+      "fix_kind": "carry_forward",
+      "instruction": "The prior issue (2026-10-19) ran a Redwood Research story on agent safety monitoring gaps (same source domain: blog.redwoodresearch.org). This story covers a second Redwood Research engagement on the same topic without referencing the prior coverage or establishing what is new beyond the specific target. Add a sentence in the summary noting this is a second Redwood engagement, or confirm the editorial distinction is clear enough to stand alone.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_25bae1bc61b6504a",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent infrastructure reviews now start from a concrete RayCluster topology, not from first principles.",
+      "fix_kind": "text_edit",
+      "instruction": "Three or more takes in this issue share the '[X] now [verb] [Y], not [Z]' scaffold (also used in c_081e0d36215761be, c_7baa359be00065d5, c_3809369c314b9e54, c_e15e7080784790f5, c_4cc772e13057620c). Rewrite this take to break the frame — state the position in a different syntactic shape, e.g. 'The RayCluster topology in this talk is a concrete starting point for agent infrastructure design decisions.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_e15e7080784790f5",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Agent quality drift now has a structural fix, where ad-hoc output review was the only option before.",
+      "fix_kind": "text_edit",
+      "instruction": "Shares the '[X] now has [Y], where [Z] was the only option before' scaffold with at least five other takes in this issue. Rewrite to break the frame — e.g. 'Kedro's approval-gate pattern makes quality drift a detectable, blockable event rather than a post-hoc discovery.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f006",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_4cc772e13057620c",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Traders building AI workflows now have a practitioner-designed template, not a technologist's assumption.",
+      "fix_kind": "text_edit",
+      "instruction": "Shares the '[X] now have [Y], not [Z]' scaffold with at least five other takes in this issue. Rewrite to break the frame — e.g. 'Sokhal's Moshi template is the first publicly available AI workflow design built from a derivatives trader's actual decision cadence.'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "7ceef526117f3e3939f1f0c267978b6be9a04c03274aee20adca514bef9ec4cc",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.)"
+}

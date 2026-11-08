@@ -1,0 +1,194 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-10-20T21:34:30.639337Z",
+  "computed_verdict": "red",
+  "one_line": "Duplicate Databricks story and four takes sharing one scaffold are the day's structural problems.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_01d28fb4995294d0",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "IBM Research's ALTK-Evolve appends short behavioural rules, distilled from past agent trajectories, to a stock GPT-4.1 customer-service agent.",
+      "fix_kind": "sourcing",
+      "instruction": "The verification block flags this claim as unsupported by the source. Remove or hedge the specific claim that ALTK-Evolve uses GPT-4.1 as its base model unless the source explicitly names it; replace with 'a stock customer-service agent' or whatever the source does name.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ae8bc6acb0f61c72",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "shape_integrity",
+      "severity": "major",
+      "quote": "Databricks triples agent pass rate with built-in persistent memory",
+      "fix_kind": "structural",
+      "instruction": "Stories c_121edfb77c17d1ec and c_ae8bc6acb0f61c72 both cover Databricks Agent Memory / MemCurrent from the same source URL pattern and report the same core facts (tripling pass rates, 31% token reduction). This is a duplicate routing failure. Remove one story or merge them; if the MemCurrent architectural detail warrants a separate Currents entry, reroute c_ae8bc6acb0f61c72 there with appropriate hedging.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_121edfb77c17d1ec",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Agent memory previously meant standing up a separate system; Databricks now bundles it into the platform.",
+      "fix_kind": "text_edit",
+      "instruction": "This take and c_ae8bc6acb0f61c72's take ('Production agents previously rebuilt context from scratch every session; Databricks now stores it.') share the same 'X previously meant Y; Databricks now does Z' scaffold. If both stories are retained, rewrite one take to break the syntactic parallel.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_cca49012f2c9d6af",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "If you are deciding whether to build or buy agent infrastructure this quarter, read it before that decision lands.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On body must close on an imperative action sharpened to a specific artefact and trigger, not a conditional reading recommendation. Replace with a concrete imperative naming the specific architectural element or decision point from Ramp's post, e.g. 'Map Laminar's orchestration loop against your current harness before your next vendor renewal.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_14f73fc06c6f5288",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "The evals are OpenAI's own framing, and no public benchmark harness is described. The harness is public and the evals cover COBOL migration on benchmark data.",
+      "fix_kind": "text_edit",
+      "instruction": "The summary contains two directly contradictory sentences: one states 'no public benchmark harness is described' and the next states 'The harness is public.' This is an internal contradiction that must be resolved. Determine which claim the source supports and delete the other sentence.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f007",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_967ea03f80c1af44",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Neural-network opacity was the settled premise; one researcher's year of close observation disputes it.",
+      "fix_kind": "text_edit",
+      "instruction": "The take hedges with 'disputes it' rather than stating the publication's position. The body already establishes the field is split; the take should advance beyond that to a declarative position, e.g. 'The settled assumption of irreducible neural-network opacity now has a legible internal-logic challenger the field cannot dismiss.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f008",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_ae8bc6acb0f61c72",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "major",
+      "quote": "Raise the architecture at your next agent design review.",
+      "fix_kind": "text_edit",
+      "instruction": "The Hands-On imperative close must name a specific artefact and trigger, not a generic meeting prompt. Replace with an action tied to a concrete element from the story, e.g. 'Swap your session-reset memory layer for MemCurrent and run the three open-source backend benchmarks before your next architecture sign-off.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f009",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 1,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "major",
+      "quote": "Shifting 0.03% of parameters moved one benchmark across its full range, exposing scores as label-policy proxies.",
+      "fix_kind": "text_edit",
+      "instruction": "This sentence restates the story's take ('Safety benchmark scores previously signalled detection strength; they measure label-policy alignment instead') in compressed form rather than compressing a story fact. Rewrite to anchor on a falsifiable story detail, e.g. 'Ten classifiers trained on 53,000 prompts showed benchmark scores correlating 0.74 with labeling policy and only 0.34 with detection capability.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f010",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_c9e314ae9da59636",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Long-horizon agent deployments previously ran in dozens; production architects now plan for ten thousand.",
+      "fix_kind": "text_edit",
+      "instruction": "This take shares the 'X previously ran in Y; now Z' scaffold with c_121edfb77c17d1ec's take and c_ae8bc6acb0f61c72's take. Three takes sharing the same 'previously X; now Y' frame is a major pattern. Rewrite to break the parallel, e.g. 'A 36-hour, 10,000-agent production run resets the baseline assumption for autonomous oversight architecture.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f011",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_bf34dfe33c638472",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "major",
+      "quote": "Safety benchmark scores previously signalled detection strength; they measure label-policy alignment instead.",
+      "fix_kind": "text_edit",
+      "instruction": "Four takes in this issue use the 'X previously meant/signalled Y; now Z' scaffold: c_c9e314ae9da59636, c_121edfb77c17d1ec, c_ae8bc6acb0f61c72, and this one. Three or more sharing a frame is a major finding. Rewrite this take to break the pattern, e.g. 'A 0.74 correlation with labeling policy and 0.34 with detection means safety scores are auditing vendor definitions, not model behaviour.'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-4-6",
+  "issue_sha256": "d5a8cf7e91d41e1781f4ed8bd1e32025c6e638b5a045d17081ebc03d329bac18",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.) | 1 finding(s) dropped: malformed shape"
+}
