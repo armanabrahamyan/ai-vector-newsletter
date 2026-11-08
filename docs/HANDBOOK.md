@@ -325,6 +325,22 @@ LLM_MODEL=claude-opus-5-5 aiv run --stages rank,summarise --date <date>
 
 Inline env override — runs once, your `.env` is untouched.
 
+### Rank on a cheaper model than the writer
+
+```ini
+RANK_MODEL=claude-haiku-5-5    # rank stage only; unset = same as LLM_MODEL
+```
+
+Ranking is scoring against the rubric, not writing. Since rank prompt
+v0.7 (2026-11-08) the prompt carries a scoring-calibration block that
+tells the model which dimension each kind of evidence may move, and with
+it Haiku 5.5 ranks at about a tenth of Sonnet's cost (roughly $0.20
+against $2.00 per daily run of ~500 clusters). The paired issues built
+from both rankings read better from the Haiku one, so this is the
+ratified setting. The writer, verifier and reviewer keep `LLM_MODEL` /
+`REVIEW_MODEL`. In CI the repo variable `RANK_MODEL` carries the same
+value. To go back, unset it: rank then uses `LLM_MODEL` again.
+
 ---
 
 ## 6. "I want to tune the LLM behaviour"

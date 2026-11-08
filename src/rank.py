@@ -72,12 +72,33 @@ from src.models import RUBRIC_WEIGHTS, SECTION_WEIGHTS, Cluster, Item, RankedSto
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-RANK_PROMPT_VERSION = "v0.6.1"
+RANK_PROMPT_VERSION = "v0.7"
 r"""Pydantic-validated version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``rank-v0.6.1-2026-08-08``. Bump when the prompt content
+Audit tag: ``rank-v0.7-2026-11-08``. Bump when the prompt content
 changes -- so the eval harness can correlate score movement against
 prompt revisions (risk-register item #6 in docs/internal/TEAM.md).
+
+v0.7 (2026-11-08): SCORING CALIBRATION block appended to the cached prefix
+after the rubric (``_SCORING_CALIBRATION_BLOCK``), and the rank stage
+given its own model knob (``RANK_MODEL``, falling back to ``LLM_MODEL``).
+Ratified 2026-11-08 from paired issues built from two rankings of the same
+clusters. The ranker had been scoring the thinness of the feed excerpt
+instead of the event -- "single source", "vendor-reported", "details
+thin" in its rationales -- which demoted exactly the stories the rubric's
+signal filter rates highest: frontier releases, open-weights launches,
+incident reports, inference-cost shifts. The block says which dimension
+each kind of evidence may move: artefact absence lowers hands_on_utility
+only, corroboration is the verifier's job, a same-day first report is
+"breaking". Measured on 2026-10-31 (504 clusters): with the block, Sonnet
+5.5 and Haiku 5.5 agree on the head of the list far better than either
+did with the unblocked Sonnet 5.5 (Spearman over the union of top-60s
+0.65 vs 0.47), and the issues built from the Haiku ranking were preferred
+on read. Known effect: more stories clear the cut line (206 vs 148 of 504
+that day). The floor stays with ``tier_thresholds``; two attempts to add
+floor rules to this block over-fitted to the day they were written on,
+the #75/#77 lesson again. Text is additive -- EDITORIAL FOCUS and the
+rubric block are byte-identical to v0.6.1.
 
 v0.6.1 (2026-08-08): MESSAGE-STRUCTURE-ONLY change -- prompt caching.
 The first-attempt prompt BYTES are identical to v0.6; the prompt is now
@@ -294,6 +315,65 @@ rule. The rubric is for the survivors.
 
 
 # ---------------------------------------------------------------------------
+# Scoring calibration -- v0.7 (2026-11-08). Appended to the cached prefix
+# AFTER the rubric block, so it is the last instruction the model reads
+# before the cluster. It does not change the editorial focus or the rubric;
+# it says which dimension each kind of evidence is allowed to move. Keep it
+# additive and keep rules out of it that set floors or base rates: the two
+# variants that tried (scratch v2/v3, 2026-11-08) each fitted the day they
+# were written on and lost agreement on the next. Ratification record in
+# RANK_PROMPT_VERSION.
+# ---------------------------------------------------------------------------
+
+_SCORING_CALIBRATION_BLOCK = """\
+SCORING CALIBRATION (read before scoring; these rules resolve the most
+common mis-scorings)
+
+1. Score the story, not the excerpt. The ITEMS block shows at most three
+   items, each cut to a few hundred characters. A one-line summary, a
+   single source, a small cluster size, or a snippet that names no repo,
+   paper or benchmark are properties of the FEED, not of the story. Do
+   not lower significance, big_picture_relevance or freshness_momentum
+   for any of them. Score what the headline and summary describe, and
+   infer the obvious (an "open source" release has a repo; a model
+   release is API-usable) rather than treating an absent link as absence.
+
+2. Corroboration and source trust are not scoring inputs. Trust weights
+   are applied by code and factual checking is a separate verifier stage.
+   "Single source", "unverified" or "vendor-authored" is never a reason
+   for a lower score on any dimension.
+
+3. Missing artefacts lower hands_on_utility only. "No repo / no code / no
+   benchmark / no API" is exactly what the hands_on_utility 25 anchor
+   describes; it says nothing about significance or big_picture_relevance.
+   Conversely, having an artefact (a tutorial, a release note, a reference
+   architecture, a paper) satisfies only the PRACTICAL signal dimension.
+   It does not by itself make a story significant.
+
+4. Significance counts signal dimensions, not artefacts. Ask TODAY,
+   TOMORROW and PRACTICAL separately and score by how many are hit, per
+   the anchors. A frontier-lab model release, a change in where frontier
+   models are sold or hosted, a cost-structure change in inference, or a
+   documented agent incident affecting many organisations usually hits
+   TODAY and TOMORROW with no artefact at all. A vendor tutorial or
+   reference architecture on a Tier-1 topic usually hits PRACTICAL only.
+
+5. Freshness is about timing, not about how many sources the cluster has.
+   A first report of a release, incident or paper from the last two days
+   is "Breaking" under the 75 anchor on its own; "visibly building
+   momentum" is the OTHER route to 75, not an extra requirement. The
+   25-50 band is for follow-ups and re-summaries of something already
+   widely covered, not for new single-source stories.
+
+6. Big-picture relevance asks what a Head of AI / CDO / CTO would
+   re-prioritise. Vendor-calculus changes (which cloud sells which models,
+   exclusivity ending), new capability tiers, and security incidents that
+   show a new class of agent risk sit at the 75 anchor even when the
+   story is a short announcement. Absence of an FS or regulatory anchor
+   lowers financial_services_impact only, never big_picture_relevance."""
+
+
+# ---------------------------------------------------------------------------
 # Public entry point.
 # ---------------------------------------------------------------------------
 
@@ -423,6 +503,28 @@ def rank(date: _dt.date | None = None) -> list[RankedStory]:
         len(ranked), dropped, llm_errors, top_score, median_score, ranked_out,
     )
     return ranked
+
+
+# ---------------------------------------------------------------------------
+# Rank-stage model knob (v0.7, 2026-11-08).
+# ---------------------------------------------------------------------------
+
+RANK_MODEL_ENV_VAR = "RANK_MODEL"
+
+
+def _resolve_rank_model() -> str | None:
+    """Which model scores clusters: ``RANK_MODEL`` when set, else ``None``
+    so ``_llm_call`` falls back to ``LLM_MODEL`` like every other stage.
+
+    Ranking is a scoring task against an inlined rubric. With the v0.7
+    scoring-calibration block a small model does it at about a tenth of
+    the writer model's cost (~$0.20 vs ~$2.00 per ~500-cluster run,
+    2026-11-08), and the paired-issue read preferred its selections. The
+    writer, verifier and reviewer stay on ``LLM_MODEL`` / ``REVIEW_MODEL``.
+    Ratified setting: ``claude-haiku-5-5`` (see .env.example).
+    """
+    explicit = (os.getenv(RANK_MODEL_ENV_VAR) or "").strip()
+    return explicit or None
 
 
 # ---------------------------------------------------------------------------
@@ -957,8 +1059,9 @@ def _build_rank_prompt_parts(
     bytes (pinned by tests/test_rank.py::TestPromptCacheSplit). The split
     point is the stable structural boundary just after the literal
     ``"CLUSTER\\ncanonical_title: "``: everything before it (intro +
-    editorial focus + rubric, ~3,084 billed tokens with rubric v0.7 --
-    comfortably above the 1,024-token Sonnet cache minimum) is byte-
+    editorial focus + rubric + scoring calibration since prompt v0.7;
+    3,084 billed tokens with rubric v0.7 before the calibration block was
+    added -- comfortably above the 1,024-token Sonnet cache minimum) is byte-
     identical for every cluster within a run and across days as long as
     ``config/rubric.yaml`` is unchanged, so ``_llm_call_anthropic`` marks
     it with ``cache_control: {"type": "ephemeral"}`` (5-min TTL, refreshed
@@ -1005,6 +1108,8 @@ senior leaders they work with, with a financial-services lens.
 
 {_EDITORIAL_FOCUS_BLOCK}
 {rubric_block}
+
+{_SCORING_CALIBRATION_BLOCK}
 
 CLUSTER
 canonical_title: """
@@ -1132,7 +1237,10 @@ def _call_and_parse_rank(
             (prefix, current_variable) if is_split else current_variable
         )
         try:
-            raw = _llm_call(current_prompt, temperature=temperature, max_tokens=800)
+            raw = _llm_call(
+                current_prompt, temperature=temperature, max_tokens=800,
+                model=_resolve_rank_model(),
+            )
         except Exception:  # noqa: BLE001
             _LOG.exception(
                 "rank: LLM call failed for cluster_id=%s (attempt %d/%d)",
@@ -1576,9 +1684,15 @@ def _assign_initial_tier(
 # ---------------------------------------------------------------------------
 
 def _llm_call(
-    prompt: "str | tuple[str, str]", *, temperature: float, max_tokens: int
+    prompt: "str | tuple[str, str]", *, temperature: float, max_tokens: int,
+    model: str | None = None,
 ) -> str:
     """Issue one LLM call and return the raw response text.
+
+    ``model`` overrides ``LLM_MODEL`` for this call only (the rank stage
+    passes ``_resolve_rank_model()``, v0.7). ``None`` reads the environment
+    as before, so summarise / verify / review / preflight callers are
+    unchanged.
 
     ``prompt`` is either a plain string (summarise / verify / review /
     preflight callers -- unchanged) or a ``(cached_prefix, variable)``
@@ -1599,7 +1713,7 @@ def _llm_call(
         If a required env var (``LLM_MODEL``) is missing.
     """
     provider = os.getenv("LLM_PROVIDER", "anthropic").strip().lower()
-    model = os.getenv("LLM_MODEL", "").strip()
+    model = (model or os.getenv("LLM_MODEL", "")).strip()
     if not model:
         raise RuntimeError("LLM_MODEL is required")
     timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
