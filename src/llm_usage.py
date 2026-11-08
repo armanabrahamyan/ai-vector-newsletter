@@ -36,8 +36,13 @@ from typing import Any
 # cache writes are 1.25x the base input rate, cache hits/refreshes are
 # 0.10x the base input rate (multipliers confirmed against the per-model
 # table -- e.g. sonnet-4-6: $3 input -> $3.75 write / $0.30 hit). The
-# Claude 5.5 rows (added 2026-10-31) use the per-model figures directly:
-# opus-5-5 cache reads are $0.20, i.e. 0.05x, not 0.10x.
+# Claude 5.5 rows use the per-model figures directly: sonnet-5-5 and
+# opus-5-5 cache reads are 0.05x base input ($0.10 and $0.20; the sonnet
+# row was corrected from $0.20 on 2026-11-08 -- run records written before
+# that overstate cache-read cost by 2x on that model). haiku-5-5 is priced
+# by prompt length: the row below is the <= 100k-token tier, which every
+# pipeline call sits under (rank ~5k, summarise ~10k); above 100k the API
+# charges 5x and this table would understate it.
 #
 # PRICES DRIFT -- verify against current Anthropic pricing before trusting
 # a cost figure for a budget decision.
@@ -45,8 +50,9 @@ from typing import Any
 _PRICING: dict[str, tuple[float, float, float, float]] = {
     # (usd_per_mtok_input, usd_per_mtok_output,
     #  usd_per_mtok_cache_write_5m, usd_per_mtok_cache_read)
-    "claude-sonnet-5-5": (2.00, 10.00, 2.50, 0.20),   # fetched 2026-10-31
+    "claude-sonnet-5-5": (2.00, 10.00, 2.50, 0.10),   # fetched 2026-11-08
     "claude-opus-5-5": (4.00, 20.00, 5.00, 0.20),     # fetched 2026-10-31
+    "claude-haiku-5-5": (0.10, 0.50, 0.125, 0.01),    # fetched 2026-11-08, <= 100k-token prompts
     "claude-sonnet-4-6": (3.00, 15.00, 3.75, 0.30),   # fetched 2026-08-08
     "claude-opus-4": (15.00, 75.00, 18.75, 1.50),     # fetched 2026-08-08
     "claude-haiku-4-5": (1.00, 5.00, 1.25, 0.10),     # fetched 2026-08-08
