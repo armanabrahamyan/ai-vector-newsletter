@@ -31,9 +31,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.models import Cluster, Item
+from src import rank as rank_mod
 from src.rank import (
     _DEFAULT_TIER_THRESHOLDS,
     _EDITORIAL_FOCUS_BLOCK,
+    _SCORING_CALIBRATION_BLOCK,
     _FRESHNESS_INFERRED_CAP,
     _PRIOR_COVERAGE_NOVELTY_CAPS,
     _PRIOR_COVERAGE_SIGNIFICANCE_CAP,
@@ -1626,10 +1628,12 @@ def _golden_v06_single_string_prompt(
     today: _dt.date | None = None,
 ) -> str:
     """VERBATIM copy of the v0.6 (pre-cache-split) ``_build_rank_prompt``
-    body -- the golden reference for the byte-equality gate. If a deliberate
-    prompt change lands in rank.py, this copy must be updated in the same
-    PR alongside a RANK_PROMPT_VERSION bump; an accidental byte drift shows
-    up here as a failure."""
+    body -- the golden reference for the byte-equality gate -- with the one
+    deliberate change since: v0.7 (2026-11-08) inserts
+    ``_SCORING_CALIBRATION_BLOCK`` between the rubric block and the CLUSTER
+    header. If a deliberate prompt change lands in rank.py, this copy must
+    be updated in the same PR alongside a RANK_PROMPT_VERSION bump; an
+    accidental byte drift shows up here as a failure."""
     items = _select_items_for_prompt(cluster, items_by_id, trust_weights)
     items_block_lines: list[str] = []
     for it in items:
@@ -1656,6 +1660,8 @@ senior leaders they work with, with a financial-services lens.
 
 {_EDITORIAL_FOCUS_BLOCK}
 {rubric_block}
+
+{_SCORING_CALIBRATION_BLOCK}
 
 CLUSTER
 canonical_title: {cluster.canonical_title}
@@ -2078,3 +2084,110 @@ class TestClaude5RequestShape:
                 )
         finally:
             llm_usage.reset()
+
+
+# ===========================================================================
+# v0.7 (2026-11-08): scoring-calibration block + rank-stage model knob.
+# ===========================================================================
+
+class TestScoringCalibrationBlock:
+    """The v0.7 block sits in the CACHED prefix, after the rubric and
+    before the cluster header, exactly once. Its wording is the ratified
+    text; these tests pin placement and the rules the A/B turned on, not
+    every sentence."""
+
+    def _prefix(self) -> str:
+        clusters, items, day = _load_archive_day(_ARCHIVE_DAYS[0])
+        rubric_block = _build_rubric_block(_RUBRIC_PATH)
+        trust = _load_trust_weights(_SOURCES_PATH)
+        prefix, variable = _build_rank_prompt_parts(
+            clusters[0], items, rubric_block, trust, today=day,
+        )
+        assert _SCORING_CALIBRATION_BLOCK not in variable
+        return prefix
+
+    def test_block_is_in_the_prefix_once_after_the_rubric(self) -> None:
+        prefix = self._prefix()
+        assert prefix.count(_SCORING_CALIBRATION_BLOCK) == 1
+        rubric_at = prefix.index("RUBRIC (config/rubric.yaml @")
+        block_at = prefix.index(_SCORING_CALIBRATION_BLOCK)
+        assert rubric_at < block_at
+        assert prefix.endswith(
+            _SCORING_CALIBRATION_BLOCK + "\n\n" + _CACHE_BOUNDARY
+        )
+
+    def test_block_names_the_rules_the_ab_turned_on(self) -> None:
+        block = _SCORING_CALIBRATION_BLOCK
+        assert block.startswith("SCORING CALIBRATION")
+        # artefact absence is a hands_on_utility matter only
+        assert "Missing artefacts lower hands_on_utility only" in block
+        # sourcing is the verifier's job, not a scoring input
+        assert "Corroboration and source trust are not scoring inputs" in block
+        # same-day first reports are breaking on their own
+        assert "Freshness is about timing" in block
+        # no floor / base-rate rules (the #75/#77 trap) -- the block never
+        # tells the model how many stories to keep
+        assert "of 10" not in block and "%" not in block
+
+    def test_prompt_version_bumped_with_the_block(self) -> None:
+        assert rank_mod.RANK_PROMPT_VERSION == "v0.7"
+
+
+class TestRankModelKnob:
+    """``RANK_MODEL`` picks the rank-stage model; unset falls back to
+    ``LLM_MODEL`` through ``_llm_call``'s existing path, so every other
+    caller of ``_llm_call`` is untouched."""
+
+    def test_unset_resolves_to_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("RANK_MODEL", raising=False)
+        assert rank_mod._resolve_rank_model() is None
+        monkeypatch.setenv("RANK_MODEL", "   ")
+        assert rank_mod._resolve_rank_model() is None
+
+    def test_set_value_is_returned_stripped(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("RANK_MODEL", " claude-haiku-5-5 ")
+        assert rank_mod._resolve_rank_model() == "claude-haiku-5-5"
+
+    def test_llm_call_model_override_reaches_the_provider(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("LLM_PROVIDER", "anthropic")
+        monkeypatch.setenv("LLM_MODEL", "claude-sonnet-5-5")
+        seen: dict[str, str] = {}
+
+        def _fake_anthropic(prompt, *, model, temperature, max_tokens, timeout):
+            seen["model"] = model
+            return "{}"
+
+        monkeypatch.setattr(rank_mod, "_llm_call_anthropic", _fake_anthropic)
+        rank_mod._llm_call("p", temperature=0.0, max_tokens=8, model="claude-haiku-5-5")
+        assert seen["model"] == "claude-haiku-5-5"
+        rank_mod._llm_call("p", temperature=0.0, max_tokens=8)
+        assert seen["model"] == "claude-sonnet-5-5"
+        rank_mod._llm_call("p", temperature=0.0, max_tokens=8, model=None)
+        assert seen["model"] == "claude-sonnet-5-5"
+
+    def test_rank_call_passes_rank_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("RANK_MODEL", "claude-haiku-5-5")
+        seen: dict[str, object] = {}
+
+        def _fake_llm(prompt, *, temperature, max_tokens, model=None):
+            seen["model"] = model
+            return json.dumps({
+                "cluster_id": "c_x", "score": 50,
+                "breakdown": {
+                    "significance": 50, "hands_on_utility": 50,
+                    "big_picture_relevance": 50,
+                    "financial_services_impact": 50, "freshness_momentum": 50,
+                },
+                "audience_tags": ["general"], "rationale": "r",
+            })
+
+        monkeypatch.setattr(rank_mod, "_llm_call", _fake_llm)
+        parsed = rank_mod._call_and_parse_rank(("prefix", "variable"), 0.2, "c_x")
+        assert parsed is not None
+        assert seen["model"] == "claude-haiku-5-5"
+        monkeypatch.delenv("RANK_MODEL")
+        rank_mod._call_and_parse_rank(("prefix", "variable"), 0.2, "c_x")
+        assert seen["model"] is None
+
