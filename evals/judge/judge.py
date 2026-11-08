@@ -11,7 +11,11 @@ bias at the infrastructure level, not just the model level.
 Judge model selection
 ---------------------
 Reads EVAL_JUDGE_PROVIDER (default: anthropic) and EVAL_JUDGE_MODEL
-(default: claude-opus-4-7). Temperature is fixed at 0.0 for stability.
+(default: claude-opus-4-7). Temperature 0.0 is sent only to models that
+still accept it (Claude 4.7+ and every Claude 5 model reject sampling
+parameters). Claude 5 models think before every reply and cannot be told
+not to; EVAL_JUDGE_EFFORT (default: low) sets how much, and the
+per-dimension max_tokens budgets get a fixed headroom for it.
 
 Cache layer
 -----------
@@ -59,6 +63,39 @@ _DEFAULT_TIMEOUT = 60.0
 
 # Models that reject temperature at the API level (populated at runtime).
 _MODELS_REJECTING_TEMPERATURE: set[str] = set()
+
+# Deliberately mirrors src/rank.py rather than importing it -- the judge
+# stays decoupled from the generation stack (see module docstring).
+# Model-id prefixes known to reject sampling parameters (Opus 4.7 onward,
+# every Claude 5 model), and prefixes where thinking is always on.
+_TEMPERATURE_REJECTING_PREFIXES: tuple[str, ...] = (
+    "claude-opus-4-7", "claude-opus-4-8",
+    "claude-opus-5", "claude-sonnet-5", "claude-haiku-5",
+    "claude-fable", "claude-mythos",
+)
+_THINKING_ALWAYS_ON_PREFIXES: tuple[str, ...] = (
+    "claude-opus-5", "claude-sonnet-5", "claude-haiku-5",
+    "claude-fable", "claude-mythos",
+)
+_DEFAULT_EFFORT_THINKING_MODELS = "low"
+_THINKING_HEADROOM_TOKENS = 1024
+_VALID_EFFORT_LEVELS = frozenset({"low", "medium", "high", "xhigh", "max"})
+
+
+def _resolve_judge_effort(model: str) -> "str | None":
+    """``EVAL_JUDGE_EFFORT`` when set; else ``low`` for thinking-always-on
+    models; else ``None`` (send nothing -- older models unchanged)."""
+    explicit = (os.getenv("EVAL_JUDGE_EFFORT") or "").strip().lower()
+    if explicit:
+        if explicit not in _VALID_EFFORT_LEVELS:
+            raise RuntimeError(
+                f"EVAL_JUDGE_EFFORT={explicit!r} is not one of "
+                f"{sorted(_VALID_EFFORT_LEVELS)}"
+            )
+        return explicit
+    if model.startswith(_THINKING_ALWAYS_ON_PREFIXES):
+        return _DEFAULT_EFFORT_THINKING_MODELS
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -288,6 +325,10 @@ def _call_anthropic(
 
     client = anthropic.Anthropic(**client_kwargs)
 
+    if model.startswith(_THINKING_ALWAYS_ON_PREFIXES):
+        # Thinking tokens count toward max_tokens; keep the per-dimension
+        # reply budget intact.
+        max_tokens += _THINKING_HEADROOM_TOKENS
     create_kwargs: dict[str, Any] = {
         "model": model,
         "max_tokens": max_tokens,
@@ -295,11 +336,15 @@ def _call_anthropic(
         "messages": [{"role": "user", "content": user_prompt}],
     }
 
-    # Temperature 0.0 for judge stability. Some Claude 4.x models reject
-    # the temperature parameter -- we catch and retry without it (same
-    # pattern as rank.py::_llm_call_anthropic).
-    if model not in _MODELS_REJECTING_TEMPERATURE:
+    # Temperature 0.0 for judge stability, on models that still accept it.
+    # Known families skip it upfront; anything else is caught on the 400
+    # and retried without (same pattern as rank.py::_llm_call_anthropic).
+    if (model not in _MODELS_REJECTING_TEMPERATURE
+            and not model.startswith(_TEMPERATURE_REJECTING_PREFIXES)):
         create_kwargs["temperature"] = 0.0
+    effort = _resolve_judge_effort(model)
+    if effort is not None:
+        create_kwargs["output_config"] = {"effort": effort}
 
     try:
         resp = client.messages.create(**create_kwargs)

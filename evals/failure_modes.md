@@ -224,7 +224,7 @@ a prompt version change is a strong prompt-drift signal.
 2. If drift is detected with no version bump: compare `LLM_MODEL` env var
    in CI logs this week vs. last week. Check provider release notes.
 3. If provider silently changed a default: pin the model version in the
-   `LLM_MODEL` env var (e.g. `claude-opus-4-7` not `claude-opus-latest`).
+   `LLM_MODEL` env var (e.g. `claude-sonnet-5-5` not `claude-sonnet-latest`).
 4. Consider running the ranking eval on a fixed set of clusters (from the
    synthetic fixture) on every CI run as a cheaply-detectable canary.
 

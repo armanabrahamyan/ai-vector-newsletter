@@ -137,7 +137,7 @@ its own — that's why you can re-run subsets cheaply.
 - **Reads:** `clusters.jsonl`
 - **Writes:** `ranked.jsonl`
 - **What it does:** one LLM call per cluster — scores 0-100 against `config/rubric.yaml` (significance / hands_on_utility / big_picture_relevance / financial_services_impact / freshness_momentum), tags audiences, assigns a tier (`pulse` / `on_the_radar` / `cut`).
-- **Uses LLM.** Cost ≈ $0.05-0.10 with `claude-sonnet-4-6` (~50 clusters × small prompt). Time ≈ 60-90 s.
+- **Uses LLM.** Cost ≈ $1-3 per run, measured from `data/metrics_log.jsonl` (September-October 2026 runs on `claude-sonnet-4-6`: $1.20-2.91 for 120k-325k input tokens; the earlier "$0.05-0.10, ~50 clusters" estimate was out of date). Scales with cluster count. Time ≈ 2-3 min.
 - **When it goes wrong:** wrong stories surfacing → rubric weights or rank prompt drift. Re-run with `--verbose` to see per-cluster reasoning.
 
 ### `summarise` — write headlines + bodies
@@ -300,7 +300,7 @@ LLM_API_KEY=sk-...
 # LiteLLM proxy (you've set it up locally)
 LLM_PROVIDER=litellm
 LLM_ENDPOINT=http://localhost:4000/v1
-LLM_MODEL=claude-sonnet-4-6   # whatever alias your proxy maps
+LLM_MODEL=claude-sonnet-5-5   # whatever alias your proxy maps
 LLM_API_KEY=...
 
 # Ollama (local)
@@ -312,14 +312,14 @@ LLM_API_KEY=                  # often blank for localhost
 # AWS Bedrock
 LLM_PROVIDER=bedrock
 LLM_ENDPOINT=https://bedrock-runtime.us-east-1.amazonaws.com
-LLM_MODEL=anthropic.claude-sonnet-4-6-v1:0
+LLM_MODEL=anthropic.claude-sonnet-5-5
 LLM_API_KEY=                  # blank uses ambient AWS creds
 ```
 
 For a one-off experiment without touching `.env`:
 
 ```bash
-LLM_MODEL=claude-opus-4-7 aiv run --stages rank,summarise --date <date>
+LLM_MODEL=claude-opus-5-5 aiv run --stages rank,summarise --date <date>
 ```
 
 Inline env override — runs once, your `.env` is untouched.
@@ -330,10 +330,19 @@ Inline env override — runs once, your `.env` is untouched.
 
 ```ini
 LLM_TIMEOUT_SECONDS=60         # per-call timeout
+LLM_EFFORT=low                 # Claude 5 thinking depth: low|medium|high|xhigh|max
 LLM_TEMPERATURE_RANK=0.2       # low = stable rankings across re-runs
 LLM_TEMPERATURE_SUMMARISE=0.6  # higher = more voice texture
 AIV_CLOSING_SHAPE_REPAIR=1     # 0 = skip the closing-shape rewrite pass
 ```
+
+`LLM_EFFORT` (default `low` on Claude 5 models, nothing sent on older
+ones): Claude 5 models think before every reply and cannot be told not
+to. Thinking tokens are billed as output, so `low` keeps the cost profile
+close to the no-thinking models the prompts were tuned on. Raise it for a
+one-off experiment the same way as `LLM_MODEL` above. The temperature
+settings are ignored by Claude 4.7+ and Claude 5 models (they reject
+sampling parameters); they still apply to other providers.
 
 `AIV_CLOSING_SHAPE_REPAIR` (default on): after each story is written,
 code checks the body's last sentence against the section's closing-shape

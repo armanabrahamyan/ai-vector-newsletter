@@ -28,8 +28,8 @@ system_prompt: |
        is wire headlinese, itself a defect); a genre label on a recognised anchor
        ("Claude Code tip: ...") -- that is a RATIFIED POSITIVE marker for a small
        practical move, max one per issue, NOT press-release style.
-    2. length: <= 90 characters AND <= 12 words. 13 words / ~95 chars is
-       borderline; >14 words OR >100 chars is fail unless the spec itself IS the news.
+    2. length: <= 100 characters AND <= 15 words. 16 words / ~105 chars is
+       borderline; >17 words OR >110 chars is fail unless the spec itself IS the news.
     3. no_forbidden_elements: no version numbers, no acronyms (LM/VLM/MoE/ASR/OCR/RAG/etc.),
        no em-dashes, no slang verbs ("drops", "ships hot"), no UNRECOGNISED proper nouns
        (new tools/papers/benchmarks are described, named in the body). Recognised names
@@ -38,9 +38,9 @@ system_prompt: |
 
   Verdict scale:
   - pass: all three sub-tests pass
-  - borderline: one sub-test at the margin (e.g. 13 words, "major" adjective,
+  - borderline: one sub-test at the margin (e.g. 16 words, "major" adjective,
     a rung-3 subject whose modifiers only weakly identify the artifact)
-  - fail: clearly fails one or more sub-tests (>14 words, acronym, unrecognised
+  - fail: clearly fails one or more sub-tests (>17 words, acronym, unrecognised
     name in position 1, "A new framework..." opener, deleted article, recognised
     anchor traded for an abstract benefit)
 

@@ -2091,13 +2091,15 @@ This section is consumed by **`src/rank.py`** and **`src/summarise.py`**
 | `LLM_PROVIDER` | Provider/protocol id; code branches on this to select the client library. One of `anthropic`, `bedrock`, `openai`, `litellm`, `ollama`. Default: `anthropic`. | `bedrock` |
 | `LLM_ENDPOINT` | Base URL of the LLM API. | `https://api.anthropic.com` / `https://bedrock-runtime.us-east-1.amazonaws.com` / `http://localhost:11434` |
 | `LLM_API_KEY` | Authentication key/token. **Secret.** Never logged, never committed. For providers that use signed requests (e.g. AWS SigV4 for Bedrock), this slot may hold the appropriate credential bundle or be empty if the client uses ambient AWS credentials. | `sk-ant-…` |
-| `LLM_MODEL` | Model identifier as the provider expects it. | `claude-opus-4-7` / `anthropic.claude-3-5-sonnet-20241022-v2:0` / `llama3.1:70b` |
+| `LLM_MODEL` | Model identifier as the provider expects it. | `claude-sonnet-5-5` / `anthropic.claude-sonnet-5-5` / `llama3.1:70b` |
 
 ### Optional env vars
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `LLM_TIMEOUT_SECONDS` | `60` | Per-call wall-clock timeout. |
+| `LLM_THINKING` | unset | `off` sends `thinking: {"type": "between_tools"}` (no extended thinking). Accepted only by `claude-sonnet-5-5` at effort `high` or below; ignored for other models. |
+| `LLM_EFFORT` | `low` on Claude 5 models; unset otherwise | Sent as `output_config.effort` on Anthropic calls. Claude 5 models cannot turn thinking off; `low` keeps it short. `max_tokens` gets a fixed 1024-token headroom on these models so each stage's reply budget is unchanged. Older models get no `output_config` unless this is set. |
 | `LLM_TEMPERATURE_RANK` | `0.2` | Temperature for `rank.py` calls. Low, for stability of scores across re-runs. |
 | `LLM_TEMPERATURE_SUMMARISE` | `0.6` | Temperature for `summarise.py` calls. Higher, to give the voice texture room. |
 
