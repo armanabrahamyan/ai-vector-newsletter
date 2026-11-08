@@ -1939,3 +1939,142 @@ class TestPromptCacheSplit:
             _llm_call(("PREFIX-", "VARIABLE"), temperature=0.2, max_tokens=16)
         body = mock_post.call_args.kwargs["json"]
         assert body["messages"][0]["content"] == "PREFIX-VARIABLE"
+
+
+class TestClaude5RequestShape:
+    """Claude 5 models (2026-10-31 switch to claude-sonnet-5-5) reject
+    sampling parameters and always think. The Anthropic branch must send a
+    request the API accepts -- no `temperature`, an explicit effort, room
+    for thinking tokens -- while older models' requests stay byte-identical
+    (TestPromptCacheSplit covers the cache split itself)."""
+
+    @staticmethod
+    def _install_fake_anthropic(
+        monkeypatch: pytest.MonkeyPatch, captured: list, *,
+        stop_reason: "str | None" = None, category: "str | None" = None,
+    ) -> None:
+        import sys
+        import types
+        from types import SimpleNamespace
+
+        fake = types.ModuleType("anthropic")
+
+        class BadRequestError(Exception):
+            pass
+
+        class _Messages:
+            def create(self, **kwargs):
+                captured.append(kwargs)
+                usage = SimpleNamespace(
+                    input_tokens=50, output_tokens=5,
+                    cache_creation_input_tokens=0, cache_read_input_tokens=0,
+                )
+                details = SimpleNamespace(category=category) if category else None
+                return SimpleNamespace(
+                    usage=usage,
+                    content=[
+                        SimpleNamespace(thinking=""),   # display: omitted
+                        SimpleNamespace(text="{}"),
+                    ],
+                    stop_reason=stop_reason,
+                    stop_details=details,
+                )
+
+        class _Anthropic:
+            def __init__(self, **kwargs):
+                self.messages = _Messages()
+
+        fake.Anthropic = _Anthropic
+        fake.BadRequestError = BadRequestError
+        monkeypatch.setitem(sys.modules, "anthropic", fake)
+
+    def _call(self, monkeypatch, model, **env):
+        from src import llm_usage
+
+        monkeypatch.delenv("LLM_EFFORT", raising=False)
+        monkeypatch.delenv("LLM_THINKING", raising=False)
+        for k, v in env.items():
+            monkeypatch.setenv(k, v)
+        captured: list = []
+        self._install_fake_anthropic(monkeypatch, captured)
+        llm_usage.reset()
+        try:
+            out = _llm_call_anthropic(
+                "PLAIN PROMPT", model=model, temperature=0.2,
+                max_tokens=16, timeout=5.0,
+            )
+        finally:
+            llm_usage.reset()
+        return out, captured[0]
+
+    def test_claude5_model_omits_temperature_and_sends_low_effort(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        out, kwargs = self._call(monkeypatch, "claude-sonnet-5-5")
+        assert out == "{}"                      # thinking block skipped
+        assert "temperature" not in kwargs      # rejected -> never sent
+        assert kwargs["output_config"] == {"effort": "low"}
+        assert kwargs["max_tokens"] == 16 + 1024  # caller budget + headroom
+
+    def test_pre_claude5_model_request_is_unchanged(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _, kwargs = self._call(monkeypatch, "claude-sonnet-4-6")
+        assert kwargs["temperature"] == 0.2
+        assert "output_config" not in kwargs
+        assert kwargs["max_tokens"] == 16
+
+    def test_llm_effort_env_overrides_default_on_any_model(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _, k5 = self._call(monkeypatch, "claude-opus-5-5", LLM_EFFORT="medium")
+        assert k5["output_config"] == {"effort": "medium"}
+        _, k4 = self._call(monkeypatch, "claude-sonnet-4-6", LLM_EFFORT="high")
+        assert k4["output_config"] == {"effort": "high"}
+
+    def test_llm_thinking_off_sends_between_tools_on_sonnet_5_5_only(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _, k = self._call(monkeypatch, "claude-sonnet-5-5", LLM_THINKING="off")
+        assert k["thinking"] == {"type": "between_tools"}
+        assert k["output_config"] == {"effort": "low"}
+        # Any other model rejects between_tools -- the flag is ignored there.
+        _, k_opus = self._call(monkeypatch, "claude-opus-5-5", LLM_THINKING="off")
+        assert "thinking" not in k_opus
+        _, k_old = self._call(monkeypatch, "claude-sonnet-4-6", LLM_THINKING="off")
+        assert "thinking" not in k_old
+
+    def test_llm_thinking_off_rejects_xhigh_effort(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        with pytest.raises(RuntimeError, match="high or below"):
+            self._call(
+                monkeypatch, "claude-sonnet-5-5",
+                LLM_THINKING="off", LLM_EFFORT="xhigh",
+            )
+
+    def test_invalid_llm_effort_fails_loudly(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        with pytest.raises(RuntimeError, match="LLM_EFFORT='turbo'"):
+            self._call(monkeypatch, "claude-sonnet-5-5", LLM_EFFORT="turbo")
+
+    def test_refusal_stop_reason_raises_instead_of_empty_text(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        from src import llm_usage
+
+        monkeypatch.delenv("LLM_EFFORT", raising=False)
+        captured: list = []
+        self._install_fake_anthropic(
+            monkeypatch, captured, stop_reason="refusal", category="cyber",
+        )
+        llm_usage.reset()
+        try:
+            with pytest.raises(RuntimeError, match="refusal.*category=cyber"):
+                _llm_call_anthropic(
+                    "PLAIN PROMPT", model="claude-sonnet-5-5",
+                    temperature=0.2, max_tokens=16, timeout=5.0,
+                )
+        finally:
+            llm_usage.reset()

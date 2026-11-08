@@ -125,6 +125,28 @@ class TestPricingLookup:
         assert snap["total"]["cost_usd"] is None
 
 
+    def test_claude_5_5_rows_priced_per_model_table(self):
+        """The 2026-10-31 switch: pipeline on sonnet-5-5 ($2 in / $10 out),
+        judge + reviewer on opus-5-5 ($4 in / $20 out). 1M tokens each way."""
+        llm_usage.set_stage("rank")
+        llm_usage.record("claude-sonnet-5-5", 1_000_000, 1_000_000)
+        llm_usage.set_stage("review")
+        llm_usage.record("claude-opus-5-5", 1_000_000, 1_000_000)
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(12.00)
+        assert snap["stages"]["review"]["cost_usd"] == pytest.approx(24.00)
+
+    def test_opus_5_5_cache_read_is_0_20_not_0_10x(self):
+        """opus-5-5 cache reads are $0.20/mtok per the pricing table -- the
+        0.10x rule of thumb the older rows follow would give $0.40."""
+        llm_usage.set_stage("rank")
+        llm_usage.record(
+            "claude-opus-5-5", 0, 0, cache_read_input_tokens=1_000_000,
+        )
+        snap = llm_usage.snapshot()
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(0.20)
+
+
 class TestCacheTokenAccounting:
     """Prompt-caching fields (2026-08-08, rank cache split). The Anthropic
     usage object splits billed input into `input_tokens` (after the last

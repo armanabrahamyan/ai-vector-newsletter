@@ -59,7 +59,12 @@ schema_version: 1
 # borderline-on-cold-open; (b) the v0.2 lead_phrase pass exemplar
 # "Trust gaps are widening." is RETIRED and reclassified as the
 # aphoristic-lead defect under the synthesis contract.
-rubric_version: "v0.4-2026-08-09"
+# v0.5 (2026-10-31): headline length caps raised to 15 words / 100
+# characters (ratified 2026-10-31 against the staged issue written by
+# claude-sonnet-5-5; borderline 16 words / ~105 chars, fail >17 words or
+# >110 chars). Mirrors summarise.py v0.24 and judge/prompts/headline.yaml.
+# No other criterion changes.
+rubric_version: "v0.5-2026-10-31"
 corpus_basis:
   ratified_issues: ["2026-05-23 .. 2026-07-03 (23 released issues)"]
   rulings_basis: >
@@ -428,9 +433,10 @@ per_story_criteria:
           pattern as a genre label on a recognised anchor.
       length:
         check: >
-          <= 90 characters AND <= 12 words (hard caps, mirrored in
-          summarise.py). 13 words / ~95 chars is borderline; >14 words
-          OR >100 chars is fail unless the spec ITSELF is the news.
+          <= 100 characters AND <= 15 words (hard caps, mirrored in
+          summarise.py; raised from 90 / 12 on 2026-10-31, ratified).
+          16 words / ~105 chars is borderline; >17 words OR >110 chars
+          is fail unless the spec ITSELF is the news.
       no_forbidden_elements:
         check: >
           No version numbers, no acronyms (LM/VLM/MoE/ASR/OCR/RAG/etc.),

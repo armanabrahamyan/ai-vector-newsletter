@@ -2152,16 +2152,17 @@ class TestVoiceDiversityVersionBump:
     """The injection is a MATERIAL prompt change; SUMMARISE_PROMPT_VERSION
     must move with it so the audit trail picks up the shift."""
 
-    def test_summarise_prompt_version_is_v0_23_1(self) -> None:
-        # v0.23.1 (2026-08-29): code-side closing-shape check + the
-        # one-sentence rewrite prompt. Audit tag:
-        # summarise-v0.23.1-2026-08-29.
+    def test_summarise_prompt_version_is_v0_24(self) -> None:
+        # v0.24 (2026-10-31): claude-sonnet-5-5 migration -- headline caps
+        # 15 words / 100 chars + ONE ATTRIBUTION, ONCE. Audit tag:
+        # summarise-v0.24-2026-10-31.
         from src.summarise import SUMMARISE_PROMPT_VERSION
-        assert SUMMARISE_PROMPT_VERSION == "v0.23.1"
+        assert SUMMARISE_PROMPT_VERSION == "v0.24"
 
-    def test_digest_prompt_version_is_v1_0(self) -> None:
+    def test_digest_prompt_version_is_v1_1(self) -> None:
+        # v1.1 (2026-10-31): bold lead is a short claim with articles kept.
         from src.summarise import DIGEST_PROMPT_VERSION
-        assert DIGEST_PROMPT_VERSION == "v1.0"
+        assert DIGEST_PROMPT_VERSION == "v1.1"
 
 
 # ===========================================================================
@@ -3408,8 +3409,8 @@ ITEMS:
 
 {callback_block}INSTRUCTIONS
 - HEADLINE: follow the HEADLINE rules above. Lead with the consequence
-  or action, not the name. HARD CAPS: maximum 12 words AND maximum 90
-  characters. Both are enforced -- a headline that exceeds either is
+  or action, not the name. TARGET 11-13 words, under 90 characters.
+  HARD CAPS: maximum 15 words AND maximum 100 characters. Both are enforced -- a headline that exceeds either is
   rejected and you will be asked to rewrite. COUNT the words AND
   characters before returning. Model names and version numbers belong
   in the BODY, not the title.
@@ -3513,6 +3514,18 @@ ITEMS:
   the connection is weak, skip it.
 - Australian English throughout.
 - Link out; never reproduce full articles.
+- ONE ATTRIBUTION, ONCE: when the body already names who produced the
+  source ("OpenAI says", "Mistral's own post", "Ramp's engineering
+  team describes", "an arXiv preprint"), that phrase IS the
+  calibration. Do NOT add a second sentence or clause restating it
+  ("the figures are the vendor's own", "the write-up is the company's
+  own account", "vendor-reported", "light on detail", "no independent
+  testing", "the announcement gives no results"). Delete it and spend
+  the words on a number or a mechanism instead.
+  Likewise do NOT inventory what is missing ("still withheld", "haven't
+  said how", "light on figures", "no results yet"): if the source
+  reports an actor's decision to withhold, state it as their decision
+  ("weights withheld for safety"); otherwise stay silent on the gap.
 - SIGNAL: pick ONE verdict pill that captures what the reader should DO:
     * "act"     -- vendor / contract / architecture decision worth making
                    this quarter. Typical for Big Picture stories with a
@@ -3531,8 +3544,8 @@ ITEMS:
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
-  "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
-  "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
+  "headline": "<consequence-led headline, HARD <= 100 chars AND <= 15 words>",
+  "summary": "<40-55 word body; HARD 60-word cap, minimum 30 (same for the Pulse)>",
   "take": "<ONE declarative cold-open sentence, 12-18 words, HARD caps 18 words / 118 chars: the publication's position>",
   "take_route": "<one of: R1 | R2 | R3>",
   "signal": "<one of: act | try | read | watch | discuss>"
@@ -5070,3 +5083,66 @@ class TestSynthesisMarkupHandling:
             marked, **TestDigestViolations._ctx()
         )
         assert any("markup" in v for v in out)
+
+
+class TestHeadlineVersionTokenCheck:
+    """v0.24: version tokens in a headline trigger the corrective retry
+    (ratified headline defect the prompt bans and claude-sonnet-5-5
+    ignored). The pattern is deliberately narrow -- plain decimals and
+    money are not versions."""
+
+    @staticmethod
+    def _draft(headline: str):
+        from src.summarise import _SummaryDraft
+        return _SummaryDraft(
+            headline=headline, summary=" ".join(["word"] * 40),
+            take="Retry discipline is now a caching property, not a prompt nicety.",
+            signal="try",
+        )
+
+    @pytest.mark.parametrize("headline", [
+        "Moonshot's Kimi K3.1 Pro nears frontier scores at half the price",
+        "Kimi nears Claude Opus 5.5 scores at half the price",
+        "Researchers using GPT-5.6 found two flaws in PHP's engine",
+        "Cursor extension version 2.1.313 carried an SSH backdoor",
+    ])
+    def test_version_token_is_a_violation(self, headline: str) -> None:
+        from src.summarise import _length_violations
+        issues = _length_violations(self._draft(headline))
+        assert any("version token" in i for i in issues), issues
+
+    @pytest.mark.parametrize("headline", [
+        "Ramp builds an AI pipeline that makes credit decisions from statements",
+        "A $1.5 billion fund now underwrites agent errors at 2.5x the premium",
+        "DeepSeek claims roughly 80% serving margins on its open engine",
+        "Top AI models write strong equity research but fail at forecasting",
+    ])
+    def test_decimals_money_and_plain_names_pass(self, headline: str) -> None:
+        from src.summarise import _length_violations
+        assert _length_violations(self._draft(headline)) == []
+
+    def test_corrective_retry_asks_for_the_target_not_the_cap(self) -> None:
+        """The retry targets 13 words / 90 chars (two words and ten chars
+        under the 15 / 100 caps) because the model overshoots what it is
+        asked for by 1-5 words."""
+        import json as _json
+        from unittest.mock import patch as _patch
+        over = _json.dumps({
+            "headline": "Moonshot's Kimi K3.1 Pro nears frontier scores at half the price",
+            "summary": " ".join(["word"] * 40),
+            "take": "Retry discipline is now a caching property, not a prompt nicety.",
+            "signal": "try",
+        })
+        ok = _json.dumps({
+            "headline": "Moonshot's Kimi nears frontier scores at half the price",
+            "summary": " ".join(["word"] * 40),
+            "take": "Retry discipline is now a caching property, not a prompt nicety.",
+            "signal": "try",
+        })
+        with _patch("src.summarise._llm_call", side_effect=[over, ok]) as mock_llm:
+            from src.summarise import _call_and_parse_summary
+            draft = _call_and_parse_summary("PLAIN PROMPT", 0.6, "c_x")
+        assert draft is not None and "K3.1" not in draft.headline
+        second = mock_llm.call_args_list[1].args[0]
+        assert "version token 'K3.1'" in second
+        assert "AT MOST 13 words AND AT MOST 90 characters" in second

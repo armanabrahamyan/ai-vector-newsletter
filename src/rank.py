@@ -1588,7 +1588,8 @@ def _llm_call(
     joined single string, byte-identical to the pre-split prompt.
 
     Reads ``LLM_PROVIDER``, ``LLM_ENDPOINT``, ``LLM_API_KEY``, ``LLM_MODEL``,
-    ``LLM_TIMEOUT_SECONDS`` from the environment. Does NOT log the API key.
+    ``LLM_TIMEOUT_SECONDS`` (and, on the Anthropic branch, ``LLM_EFFORT``)
+    from the environment. Does NOT log the API key.
 
     Raises
     ------
@@ -1630,6 +1631,85 @@ def _llm_call(
 # Confirmed (2026-05-23): claude-opus-4-7 family rejects temperature.
 _MODELS_REJECTING_TEMPERATURE: set[str] = set()
 
+# Model-id prefixes KNOWN to reject sampling parameters (Opus 4.7 onward
+# and every Claude 5 model). Skipped upfront rather than learned from a
+# 400: the wasted round-trip is avoidable, and the rejection text the lazy
+# path matches on is not guaranteed stable across model generations
+# (Anthropic model-migration guide, checked 2026-10-31).
+_TEMPERATURE_REJECTING_PREFIXES: tuple[str, ...] = (
+    "claude-opus-4-7", "claude-opus-4-8",
+    "claude-opus-5", "claude-sonnet-5", "claude-haiku-5",
+    "claude-fable", "claude-mythos",
+)
+
+# Model-id prefixes where extended thinking is ALWAYS ON (Claude 5 family):
+# it cannot be disabled, and the API default effort (`high` on Sonnet 5.5,
+# `medium` on Opus 5.5) thinks before nearly every reply. Every call in
+# this pipeline was tuned against no-thinking models with tight
+# `max_tokens` budgets, and thinking tokens count toward that budget, so:
+#   - the default effort for these models is `low` (the migration guide's
+#     starting point for classification, extraction and content
+#     generation); override per deployment with `LLM_EFFORT`;
+#   - `max_tokens` gets a fixed headroom so the caller's reply budget is
+#     unchanged and short low-effort thinking has room.
+_THINKING_ALWAYS_ON_PREFIXES: tuple[str, ...] = (
+    "claude-opus-5", "claude-sonnet-5", "claude-haiku-5",
+    "claude-fable", "claude-mythos",
+)
+_DEFAULT_EFFORT_THINKING_MODELS = "low"
+_THINKING_HEADROOM_TOKENS = 1024
+_VALID_EFFORT_LEVELS = frozenset({"low", "medium", "high", "xhigh", "max"})
+
+# `LLM_THINKING=off`: send `thinking: {"type": "between_tools"}`, the
+# lowest thinking setting -- no extended thinking at all. The API accepts
+# it ONLY on Claude Sonnet 5.5 and only at effort `high` or below; every
+# other model rejects it, so it is applied by prefix and ignored elsewhere.
+_BETWEEN_TOOLS_PREFIXES: tuple[str, ...] = ("claude-sonnet-5-5",)
+
+
+def _thinking_off_requested(model: str) -> bool:
+    """True when ``LLM_THINKING=off`` and ``model`` accepts ``between_tools``."""
+    flag = (os.getenv("LLM_THINKING") or "").strip().lower()
+    return flag == "off" and model.startswith(_BETWEEN_TOOLS_PREFIXES)
+
+
+def _model_rejects_temperature(model: str) -> bool:
+    """True when ``model`` is known (statically, or from an earlier 400 in
+    this process) to reject ``temperature``; the parameter is then omitted
+    upfront."""
+    if model in _MODELS_REJECTING_TEMPERATURE:
+        return True
+    return model.startswith(_TEMPERATURE_REJECTING_PREFIXES)
+
+
+def _thinking_always_on(model: str) -> bool:
+    """True for models whose extended thinking cannot be disabled."""
+    return model.startswith(_THINKING_ALWAYS_ON_PREFIXES)
+
+
+def _resolve_effort(model: str) -> "str | None":
+    """Effort level to send as ``output_config.effort``, or ``None`` to
+    send nothing (API default).
+
+    ``LLM_EFFORT`` wins when set (any model). Unset, thinking-always-on
+    models get ``low``; every other model gets nothing, so a request to
+    e.g. claude-sonnet-4-6 is byte-identical to before this knob existed.
+
+    Raises ``RuntimeError`` on an unrecognised ``LLM_EFFORT`` value -- a
+    typo would otherwise silently run every call at the API default.
+    """
+    explicit = (os.getenv("LLM_EFFORT") or "").strip().lower()
+    if explicit:
+        if explicit not in _VALID_EFFORT_LEVELS:
+            raise RuntimeError(
+                f"LLM_EFFORT={explicit!r} is not one of "
+                f"{sorted(_VALID_EFFORT_LEVELS)}"
+            )
+        return explicit
+    if _thinking_always_on(model):
+        return _DEFAULT_EFFORT_THINKING_MODELS
+    return None
+
 
 def _llm_call_anthropic(
     prompt: "str | tuple[str, str]", *, model: str, temperature: float,
@@ -1648,11 +1728,19 @@ def _llm_call_anthropic(
     Plain-string prompts (summarise / verify / review / preflight) are
     sent exactly as before.
 
-    Some Claude 4.7+ models reject ``temperature``/``top_p``/``top_k`` at
-    runtime (the model uses adaptive sampling). We try with temperature
-    first; on the specific deprecation error we cache the model name in
-    ``_MODELS_REJECTING_TEMPERATURE`` and retry without -- subsequent calls
-    in the same process skip the parameter upfront.
+    Claude 4.7+ models reject ``temperature``/``top_p``/``top_k`` at
+    runtime (the model uses adaptive sampling). Known model families skip
+    the parameter upfront (``_TEMPERATURE_REJECTING_PREFIXES``); for
+    anything else we try with temperature first and, on the specific
+    deprecation error, cache the model name in
+    ``_MODELS_REJECTING_TEMPERATURE`` and retry without.
+
+    Claude 5 models (2026-10-31): thinking is always on. The request
+    carries ``output_config.effort`` (``_resolve_effort``) and
+    ``max_tokens`` is raised by ``_THINKING_HEADROOM_TOKENS`` so the
+    caller's reply budget still applies to the reply alone. A
+    ``stop_reason`` of ``refusal`` raises instead of returning empty text;
+    ``max_tokens`` logs a warning so truncation is visible in the run log.
     """
     import anthropic  # local import -- optional dep on bedrock-only deploys
 
@@ -1680,13 +1768,25 @@ def _llm_call_anthropic(
         # empty text block cannot be cached -- send the joined string).
         content = prompt if isinstance(prompt, str) else "".join(prompt)
 
+    if _thinking_always_on(model):
+        max_tokens += _THINKING_HEADROOM_TOKENS
     create_kwargs: dict[str, Any] = {
         "model": model,
         "max_tokens": max_tokens,
         "messages": [{"role": "user", "content": content}],
     }
-    if model not in _MODELS_REJECTING_TEMPERATURE:
+    if not _model_rejects_temperature(model):
         create_kwargs["temperature"] = temperature
+    effort = _resolve_effort(model)
+    if effort is not None:
+        create_kwargs["output_config"] = {"effort": effort}
+    if _thinking_off_requested(model):
+        if effort in ("xhigh", "max"):
+            raise RuntimeError(
+                "LLM_THINKING=off needs LLM_EFFORT of high or below "
+                f"(got {effort!r})"
+            )
+        create_kwargs["thinking"] = {"type": "between_tools"}
 
     try:
         resp = client.messages.create(**create_kwargs)
@@ -1717,9 +1817,24 @@ def _llm_call_anthropic(
             getattr(usage, "cache_read_input_tokens", 0) or 0
         ),
     )
+    stop_reason = getattr(resp, "stop_reason", None)
+    if stop_reason == "refusal":
+        details = getattr(resp, "stop_details", None)
+        category = getattr(details, "category", None) if details else None
+        raise RuntimeError(
+            f"{model} refused the request (stop_reason=refusal, "
+            f"category={category or 'unspecified'})"
+        )
+    if stop_reason == "max_tokens":
+        _LOG.warning(
+            "LLM reply from %s hit max_tokens=%d -- output may be truncated "
+            "(on Claude 5 models thinking tokens count toward the budget)",
+            model, max_tokens,
+        )
     # Concatenate text blocks. SDK returns a list of content blocks; the
     # ranking + summarisation prompts both request plain text/JSON, so we
-    # join all text blocks defensively.
+    # join all text blocks defensively. Thinking blocks carry `.thinking`,
+    # not `.text`, so they are skipped here.
     chunks: list[str] = []
     for block in resp.content:
         text = getattr(block, "text", None)

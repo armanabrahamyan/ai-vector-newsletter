@@ -98,9 +98,33 @@ from src.models import (
 # Module constants -- declared at top per the LLM Engineer spec.
 # ---------------------------------------------------------------------------
 
-SUMMARISE_PROMPT_VERSION = "v0.23.1"
+SUMMARISE_PROMPT_VERSION = "v0.24"
 """Pydantic-validated version string. Audit tag:
-``summarise-v0.23.1-2026-08-29``.
+``summarise-v0.24-2026-10-31``.
+v0.24 (2026-10-31, claude-sonnet-5-5 migration): the writer moved from
+claude-sonnet-4-6 to claude-sonnet-5-5 (thinking on, effort low). Two
+changes ratified 2026-10-31 against that model's staged output. (1)
+HEADLINE caps raised from 12 words / 90 chars to 15 words / 100 chars:
+the new model wrote 13-17 word headlines on 13 of 16 stories and the
+corrective retry never bound; the length read on the staged issue is the
+new cap, mirrored in evals/voice/rubric.yaml and evals/judge/prompts/
+headline.yaml. (2) ONE ATTRIBUTION, ONCE: the new model names the
+evidence class and then restates it as a trailing flag ("the figures
+are the vendor's own") on 8 of 16 bodies -- gate-3 defects under the
+R-8 trust-flag contract that four prompt revisions already ban in the
+abstract. The INSTRUCTIONS block (closest to the output) and the BEFORE
+FINALISING checklist now carry the rule with the observed forms as
+banned examples. (3) The model overshoots any stated cap by 1-5 words,
+so the prompt now states a TARGET (11-13 words, under 90 chars) beneath
+the cap and the corrective retry asks for the target, not the cap. (4)
+Version tokens in headlines ("K3.1", "Opus 5.5") are detected in code
+(``_HEADLINE_VERSION_TOKEN``) and fed to the same corrective retry. (5)
+The BODY gets the same target band (40-55 words under the 60 cap; the
+retry asks for 55) -- the model wrote 61-63 on 5 of 16 bodies -- and the
+ONE ATTRIBUTION rule names the observed absence-inventory forms ("still
+withheld", "haven't said how", "light on figures") as banned.
+DIGEST v1.1: the bold lead is a short CLAIM with its articles kept
+(rubric bold_is_naming / budget), not a topic label.
 v0.23.1 (2026-08-29, code-side closing-shape check): the reviewer filed
 the same closing-shape defect against nearly every August issue -- a
 Currents or Big Picture body ending on an instruction to the reader
@@ -551,7 +575,7 @@ bar still run inside the eligible pool. This is a behavioural change in
 ``_pick_pulse``, not a prompt change. v0.9 (#82) biased against prior
 coverage."""
 
-DIGEST_PROMPT_VERSION = "v1.0"
+DIGEST_PROMPT_VERSION = "v1.1"
 """Audit tag: ``digest-v1.0-2026-08-09``. First version of the issue-level
 digest prompt ("The 30-second read" -- Issue v8 ``digest`` field, 2026-08-09
 layout redesign). Recorded under ``Issue.prompt_versions["digest"]`` only
@@ -976,16 +1000,19 @@ CALIBRATION (headline -- McKinsey tagline style):
   decoding") replaced with plain English ("one word at a time"); model
   family ("Nemotron-Labs Diffusion") and parameter sizes move to body.
 
-HEADLINE LENGTH -- HARD CAP. Maximum 90 characters AND maximum 12 words.
-There is NO "ideally" here -- a headline that exceeds either limit is
-REJECTED and you will be asked to rewrite. Count the words AND count the
-characters BEFORE returning. If you are at 13 words, cut one. If you are
-at 91+ chars, cut. The cap is a constraint of the form, not a target. A
-sharp 9-word headline beats a flabby 12-word one; aim for the floor of
-the range, not the ceiling.
+HEADLINE LENGTH -- TARGET 11-13 words and under 90 characters. HARD CAP
+15 words AND 100 characters. There is NO "ideally" on the cap -- a
+headline that exceeds either limit is REJECTED and you will be asked to
+rewrite. Write to the TARGET, not the cap: drafts written "to 15" land
+at 16-17 and are rejected. Count the words AND count the characters
+BEFORE returning. If you are at 14 words, cut one. If you are at 91+
+chars, cut. A sharp 10-word headline beats a flabby 15-word one; aim
+for the floor of the range, not the ceiling.
 
 =======================================================================
-BODY -- 30 to 60 words. HARD LIMIT. (Same for the Pulse.)
+BODY -- TARGET 40-55 words. HARD LIMIT 60 (minimum 30). Same for the
+Pulse. Write to the target, not the limit: a draft written "to 60"
+lands at 61-63 and is rejected.
 =======================================================================
 
 HARD CAP: the body MUST be between 30 and 60 words. 61+ words is
@@ -1213,18 +1240,22 @@ it), keep it in the BODY -- but EXPLAIN WHAT IT IS in plain English
 the first time. Never in the title.
 
 BEFORE FINALISING, CHECK (mandatory -- run these counts before returning)
-  - Headline word count: <= 12 words? COUNT them. 13 is a fail.
-  - Headline character count: <= 90 chars? COUNT them. 91 is a fail.
+  - Headline word count: 11-13 words (HARD cap 15)? COUNT them. 16 is a
+    fail.
+  - Headline character count: under 90 chars (HARD cap 100)? COUNT them.
+    101 is a fail.
   - Headline content: would a non-specialist reader who skims ONLY
     headlines know what happened AND why it matters? If the headline
     needs the body to make sense, it's a label -- rewrite. No acronyms?
     No version numbers? No spec-sheet detail unless the spec IS the news?
-  - Body word count: between 30 and 60 words? COUNT them. 61 is a fail.
-    The Pulse is held to the same cap.
+  - Body word count: 40-55 words (HARD cap 60, minimum 30)? COUNT them.
+    61 is a fail. The Pulse is held to the same cap.
   - Body content: One concrete number or mechanism that carries the news
     (the rest replaced with their consequence per the LANGUAGE rules)?
     Trust flag if warranted? Close tied to a SPECIFIC DECISION (not a
     group or department)? Acronyms spelled out or replaced?
+  - Attribution said ONCE? If the body names the source's author, there
+    is NO second sentence saying the claims are theirs or what is missing.
 """
 
 # v0.15 (2026-06-03): HEADLINE RULES that apply to EVERY story (head-tier
@@ -3588,8 +3619,8 @@ ITEMS:
 
 {callback_block}INSTRUCTIONS
 - HEADLINE: follow the HEADLINE rules above. Lead with the consequence
-  or action, not the name. HARD CAPS: maximum 12 words AND maximum 90
-  characters. Both are enforced -- a headline that exceeds either is
+  or action, not the name. TARGET 11-13 words, under 90 characters.
+  HARD CAPS: maximum 15 words AND maximum 100 characters. Both are enforced -- a headline that exceeds either is
   rejected and you will be asked to rewrite. COUNT the words AND
   characters before returning. Model names and version numbers belong
   in the BODY, not the title.
@@ -3693,6 +3724,18 @@ ITEMS:
   the connection is weak, skip it.
 - Australian English throughout.
 - Link out; never reproduce full articles.
+- ONE ATTRIBUTION, ONCE: when the body already names who produced the
+  source ("OpenAI says", "Mistral's own post", "Ramp's engineering
+  team describes", "an arXiv preprint"), that phrase IS the
+  calibration. Do NOT add a second sentence or clause restating it
+  ("the figures are the vendor's own", "the write-up is the company's
+  own account", "vendor-reported", "light on detail", "no independent
+  testing", "the announcement gives no results"). Delete it and spend
+  the words on a number or a mechanism instead.
+  Likewise do NOT inventory what is missing ("still withheld", "haven't
+  said how", "light on figures", "no results yet"): if the source
+  reports an actor's decision to withhold, state it as their decision
+  ("weights withheld for safety"); otherwise stay silent on the gap.
 - SIGNAL: pick ONE verdict pill that captures what the reader should DO:
     * "act"     -- vendor / contract / architecture decision worth making
                    this quarter. Typical for Big Picture stories with a
@@ -3711,8 +3754,8 @@ ITEMS:
 Return ONLY a single JSON object (no markdown fences, no commentary):
 
 {{
-  "headline": "<consequence-led headline, HARD <= 90 chars AND <= 12 words>",
-  "summary": "<30-60 word body, HARD 60-word cap (same for the Pulse)>",
+  "headline": "<consequence-led headline, HARD <= 100 chars AND <= 15 words>",
+  "summary": "<40-55 word body; HARD 60-word cap, minimum 30 (same for the Pulse)>",
   "take": "<ONE declarative cold-open sentence, 12-18 words, HARD caps 18 words / 118 chars: the publication's position>",
   "take_route": "<one of: R1 | R2 | R3>",
   "signal": "<one of: act | try | read | watch | discuss>"
@@ -3724,8 +3767,29 @@ Return ONLY a single JSON object (no markdown fences, no commentary):
 # Length caps -- mirrored from the prompt + the judge rubric in
 # evals/judge/prompts/headline.yaml and summary.yaml. Single source of
 # truth for the post-LLM enforcement check below.
-_HEADLINE_MAX_WORDS = 12
-_HEADLINE_MAX_CHARS = 90
+_HEADLINE_MAX_WORDS = 15   # was 12 until 2026-10-31 (ratified: 15 / 100)
+_HEADLINE_MAX_CHARS = 100  # was 90
+# v0.24: the corrective retry asks for the TARGET, not the cap. Measured
+# on claude-sonnet-5-5 (2026-10-31): asked for "at most 12" it returned
+# 13-18; asked for "at most 15" it returned 16-20. A retry aimed two
+# words and ten characters under the cap lands inside it.
+_HEADLINE_RETRY_TARGET_WORDS = 13
+_HEADLINE_RETRY_TARGET_CHARS = 90
+_BODY_RETRY_TARGET_WORDS = 55      # same overshoot: asked for 60 it wrote 61-63
+# v0.24: version tokens in a headline ("K3.1", "Opus 5.5", "GPT-5.6",
+# "2.1.313") are a ratified headline defect (rubric no_forbidden_elements)
+# that the prompt bans and claude-sonnet-5-5 ignored on 2 of 16 stories.
+# Detected in code and fed to the same corrective retry; the exception
+# ("unless the version IS the news") stays the model's call on the retry.
+# Deliberately narrow: a letter-prefixed dotted version, a model family
+# name followed by a number, or a three-part dotted number. Plain decimals
+# ("$1.5 billion", "2.5x") do not match.
+_HEADLINE_VERSION_TOKEN = re.compile(
+    r"\b[A-Za-z]{1,6}-?\d+(?:\.\d+)+\b"
+    r"|\b(?:Opus|Sonnet|Haiku|Claude|GPT|Gemini|Llama|Mistral|Qwen|Kimi"
+    r"|DeepSeek|Grok|Codex)[ -]?\d+(?:\.\d+)*\b"
+    r"|\b\d+\.\d+\.\d+\b"
+)
 _BODY_MIN_WORDS = 30
 _BODY_MAX_WORDS = 60
 
@@ -3961,6 +4025,13 @@ def _length_violations(draft: _SummaryDraft) -> list[str]:
         issues.append(
             f"summary body is {bw} words (minimum is {_BODY_MIN_WORDS})"
         )
+    m = _HEADLINE_VERSION_TOKEN.search(draft.headline)
+    if m:
+        issues.append(
+            f"headline contains the version token {m.group(0)!r} -- model "
+            "names and version numbers belong in the body, not the "
+            "headline, unless the version itself IS the news"
+        )
     return issues
 
 
@@ -4055,10 +4126,14 @@ def _call_and_parse_summary(
         "violations were found:\n\n"
         + "\n".join(f"  - {v}" for v in violations)
         + "\n\nRewrite the JSON so that:\n"
-        f"  - headline is AT MOST {_HEADLINE_MAX_WORDS} words AND AT MOST "
-        f"{_HEADLINE_MAX_CHARS} characters\n"
-        f"  - summary is BETWEEN {_BODY_MIN_WORDS} AND {_BODY_MAX_WORDS} "
-        "words (the Pulse is held to the same cap)\n"
+        f"  - headline is AT MOST {_HEADLINE_RETRY_TARGET_WORDS} words AND AT "
+        f"MOST {_HEADLINE_RETRY_TARGET_CHARS} characters (the hard caps are "
+        f"{_HEADLINE_MAX_WORDS} words / {_HEADLINE_MAX_CHARS} characters; "
+        "write to the target so the rewrite lands inside them), with no "
+        "model names or version numbers unless the version IS the news\n"
+        f"  - summary is BETWEEN {_BODY_MIN_WORDS} AND {_BODY_RETRY_TARGET_WORDS} "
+        f"words (the hard cap is {_BODY_MAX_WORDS}; write to the target so the "
+        "rewrite lands inside it; the Pulse is held to the same cap)\n"
         '  - "take" is PRESENT: ONE declarative cold-open sentence, 12-18 '
         f"words (hard caps {take_word_cap} words / {_TAKE_MAX_CHARS} "
         "characters), no This/That/It opener, no question mark, no hedges "
@@ -5990,10 +6065,14 @@ STRUCTURE (fixed; code rejects violations):
   when the sentence genuinely draws a fact from them.
 
 EACH BULLET = a bold LEAD + one SENTENCE.
-- LEAD: 3-6 words ending in a full stop. A NAMING -- what is this
-  about -- never an imperative, never a question, and no artifact names
-  a senior practitioner would not recognise (describe the artifact
-  instead). It must not echo any section synthesis below, must not
+- LEAD: 3-6 words ending in a full stop. A NAMING of the takeaway: a
+  short CLAIM a reader could disagree with ("Kimi undercuts Opus on
+  price.", "Cursor's extension carried a backdoor."), never a topic
+  label or a headline restatement ("Poisoned Cursor extension update."
+  is a label), never an imperative, never a question, and no artifact
+  names a senior practitioner would not recognise (describe the artifact
+  instead). Keep the articles: "PHP engine bugs found." is wire
+  headlinese and fails; "AI found bugs in PHP's engine." is a claim. It must not echo any section synthesis below, must not
   share a 3-word run with one, and must not open with the same word as
   its section's synthesis.
 - SENTENCE: exactly ONE sentence, 14-22 words (up to 26 ONLY as a

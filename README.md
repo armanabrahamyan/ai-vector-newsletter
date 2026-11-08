@@ -42,7 +42,7 @@ cp .env.example .env             # fill in LLM_PROVIDER, LLM_ENDPOINT, LLM_API_K
 aiv check                        # pre-flight: embedding model cached + LLM reachable
 ```
 
-The LLM defaults to `claude-sonnet-4-6` via the Anthropic API. Embeddings run locally (BAAI/bge-base-en-v1.5, cached under `~/.cache/huggingface/`). See `.env.example` for the full config reference.
+The LLM defaults to `claude-sonnet-5-5` via the Anthropic API. Embeddings run locally (BAAI/bge-base-en-v1.5, cached under `~/.cache/huggingface/`). See `.env.example` for the full config reference.
 
 ---
 

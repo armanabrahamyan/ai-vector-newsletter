@@ -1979,7 +1979,7 @@ def _resolve_review_model() -> str:
     The split exists to mitigate same-model leniency: a model grading prose
     a sibling model wrote is measurably softer on it than an independent
     one. Recommended production setting is a stronger model than the writer
-    (``claude-opus-4-7``), mirroring ``EVAL_JUDGE_MODEL``. See
+    (``claude-opus-5-5``), mirroring ``EVAL_JUDGE_MODEL``. See
     ``.env.example``.
     """
     explicit = (os.getenv("REVIEW_MODEL") or "").strip()
