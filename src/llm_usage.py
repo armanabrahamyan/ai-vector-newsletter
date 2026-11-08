@@ -145,26 +145,41 @@ def _stage_snapshot(by_model: dict[str, dict[str, int]]) -> dict[str, Any]:
     )
     cost_usd = 0.0
     cost_known = True
+    # Per-model split (2026-11-08): `aiv cost` attributes spend by model, and
+    # a model missing from the pricing table is visible by name instead of
+    # only as a None total.
+    models: dict[str, dict[str, Any]] = {}
     for model, tok in by_model.items():
         rates = _price_for_model(model)
+        model_cost: float | None
         if rates is None:
             cost_known = False
-            continue
-        in_rate, out_rate, cache_write_rate, cache_read_rate = rates
-        cost_usd += (tok["input_tokens"] / 1_000_000) * in_rate
-        cost_usd += (tok["output_tokens"] / 1_000_000) * out_rate
-        cost_usd += (
-            tok.get("cache_creation_input_tokens", 0) / 1_000_000
-        ) * cache_write_rate
-        cost_usd += (
-            tok.get("cache_read_input_tokens", 0) / 1_000_000
-        ) * cache_read_rate
+            model_cost = None
+        else:
+            in_rate, out_rate, cache_write_rate, cache_read_rate = rates
+            model_cost = (tok["input_tokens"] / 1_000_000) * in_rate
+            model_cost += (tok["output_tokens"] / 1_000_000) * out_rate
+            model_cost += (
+                tok.get("cache_creation_input_tokens", 0) / 1_000_000
+            ) * cache_write_rate
+            model_cost += (
+                tok.get("cache_read_input_tokens", 0) / 1_000_000
+            ) * cache_read_rate
+            cost_usd += model_cost
+        models[model] = {
+            "input_tokens": tok["input_tokens"],
+            "output_tokens": tok["output_tokens"],
+            "cache_creation_input_tokens": tok.get("cache_creation_input_tokens", 0),
+            "cache_read_input_tokens": tok.get("cache_read_input_tokens", 0),
+            "cost_usd": round(model_cost, 4) if model_cost is not None else None,
+        }
     return {
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "cache_creation_input_tokens": cache_creation,
         "cache_read_input_tokens": cache_read,
         "cost_usd": round(cost_usd, 4) if cost_known else None,
+        "models": models,
     }
 
 
@@ -177,6 +192,10 @@ def snapshot() -> dict[str, Any]:
     metrics_log.jsonl records simply lack them -- readers treat absent as 0.
     `cost_usd` is None whenever any contributing model isn't in the pricing
     table -- we report tokens either way, but never guess at a cost.
+    Each stage also carries `models` (added 2026-11-08): the same five
+    fields per model id, so `aiv cost` can attribute spend by model and
+    name the model a missing price belongs to. Records written before
+    then have no `models` key -- readers treat absent as "not recorded".
     """
     stages: dict[str, Any] = {}
     total_input = 0

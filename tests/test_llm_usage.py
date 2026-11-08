@@ -272,3 +272,31 @@ class TestFormatSummaryLine:
         llm_usage.record("some-unpriced-model", 1000, 100)
         line = llm_usage.format_summary_line(stage_order=("rank",))
         assert "cost unknown" in line
+
+
+class TestPerModelSplit:
+    """``models`` inside each stage snapshot (2026-11-08) is what ``aiv cost``
+    attributes spend by, and how a missing price gets a name."""
+
+    def test_each_model_in_a_stage_gets_its_own_priced_entry(self):
+        llm_usage.reset()
+        llm_usage.set_stage("rank")
+        llm_usage.record("claude-sonnet-5-5", 1_000_000, 0)
+        llm_usage.record("claude-opus-5-5", 0, 1_000_000)
+        snap = llm_usage.snapshot()
+        models = snap["stages"]["rank"]["models"]
+        assert models["claude-sonnet-5-5"]["cost_usd"] == pytest.approx(2.00)
+        assert models["claude-opus-5-5"]["cost_usd"] == pytest.approx(20.00)
+        assert snap["stages"]["rank"]["cost_usd"] == pytest.approx(22.00)
+
+    def test_unpriced_model_is_named_and_its_cost_is_none_not_zero(self):
+        llm_usage.reset()
+        llm_usage.set_stage("rank")
+        llm_usage.record("claude-sonnet-5-5", 1_000_000, 0)
+        llm_usage.record("mystery-model", 10, 10)
+        snap = llm_usage.snapshot()
+        models = snap["stages"]["rank"]["models"]
+        assert models["mystery-model"]["cost_usd"] is None
+        assert models["mystery-model"]["input_tokens"] == 10
+        assert models["claude-sonnet-5-5"]["cost_usd"] == pytest.approx(2.00)
+        assert snap["stages"]["rank"]["cost_usd"] is None

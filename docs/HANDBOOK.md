@@ -90,6 +90,7 @@ costs, and how long it takes — live in §2.
 | See what would happen | add `--dry-run` to any command |
 | Get more logging | add `--verbose` to any command |
 | Just check setup | `aiv check` |
+| See what the LLM stages cost | `aiv cost` (by day; `--by week`, `--by month`, §21) |
 
 Pipeline stages, in order:
 `fetch` → `cluster` → `rank` → `summarise` → `verify` → `render` → `review`
@@ -603,11 +604,12 @@ aiv run --stage fetch          # fetch alone — no LLM cost at all
 aiv run --stages fetch,cluster # gather + group, still no LLM
 ```
 
-A full `aiv run` is ~$0.10–0.20 of Anthropic spend (depends on item count
-and model). Skipping `rank` + `summarise` removes the bulk of the LLM cost.
-`verify` adds a small incremental cost (~$0.02-0.05); skip it with
-`--no-verify` when you just want to re-render quickly or when the LLM
-endpoint is unavailable.
+A full `aiv run` costs about $3-5 (measured: $2.74-4.88 per issue day on
+`claude-sonnet-4-6` in September-October 2026, `aiv cost --last 60`; §21
+has the breakdown). `rank` and `summarise` are roughly 45% each of that
+and `verify` about 10%, so skipping `rank` + `summarise` removes the bulk
+of the LLM cost. Skip `verify` with `--no-verify` when you just want to
+re-render quickly or when the LLM endpoint is unavailable.
 
 For iteration: do one full run to get fresh data, then loop on
 `--stages rank,summarise,render` while tweaking prompts.
@@ -623,7 +625,8 @@ LLM usage: rank 25.1k/3.2k ($0.12) | summarise 88.0k/12.0k ($0.44) | verify 41.0
 Each segment is `stage input_tokens/output_tokens ($cost)`. Only stages
 that actually called the LLM show up — a `--stages fetch,cluster,render`
 run prints no cost line at all. The same numbers are also written to
-`data/metrics_log.jsonl` under an `"llm_usage"` key for trend-watching.
+`data/metrics_log.jsonl` under an `"llm_usage"` key; `aiv cost` reads them
+back by day, week or month (§21).
 
 Prices live in a small table at the top of `src/llm_usage.py`, keyed by
 model-id prefix (so dated ids like `claude-sonnet-4-6-20260115` still
@@ -1084,3 +1087,59 @@ a freshly released issue appears by number after restarting `npm run
 dev`. All counter dimensions are shown: pages, referrers, countries,
 languages, browsers, systems, screen sizes, and campaigns when any
 exist.
+
+---
+
+## 21. "How much is this costing me?" — `aiv cost`
+
+```bash
+aiv cost                               # last 30 days, one row per issue day
+aiv cost --by week --last 12           # weekly, last 12 weeks
+aiv cost --by month --from 2026-07-01  # monthly since July
+aiv cost --json --by month --last 3    # machine-readable
+```
+
+**Where the numbers come from.** Every `aiv run` records, for each stage,
+the token counts the Anthropic API returned on each call and prices them
+from the table at the top of `src/llm_usage.py`, writing one record to
+`data/metrics_log.jsonl`. `aiv cost` adds those records up. Nothing is
+estimated and no LLM is called. The API reports tokens, not dollars;
+Anthropic bills from the same counts, so the figure is exact to the cent
+as long as the price table is current (usage tracking began 2026-07-04;
+earlier runs have no cost data and are listed as skipped).
+
+**Reading the table.** One row per issue day: every run for that date,
+re-runs included, with input / output / cache-write / cache-read tokens
+and cost. Under the table: the average per day with a run, the split by
+stage, and the split by model (recorded for runs from 2026-11-08 on). A
+`?` after a cost means a run used a model missing from the price table —
+its tokens are counted, its cost is not; add the model to `_PRICING` in
+`src/llm_usage.py` to unblock it.
+
+`--by-run-date` dates each run by when it ran (UTC) instead of by the
+issue it built. The two differ by a day for the nightly workflow, which
+runs at 21:00 UTC and builds the next day's issue.
+
+**What is not in the log.** Anything that does not go through `aiv run`:
+the eval judge (`aiv eval`), Claude Code sessions, ad-hoc calls. Those
+show up only on the Anthropic bill.
+
+**Checking against the actual bill.**
+
+```bash
+aiv cost --reconcile --last 14
+```
+
+Adds a `billed` column per day from Anthropic's Usage and Cost Analytics
+API, plus the delta (billed minus computed) and a line for money billed
+on days with no logged run — that is the judge and Claude Code spend. It
+needs `ANTHROPIC_ADMIN_KEY` in `.env`: an Admin API key (`sk-ant-admin...`)
+that an organisation admin creates in the Claude Console. The Admin API
+is not available to individual accounts. The bill is organisation-wide;
+set `AIV_ANTHROPIC_API_KEY_ID` to the `apikey_...` id of the key the
+pipeline uses (Console → API keys) to narrow it to this newsletter.
+
+Two things to know when reading it: the data lands up to 24 hours late,
+and a month's figures can move until about 7 days after it ends. If the
+delta on run days is consistently non-zero, the price table is stale —
+update `src/llm_usage.py` from the Anthropic pricing page.
