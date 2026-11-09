@@ -1,0 +1,104 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-09T21:19:36.134811Z",
+  "computed_verdict": "amber",
+  "one_line": "Mostly clean day; one overstated GitLab headline and minor grounding slips in Currents.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_70755f4f81b6316e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "GitLab lets Claude Code and Cursor work inside its platform, with every session logged",
+      "fix_kind": "text_edit",
+      "instruction": "Replace 'every session logged' with wording that matches the source: organisations can record qualifying agent sessions (user, agent, project, timing). Example: 'GitLab 19.5 lets Claude Code and Cursor work inside its platform, with qualifying sessions logged'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_70755f4f81b6316e",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "Security teams can now see which outside coding agents touched which projects, instead of inferring it from commits.",
+      "fix_kind": "text_edit",
+      "instruction": "Hedge to match the source: only qualifying sessions are recorded, so say security teams can see which agents touched which projects for logged sessions.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_8146671f5544e298",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "but only with multi-agent orchestration",
+      "fix_kind": "text_edit",
+      "instruction": "The source says orchestration gains are largest on local hardware, not that it is the only route. Rewrite the take to say local orchestration gains most, without claiming 'only'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "currents",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "and monitors reading training behaviour",
+      "fix_kind": "text_edit",
+      "instruction": "The flagged claim about the monitoring item governing a model without retraining is unsupported, since the source describes SFT-to-RL alignment interventions. Reword the synthesis so it does not say the monitoring item avoids retraining.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "section",
+        "story_id": null,
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "synthesis"
+      },
+      "criterion": "synthesis_shape",
+      "severity": "minor",
+      "quote": "Controls fail at their weakest touchpoint.",
+      "fix_kind": "text_edit",
+      "instruction": "Delete this aphoristic closing slogan, or replace it with a sentence about today's three stories.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-5-5",
+  "issue_sha256": "ec801f350b532e7af516be0925b454c57316dbd80eb527d0207bd66ed0809ad3",
+  "note": "verdict rule: major >= 1 (A reader would notice this. Ratifiable with notes, and worth a look before it ships.) | 1 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
