@@ -1,0 +1,1859 @@
+{
+  "schema_version": 9,
+  "issue_number": 86,
+  "revision": 0,
+  "date": "2026-11-13",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_a59b19dcbfec1e2d",
+        "headline": "Grok Build's share links exposed 35,000 apps, including SpaceXSI's own internal sales files",
+        "summary": "Security firm Claroc found Grok Build's share links, meant to be unguessable, could be enumerated, opening 35,000 apps to anyone. Exposed data included medical exam results, employee ID numbers and a 594-account sales territory map from 24 SpaceXSI apps. Before your team shares anything built by a coding agent, check who can open the link.",
+        "take": "Link-only sharing on agent-built apps now counts as public hosting, where teams once treated it as private.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://arstechnica.com/security/2026/11/grok-build-coding-agent-leaks-oodles-of-confidential-info-some-belonging-to-spacexsi/"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "act",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_a59b19dcbfec1e2d",
+          "prompt_version": "v0.7",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "Grok Build's share links exposed 35,000 apps, including SpaceXSI's own internal sales files",
+              "verdict": "unverifiable",
+              "location": "headline",
+              "summary_span": "Grok Build's share links exposed 35,000 apps, including SpaceXSI's own internal sales files",
+              "source_span": "makes it possible for anyone to enumerate thousands of live Grok Build projects",
+              "note": "Source says only 'thousands' of projects; the 35,000 figure is not in the excerpt, though SpaceXSI sales files are supported."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Claroc found Grok Build's share links could be enumerated",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Security firm Claroc found Grok Build's share links, meant to be unguessable, could be enumerated",
+              "source_span": "makes it possible for anyone to enumerate thousands of live Grok Build projects",
+              "note": "Matches the source's enumeration finding."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The share links were meant to be unguessable",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "share links, meant to be unguessable",
+              "source_span": "Grok takes steps to randomize the URLs so only people who know the exact URL can access the data",
+              "note": "Paraphrase of randomized URLs."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The enumeration opened 35,000 apps to anyone",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "opening 35,000 apps to anyone",
+              "source_span": "enumerate thousands of live Grok Build projects",
+              "note": "Excerpt gives no 35,000 figure, only 'thousands'."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Exposed data included medical exam results and employee ID numbers",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Exposed data included medical exam results, employee ID numbers",
+              "source_span": "the exposed data includes things like internal business plans, ad proposals, medical exam results, galley checklists... and employee names and ID numbers",
+              "note": "Directly stated."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Exposed data included a 594-account sales territory map",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "a 594-account sales territory map",
+              "source_span": "a sales territory map of 594 accounts",
+              "note": "Matches."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The sales territory map came from 24 SpaceXSI apps",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "a 594-account sales territory map from 24 SpaceXSI apps",
+              "source_span": "Claroc found 24 of them—include... a sales territory map of 594 accounts",
+              "note": "24 SpaceXSI apps contained the documents including the map."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Link-only sharing on agent-built apps now counts as public hosting",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "Link-only sharing on agent-built apps now counts as public hosting, where teams once treated it as private.",
+              "source_span": "",
+              "note": "Editorial position; the claim about teams' past treatment is not checkable from the excerpt."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Grok Build's private share links were guessable.",
+              "verdict": "contradicted",
+              "location": "body",
+              "summary_span": "Grok Build's private links were guessable.",
+              "source_span": "Grok takes steps to randomize the URLs so only people who know the exact URL can access the data stored there. A design decision by developers of the platform, however, completely torpedoes that objective and makes it possible for anyone to enumerate thousands of live Grok Build projects.",
+              "note": "digest: Source says the URLs were randomized but a design flaw allowed enumeration, so 'guessable' is roughly right, though the mechanism differs; leaning supported on enumeration."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Claroc enumerated share links.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "Claroc enumerated share links",
+              "source_span": "makes it possible for anyone to enumerate thousands of live Grok Build projects",
+              "note": "digest: Source says enumeration was possible, and Claroc's research found the exposed data."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Claroc reached 35,000 apps.",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "reached 35,000 apps",
+              "source_span": "enumerate thousands of live Grok Build projects",
+              "note": "digest: Source says only 'thousands'; the 35,000 figure is not in the excerpt."
+            },
+            {
+              "schema_version": 1,
+              "claim": "Exposed data included medical results.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "including medical results",
+              "source_span": "medical exam results",
+              "note": "digest: Matches the source."
+            },
+            {
+              "schema_version": 1,
+              "claim": "A SpaceXSI sales territory map covered 594 accounts.",
+              "verdict": "supported",
+              "location": "body",
+              "summary_span": "a 594-account SpaceXSI sales territory map",
+              "source_span": "a sales territory map of 594 accounts",
+              "note": "digest: Matches the source."
+            }
+          ],
+          "has_contradiction": true,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_2b14c26845f20ae2",
+          "headline": "Microsoft researchers backdoor an AI agent by editing fewer than ten neurons, no retraining needed",
+          "summary": "Microsoft's Lazarus technique reprograms dormant neurons so an agent passes standard evaluations, then runs attacker code when a trigger appears, such as the clock passing midnight into 2027. Frontier agents can catch the edits, but only by comparing against the original weights. If provenance is your only defence, who verifies it in your deployment?",
+          "take": "Model procurement checks now need weight-integrity proof, because behavioural evaluations alone no longer certify a model as safe.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.microsoft.com/en-us/research/blog/lazare-veni-foras-reprogramming-dormant-neurons-to-backdoor-ai-agents/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_2b14c26845f20ae2",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Microsoft researchers backdoor an AI agent by editing fewer than ten neurons, no retraining needed",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Microsoft researchers backdoor an AI agent by editing fewer than ten neurons, no retraining needed",
+                "source_span": "weight-reprogramming fewer than 10 dormant neurons in an LLM, is enough to backdoor an agent built on it, and requires no training",
+                "note": "Matches the source on both the neuron count and the absence of training."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Lazarus reprograms dormant neurons",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Microsoft's Lazarus technique reprograms dormant neurons so an agent passes standard evaluations",
+                "source_span": "a backdoor technique that can reprogram dormant neurons in an AI model",
+                "note": "Directly stated in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The backdoored agent passes standard evaluations",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "so an agent passes standard evaluations",
+                "source_span": "The model passes standard evals and behaves normally, until a trigger appears.",
+                "note": "Directly stated in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agent runs attacker code when a trigger appears",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "then runs attacker code when a trigger appears",
+                "source_span": "emits a command that downloads and runs an attacker’s code",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A trigger can be the clock passing midnight into 2027",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "such as the clock passing midnight into 2027",
+                "source_span": "once the clock passes midnight into 2027, the agent—in the middle of an ordinary task—emits a command",
+                "note": "Source gives this exact example."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Frontier agents can catch the edits",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Frontier agents can catch the edits",
+                "source_span": "frontier agents can spot anomalous weight modifications if you ask them to look",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Reliable detection requires comparing against the original weights",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "but only by comparing against the original weights",
+                "source_span": "Reliable detection requires diff’ing against the original, unmodified weights",
+                "note": "Paraphrase; the 'only' is consistent with the source's 'requires'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Model procurement checks need weight-integrity proof",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Model procurement checks now need weight-integrity proof",
+                "source_span": "making model provenance and weight integrity critical security concerns",
+                "note": "Consistent with the source's emphasis on provenance and weight integrity."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Behavioural evaluations alone no longer certify a model as safe",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "behavioural evaluations alone no longer certify a model as safe",
+                "source_span": "The model passes standard evals and behaves normally, until a trigger appears.",
+                "note": "Backdoored models pass standard evals, and the source says no scan can prove safety."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Microsoft researchers created a backdoor in an AI model's neurons.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Microsoft hid a backdoor in neurons.",
+                "source_span": "Microsoft researchers have discovered “Lazarus,” a backdoor technique that can reprogram dormant neurons in an AI model",
+                "note": "digest: Microsoft researchers developed and demonstrated the technique in a study; 'hid' is a loose paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Editing fewer than ten neurons is enough to backdoor an agent.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Editing fewer than ten neurons gave an agent a midnight trigger",
+                "source_span": "weight-reprogramming fewer than 10 dormant neurons in an LLM, is enough to backdoor an agent built on it",
+                "note": "digest: Matches; 'editing' paraphrases weight-reprogramming."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The trigger was a midnight date change.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a midnight trigger",
+                "source_span": "once the clock passes midnight into 2027, the agent... emits a command that downloads and runs an attacker’s code",
+                "note": "digest: Midnight clock passing is the example trigger."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The backdoored agent still passed standard evaluations.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "while it still passed standard evaluations",
+                "source_span": "The model passes standard evals and behaves normally, until a trigger appears.",
+                "note": "digest: Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Behavioural tests passed a tampered agent.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "behavioural tests passed a tampered agent",
+                "source_span": "The model passes standard evals and behaves normally, until a trigger appears.",
+                "note": "synthesis: Backdoored agents pass standard evals, matching the claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Machine-checked proofs caught reintroduced bugs in Signal's code.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "machine-checked proofs caught reintroduced bugs in Signal's code",
+                "source_span": "we reintroduced two real, previously fixed bugs into an isolated version of Signal's code. In both cases, the system produced a machine-checked proof that the buggy version was insecure.",
+                "note": "synthesis: Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The cost of inspecting the artefact itself is falling.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "the cost of doing so is falling",
+                "source_span": "our verification process took just four weeks – a task that historically takes expert teams years",
+                "note": "synthesis: Source suggests a one-off time saving but gives no cost trend, and nothing on weight-inspection cost, so this is largely editorial and cannot be verified."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_3bdbadc446986eb0",
+          "headline": "Google DeepMind's AI agents proved Signal's actual encryption code secure in four weeks",
+          "summary": "Google DeepMind's AlphaProof Code agents wrote millions of lines of Lean proofs showing Signal's compiled cryptographic code meets its security specifications, flagging just 1% for human review. Reintroduced real bugs were caught by machine-checked proofs, and the verification artifacts are open-sourced. If proofs take weeks, not years, which of your critical systems still rests on testing alone?",
+          "take": "Security assurance for critical code now takes weeks of agent-assisted proof, where it once took expert teams years.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://deepmind.google/blog/introducing-alphaproof-code/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_3bdbadc446986eb0",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Google DeepMind's AI agents proved Signal's actual encryption code secure in four weeks",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Google DeepMind's AI agents proved Signal's actual encryption code secure in four weeks",
+                "source_span": "our verification process took just four weeks – proving that Signal's core cryptographic code delivers the security protections our experts specified.",
+                "note": "Matches the source, which says the process took four weeks and covered the actual code; 'secure' is a compression of 'delivers the specified security protections'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AlphaProof Code agents wrote millions of lines of Lean proofs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AlphaProof Code agents wrote millions of lines of Lean proofs",
+                "source_span": "generating over six million lines of Lean",
+                "note": "Six million is consistent with 'millions'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The proofs show Signal's compiled cryptographic code meets its security specifications",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "showing Signal's compiled cryptographic code meets its security specifications",
+                "source_span": "proving that the compiled code fulfills the key security properties",
+                "note": "Paraphrase of the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agents flagged just 1% for human review",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "flagging just 1% for human review",
+                "source_span": "just one percent of the codebase",
+                "note": "'1%' is the same figure as 'one percent'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Reintroduced real bugs were caught by machine-checked proofs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Reintroduced real bugs were caught by machine-checked proofs",
+                "source_span": "we reintroduced two real, previously fixed bugs... the system produced a machine-checked proof that the buggy version was insecure.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The verification artifacts are open-sourced",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the verification artifacts are open-sourced",
+                "source_span": "We are open-sourcing our formal verification artifacts for community use.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Security assurance for critical code now takes weeks of agent-assisted proof, where it once took expert teams years.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Security assurance for critical code now takes weeks of agent-assisted proof, where it once took expert teams years.",
+                "source_span": "our verification process took just four weeks – a task that historically takes expert teams years",
+                "note": "The source supports this for Signal. Generalising to critical code overreaches slightly but is within house style."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Both stories turn on what a verifier can see: behavioural tests passed a tampered agent, while machine-checked proofs caught reintroduced bugs in Signal's code. Assurance is moving from sampling outputs to inspecting the artefact itself, and the cost of doing so is falling."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_aeb47de5556fa2f7",
+          "headline": "Google joins a new class of AI models that answer yes/no questions for a fraction of a cent",
+          "summary": "Google's Gemini Decision 1 returns yes/no probabilities, choices and rubric scores with no generated text, priced at 10 cents per million input tokens, output free. Unlike text-only Jev, it reads images, audio, video and PDFs. Simon Willison's video test returned 0.92 for a robot, 0.05 for a dragon. Swap one guardrail or routing call to it via AI Gateway this week, then compare cost and agreement against your current LLM classifier.",
+          "take": "Routing and policy checks no longer need a full chat model generating tokens to return one answer.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://simonwillison.net/2026/Nov/11/gemini-decisions-api/",
+            "https://vercel.com/changelog/gemini-decision-1-now-available-on-ai-gateway"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_aeb47de5556fa2f7",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Google joins a new class of AI models that answer yes/no questions for a fraction of a cent",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Google joins a new class of AI models that answer yes/no questions for a fraction of a cent",
+                "source_span": "Google join Jev and OpenAI in the decision model category with \"Gemini Decision 1\"",
+                "note": "Decision model category; 10 cents per million input tokens makes a fraction of a cent per question plausible."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Decision 1 returns yes/no probabilities, choices and rubric scores",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google's Gemini Decision 1 returns yes/no probabilities, choices and rubric scores with no generated text",
+                "source_span": "it supports the same three types of questions (yes/no, choice, and rubric-scoring)",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Decision 1 returns no generated text",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with no generated text",
+                "source_span": "without generating output tokens",
+                "note": "Vercel says no output tokens are generated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Decision 1 is priced at 10 cents per million input tokens",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "priced at 10 cents per million input tokens",
+                "source_span": "10 cents per million input tokens, and output is free",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Output is free",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "output free",
+                "source_span": "output is free",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Jev is text-only",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Unlike text-only Jev",
+                "source_span": "Jev is text (and JSON) only.",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Decision 1 reads images, audio, video and PDFs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it reads images, audio, video and PDFs",
+                "source_span": "it covers text, images, audio, video, and PDFs",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Simon Willison's video test returned 0.92 for a robot",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "returned 0.92 for a robot",
+                "source_span": "\"probability\": 0.9234055387792485",
+                "note": "Rounds correctly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Simon Willison's video test returned 0.05 for a dragon",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "0.05 for a dragon",
+                "source_span": "\"probability\": 0.04976021841520312",
+                "note": "Rounds to 0.05."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Decision 1 is available via AI Gateway",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "via AI Gateway",
+                "source_span": "Gemini Decision 1 from Google is now available on AI Gateway.",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Routing and policy checks no longer need a full chat model generating tokens to return one answer",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Routing and policy checks no longer need a full chat model generating tokens to return one answer.",
+                "source_span": "Use it to route requests, check policies, filter agent tools, or rank results without generating output tokens.",
+                "note": "Source describes these uses without generated tokens."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google sells yes/no answers cheaply.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google sells yes/no answers cheaply.",
+                "source_span": "It's priced the same as the GPT-6 Luna decision model: 10 cents per million input tokens, and output is free.",
+                "note": "digest: Google offers yes/no decision model at low price; consistent with source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Decision 1 returns probabilities with no generated text.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Gemini Decision 1 returns probabilities with no generated text",
+                "source_span": "returning Boolean probabilities, choices, and scores. Use it to route requests... without generating output tokens.",
+                "note": "digest: Source says it returns probabilities without generating output tokens."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Decision 1 costs 10 cents per million input tokens.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "at 10 cents per million input tokens",
+                "source_span": "10 cents per million input tokens, and output is free.",
+                "note": "digest: Price matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Four of these five releases swap a billed or networked dependency for something cheaper or local",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Four of these five releases swap a billed or networked dependency for something cheaper or local",
+                "source_span": "",
+                "note": "synthesis: The excerpt has six sources, and the 'four of five' count and its categorization depend on which stories are grouped, so this can't be checked from the excerpt alone. Some stories fit the claim, such as the AWS local emulator and on-device Phonon TTS."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The fifth release makes an existing bill visible",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the fifth makes an existing bill visible",
+                "source_span": "add 12-hour Responses caching and cache-write usage",
+                "note": "synthesis: The OpenAI SDK adds cache-write usage reporting, and the Vercel gateway shows decision calls in logs and budgets, so this plausibly fits."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Most evidence is vendor-supplied or a single hands-on test",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Most evidence is vendor-supplied or a single hands-on test",
+                "source_span": "I tested it against video by passing these questions to it along with my Yonkers stomping robot video file",
+                "note": "synthesis: The sources are vendor posts such as Hugging Face, Vercel and NVIDIA, plus Willison's single hands-on test."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_66803d4b4236bfd1",
+          "headline": "AWS releases an official local emulator, written by a swarm of agents in three weeks",
+          "summary": "AWS's new aws-emulator runs tests against a local clone of its services, with no paid API key needed. It is written in Rust by a swarm of agents, with 29,684 commits in three weeks. Simon Willison notes it needs Docker on macOS and Windows. Point one integration test suite at it this week and compare results with real AWS.",
+          "take": "Integration tests no longer need a billed AWS account; a local clone now stands in.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://simonwillison.net/2026/Nov/11/aws-emulator/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_66803d4b4236bfd1",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "AWS releases an official local emulator, written by a swarm of agents in three weeks",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "AWS releases an official local emulator, written by a swarm of agents in three weeks",
+                "source_span": "an official emulator from AWS to run tests against a local clone of their many different services",
+                "note": "Source says official AWS emulator, written by a swarm of agents, 29,684 commits in first three weeks; headline compresses this, and 'three weeks' is the project's first three weeks, which is close enough."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AWS's new aws-emulator runs tests against a local clone of its services",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "AWS's new aws-emulator runs tests against a local clone of its services",
+                "source_span": "to run tests against a local clone of their many different services",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "aws-emulator needs no paid API key",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with no paid API key needed",
+                "source_span": "without having to provision a paid API key to do so",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "aws-emulator is written in Rust",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It is written in Rust by a swarm of agents",
+                "source_span": "It's written in Rust by a huge swarm of agents",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "aws-emulator was written by a swarm of agents",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "written in Rust by a swarm of agents",
+                "source_span": "written in Rust by a huge swarm of agents",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The project has 29,684 commits in three weeks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with 29,684 commits in three weeks",
+                "source_span": "29,684 commits in the first three weeks of the project",
+                "note": "Number matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "aws-emulator needs Docker on macOS and Windows",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Simon Willison notes it needs Docker on macOS and Windows",
+                "source_span": "It currently requires Docker to run on macOS or Windows.",
+                "note": "Matches the source, and the author is Simon Willison's blog."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Integration tests no longer need a billed AWS account; a local clone now stands in.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Integration tests no longer need a billed AWS account; a local clone now stands in.",
+                "source_span": "run tests against a local clone of their many different services without having to provision a paid API key",
+                "note": "Consistent with the source's claim about running tests locally without a paid key."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_dcf1f0cdb467e3f1",
+          "headline": "Gradium's open speech model runs offline on a phone and tops a public leaderboard",
+          "summary": "Phonon, Gradium's text-to-speech model, runs offline on phones, laptops and in a browser tab. The two models are about 65 MB and 75 MB. Phonon 31m (English) is Apache 2.0, free for commercial use; 40m covers five languages, non-commercial. Weights are open. Swap it into one offline voice feature this week and measure time-to-first-audio on your slowest target device.",
+          "take": "Voice features no longer need a server round trip; a 65 MB model now speaks on the device.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/blog/phonon-tts"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_dcf1f0cdb467e3f1",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Gradium's open speech model runs offline on a phone and tops a public leaderboard",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Gradium's open speech model runs offline on a phone and tops a public leaderboard",
+                "source_span": "the models top the CPU streaming benchmark on time-to-first audio",
+                "note": "Runs offline on phones and tops the CPU streaming time-to-first-audio benchmark on the Open TTS Leaderboard; 'tops a leaderboard' is a fair compression, though it is a vendor-reported claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Phonon is Gradium's text-to-speech model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Phonon, Gradium's text-to-speech model",
+                "source_span": "Phonon, our small text-to-speech model that runs on your own device",
+                "note": "Gradium is named in the source as the maker (Gradium Studio)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Phonon runs offline on phones, laptops and in a browser tab",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "runs offline on phones, laptops and in a browser tab",
+                "source_span": "It runs on phones, laptops, single-board computers and in a browser tab",
+                "note": "Matches the source; offline is also stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The two models are about 65 MB and 75 MB",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The two models are about 65 MB and 75 MB.",
+                "source_span": "Phonon comes in two sizes, at about 65 MB and 75 MB.",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Phonon 31m (English) is Apache 2.0",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Phonon 31m (English) is Apache 2.0, free for commercial use",
+                "source_span": "Phonon 31m speaks English and is Apache 2.0, so you can build on it freely, including for commercial products.",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Phonon 40m covers five languages, non-commercial",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "40m covers five languages, non-commercial",
+                "source_span": "Phonon 40m covers all five languages under a non-commercial license.",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Phonon's weights are open",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Weights are open.",
+                "source_span": "We’ve also opened the weights.",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Voice features no longer need a server round trip",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Voice features no longer need a server round trip; a 65 MB model now speaks on the device.",
+                "source_span": "It needs no server and no network, and what you type stays with you.",
+                "note": "Phonon works without a server or network."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A 65 MB model now speaks on the device",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a 65 MB model now speaks on the device",
+                "source_span": "Phonon comes in two sizes, at about 65 MB and 75 MB.",
+                "note": "The smaller model is about 65 MB and runs on-device."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_a0dcf4a8a6edd648",
+          "headline": "NVIDIA releases nine million synthetic Japanese personas so banks can test AI without customer data",
+          "summary": "Nemotron-Personas-Finance-Japan, from NVIDIA and Elith, pairs Japan's official statistics with household finance and financial literacy data across 1 million records, each holding nine personas. Generated with NeMo Data Designer and Gemma, it is public on Hugging Face under CC BY 4.0. Seed one Japanese-language customer-service agent evaluation with it, then compare results across age and region.",
+          "take": "Japanese financial AI testing no longer waits on customer records; census-grounded synthetic households now stand in.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/blog/nvidia/nemotron-personas-finance-japan"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_a0dcf4a8a6edd648",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA releases nine million synthetic Japanese personas so banks can test AI without customer data",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA releases nine million synthetic Japanese personas so banks can test AI without customer data",
+                "source_span": "9M personas total (1M records x 9 personas each)",
+                "note": "Nine million personas and the no-real-customer-data purpose both match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nemotron-Personas-Finance-Japan comes from NVIDIA and Elith",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Nemotron-Personas-Finance-Japan, from NVIDIA and Elith",
+                "source_span": "Elith and NVIDIA have released Nemotron-Personas-Finance-Japan",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The dataset pairs Japan's official statistics with household finance and financial literacy data",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "pairs Japan's official statistics with household finance and financial literacy data",
+                "source_span": "pairs Japan’s official statistics with household finance and financial literacy data",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The dataset has 1 million records",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "across 1 million records",
+                "source_span": "1M records x 9 personas each",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each record holds nine personas",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "each holding nine personas",
+                "source_span": "1M records x 9 personas each",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The dataset was generated with NeMo Data Designer",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Generated with NeMo Data Designer and Gemma",
+                "source_span": "It was built using NVIDIA’s framework for synthetic data generation, NeMo Data Designer.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The dataset was generated with Gemma",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Generated with NeMo Data Designer and Gemma",
+                "source_span": "gemma-4-31B-it (Apache-2.0): For Japanese text generation",
+                "note": "Gemma was used for the Japanese text generation."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The dataset is public on Hugging Face",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it is public on Hugging Face",
+                "source_span": "Publisher: Hugging Face Blog",
+                "note": "The source is a Hugging Face blog announcing an open release, so this is a reasonable inference."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The dataset is released under CC BY 4.0",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "under CC BY 4.0",
+                "source_span": "Released under the CC BY 4.0 license",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Japanese financial AI testing no longer waits on customer records; census-grounded synthetic households now stand in.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Japanese financial AI testing no longer waits on customer records; census-grounded synthetic households now stand in.",
+                "source_span": "expands the environment where Japanese developers and enterprises can develop and evaluate AI tailored to local and industry requirements, without using real customer data",
+                "note": "The source describes testing without real customer data using official-statistics-grounded personas."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_42e26bad6bab7e00",
+          "headline": "OpenAI's Python library now lets cached Responses prompts persist for 12 hours",
+          "summary": "OpenAI's Python SDK v3.45.0 adds 12-hour caching for the Responses API and reports cache-write usage, so you can see what caching costs as well as saves. It also adds project-level service tier settings. Upgrade a staging service this week and compare cache-write tokens in usage logs against your current bills.",
+          "take": "Prompt-cache spend can now be audited line by line, where cache writes once hid inside total usage.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://github.com/openai/openai-python/releases/tag/v3.45.0"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_42e26bad6bab7e00",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python library now lets cached Responses prompts persist for 12 hours",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "OpenAI's Python library now lets cached Responses prompts persist for 12 hours",
+                "source_span": "add 12-hour Responses caching and cache-write usage",
+                "note": "Release note says 12-hour Responses caching was added; paraphrase is fair."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python SDK v3.45.0 adds 12-hour caching for the Responses API",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI's Python SDK v3.45.0 adds 12-hour caching for the Responses API",
+                "source_span": "3.45.0 ... api: add 12-hour Responses caching and cache-write usage",
+                "note": "Matches the release feature entry."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SDK v3.45.0 reports cache-write usage",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reports cache-write usage",
+                "source_span": "add 12-hour Responses caching and cache-write usage",
+                "note": "Cache-write usage is listed in the same feature."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Cache-write reporting shows what caching costs as well as saves",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "so you can see what caching costs as well as saves",
+                "source_span": "",
+                "note": "Release note gives no detail on cost visibility; this is an inference."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SDK v3.45.0 adds project-level service tier settings",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It also adds project-level service tier settings.",
+                "source_span": "api: add project service tier settings",
+                "note": "Matches the feature entry."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Prompt-cache spend can now be audited line by line",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Prompt-cache spend can now be audited line by line, where cache writes once hid inside total usage.",
+                "source_span": "add 12-hour Responses caching and cache-write usage",
+                "note": "Source only says cache-write usage was added; line-by-line auditing and the earlier hidden-in-total claim are not in the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Four of these five releases swap a billed or networked dependency for something cheaper or local, and the fifth makes an existing bill visible. Most evidence is vendor-supplied or a single hands-on test, so trial one on your own workload."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_d61487d56b44f2f5",
+          "headline": "The Bank for International Settlements built an AI agent that replicates central-bank economic models",
+          "summary": "Early signal that agentic coding tools can run macroeconometrics. The BIS paper pairs plain-text workflow files and a verified library of model specifications with an off-the-shelf coding agent. It reproduced three widely used structural vector autoregressions where data were well defined; researchers confirm each key decision, and the framework is released publicly.",
+          "take": "Econometric replication work now starts from an agent's logged draft rather than a researcher's blank script.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://www.bis.org/publications/working-paper-1395-marcobis-ai-agentic-econometric-analysis-central-bankers"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_d61487d56b44f2f5",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "The Bank for International Settlements built an AI agent that replicates central-bank economic models",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "The Bank for International Settlements built an AI agent that replicates central-bank economic models",
+                "source_span": "MaRCo@BIS combines an AI agent with a verified dictionary of published model specifications, a tested library of econometric methods and a structured workflow.",
+                "note": "BIS is the publisher and MaRCo@BIS replicates published structural VARs; 'The Bank' and 'International Settlements' are just the expansion of BIS."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The BIS paper pairs plain-text workflow files with an off-the-shelf coding agent",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The BIS paper pairs plain-text workflow files and a verified library of model specifications with an off-the-shelf coding agent.",
+                "source_span": "a framework of plain-text workflow files, a verified dictionary of canonical model specifications and a tested reference library, read by an off-the-shelf agentic coding environment",
+                "note": "Matches the abstract."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The paper includes a verified library of model specifications",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a verified library of model specifications",
+                "source_span": "a verified dictionary of canonical model specifications and a tested reference library",
+                "note": "Dictionary paraphrased as library; fine."
+              },
+              {
+                "schema_version": 1,
+                "claim": "MaRCo@BIS reproduced three widely used structural vector autoregressions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It reproduced three widely used structural vector autoregressions where data were well defined",
+                "source_span": "benchmark the agent’s replications of three widely-used structural VARs against the originals",
+                "note": "Matches the three structural VARs."
+              },
+              {
+                "schema_version": 1,
+                "claim": "MaRCo@BIS reproduced them where data were well defined",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "where data were well defined",
+                "source_span": "It successfully reproduced published findings where the specification and data were sufficiently well defined",
+                "note": "Condition matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Researchers confirm each key decision",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "researchers confirm each key decision",
+                "source_span": "Researchers must confirm or override key decisions",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The framework is released publicly",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the framework is released publicly",
+                "source_span": "The framework is released as a public good for the central banking community and macroeconomic researchers more broadly.",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Econometric replication work now starts from an agent's logged draft rather than a researcher's blank script.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Econometric replication work now starts from an agent's logged draft rather than a researcher's blank script.",
+                "source_span": "",
+                "note": "Editorial position about general practice; the source covers one framework that logs choices, not a field-wide shift."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Most of these items concern infrastructure around agents (scheduling, pricing, permissions, capital) rather than the models.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Most of these items concern the plumbing around agents rather than the models: scheduling, pricing, permissions and capital.",
+                "source_span": "Agent Substrate ... multiplexes many sessions over a small pool of worker Pods.",
+                "note": "synthesis: The sources cover scheduling (Agent Substrate), pricing (Muse Ember), permissions (Genie in Slack) and capital (Numerai staking), so the description fits."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Nearly all of these items rest on a vendor blog, a preprint or a proof-of-concept.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Nearly all rest on a vendor blog, a preprint or a proof-of-concept",
+                "source_span": "Publisher: NVIDIA Technical Blog; Publisher: Databricks Blog; Publisher: Hugging Face Daily Papers",
+                "note": "synthesis: The sources are mostly vendor blogs and papers, and the Gemini Robotics piece describes a proof-of-concept."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_5d412d884a564c6a",
+          "headline": "Meta's smallest model matches Claude Haiku's price and sits on the cost-performance frontier",
+          "summary": "If this holds, the small-model price floor has a third occupant. Meta's Muse Ember costs $0.10 per million input tokens and $0.50 output, identical to GPT-6 Luna and Claude Haiku 5.5 on short prompts. Simon Willison notes Artificial Analysis charts it on the efficiency frontier; prices rise past a long-prompt threshold.",
+          "take": "Agent subtask budgets now have three vendors quoting one price, so cost per task replaces price per token.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://simonwillison.net/2026/Nov/10/muse-ember/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5d412d884a564c6a",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Meta's smallest model matches Claude Haiku's price and sits on the cost-performance frontier",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Meta's smallest model matches Claude Haiku's price and sits on the cost-performance frontier",
+                "source_span": "For shorter prompts it's priced the same as GPT-6 Luna and Claude Haiku 5.5 - both are $0.10/million input tokens and $0.50/million output.",
+                "note": "Price matches on short prompts and the model sits on the Pareto/efficiency frontier; the headline omits the short-prompt qualifier, which is acceptable compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse Ember costs $0.10 per million input tokens",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Meta's Muse Ember costs $0.10 per million input tokens and $0.50 output",
+                "source_span": "priced the same as GPT-6 Luna and Claude Haiku 5.5 - both are $0.10/million input tokens and $0.50/million output",
+                "note": "Ember is priced the same as the other two, so $0.10 input follows."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse Ember costs $0.50 per million output tokens",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Meta's Muse Ember costs $0.10 per million input tokens and $0.50 output",
+                "source_span": "$0.10/million input tokens and $0.50/million output",
+                "note": "Same price as the other two models."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse Ember's price is identical to GPT-6 Luna and Claude Haiku 5.5 on short prompts",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "identical to GPT-6 Luna and Claude Haiku 5.5 on short prompts",
+                "source_span": "For shorter prompts it's priced the same as GPT-6 Luna and Claude Haiku 5.5",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Artificial Analysis charts Muse Ember on the efficiency frontier",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Simon Willison notes Artificial Analysis charts it on the efficiency frontier",
+                "source_span": "The Muse Ember models sit right on that Pareto line",
+                "note": "Source says it sits on the Pareto line of the Artificial Analysis chart; Meta also calls it out."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse Ember prices rise past a long-prompt threshold",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "prices rise past a long-prompt threshold",
+                "source_span": "they also all have a threshold after which the price goes up",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Three vendors quote one price for small models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent subtask budgets now have three vendors quoting one price, so cost per task replaces price per token.",
+                "source_span": "For shorter prompts it's priced the same as GPT-6 Luna and Claude Haiku 5.5",
+                "note": "Three vendors share the price on short prompts; the cost-per-task conclusion is editorial and echoes the source's view."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse Ember costs $0.10 per million input tokens",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Muse Ember costs $0.10 per million input tokens",
+                "source_span": "For shorter prompts it's priced the same as GPT-6 Luna and Claude Haiku 5.5 - both are $0.10/million input tokens and $0.50/million output.",
+                "note": "digest: Ember is priced the same as the two models for shorter prompts, so its input price is $0.10."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse Ember costs $0.50 per million output tokens",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "$0.50 output",
+                "source_span": "both are $0.10/million input tokens and $0.50/million output",
+                "note": "digest: Ember's output price matches the stated $0.50."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Muse Ember's price is identical to Claude Haiku 5.5 on short prompts",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "identical to Claude Haiku 5.5 on short prompts",
+                "source_span": "For shorter prompts it's priced the same as GPT-6 Luna and Claude Haiku 5.5",
+                "note": "digest: Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Haiku 5.5 and similar models are the cheapest rivals; Meta matched their price",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Meta matched the cheapest rivals' price.",
+                "source_span": "Meta AI just launched their entry in the Claude Haiku/GPT Luna category",
+                "note": "digest: Same-category models at the same price; 'cheapest' is a mild characterisation, and Fable 5.2 is far pricier."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_e8ccb49752f9d946",
+          "headline": "NVIDIA donates a runtime that parks idle AI agents instead of keeping a Kubernetes Pod each",
+          "summary": "If this holds, agent platforms stop paying for idle compute. NVIDIA's Agent Substrate, donated to the Cloud Native Computing Foundation Sandbox, multiplexes many agent sessions over a small pool of worker Pods, checkpointing idle ones (memory and filesystem) and restoring them on demand. It claims 10x the density of standard containers; the code is public.",
+          "take": "Agent platform budgets now price sessions by activity, not by one warm Pod held for every user.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://developer.nvidia.com/blog/agent-substrate-advancing-kubernetes-for-agents-at-scale/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_e8ccb49752f9d946",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "NVIDIA donates a runtime that parks idle AI agents instead of keeping a Kubernetes Pod each",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "NVIDIA donates a runtime that parks idle AI agents instead of keeping a Kubernetes Pod each",
+                "source_span": "Agent Substrate, now donated to the Cloud Native Computing Foundation (CNCF) Sandbox, is an open-source, security-hardened, zero-trust runtime for sandboxed agents",
+                "note": "Donation, runtime, and checkpointing of idle sessions instead of one Pod per session are all in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent Substrate was donated to the Cloud Native Computing Foundation Sandbox",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA's Agent Substrate, donated to the Cloud Native Computing Foundation Sandbox",
+                "source_span": "Agent Substrate, now donated to the Cloud Native Computing Foundation (CNCF) Sandbox",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent Substrate multiplexes many agent sessions over a small pool of worker Pods",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "multiplexes many agent sessions over a small pool of worker Pods",
+                "source_span": "It multiplexes many sessions over a small pool of worker Pods.",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent Substrate checkpoints idle sessions, including memory and filesystem",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "checkpointing idle ones (memory and filesystem)",
+                "source_span": "Idle sessions are checkpointed, memory and filesystem included",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent Substrate restores checkpointed sessions on demand",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "restoring them on demand",
+                "source_span": "restored onto whichever worker is free when the next request arrives",
+                "note": "Paraphrase of the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent Substrate claims 10x the density of standard containers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It claims 10x the density of standard containers",
+                "source_span": "with 10x higher density than standard containers",
+                "note": "The summary hedges it as a claim, which matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The Agent Substrate code is public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the code is public",
+                "source_span": "All of this work is public in the Agent Substrate repository",
+                "note": "The source says it is open-source and the repository is public."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent platform budgets now price sessions by activity, not by one warm Pod held for every user.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agent platform budgets now price sessions by activity, not by one warm Pod held for every user.",
+                "source_span": "",
+                "note": "This is an editorial position about industry pricing practice, and the source does not cover it."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_1c3ebb5f1a5dfd88",
+          "headline": "Databricks puts its data agent inside Slack, answering with each asker's own permissions",
+          "summary": "If this holds, Databricks' Genie becomes a colleague you @mention in Slack. It answers from company data under the asker's own permissions, cites sources, and updates tickets and documents through MCP connectors after approval. Admins can make channel replies private by default. Databricks' own announcement says the app is now generally available.",
+          "take": "Data questions asked in Slack no longer need a dashboard hunt; answers arrive inside the thread, under the asker's permissions.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.databricks.com/blog/genie-slack-now-generally-available-governed-ai-cowork-right-where-work-happens"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_1c3ebb5f1a5dfd88",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks puts its data agent inside Slack, answering with each asker's own permissions",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Databricks puts its data agent inside Slack, answering with each asker's own permissions",
+                "source_span": "Every question runs with the asker's permissions, so Unity Catalog and source permissions apply in DMs and channels alike.",
+                "note": "Genie in Slack runs each question under the asker's permissions."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie can be @mentioned in Slack",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Genie becomes a colleague you @mention in Slack",
+                "source_span": "DM Genie or @mention it in a channel",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie answers from company data under the asker's own permissions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It answers from company data under the asker's own permissions",
+                "source_span": "Every question runs using the identity of the person who asked it",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie cites sources",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "cites sources",
+                "source_span": "Every answer cites its sources",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie updates tickets and documents through MCP connectors after approval",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "updates tickets and documents through MCP connectors after approval",
+                "source_span": "Genie updates documents and tickets through MCP connectors after you approve",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Admins can make channel replies private by default",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Admins can make channel replies private by default",
+                "source_span": "admins can set responses to be private to the person who asked as the default for the whole workspace",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks' announcement says the app is now generally available",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Databricks' own announcement says the app is now generally available",
+                "source_span": "Genie in Slack is generally available",
+                "note": "Source is Databricks' own blog and states GA."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Answers arrive inside the thread, under the asker's permissions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "answers arrive inside the thread, under the asker's permissions",
+                "source_span": "Genie responds directly in the thread",
+                "note": "Both stated in source."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_386f1eb95b8da48b",
+          "headline": "Numerai lets AI agents stake real cryptocurrency on their own stock-prediction models",
+          "summary": "Numerai's Atomic Blockchain Staking lets agents manage NMR stakes directly on Ethereum. A wallet-level contract gives full control, and a strategy contract stores allocations across models. Early signal, from Numerai's own blog: MCP has logged over 100,000 sessions. Signals merges into the main tournament on 1 January 2027.",
+          "take": "Quant tournaments that stopped at agent-submitted predictions now extend to agent-controlled capital, with staking handled on-chain rather than by humans.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://blog.numer.ai/atomic-blockchain-staking/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_386f1eb95b8da48b",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Numerai lets AI agents stake real cryptocurrency on their own stock-prediction models",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Numerai lets AI agents stake real cryptocurrency on their own stock-prediction models",
+                "source_span": "enabling agents to manage NMR stakes directly on Ethereum",
+                "note": "Agents can stake NMR on models; this is a fair compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Atomic Blockchain Staking lets agents manage NMR stakes directly on Ethereum",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Numerai's Atomic Blockchain Staking lets agents manage NMR stakes directly on Ethereum.",
+                "source_span": "enabling agents to manage NMR stakes directly on Ethereum",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A wallet-level contract gives full control",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "A wallet-level contract gives full control",
+                "source_span": "The new staking contract allows direct control of stake from a wallet.",
+                "note": "'Full' is a mild paraphrase of direct control."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A strategy contract stores allocations across models",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "a strategy contract stores allocations across models",
+                "source_span": "storing stake configuration across models",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "MCP has logged over 100,000 sessions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "MCP has logged over 100,000 sessions",
+                "source_span": "MCP has recorded over 100,000 sessions",
+                "note": "The source is Numerai's own blog, and the body attributes the figure to it."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Signals merges into the main tournament on 1 January 2027",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Signals merges into the main tournament on 1 January 2027.",
+                "source_span": "Signals will merge with our main tournament on January 1, 2027.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Quant tournaments previously stopped at agent-submitted predictions",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Quant tournaments that stopped at agent-submitted predictions",
+                "source_span": "",
+                "note": "The source covers only Numerai, not tournaments generally."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Staking is handled on-chain rather than by humans",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "extend to agent-controlled capital, with staking handled on-chain rather than by humans",
+                "source_span": "enabling agents to manage NMR stakes directly on Ethereum",
+                "note": "Agents can control stakes on-chain, though humans can still stake."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9450211600aa50ff",
+          "headline": "Block gives employees and AI agents one shared workspace, with a different model behind each agent",
+          "summary": "Worth watching: Block's open-source Buzz puts staff and agents in shared channels and threads, with Databricks' Unity Gateway supplying OpenAI, Anthropic, Google and open-weight models through one integration. Engineers are testing a stronger model coordinating cheaper ones, per Databricks' own blog. Buzz is self-hostable, model-agnostic, and its code is public.",
+          "take": "Agent rollouts at firms like Block now assign a model per task, rather than one model per company.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.databricks.com/blog/how-block-powers-collaborative-ai-agents-buzz-and-unity-gateway"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9450211600aa50ff",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Block gives employees and AI agents one shared workspace, with a different model behind each agent",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Block gives employees and AI agents one shared workspace, with a different model behind each agent",
+                "source_span": "Buzz brings employees and AI agents into a shared workspace. Buzz lets users choose the model or harness behind each agent.",
+                "note": "Users choose the model per agent; a different model per agent is possible, and the headline compresses this acceptably."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Block's open-source Buzz puts staff and agents in shared channels and threads",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Block's open-source Buzz puts staff and agents in shared channels and threads",
+                "source_span": "Block Buzz is an open source collaboration workspace where employees and AI agents can work together in channels, threads, and direct messages.",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks' Unity Gateway supplies OpenAI, Anthropic, Google and open-weight models through one integration",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Databricks' Unity Gateway supplying OpenAI, Anthropic, Google and open-weight models through one integration",
+                "source_span": "frontier models from OpenAI, Anthropic, and Google, as well as select open-weight models, all accessible through a single integration.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Engineers are testing a stronger model coordinating cheaper ones",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Engineers are testing a stronger model coordinating cheaper ones",
+                "source_span": "using a more capable model to coordinate work across a team of agents powered by smaller, more efficient models.",
+                "note": "Paraphrase of the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The coordinating-model experiment is described in Databricks' own blog",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "per Databricks' own blog",
+                "source_span": "Publisher: Databricks Blog",
+                "note": "The source is the Databricks blog."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Buzz is self-hostable and model-agnostic",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Buzz is self-hostable, model-agnostic",
+                "source_span": "Buzz is model-agnostic and can be self-hosted",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Buzz's code is public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "its code is public",
+                "source_span": "Block developed Buzz, an open source collaboration space",
+                "note": "Open source implies public code."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent rollouts at firms like Block now assign a model per task, rather than one model per company.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agent rollouts at firms like Block now assign a model per task, rather than one model per company.",
+                "source_span": "Enterprises can assign different models to AI agents based on task requirements, performance, and cost.",
+                "note": "The source supports Block's practice, but the generalisation to firms like Block and the contrast with one model per company are not checkable from it."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_37a9eb3cc62356eb",
+          "headline": "A serving system that reallocates GPUs as agents work cuts latency up to four times",
+          "summary": "Evolving Infra, an arXiv preprint, lets inference nodes switch between reading prompts and generating replies as agent workloads shift, and keeps the memory caches agents will reuse. Against NVIDIA's production framework Dynamo, tested on up to 256 GB300 GPUs, it cut mean latency up to 4.1x. No code or models are linked.",
+          "take": "Agent inference clusters no longer need a fixed prefill-to-decode split; the ratio now adjusts at runtime.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/papers/2611.12304"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_37a9eb3cc62356eb",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A serving system that reallocates GPUs as agents work cuts latency up to four times",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A serving system that reallocates GPUs as agents work cuts latency up to four times",
+                "source_span": "Evolving Infra reduces mean end-to-end request latency and P95 TTFT by up to 4.1x and 14x over Dynamo",
+                "note": "4.1x is rounded to four times, and nodes switching between prefill and decode matches reallocating GPUs. The result is vendor-reported by the authors, but the headline's hedge is acceptable."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evolving Infra is an arXiv preprint",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Evolving Infra, an arXiv preprint",
+                "source_span": "",
+                "note": "The excerpt is from Hugging Face Daily Papers and never says arXiv or preprint."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evolving Infra lets inference nodes switch between reading prompts and generating replies",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "lets inference nodes switch between reading prompts and generating replies as agent workloads shift",
+                "source_span": "allowing nodes to switch efficiently between prefill and decode",
+                "note": "Prefill and decode are paraphrased in plain English."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evolving Infra keeps the memory caches agents will reuse",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "keeps the memory caches agents will reuse",
+                "source_span": "eviction of KV caches that agents will reuse",
+                "note": "The agent-aware KV manager guides eviction to avoid losing reusable caches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Dynamo is NVIDIA's production framework",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "NVIDIA's production framework Dynamo",
+                "source_span": "Dynamo, NVIDIA's production framework",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evolving Infra was tested on up to 256 GB300 GPUs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "tested on up to 256 GB300 GPUs",
+                "source_span": "on up to 256 GB300 GPUs",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Evolving Infra cut mean latency up to 4.1x",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it cut mean latency up to 4.1x",
+                "source_span": "reduces mean end-to-end request latency and P95 TTFT by up to 4.1x and 14x over Dynamo",
+                "note": "The figure matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "No code or models are linked",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "No code or models are linked.",
+                "source_span": "Models citing this paper 0 No model linking this paper",
+                "note": "The page shows no linked models, datasets or Spaces."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent inference clusters no longer need a fixed prefill-to-decode split; the ratio now adjusts at runtime.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Agent inference clusters no longer need a fixed prefill-to-decode split; the ratio now adjusts at runtime.",
+                "source_span": "an online planner matches the PD split to workload composition",
+                "note": "The system adjusts the PD split at runtime. 'No longer need' is editorial framing."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_6fa18bdbb0996c33",
+          "headline": "Google DeepMind's robot model hits 96% on a Mercedes-Benz factory line",
+          "summary": "Gemini Robotics 2.5 helped Apptronik's Apollo 2 humanoid sort automotive brackets on Mercedes-Benz production lines with a 96% success rate, in a proof-of-concept. Google DeepMind reports 30% to 100% higher success than its prior baselines across 200 tasks. It is rolling out to robotics partners; the ASIMOV-Jailbreak safety benchmark is open-source.",
+          "take": "Factory pilots for humanoid robots now report a success rate per task, where demos once offered only video.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://deepmind.google/blog/gemini-robotics-2-5-accelerates-real-world-physical-intelligence/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_6fa18bdbb0996c33",
+            "prompt_version": "v0.7",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Google DeepMind's robot model hits 96% on a Mercedes-Benz factory line",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Google DeepMind's robot model hits 96% on a Mercedes-Benz factory line",
+                "source_span": "During a real-world proof-of-concept on Mercedes-Benz production lines, our models helped Apptronik’s Apollo 2 humanoid pick and pack automotive parts with a 96% success rate.",
+                "note": "The 96% figure on Mercedes-Benz production lines matches the source, which labels it a proof-of-concept."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Robotics 2.5 helped Apptronik's Apollo 2 humanoid sort automotive brackets",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Gemini Robotics 2.5 helped Apptronik's Apollo 2 humanoid sort automotive brackets on Mercedes-Benz production lines with a 96% success rate, in a proof-of-concept.",
+                "source_span": "picks up metal automotive brackets, and places them into sequencing containers",
+                "note": "The source describes kitting and sorting parts, including metal brackets."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Apollo 2 achieved a 96% success rate on Mercedes-Benz production lines",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with a 96% success rate, in a proof-of-concept",
+                "source_span": "Achieving a 96% success rate, this pilot shows promising progress",
+                "note": "The figure and the proof-of-concept framing both match the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google DeepMind reports 30% to 100% higher success than its prior baselines",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Google DeepMind reports 30% to 100% higher success than its prior baselines across 200 tasks.",
+                "source_span": "Gemini Robotics 2.5 achieves a 30% to 100% higher success rate depending on the type of task",
+                "note": "The range matches the source and is attributed to DeepMind."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The evaluation spans 200 tasks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "across 200 tasks",
+                "source_span": "We evaluated the model across 200 distinct tasks",
+                "note": "The source also says 'over 200', so the rounding is fine."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini Robotics 2.5 is rolling out to robotics partners",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It is rolling out to robotics partners",
+                "source_span": "Gemini Robotics 2.5 is rolling out to our robotics partners.",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The ASIMOV-Jailbreak safety benchmark is open-source",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the ASIMOV-Jailbreak safety benchmark is open-source",
+                "source_span": "we are releasing ASIMOV-Jailbreak, a new open-source benchmark",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Factory pilots for humanoid robots now report a success rate per task, where demos once offered only video.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Factory pilots for humanoid robots now report a success rate per task, where demos once offered only video.",
+                "source_span": "",
+                "note": "This is a trend claim about industry reporting practice, which the source does not address. The source gives one pilot figure, not a per-task rate."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Most of these items concern the plumbing around agents rather than the models: scheduling, pricing, permissions and capital. Nearly all rest on a vendor blog, a preprint or a proof-of-concept, which is why they sit here and not higher up."
+    }
+  ],
+  "digest": [
+    {
+      "schema_version": 1,
+      "lead": "Grok Build's private links were guessable.",
+      "sentence": "Claroc enumerated share links and reached 35,000 apps, including medical results and a 594-account SpaceXSI sales territory map.",
+      "story_ids": [
+        "c_a59b19dcbfec1e2d"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Microsoft hid a backdoor in neurons.",
+      "sentence": "Editing fewer than ten neurons gave an agent a midnight trigger while it still passed standard evaluations.",
+      "story_ids": [
+        "c_2b14c26845f20ae2"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Google sells yes/no answers cheaply.",
+      "sentence": "Gemini Decision 1 returns probabilities with no generated text, at 10 cents per million input tokens.",
+      "story_ids": [
+        "c_aeb47de5556fa2f7"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "lead": "Meta matched the cheapest rivals' price.",
+      "sentence": "Muse Ember costs $0.10 per million input tokens and $0.50 output, identical to Claude Haiku 5.5 on short prompts.",
+      "story_ids": [
+        "c_5d412d884a564c6a"
+      ]
+    }
+  ],
+  "generated_at": "2026-11-12T21:17:58.615464Z",
+  "prompt_versions": {
+    "rank": "v0.7",
+    "summarise": "v0.24",
+    "pulse": "v0.10",
+    "digest": "v1.1"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 2, hands_on: 5, currents: 8"
+}
