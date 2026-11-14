@@ -1,0 +1,86 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-12T21:19:54.180965Z",
+  "computed_verdict": "amber",
+  "one_line": "Mostly clean day; one contradicted 'guessable' claim in the Pulse and its digest bullet.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_a59b19dcbfec1e2d",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Security firm Claroc found Grok Build's share links, meant to be unguessable, could be enumerated, opening 35,000 apps to anyone.",
+      "fix_kind": "text_edit",
+      "instruction": "The fact-check flagged the 'guessable' claim as contradicted, since the source says Grok randomizes the URLs. Rewrite so it is clear that Claroc reported enumerating the links, rather than stating as bare fact that they were guessable. Attribute the claim to Claroc and keep the source's randomization detail.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_lead"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Grok Build's private links were guessable.",
+      "fix_kind": "text_edit",
+      "instruction": "The fact-check marks 'guessable' as contradicted, because the source says the URLs were randomized. Reword the lead to say the links were enumerated, per Claroc, for example 'Claroc enumerated Grok Build share links'. Keep it to 3-6 words.",
+      "echo_of": "f001"
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 3,
+        "field": "digest_sentence"
+      },
+      "criterion": "digest_shape",
+      "severity": "minor",
+      "quote": "Muse Ember costs $0.10 per million input tokens and $0.50 output, identical to Claude Haiku 5.5 on short prompts.",
+      "fix_kind": "text_edit",
+      "instruction": "The sentence copies the story's price detail word for word. Keep it, but make it a compression of the story, not a duplicate of its summary.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_386f1eb95b8da48b",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Quant tournaments that stopped at agent-submitted predictions now extend to agent-controlled capital, with staking handled on-chain rather than by humans.",
+      "fix_kind": "text_edit",
+      "instruction": "The take is 22+ words, over the 22-word Currents limit and not two-sided. Cut it to one declarative sentence of about 16 words, for example 'Agents now stake real capital on their own predictions, not only submit them.'",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-5-5",
+  "issue_sha256": "dea74e28b34ec4cc4c0af267a86342bd776a779dd51364a96145e469947d8eed",
+  "note": "verdict rule: major >= 1 (A reader would notice this. Ratifiable with notes, and worth a look before it ships.) | 1 echo(es) not counted: the same defect filed again in another field or under another criterion"
+}
