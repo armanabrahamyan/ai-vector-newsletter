@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 88 &middot; 17 November 2026</title>
+<meta name="description" content="Same finance agent, seven identical runs: scores swing widely and costs vary by 17%. Issue No. 88 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 88 &middot; 17 Nov &middot; 6 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure gap14">
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>Same finance agent, seven identical runs: scores swing widely and costs vary by 17%</h1>
+  <p class="takeaway">Finance agent procurement now needs repeated-run score ranges, where a single leaderboard number once settled the choice.</p>
+  <p class="dek">Seven identical runs of an untuned finance agent passed between 105 and 123 of 149 criteria, with bills varying 17%. In an arXiv preprint, an optimisation loop cut cost to 0.34x at steady accuracy, but its accuracy gains fell within noise. Judge agents on repeated runs, and budget for cost tuning first.</p>
+  <div class="story-meta">
+    <a class="src" href="https://arxiv.org/abs/2611.17939" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Each story moves the point of assurance away from the provider&#39;s own word: outside evaluators, per-action intent checks, a second chip supplier, and measured attacker weakness. The evidence is uneven, though, since two are proposals or vendor claims and one is a single preprint.</p>
+  </div>
+  <article class="measure stack">
+    <h3>The EU wants frontier AI models tested by outside evaluators with proven independence</h3>
+    <p class="takeaway">Vendor assurance for frontier models now has to name testers the provider cannot pay or steer.</p>
+    <p class="dek">The EU AI Office has proposed qualification and independence rules for external evaluators of the most powerful general-purpose models, with a scoring system planned. Evaluators must be free of provider financial or operational influence. Twenty organisations were selected for a July workshop, 19 attended. If providers can&#39;t pick their own testers, who in your vendor contracts holds the right to audit?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://artificialintelligenceact.substack.com/p/the-eu-ai-act-newsletter-114-who" target="_blank" rel="noreferrer">artificialintelligenceact.substack.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Uber checks whether each AI agent action fits the request, not just the permissions</h3>
+    <p class="takeaway">Agent sign-off now needs per-agent intent and constraint definitions, where access-permission reviews once sufficed.</p>
+    <p class="dek">Uber Engineering says identity and API controls can confirm an agent may touch a resource, not whether the action suits the request. Its framework registers each agent, checks proposed actions at runtime through guard hooks, and replays recorded traces. Its strongest control was explicit per-agent constraints. If vendor agents accept no hooks, who enforces intent in your stack?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://www.infoq.com/news/2026/11/uber-secure-ai-framework/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Google&#39;s two new AI chips give buyers a credible threat in Nvidia price talks</h3>
+    <p class="takeaway">Nvidia renewals now get negotiated against a workable Google alternative, where AMD alone once set the ceiling.</p>
+    <p class="dek">Google announced two TPU systems on 9 November: one built to keep data protected while a model runs, one for memory-heavy workloads. Unlike AMD, Google designs the chip, runs Gemini on it, and can deliver it via Google Cloud or in your own data centre. If a large workload can credibly move, what is your Nvidia contract&#39;s price worth?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://llmquant.substack.com/p/google-is-coming-for-nvidias-pricing" target="_blank" rel="noreferrer">llmquant.substack.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Today&#39;s best computer-use agents exploit fewer than one in eight real web app flaws</h3>
+    <p class="takeaway">Penetration-testing budgets can still treat screen-driving agents as weak attackers, with exploitation rates under 12%.</p>
+    <p class="dek">HackWorld, an arXiv preprint, tests computer-use agents (AI that operates a screen like a person) against 36 real web applications with injection and authentication flaws, in capture-the-flag format. Exploitation rates stay below 12%; agents botch multi-step attack planning and misuse security tools. If agents gain that skill, who in your security team owns testing them?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://arxiv.org/abs/2510.12200" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Four of these five releases are drop-in swaps you can try in an afternoon, while the evidence behind them is thin: one vendor&#39;s own figures, one 277-task study, one developer&#39;s tally, and a vLLM tag with no release notes. Treat them as cheap experiments.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Alibaba&#39;s newest flagship model is now callable through Vercel&#39;s gateway with a one-line model swap</h3>
+    <p class="takeaway">Trying a Chinese frontier model in your coding agent now takes one setup command, not a new provider contract.</p>
+    <p class="dek">Qwen4-Max, Alibaba&#39;s first Qwen4 model, is live on Vercel&#39;s AI Gateway as alibaba/qwen4-max. It reasons over images and a 1M-token context, and Vercel says it uses fewer tokens than prior Qwen Max models and writes more secure code. Pricing carries no gateway markup. Alibaba is open-sourcing a Live Delivery plugin. Point one existing coding-agent route at it this week and compare token spend against your current model.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://vercel.com/changelog/qwen4-max-now-available-on-ai-gateway" target="_blank" rel="noreferrer">vercel.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Microsoft&#39;s open-source plugin cuts coding-agent costs by up to 31% by learning from past sessions</h3>
+    <p class="takeaway">Repeat-repository agent spend now falls with experience, where fixed cost-saving plugins helped only some repositories.</p>
+    <p class="dek">Microsoft Research&#39;s TokenEconomizer reads an agent&#39;s past sessions in a repository, then adds one-line notes, prunes unused tools and flags failure loops. Across 277 bug-fixing tasks, costs fell 18.4-30.9% with success broadly stable. It works alongside Claude Code without modifying the agent, and the plugin is open-source. Install it on one repository you revisit often, then compare spend after six tasks.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.microsoft.com/en-us/research/blog/tokeneconomizer-learning-from-experience-to-make-ai-coding-agents-more-efficient/" target="_blank" rel="noreferrer">microsoft.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>AWS releases a free local emulator so coding agents can test against 200+ services</h3>
+    <p class="takeaway">Agent test loops no longer need a live AWS account, billing exposure or provisioned cloud resources.</p>
+    <p class="dek">AWS Emulator serves a local HTTPS endpoint for more than 200 AWS services, built by AI agents from AWS&#39;s public API models. Fidelity scores ship with each release; one developer counted S3 passing about two in three tests, CloudFormation under one in five. Code is public domain. Already testing agents on AWS? Point the SDK&#39;s AWS_ENDPOINT_URL at it for non-security tests; it does not evaluate IAM policies.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://www.infoq.com/news/2026/11/aws-emulator-agents/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>vLLM, the open-source engine behind much self-hosted AI, ships a new minor release</h3>
+    <p class="takeaway">Self-hosted inference stacks now have a newer vLLM minor line to pin, where v0.33 was the latest.</p>
+    <p class="dek">vLLM, the widely used open-source engine for serving language models, has tagged v0.34.0 on GitHub. The release page carries two downloadable assets but no written notes, so the changes are only visible in the code. Diff the tag against your pinned version in staging, and hold production upgrades until your own throughput tests pass.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/vllm-project/vllm/releases/tag/v0.34.0" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Tether releases an open agent model small enough to run on a phone</h3>
+    <p class="takeaway">Simple tool-calling assistants no longer need a cloud model call; a 0.8B model now handles routine requests locally.</p>
+    <p class="dek">Tether AI Research&#39;s BotPsy, built on Qwen3.5-0.8B, roughly doubles its base model&#39;s tool-use scores (BFCL v4 from 23.4 to 44.0) and beats a model 2.5 times its size on five of six agent benchmarks. Open weights come under Apache 2.0, with GGUF files for llama.cpp. Pull the Q4 GGUF and run your own function-calling cases; the maker says it is not for high-stakes use.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/qvac/botpsy" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">8 items</span></div>
+    <p class="synthesis">Most of these items attach a number to something teams used to buy by habit: model calls, chips, signals, even whole agents. Almost every figure comes from a preprint or a vendor&#39;s own test, so they sit here until independent replication arrives.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Eight leading AI models can place options trades, but none profits reliably</h3>
+    <p class="takeaway">Trading-agent pilots now get judged on risk and structure choices, where stock-direction accuracy once passed for skill.</p>
+    <p class="dek">LiveOption, an arXiv preprint, tested eight language models, including GPT, Gemini and DeepSeek, across three options-trading scenarios using 2025 market data. The models produced executable trades, but none delivered statistically reliable profit. Judge trading agents on risk handling and structure selection, not directional calls, before funding any pilot.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://llmquant.substack.com/p/eight-ai-models-tried-to-trade-options" target="_blank" rel="noreferrer">llmquant.substack.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A local text-to-SQL model answers half of database questions, cutting hosted-agent costs a third</h3>
+    <p class="takeaway">Database agent budgets now price a local first pass at 33.3% savings, where every query once hit the hosted model.</p>
+    <p class="dek">LuthorSQL, an arXiv preprint, pairs a local 7B model with Claude Opus 5.5, escalating only uncertain queries. Across 227 questions on databases published after Opus&#39;s training cutoff, it answered nearly half locally and cut API cost 33.3% at equal accuracy. Code and data are public, and the 33.3% saving comes from 227 questions on post-cutoff databases.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://arxiv.org/abs/2611.17780" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>An AI stock-signal generator finds better Chinese equity signals by changing what it remembers</h3>
+    <p class="takeaway">Quant teams can now measure signal diversity by portfolio rankings, where counting distinct formulas once passed for variety.</p>
+    <p class="dek">Ask a model for a hundred stock signals and many are the same trade in different clothes: rankings barely change. CosmosAlpha, covered by LLMQuant, found better Chinese-equity signals by changing what its search remembers, so it stops repeating itself. Check signal overlap in your own pipeline before funding more generation.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://llmquant.substack.com/p/the-ai-alpha-factory-has-a-duplicate" target="_blank" rel="noreferrer">llmquant.substack.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Hugging Face now routes every language-model request through OpenRouter, retrying failures on other providers</h3>
+    <p class="takeaway">Open-model reliability now rests on a shared router&#39;s failover, where each team once handled provider outages itself.</p>
+    <p class="dek">Hugging Face has switched Inference Providers to OpenRouter&#39;s router, which picks among 80+ providers on live price, speed and reliability, and retries failures elsewhere. OpenRouter reports capacity errors cut 46%. Pricing is unchanged, but your own provider API keys no longer work for language models. Audit any custom-key setups before it breaks them.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://huggingface.co/blog/openrouter" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Nvidia says its next rack serves AI agents with ten times the throughput per kilowatt</h3>
+    <p class="takeaway">Agent capacity plans now price power per kilowatt at fixed responsiveness, where chip counts once set the budget.</p>
+    <p class="dek">Nvidia&#39;s Vera Rubin NVL72 delivers over 10x the throughput per kilowatt of GB300 NVL72 on MLPerf Endpoints v1.0, at 50 tokens per second per user. The test used Kimi K3 on multi-turn agentic workloads; MLCommons has not yet verified the Vera Rubin results. Ask for power-normalised quotes before committing to next-generation capacity.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://developer.nvidia.com/blog/nvidia-vera-rubin-nvl72-leads-agentic-inference-performance-on-mlperf-endpoints-v1-0/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>OpenAI is building computer-use agents that operate healthcare teams&#39; software on-screen</h3>
+    <p class="takeaway">Clinical administrators can now picture agents working legacy screens, where integration projects once gated any automation.</p>
+    <p class="dek">If this holds, agents that click through screens the way staff do could reach healthcare systems that have no clean interface to connect to. OpenAI&#39;s post is titled around computer-use agents for healthcare teams. Its details, including any benchmarks, were not available to us. Treat it as direction of travel, not a deployable option.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://openai.com/index/advancing-computer-use-for-healthcare-teams" target="_blank" rel="noreferrer">openai.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Google DeepMind&#39;s upgraded DNA model predicts how genetic variants act in individual cell types</h3>
+    <p class="takeaway">Variant-prioritisation pipelines can now score effects in one cell type, where tissue-wide averages once blurred the signal.</p>
+    <p class="dek">If this holds, genetics moves from tissue averages to single cells. AlphaGenome 2, Google DeepMind&#39;s DNA model, found 30% of causal variants against 16% for its predecessor on an immune-cell dataset. It is open for non-commercial research via API, with commercial private preview on Google Cloud. Biotech teams should note the access terms.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://deepmind.google/blog/alphagenome-2-deciphering-how-cells-read-dna-to-better-understand-disease/" target="_blank" rel="noreferrer">deepmind.google <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A compression method builds a small model from a big one&#39;s own weights</h3>
+    <p class="takeaway">Small-model builds can now start from a teacher&#39;s weights, where training from scratch once demanded vast data.</p>
+    <p class="dek">Concertina folds each group of adjacent layers in a large model into one shared block run repeatedly, with small learned corrections restoring each layer&#39;s behaviour. Built from Qwen3-4B, a 2.27B model distilled on 22B tokens keeps about 84% of the teacher&#39;s average score and beats Qwen3-1.7B. The code is public, and the results come from one teacher, Qwen3-4B.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://arxiv.org/abs/2611.18113" target="_blank" rel="noreferrer">arxiv.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
