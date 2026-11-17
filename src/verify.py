@@ -84,12 +84,36 @@ from src.models import (
 from src.rank import JSON_RETRY_BUDGET, _extract_json_object, _llm_call
 
 
-VERIFY_PROMPT_VERSION = "v0.7"
+VERIFY_PROMPT_VERSION = "v0.8"
 r"""Pydantic-friendly version string (pattern: ^v\d+(\.\d+)*$).
 
-Audit tag: ``verify-v0.7-2026-08-09``. Bump on prompt-content changes so the
+Audit tag: ``verify-v0.8-2026-11-17``. Bump on prompt-content changes so the
 eval harness can correlate the recall / precision / unverifiable numbers
 against prompt revisions.
+
+v0.8 (2026-11-17, "confirm the contradiction"): every ``contradicted``
+verdict gets one short second call (``_confirm_contradictions``) that reads
+the claim, the quoted source span and the judge's own note, and answers
+whether the note itself ends by taking the flag back. It does not re-judge
+the claim. A flag the judge took back is withdrawn to ``supported``. Why: the judge emits its verdict before its
+reasoning, so a judge that argued its way to "supported" inside the note
+had already committed to "contradicted" -- replayed over the 74
+contradicted claims in the released archive, the confirmation withdraws
+10, each with a note that concludes the claim is supported, and one of
+them was the only hold reason on 2026-11-13.
+
+The two judge prompts are BYTE-IDENTICAL to v0.7, so every first-pass
+judgment is the one v0.7 calibrated; the only thing that can move is a
+contradiction being withdrawn, which Eval 7's ``recall_contradicted`` gate
+measures directly. The confirmation fails safe: an error, an unparseable
+answer or anything but an explicit ``"stands": false`` keeps the flag.
+Cost: one small call per contradicted claim, about one per issue.
+
+Two alternatives were measured the same day and rejected, both for moving
+the first-pass judgment. Putting the note BEFORE the verdict cut the
+advisory dropped-trust-flag recall from 5/6 to 2/6 in three runs of
+three. A trailing ``final_verdict`` key in the judge's own JSON gave 5/6,
+3/6, 3/6 against a baseline of 5/6 three times.
 
 v0.7 (2026-08-09, "digest + synthesis"): the two new reader-facing
 surfaces of the layout redesign are adjudicated (DESIGN.md "The digest",
@@ -687,6 +711,75 @@ def _enforce_contradiction_discipline(verdicts: list[ClaimVerdict]) -> list[Clai
     return verdicts
 
 
+_CONFIRM_MAX_TOKENS = 200
+
+_CONFIRM_PROMPT = """\
+A fact-checker flagged a claim in a newsletter as CONTRADICTED by its source
+and then wrote a note explaining why. Sometimes the fact-checker changes its
+mind while writing the note and ends up concluding the claim is fine, but
+the CONTRADICTED flag was already set.
+
+Your only job is to read the note and say whether the fact-checker itself
+still holds that the claim is contradicted at the END of its note. You are
+NOT re-judging the claim. Do not weigh the evidence yourself.
+
+CLAIM: {claim}
+NEWSLETTER TEXT: {summary_span}
+SOURCE QUOTE: {source_span}
+FACT-CHECKER'S NOTE: {note}
+
+"stands": false ONLY when the note explicitly ends by taking the flag back:
+it says the claim is supported, is an acceptable rounding or paraphrase, or
+is consistent with the source. A note that ends "not contradicted, just not
+stated in the source" has NOT said the claim is supported: that stands.
+
+"stands": true in every other case, including when the note describes a
+real difference and never takes it back, when it calls the difference minor
+but still a divergence, and when you personally think the flag is harsh.
+
+Return ONLY a JSON object: {{"stands": true or false, "reason": "<one short sentence>"}}
+"""
+
+
+def _confirm_contradictions(
+    verdicts: list[ClaimVerdict], *, temperature: float
+) -> list[ClaimVerdict]:
+    """Second look at each ``contradicted`` verdict (v0.8).
+
+    One short call per contradicted claim, asking one thing: does the
+    judge's own note end by taking the flag back? It does not re-judge the
+    claim. Withdraws the contradiction to ``supported`` only on an explicit
+    ``"stands": false``; every failure
+    mode -- the call raising, unparseable output, a missing or non-boolean
+    key -- keeps the flag, because a contradiction is the gate's hard block
+    and must never be lifted by a broken check.
+    """
+    for v in verdicts:
+        if v.verdict != "contradicted":
+            continue
+        prompt = _CONFIRM_PROMPT.format(
+            claim=v.claim,
+            summary_span=v.summary_span or v.claim,
+            source_span=v.source_span,
+            note=v.note or "(none)",
+        )
+        try:
+            raw = _metered_llm_call(
+                prompt, temperature=temperature, max_tokens=_CONFIRM_MAX_TOKENS,
+            )
+            payload = _extract_json_object(raw)
+        except Exception:  # noqa: BLE001 -- fail safe: the flag stays
+            _LOG.exception("verify: contradiction confirmation failed -- flag kept")
+            continue
+        if isinstance(payload, dict) and payload.get("stands") is False:
+            reason = str(payload.get("reason", "") or "").strip()
+            v.verdict = "supported"
+            v.note = (
+                f"{v.note} [contradiction withdrawn on second look: {reason}]"
+            ).strip()
+    return verdicts
+
+
 # ---------------------------------------------------------------------------
 # Public entry points.
 # ---------------------------------------------------------------------------
@@ -743,7 +836,10 @@ def verify_rich(
 
         verdicts = _parse_verify_json(raw)
         if verdicts is not None:
-            return _enforce_contradiction_discipline(verdicts)
+            return _confirm_contradictions(
+                _enforce_contradiction_discipline(verdicts),
+                temperature=temperature,
+            )
 
         _LOG.warning("verify: JSON parse failed (attempt %d/%d)", attempt, attempts)
         if attempt < attempts:
@@ -924,7 +1020,10 @@ def verify_aux_rich(
                 # the judge wrote; the note prefix (added by the caller)
                 # carries the surface attribution.
                 v.location = "body"
-            return _enforce_contradiction_discipline(verdicts)
+            return _confirm_contradictions(
+                _enforce_contradiction_discipline(verdicts),
+                temperature=temperature,
+            )
 
         _LOG.warning(
             "verify: aux (%s) JSON parse failed (attempt %d/%d)",

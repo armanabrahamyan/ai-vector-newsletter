@@ -1,9 +1,15 @@
 name: Daily publish
 
-# Nightly build-and-release. This workflow NEVER touches main directly and
-# NEVER auto-publishes: it runs the full pipeline, promotes via `aiv release`
-# on a release/<date>-issue-<N> branch, and opens a PR. Merging that PR is
-# the ratification, and — because Pages serves docs/ from main — the publish.
+# Nightly build-and-release. This workflow never pushes to main directly: it
+# runs the full pipeline, promotes via `aiv release` on a
+# release/<date>-issue-<N> branch, and opens a PR. Merging that PR is the
+# ratification, and — because Pages serves docs/ from main — the publish.
+#
+# Who merges depends on the AIV_AUTO_PUBLISH_PHASE repository variable
+# (DESIGN.md, Unattended publish). Unset or `shadow` (the default): nobody
+# but a human, and this workflow never publishes. `green_only` /
+# `green_amber`: the workflow merges the PR itself when `aiv merge-check`
+# says yes, and leaves it open for a human on every other day.
 #
 # Contract notes (docs/internal/DESIGN.md):
 # - Canonical = data/released/ on main. The issue number assigned here is a
@@ -159,16 +165,18 @@ jobs:
       - name: Run staging pipeline
         run: aiv run --date "${{ steps.when.outputs.date }}"
 
-      # Unattended-publish gate, SHADOW phase only (rollout phase comes from
-      # the AIV_AUTO_PUBLISH_PHASE repo variable; unset = shadow). `aiv gate`
+      # Unattended-publish gate (rollout phase comes from the
+      # AIV_AUTO_PUBLISH_PHASE repo variable; unset = shadow). `aiv gate`
       # reads staging review.md/verify.json/issue.json and writes
-      # data/staging/<date>/gate.json -- purely for observation this phase.
-      # It never affects whether the PR opens or whether it merges: no
-      # auto-merge logic exists yet. By contract `aiv gate` always exits 0
-      # (the decision lives in gate.json, not the exit code); the `if`
-      # below is belt-and-braces for the case where the gate itself crashes
-      # before it can honour that contract, and it must never fail this job.
-      - name: Publish gate (shadow -- observation only, never blocks)
+      # data/staging/<date>/gate.json. This step only RECORDS the decision:
+      # it never affects whether the PR opens. Acting on it is the
+      # "Merge release PR when the gate allows it" step below. By contract
+      # `aiv gate` always exits 0 (the decision lives in gate.json, not the
+      # exit code); the `if` below is belt-and-braces for the case where
+      # the gate itself crashes before it can honour that contract, and it
+      # must never fail this job. A crashed gate leaves no gate.json, which
+      # the merge step reads as a hold.
+      - name: Publish gate (records the decision, never blocks)
         env:
           AIV_AUTO_PUBLISH_PHASE: ${{ vars.AIV_AUTO_PUBLISH_PHASE }}
         run: |
@@ -417,8 +425,74 @@ jobs:
             --body-file pr_body.md)
           echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
 
-      # Morning email: subject carries the gate's shadow verdict so the day
-      # is triageable from the inbox. Plain smtplib — no third-party mail
+      # The editor's review is staging-only (gitignored, dies with the
+      # runner), but ratification needs it — post it on the PR in full.
+      - name: Post editor review on PR
+        run: |
+          DATE="${{ steps.when.outputs.date }}"
+          REVIEW="data/staging/${DATE}/review.md"
+          if [ ! -f "$REVIEW" ]; then
+            echo "::warning::No review.md in staging — PR opened without an editor review comment."
+            exit 0
+          fi
+          python - "$REVIEW" <<'PY'
+          import sys
+          from pathlib import Path
+
+          raw = Path(sys.argv[1]).read_text()
+          if raw.startswith("---"):
+              raw = raw[raw.index("---", 3) + 3 :].lstrip()
+          Path("review_comment.md").write_text(raw)
+          PY
+          gh pr comment "${{ steps.ids.outputs.branch }}" \
+            --repo "${{ github.repository }}" --body-file review_comment.md
+
+      # Posted here (not right after the gate step) because a PR comment
+      # needs an open PR to attach to -- the body was already built above,
+      # right after the run that produced revisions.jsonl.
+      - name: Post revisions comment on PR
+        if: steps.revisions.outputs.has_comment == 'true'
+        run: |
+          gh pr comment "${{ steps.ids.outputs.branch }}" \
+            --repo "${{ github.repository }}" --body-file revisions_comment.md
+
+      # Unattended publish. `aiv merge-check` exits 0 only when every
+      # condition is positively confirmed: the release was not forced, the
+      # phase is one that acts (shadow never does), gate.json says
+      # auto_merge, and the staged issue is still the one the gate judged.
+      # Any other exit -- a hold, a crash, a missing gate.json -- leaves the
+      # PR open for a human. Runs after the review and revisions comments so
+      # a merged PR still carries them. A merge that GitHub refuses is a
+      # warning, not a failure: the PR is still there to merge by hand.
+      # Anything other than forced == "false" is passed as --forced, so an
+      # empty or unexpected value holds.
+      - name: Merge release PR when the gate allows it
+        id: automerge
+        env:
+          AIV_AUTO_PUBLISH_PHASE: ${{ vars.AIV_AUTO_PUBLISH_PHASE }}
+          PR_URL: ${{ steps.open_pr.outputs.url }}
+        run: |
+          DATE="${{ steps.when.outputs.date }}"
+          FORCED_FLAG="--forced"
+          if [ "${{ steps.release.outputs.forced }}" = "false" ]; then
+            FORCED_FLAG=""
+          fi
+          if aiv merge-check --date "$DATE" $FORCED_FLAG > merge_check.txt 2>&1; then
+            cat merge_check.txt
+            if gh pr merge "$PR_URL" --repo "${{ github.repository }}" --squash --delete-branch; then
+              echo "outcome=merged" >> "$GITHUB_OUTPUT"
+            else
+              echo "::warning::merge-check said yes but the merge failed -- PR left open for a human."
+              echo "outcome=merge_failed" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            cat merge_check.txt
+            echo "outcome=held" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Morning email: subject says whether the issue published itself or is
+      # waiting, and carries the gate's verdict, so the day is triageable
+      # from the inbox. Sent after the merge step so it reports the outcome. Plain smtplib — no third-party mail
       # action ever sees the credential. Skips quietly (never fails the run)
       # when MAIL_APP_PASSWORD is unset.
       - name: Email PR-ready notification
@@ -427,6 +501,7 @@ jobs:
           MAIL_TO: a.abrahamyan@gmail.com
           PR_URL: ${{ steps.open_pr.outputs.url }}
           RELEASE_FORCED: ${{ steps.release.outputs.forced }}
+          MERGE_OUTCOME: ${{ steps.automerge.outputs.outcome }}
           ISSUE_NUM: ${{ steps.ids.outputs.issue_num }}
           DATE: ${{ steps.when.outputs.date }}
         run: |
@@ -461,15 +536,34 @@ jobs:
           msg = EmailMessage()
           forced = os.environ.get("RELEASE_FORCED") == "true"
           prefix = "[THIN] " if forced else ""
-          msg["Subject"] = f"{prefix}AI Vector #{issue_num} ({date}) ready -- {gate_first}"
+          outcome = os.environ.get("MERGE_OUTCOME", "")
+          merge_lines = "merge-check output unavailable"
+          merge_file = Path("merge_check.txt")
+          if merge_file.exists():
+              merge_lines = merge_file.read_text().strip()
+          if outcome == "merged":
+              # The release branch is deleted on merge, so the branch
+              # preview is dead; point at the live page instead.
+              preview = f"https://aivector.day/released/{date}.html"
+              state = "published automatically"
+              headline = f"Issue #{issue_num} for {date} was published automatically."
+              footer = "Nothing to do. To pull it back: aiv unrelease, or revert the merge.\n"
+          else:
+              state = "ready"
+              headline = f"Issue #{issue_num} for {date} is built and waiting."
+              if outcome == "merge_failed":
+                  headline += " The gate allowed an automatic merge but the merge failed."
+              footer = "Merge = publish. Close = skip. Comment /revise <instruction> = fix.\n"
+          msg["Subject"] = f"{prefix}AI Vector #{issue_num} ({date}) {state} -- {gate_first}"
           msg["From"] = to_addr
           msg["To"] = to_addr
           msg.set_content(
-              f"Issue #{issue_num} for {date} is built and waiting.\n\n"
-              f"Preview:  {preview}\n"
+              f"{headline}\n\n"
+              f"Read it:  {preview}\n"
               f"PR:       {pr_url}\n\n"
-              f"Gate (shadow):\n{gate_lines}\n\n"
-              "Merge = publish. Close = skip. Comment /revise <instruction> = fix.\n"
+              f"Gate:\n{gate_lines}\n\n"
+              f"Merge check:\n{merge_lines}\n\n"
+              f"{footer}"
           )
 
           try:
@@ -482,37 +576,6 @@ jobs:
           except Exception as exc:  # never fail the publish flow over email
               print(f"email send failed (non-fatal): {exc}")
           PY
-
-      # The editor's review is staging-only (gitignored, dies with the
-      # runner), but ratification needs it — post it on the PR in full.
-      - name: Post editor review on PR
-        run: |
-          DATE="${{ steps.when.outputs.date }}"
-          REVIEW="data/staging/${DATE}/review.md"
-          if [ ! -f "$REVIEW" ]; then
-            echo "::warning::No review.md in staging — PR opened without an editor review comment."
-            exit 0
-          fi
-          python - "$REVIEW" <<'PY'
-          import sys
-          from pathlib import Path
-
-          raw = Path(sys.argv[1]).read_text()
-          if raw.startswith("---"):
-              raw = raw[raw.index("---", 3) + 3 :].lstrip()
-          Path("review_comment.md").write_text(raw)
-          PY
-          gh pr comment "${{ steps.ids.outputs.branch }}" \
-            --repo "${{ github.repository }}" --body-file review_comment.md
-
-      # Posted here (not right after the gate step) because a PR comment
-      # needs an open PR to attach to -- the body was already built above,
-      # right after the run that produced revisions.jsonl.
-      - name: Post revisions comment on PR
-        if: steps.revisions.outputs.has_comment == 'true'
-        run: |
-          gh pr comment "${{ steps.ids.outputs.branch }}" \
-            --repo "${{ github.repository }}" --body-file revisions_comment.md
 
       # A silent overnight failure is unacceptable: preserve the evidence and
       # make noise. Staging artifacts carry the partial pipeline output.

@@ -1584,8 +1584,8 @@ the top of the PR body under a `[THIN]` title — the run must not die,
 because the merge/close decision belongs to the operator and a failed run
 wastes the night's tokens. Two invariants keep this safe: the PR merge
 remains the only path to publish, and **a forced release must never
-auto-merge** — when auto-merge phases are implemented, the gate (or the
-merge step) must treat `forced=true` as an unconditional hold.
+auto-merge** — `merge_authorisation` (below) treats `forced=true` as an
+unconditional hold, checked before anything else.
 
 **The gate does not change the human path.** `verify` and `review` remain
 advisory exactly as documented above: an `unavailable` verdict from either
@@ -1704,6 +1704,35 @@ a narrower phase's answer is always derivable afterwards from the recorded
 review verdict. An unrecognised value falls back to `shadow` and says so in
 `GateDecision.note` — a typo'd repository variable must never silently
 widen the gate.
+
+### Acting on the decision (2026-11-17)
+
+`decide` answers "may this issue publish unattended?". The workflow asks a
+narrower question — "may I merge the PR I just opened?" — and that adds
+conditions only the workflow knows. They live in one function,
+`gate.merge_authorisation(date, forced=...) -> (allowed, reasons)`, exposed
+as `aiv merge-check`. It is deterministic code and fails closed. It says
+yes only when every one of these is positively confirmed, checked in this
+order:
+
+| Condition | Hold reason when it fails |
+|---|---|
+| The release was not forced | `hold:forced-release` |
+| `gate.json` is readable and is for this date | `hold:gate-unreadable` |
+| The recorded phase is one that acts (not `shadow`) | `hold:shadow-phase` |
+| The phase in force now equals the phase the decision was computed under | `hold:phase-mismatch` |
+| The decision is `auto_merge` | the gate's own `hold_reasons` |
+| The staged `issue.json` still hashes to the value the gate judged | `hold:issue-changed-since-gate` |
+
+On a yes, `daily.yml` squash-merges the release PR with the workflow
+token; `main` requires no review, so no bypass is involved. The step runs
+after the review and revisions comments are posted, so a merged PR still
+carries them. A merge GitHub refuses is a warning: the PR stays open.
+
+`aiv merge-check` exits 0 on yes and non-zero on everything else. That is
+the opposite of `aiv gate` deliberately: `aiv gate` records a decision,
+whereas `merge-check` is the question a shell `if` asks, and a crash must
+read as a hold.
 
 ### Exit-code semantics
 
