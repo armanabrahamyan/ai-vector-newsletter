@@ -97,9 +97,10 @@ the claim, the quoted source span and the judge's own note, and answers
 whether the note itself ends by taking the flag back. It does not re-judge
 the claim. A flag the judge took back is withdrawn to ``supported``. Why: the judge emits its verdict before its
 reasoning, so a judge that argued its way to "supported" inside the note
-had already committed to "contradicted" -- 11 of the 74 contradicted
-claims in the released archive carry a note that concludes the claim is
-supported, and one of them was the only hold reason on 2026-11-13.
+had already committed to "contradicted" -- replayed over the 74
+contradicted claims in the released archive, the confirmation withdraws
+10, each with a note that concludes the claim is supported, and one of
+them was the only hold reason on 2026-11-13.
 
 The two judge prompts are BYTE-IDENTICAL to v0.7, so every first-pass
 judgment is the one v0.7 calibrated; the only thing that can move is a
@@ -728,8 +729,9 @@ SOURCE QUOTE: {source_span}
 FACT-CHECKER'S NOTE: {note}
 
 "stands": false ONLY when the note explicitly ends by taking the flag back:
-it says the claim is supported, is an acceptable rounding or paraphrase, is
-consistent with the source, or is not a contradiction.
+it says the claim is supported, is an acceptable rounding or paraphrase, or
+is consistent with the source. A note that ends "not contradicted, just not
+stated in the source" has NOT said the claim is supported: that stands.
 
 "stands": true in every other case, including when the note describes a
 real difference and never takes it back, when it calls the difference minor

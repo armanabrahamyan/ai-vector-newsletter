@@ -413,7 +413,18 @@ class TestEditContainment:
         after = "Teams on the new runtime now pay 45 percent less for inference."
         assert validate_replacement(
             _sentence_group(before, "take"), after,
-        ) in ("numeral_dropped", "numeral_invented")
+        ) == "numeral_dropped"
+
+    def test_digest_sentence_may_be_recast_whole(self) -> None:
+        """The digest sentence is exempt from the ceiling too; its length
+        budget is enforced by the digest spec check, not here."""
+        before = "Agents entered the link shortener with a forgotten credential."
+        after = "How the agents got into the link shortener remains unexplained."
+        group = _FieldGroup(
+            target=ReviewTarget(kind="digest", digest_index=1, field="digest_sentence"),
+            text=before,
+        )
+        assert validate_replacement(group, after) == ""
 
     def test_summary_is_still_bounded_by_edit_distance(self) -> None:
         """The exemption is for one-sentence fields only. A multi-sentence

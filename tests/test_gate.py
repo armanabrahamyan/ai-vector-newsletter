@@ -977,6 +977,57 @@ class TestMergeAuthorisation:
             False, [gate_mod.MERGE_HOLD_ISSUE_CHANGED],
         )
 
+    def test_decision_for_another_date_holds(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A gate.json copied or left over from a different day is not a
+        decision about today."""
+        _happy_day(FIXED_DATE)
+        self._decide("green_only", monkeypatch)
+        path = gate_mod.gate_path(FIXED_DATE, canonical=False)
+        payload = json.loads(path.read_text())
+        payload["date"] = (FIXED_DATE - _dt.timedelta(days=1)).isoformat()
+        path.write_text(json.dumps(payload))
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_GATE_UNREADABLE],
+        )
+
+    def test_decision_without_a_judged_hash_holds(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No recorded hash means nothing ties the yes to this issue."""
+        _happy_day(FIXED_DATE)
+        self._decide("green_only", monkeypatch)
+        path = gate_mod.gate_path(FIXED_DATE, canonical=False)
+        payload = json.loads(path.read_text())
+        payload["review"]["computed_issue_sha256"] = None
+        path.write_text(json.dumps(payload))
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_ISSUE_CHANGED],
+        )
+
+    def test_issue_deleted_after_the_decision_holds(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _happy_day(FIXED_DATE)
+        self._decide("green_only", monkeypatch)
+        (_paths.staging_dir(FIXED_DATE) / "issue.json").unlink()
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_ISSUE_CHANGED],
+        )
+
+    def test_shadow_decision_holds_even_if_the_phase_was_raised_since(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Raising the variable after the gate ran must not turn a shadow
+        observation into a publish."""
+        _happy_day(FIXED_DATE)
+        gate_mod.run_gate(FIXED_DATE)  # env unset -> recorded as shadow
+        monkeypatch.setenv(gate_mod.PHASE_ENV_VAR, "green_amber")
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_SHADOW],
+        )
+
     def test_cli_exits_zero_only_on_yes(
         self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

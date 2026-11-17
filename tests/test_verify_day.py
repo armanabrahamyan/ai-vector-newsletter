@@ -1056,3 +1056,18 @@ class TestConfirmContradictions:
         monkeypatch.setattr(verify, "_llm_call", lambda *_a, **_k: next(replies))
         out = verify.verify_rich("headline", "body text", "source text")
         assert [v.verdict for v in out] == ["supported"]
+
+    def test_verify_aux_rich_confirms_too(self, monkeypatch) -> None:
+        """A contradiction on the digest or a synthesis is the same hard
+        block, so the aux path must run the same confirmation."""
+        first_pass = json.dumps({"claims": [{
+            "claim": "Muse 1.3 released just six weeks prior",
+            "location": "body", "verdict": "contradicted",
+            "summary_span": "six weeks prior",
+            "source_span": "released September 2nd",
+            "note": "About six weeks, so this is supported.",
+        }]})
+        replies = iter([first_pass, '{"stands": false, "reason": "took it back"}'])
+        monkeypatch.setattr(verify, "_llm_call", lambda *_a, **_k: next(replies))
+        out = verify.verify_aux_rich("digest", "Muse 1.3 came six weeks prior.", "source text")
+        assert [v.verdict for v in out] == ["supported"]
