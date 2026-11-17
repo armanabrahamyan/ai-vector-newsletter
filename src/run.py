@@ -1576,6 +1576,41 @@ def gate(
     sys.exit(0)
 
 
+@app.command(name="merge-check")
+def merge_check(
+    date: Optional[str] = typer.Option(None, metavar="YYYY-MM-DD", help=_DATE_HELP),
+    forced: bool = typer.Option(
+        False, "--forced",
+        help="The release was promoted with --force (a thin issue). A "
+             "forced release never merges unattended.",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", help=_VERB_HELP),
+) -> None:
+    """Say whether the publish workflow may merge today's release PR itself.
+
+    Reads the ``gate.json`` that ``aiv gate`` wrote and applies the
+    conditions only the workflow knows: the release was not forced, the
+    rollout phase is one that acts (``shadow`` never does), and the staged
+    issue is still the one the gate judged.
+
+    **Exit code 0 means yes, and only yes.** Any other exit is a hold --
+    including a crash -- so the workflow's ``if aiv merge-check`` fails
+    closed. This is the opposite convention to ``aiv gate`` on purpose:
+    that command records a decision, this one is the question a shell
+    ``if`` asks. Nothing here merges anything.
+    """
+    _setup_logging(verbose)
+    _load_env()
+    run_date = _resolve_date(date)
+    from src import gate as gate_mod
+
+    allowed, reasons = gate_mod.merge_authorisation(run_date, forced=forced)
+    if allowed:
+        print("merge-check: MERGE")
+        sys.exit(0)
+    print(f"merge-check: HOLD -- {', '.join(reasons)}")
+    sys.exit(3)
+
 @app.command()
 def release(
     date: Optional[str] = typer.Option(None, metavar="YYYY-MM-DD", help=_DATE_HELP),

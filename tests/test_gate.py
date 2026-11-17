@@ -884,6 +884,116 @@ class TestGateCli:
 
 
 # ---------------------------------------------------------------------------
+# Acting on the decision -- may the workflow merge the PR itself?
+#
+# One test per reason the answer is no. A wrong yes here publishes an issue
+# nobody read, so every hold path is pinned, and the yes is asserted only
+# for the one state that earns it.
+# ---------------------------------------------------------------------------
+
+class TestMergeAuthorisation:
+    def _decide(self, phase: str, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Run the gate under ``phase`` and leave that phase in force."""
+        monkeypatch.setenv(gate_mod.PHASE_ENV_VAR, phase)
+        gate_mod.run_gate(FIXED_DATE)
+
+    def test_auto_merge_in_an_acting_phase_may_merge(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _happy_day(FIXED_DATE)
+        self._decide("green_only", monkeypatch)
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (True, [])
+
+    def test_shadow_never_merges_even_on_auto_merge(
+        self, tmp_data_root: Path
+    ) -> None:
+        """Shadow is the default, so this is the test that keeps an unset
+        repository variable from publishing anything."""
+        _happy_day(FIXED_DATE)
+        decision, _ = gate_mod.run_gate(FIXED_DATE)
+        assert decision.decision == "auto_merge"
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_SHADOW],
+        )
+
+    def test_forced_release_never_merges(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _happy_day(FIXED_DATE)
+        self._decide("green_amber", monkeypatch)
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=True) == (
+            False, [gate_mod.MERGE_HOLD_FORCED],
+        )
+
+    def test_missing_gate_json_holds(self, tmp_data_root: Path) -> None:
+        _happy_day(FIXED_DATE)
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_GATE_UNREADABLE],
+        )
+
+    def test_unparseable_gate_json_holds(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _happy_day(FIXED_DATE)
+        self._decide("green_only", monkeypatch)
+        gate_mod.gate_path(FIXED_DATE, canonical=False).write_text("{not json")
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_GATE_UNREADABLE],
+        )
+
+    def test_gate_hold_is_passed_through_with_its_reasons(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _write_issue(FIXED_DATE, _issue())
+        _write_verify(FIXED_DATE, verdict="clean")
+        _write_review(FIXED_DATE, verdict="red")
+        self._decide("green_amber", monkeypatch)
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.HOLD_REVIEW_RED],
+        )
+
+    def test_phase_changed_since_the_decision_holds(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An amber day decided under green_amber must not merge if the
+        phase in force is green_only by the time the workflow acts."""
+        _write_issue(FIXED_DATE, _issue())
+        _write_verify(FIXED_DATE, verdict="clean")
+        _write_review(FIXED_DATE, verdict="amber")
+        self._decide("green_amber", monkeypatch)
+        monkeypatch.setenv(gate_mod.PHASE_ENV_VAR, "green_only")
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_PHASE_MISMATCH],
+        )
+
+    def test_issue_edited_after_the_decision_holds(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _happy_day(FIXED_DATE)
+        self._decide("green_only", monkeypatch)
+        issue_path = _paths.staging_dir(FIXED_DATE) / "issue.json"
+        issue_path.write_text(issue_path.read_text() + "\n")
+        assert gate_mod.merge_authorisation(FIXED_DATE, forced=False) == (
+            False, [gate_mod.MERGE_HOLD_ISSUE_CHANGED],
+        )
+
+    def test_cli_exits_zero_only_on_yes(
+        self, tmp_data_root: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The workflow's `if aiv merge-check` must fail closed: 0 is yes,
+        everything else is hold."""
+        _happy_day(FIXED_DATE)
+        self._decide("green_only", monkeypatch)
+        runner = CliRunner()
+        args = ["merge-check", "--date", FIXED_DATE.isoformat()]
+        yes = runner.invoke(run_mod.app, args)
+        assert (yes.exit_code, "MERGE" in yes.stdout) == (0, True)
+        no = runner.invoke(run_mod.app, [*args, "--forced"])
+        assert no.exit_code != 0
+        assert gate_mod.MERGE_HOLD_FORCED in no.stdout
+
+
+# ---------------------------------------------------------------------------
 # Gate policy v2 -- review.json as the primary review artifact.
 #
 # The whole point of the change: the structured reviewer computes a verdict

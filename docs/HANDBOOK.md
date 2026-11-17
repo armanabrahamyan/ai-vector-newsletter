@@ -86,6 +86,7 @@ costs, and how long it takes — live in §2.
 | Skip the verify pass | add `--no-verify` to `aiv run` |
 | Skip the revision loop | add `--no-revise` to `aiv run` |
 | See why an issue was held | `aiv gate --date YYYY-MM-DD --dry-run` |
+| See whether the workflow would merge the PR itself | `aiv merge-check --date YYYY-MM-DD` |
 | Turn auto-publish off, now | set `AIV_AUTO_PUBLISH_PHASE` to `shadow` (§18.3) |
 | See what would happen | add `--dry-run` to any command |
 | Get more logging | add `--verbose` to any command |
@@ -153,6 +154,7 @@ its own — that's why you can re-run subsets cheaply.
 - **Writes:** `data/staging/<date>/verify.json` and updates `issue.json` with per-story flags
 - **What it does:** For each story, decomposes the headline and body into atomic factual claims and checks each one against the source excerpt. Each claim receives a verdict: `supported`, `unsupported`, `contradicted`, or `unverifiable`. Headline errors are flagged most prominently because readers trust the headline first. Rolls up to a per-story `has_contradiction`, `has_unsupported`, `headline_flagged`, and a report-level verdict of `clean`, `flagged`, or `unavailable`.
 - **Uses LLM.** Cost ≈ $0.02-0.05 (~12 stories × short prompt). Time ≈ 15-30 s.
+- **A `contradicted` verdict gets a second look.** The checker writes its verdict before its reasoning, and sometimes reasons its way back to "supported" in the note while the flag stays set. One short extra call per contradicted claim asks only whether the note ended by taking the flag back; if it did, the claim becomes `supported` and the note says "contradiction withdrawn on second look". It never re-judges the claim, and any failure of that call keeps the flag.
 - **Advisory — never blocks.** If the LLM call fails, the network is unavailable, or `source_excerpts.jsonl` is missing, `verify` writes a `verdict: unavailable` report and the pipeline continues to render. The staging preview shows no flags; the release proceeds normally.
 - **Flags are for Arman's review only.** When flags are present, the staging HTML preview shows a small amber badge on each flagged story: "unsupported claim" or "headline claim flagged." These badges do not appear in the released reader-facing HTML.
 - **When it goes wrong:** `verify.json` will say `unavailable` with a note. To re-run it alone: `aiv run --stage verify --date <date>`. To skip it entirely: `--no-verify`.
@@ -829,6 +831,20 @@ The nightly workflow builds the issue, promotes it on a
 | `green_only` | `green` | Acts on `auto_merge`. |
 | `green_amber` | `green`, `amber` | Acts on `auto_merge`. The end state. |
 
+**How the workflow acts.** After the PR is open and the review is posted
+on it, the workflow runs `aiv merge-check`. It says yes only when all of
+these hold: the release was not forced (a thin issue never merges itself),
+the phase is `green_only` or `green_amber`, `gate.json` says `auto_merge`,
+and the staged issue is still byte-for-byte the one the gate judged. On a
+yes the workflow squash-merges the PR, which publishes. On anything else —
+a hold, a crash, a missing `gate.json` — the PR stays open for you. The
+morning email subject says which happened: "published automatically" or
+"ready".
+
+```
+aiv merge-check --date YYYY-MM-DD    # exit 0 = would merge; anything else = hold, with the reason
+```
+
 Two things that are true in **every** phase, `shadow` included. First, the
 hard blocks always hold: a contradicted fact-check claim, a verifier that
 could not run, and a review written against a different version of the issue
@@ -1002,7 +1018,9 @@ below it never reach the LLM, so it also spends nothing on them.
 Most RED findings are `text_edit`: the reviewer quoted the sentence and
 wrote the replacement instruction. The reviser applies exactly those, one
 field at a time, behind the code-side validation gate (no invented
-numbers, no dropped links, no rewrite larger than 40% of the field). Three
+numbers, no dropped links, no rewrite larger than 40% of a multi-sentence
+field; a one-sentence field — take, headline, digest sentence — may be
+recast whole but must stay inside its length cap). Three
 ways to run it, from least to most automatic:
 
 ```

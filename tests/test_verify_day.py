@@ -967,3 +967,92 @@ class TestItemHeadersAfterRefetch:
             "Title: Three labs cosign\nPublisher: Latent Space\n\n"
         )
         assert pulse.endswith("Fresh body.")
+
+
+# ---------------------------------------------------------------------------
+# v0.8 (2026-11-17): the contradiction confirmation.
+#
+# A contradicted claim is the publish gate's hard block. The confirmation
+# may lift it in exactly one case -- the judge's own note took the flag back
+# -- so the tests that matter are the ones proving every OTHER outcome keeps
+# the flag, including every way the confirmation call itself can break.
+# ---------------------------------------------------------------------------
+
+class TestConfirmContradictions:
+    @staticmethod
+    def _claim(verdict: str = "contradicted") -> ClaimVerdict:
+        return ClaimVerdict(
+            claim="Muse 1.3 released just six weeks prior",
+            verdict=verdict,
+            location="body",
+            summary_span="Muse 1.3 released just six weeks prior",
+            source_span="Muse 1.3 (released September 2nd)",
+            note="About six weeks, so this is supported.",
+        )
+
+    def _run(self, monkeypatch, reply, claim=None):
+        calls: list[str] = []
+
+        def _fake(prompt, **_kwargs):
+            calls.append(prompt)
+            if isinstance(reply, Exception):
+                raise reply
+            return reply
+
+        monkeypatch.setattr(verify, "_llm_call", _fake)
+        claim = claim or self._claim()
+        verify._confirm_contradictions([claim], temperature=0.0)
+        return claim, calls
+
+    def test_flag_the_judge_took_back_is_withdrawn(self, monkeypatch) -> None:
+        claim, calls = self._run(
+            monkeypatch, '{"stands": false, "reason": "note ends on supported"}',
+        )
+        assert claim.verdict == "supported"
+        assert "withdrawn on second look" in claim.note
+        assert len(calls) == 1
+        # The confirmation sees the judge's note -- that is what it rules on.
+        assert "About six weeks, so this is supported." in calls[0]
+
+    def test_flag_that_stands_is_kept(self, monkeypatch) -> None:
+        claim, _ = self._run(monkeypatch, '{"stands": true, "reason": "x"}')
+        assert claim.verdict == "contradicted"
+
+    @pytest.mark.parametrize("reply", [
+        "not json at all",
+        "{}",
+        '{"stands": "false"}',      # a string is not an explicit false
+        '{"stands": null}',
+        RuntimeError("provider down"),
+    ])
+    def test_every_broken_confirmation_keeps_the_flag(
+        self, monkeypatch, reply
+    ) -> None:
+        """Fail safe: a broken check must never lift the gate's hard block."""
+        claim, _ = self._run(monkeypatch, reply)
+        assert claim.verdict == "contradicted"
+
+    @pytest.mark.parametrize("verdict", ["supported", "unsupported", "unverifiable"])
+    def test_other_verdicts_are_never_touched_or_paid_for(
+        self, monkeypatch, verdict
+    ) -> None:
+        claim, calls = self._run(
+            monkeypatch, '{"stands": false}', claim=self._claim(verdict),
+        )
+        assert claim.verdict == verdict
+        assert calls == []
+
+    def test_verify_rich_confirms_after_the_first_pass(self, monkeypatch) -> None:
+        """Wiring: the first-pass contradiction reaches the confirmation and
+        its answer is what the caller sees."""
+        first_pass = json.dumps({"claims": [{
+            "claim": "Muse 1.3 released just six weeks prior",
+            "location": "body", "verdict": "contradicted",
+            "summary_span": "six weeks prior",
+            "source_span": "released September 2nd",
+            "note": "About six weeks, so this is supported.",
+        }]})
+        replies = iter([first_pass, '{"stands": false, "reason": "took it back"}'])
+        monkeypatch.setattr(verify, "_llm_call", lambda *_a, **_k: next(replies))
+        out = verify.verify_rich("headline", "body text", "source text")
+        assert [v.verdict for v in out] == ["supported"]

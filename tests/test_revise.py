@@ -37,6 +37,7 @@ from src.models import ReviewFinding, ReviewReport, ReviewTarget
 from src.revise import (
     REVISE_PROMPT_VERSION,
     _FieldGroup,
+    _revise_one_field,
     revise_day,
     revisions_path,
     validate_replacement,
@@ -267,6 +268,16 @@ def _group(
     )
 
 
+def _sentence_group(text: str, field: str) -> _FieldGroup:
+    """A group on one of a story's one-sentence fields (take, headline)."""
+    return _FieldGroup(
+        target=ReviewTarget(
+            kind="story", story_id=STORY_A, section="pulse", field=field,  # type: ignore[arg-type]
+        ),
+        text=text,
+    )
+
+
 # ---------------------------------------------------------------------------
 # The validation gate.
 # ---------------------------------------------------------------------------
@@ -357,6 +368,93 @@ class TestEditContainment:
         assert validate_replacement(
             _group(_BODY_A, findings=[_finding()]), after,
         ) == ""
+
+    def test_take_may_be_recast_whole(self) -> None:
+        """A one-sentence field cannot be recast inside a 40% edit budget,
+        and "recast the sentence" is the reviewer's commonest directive on
+        a take. Taken from the shadow archive (2026-08-24), where the
+        ceiling refused exactly this repair."""
+        before = (
+            "Customer-service agent deployments now require workflow-wide "
+            "policy checks, where single-action guardrails were the standard."
+        )
+        after = (
+            "Workflow-wide policy verification is now the minimum bar for "
+            "customer-service agent compliance."
+        )
+        assert validate_replacement(_sentence_group(before, "take"), after) == ""
+
+    def test_recast_take_over_its_word_cap_is_rejected(self) -> None:
+        """What bounds a recast is the field's own ratified budget."""
+        before = "Knowledge distillation now runs on one GPU."
+        after = " ".join(["word"] * 19) + "."
+        assert validate_replacement(
+            _sentence_group(before, "take"), after,
+        ) == "length_cap_exceeded"
+
+    def test_recast_headline_over_its_cap_is_rejected(self) -> None:
+        before = "Lab ships a faster model"
+        after = " ".join(["word"] * 16)
+        assert validate_replacement(
+            _sentence_group(before, "headline"), after,
+        ) == "length_cap_exceeded"
+
+    def test_over_cap_take_may_be_shortened(self) -> None:
+        """A field already over budget stays revisable as long as the edit
+        does not make it longer -- otherwise it could never be fixed."""
+        before = " ".join(["word"] * 24) + "."
+        after = " ".join(["term"] * 20) + "."
+        assert validate_replacement(_sentence_group(before, "take"), after) == ""
+
+    def test_recast_take_still_answers_to_the_numeral_rules(self) -> None:
+        """Lifting the edit ceiling lifts nothing else: the most dangerous
+        edit class is still refused on a one-sentence field."""
+        before = "Inference costs fell 30 percent for teams on the new runtime."
+        after = "Teams on the new runtime now pay 45 percent less for inference."
+        assert validate_replacement(
+            _sentence_group(before, "take"), after,
+        ) in ("numeral_dropped", "numeral_invented")
+
+    def test_summary_is_still_bounded_by_edit_distance(self) -> None:
+        """The exemption is for one-sentence fields only. A multi-sentence
+        body rewritten wholesale is a different story from the one that was
+        ranked and fact-checked."""
+        after = " ".join(["word"] * 12) + "."
+        assert validate_replacement(
+            _group(_BODY_A, findings=[_finding()]), after,
+        ) == "edit_distance_exceeded"
+
+    def test_over_cap_recast_gets_the_one_length_retry(self) -> None:
+        """An over-cap recast is a length failure, the one kind a model
+        fixes when told the number -- so it gets the same single retry,
+        and the retry prompt names the cap."""
+        group = _sentence_group(
+            "Knowledge distillation now runs on one GPU.", "take",
+        )
+        too_long = " ".join(["word"] * 19) + "."
+        good = "Distillation is now a single-GPU job."
+        prompts: list[str] = []
+
+        def _fake(prompt: str) -> str:
+            prompts.append(prompt)
+            return too_long if len(prompts) == 1 else good
+
+        with patch("src.revise._call_revise_llm", side_effect=_fake):
+            change = _revise_one_field(group, shadow=False)
+        assert (change.status, change.after) == ("applied", good)
+        assert len(prompts) == 2
+        assert "capped at 18 words" in prompts[1]
+
+    def test_over_cap_recast_twice_is_rejected(self) -> None:
+        group = _sentence_group(
+            "Knowledge distillation now runs on one GPU.", "take",
+        )
+        too_long = " ".join(["word"] * 19) + "."
+        with patch("src.revise._call_revise_llm", return_value=too_long):
+            change = _revise_one_field(group, shadow=False)
+        assert (change.status, change.reject_reason) == (
+            "rejected", "length_cap_exceeded",
+        )
 
     def test_short_field_may_be_replaced_outright(self) -> None:
         """The absolute floor exists for exactly this: "Trust, but verify."

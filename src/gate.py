@@ -974,6 +974,66 @@ def read_decision(date: _dt.date, *, canonical: bool = False) -> GateDecision | 
         return None
 
 
+# ---------------------------------------------------------------------------
+# Acting on the decision. ``decide`` answers "may this issue publish
+# unattended?"; this answers the workflow's narrower question, "may I merge
+# the PR I just opened?" -- which adds the conditions only the workflow
+# knows (was the release forced, is this phase one that acts at all, is the
+# issue on disk still the one the gate judged).
+# ---------------------------------------------------------------------------
+
+MERGE_HOLD_FORCED = "hold:forced-release"
+MERGE_HOLD_GATE_UNREADABLE = "hold:gate-unreadable"
+MERGE_HOLD_SHADOW = "hold:shadow-phase"
+MERGE_HOLD_PHASE_MISMATCH = "hold:phase-mismatch"
+MERGE_HOLD_ISSUE_CHANGED = "hold:issue-changed-since-gate"
+
+
+def merge_authorisation(
+    date: _dt.date, *, forced: bool
+) -> tuple[bool, list[str]]:
+    """Whether the workflow may merge the release PR without a human.
+
+    Returns ``(True, [])`` only when every condition below is positively
+    confirmed; otherwise ``(False, reasons)``. Fails closed, like `decide`:
+    anything unreadable or unexpected is a hold. Never raises.
+
+    The conditions, in the order they are checked:
+
+    1. The release was not forced. A thin issue promoted with ``--force``
+       never auto-merges, in any phase (DESIGN.md, Unattended publish).
+    2. ``gate.json`` for this date is readable and is about this date.
+    3. The recorded phase is one that acts. ``shadow`` records and does
+       nothing, which is what makes it safe to leave as the default.
+    4. The phase in force now is the phase the decision was computed under.
+       ``decide`` evaluated the verdict against one phase's accepted set;
+       acting on it under another would apply a policy nobody computed.
+    5. The decision is ``auto_merge``.
+    6. The staged issue is byte-identical to the one the gate judged. The
+       gate compares the review's hash to the issue's at decision time;
+       this re-checks it at merge time, so nothing that touched the draft
+       in between can ride a stale yes.
+    """
+    try:
+        if forced:
+            return False, [MERGE_HOLD_FORCED]
+        decision = read_decision(date)
+        if decision is None or decision.date != date:
+            return False, [MERGE_HOLD_GATE_UNREADABLE]
+        if decision.phase == DEFAULT_PHASE:
+            return False, [MERGE_HOLD_SHADOW]
+        if resolve_phase()[0] != decision.phase:
+            return False, [MERGE_HOLD_PHASE_MISMATCH]
+        if decision.decision != "auto_merge":
+            return False, list(decision.hold_reasons) or [MERGE_HOLD_GATE_UNREADABLE]
+        judged = decision.review.computed_issue_sha256
+        if not judged or issue_sha256(date) != judged:
+            return False, [MERGE_HOLD_ISSUE_CHANGED]
+        return True, []
+    except Exception:  # noqa: BLE001 -- a broken check is a hold, not a crash
+        return False, [MERGE_HOLD_GATE_UNREADABLE]
+
+
 __all__ = [
     "GATE_VERSION",
     "PHASE_ENV_VAR",
@@ -996,4 +1056,5 @@ __all__ = [
     "write_decision",
     "run_gate",
     "read_decision",
+    "merge_authorisation",
 ]

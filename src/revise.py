@@ -187,6 +187,27 @@ Calibration knob. It and ``_MAX_EDIT_RATIO`` are the two numbers to revisit
 if the shadow run shows rewrites slipping through, or legitimate repairs
 being refused."""
 
+_WHOLE_SENTENCE_FIELDS: frozenset[str] = frozenset(
+    {"take", "headline", "digest_sentence"}
+)
+"""Fields that are ONE sentence, where the edit-distance ceiling does not
+apply (calibrated 2026-11-17 against the shadow archive).
+
+The reviewer's commonest directive on these fields is "recast the
+sentence" -- break a repeated frame, fix a misattribution, drop a bundled
+clause. A one-sentence field cannot be recast inside a 40% edit budget:
+of 294 shadow rejections for ``edit_distance_exceeded``, 232 were on these
+three fields, with a median edit ratio of 1.0 (the whole sentence
+replaced). The ceiling was refusing the repair the review asked for.
+
+What bounds the edit instead is the field's own ratified length budget
+(``_whole_sentence_length_reason``: take and headline caps from
+summarise; the digest sentence is re-validated by the digest spec check),
+plus every other containment rule, which still runs: no numeral dropped
+or invented, no URL dropped, deletion quotes gone. In ``live`` mode the
+touched story is then re-verified and the revised draft re-reviewed, so a
+recast sentence is fact-checked again before anything publishes."""
+
 SEVERITY_RANK: dict[str, int] = {
     "note": 0, "minor": 1, "major": 2, "blocking": 3,
 }
@@ -989,6 +1010,7 @@ def _revise_one_field(
 
     candidate = ""
     failure = ""
+    exhausted_reason = "length_constraint"
     for attempt in range(1, _LENGTH_RETRY_BUDGET + 2):
         prompt = _build_revise_prompt(group, retry_reason=failure)
         try:
@@ -1003,19 +1025,31 @@ def _revise_one_field(
         if not candidate:
             failure = "the response was empty"
             continue
-        if minimum <= len(candidate) <= maximum:
+        if not minimum <= len(candidate) <= maximum:
+            exhausted_reason = "length_constraint"
+            failure = (
+                f"the replacement was {len(candidate)} characters; this field "
+                f"must be between {minimum} and {maximum} characters"
+            )
+        elif _whole_sentence_length_reason(field_name, group.text, candidate):
+            # A recast sentence over its cap is the same fixable failure:
+            # the model can hit a number it is told. Same single retry.
+            max_words, max_chars = _whole_sentence_caps(field_name) or (0, 0)
+            exhausted_reason = "length_cap_exceeded"
+            failure = (
+                f"the replacement was {len(candidate.split())} words and "
+                f"{len(candidate)} characters; this field is capped at "
+                f"{max_words} words and {max_chars} characters"
+            )
+        else:
             break
-        failure = (
-            f"the replacement was {len(candidate)} characters; this field "
-            f"must be between {minimum} and {maximum} characters"
-        )
         _LOG.warning(
             "revise: %s replacement failed the length constraint "
             "(attempt %d): %s", group.key, attempt, failure,
         )
     else:
         return _rejected_change(
-            group, candidate, recommendation, "length_constraint",
+            group, candidate, recommendation, exhausted_reason,
         )
 
     reason = validate_replacement(group, candidate)
@@ -1117,6 +1151,12 @@ def validate_replacement(group: _FieldGroup, candidate: str) -> str:
         absolute floor of ``_MIN_EDIT_ALLOWANCE_TOKENS`` so short fields
         stay revisable). Beyond that it is a rewrite, and the story is no
         longer the one that was ranked, summarised, and fact-checked.
+        One-sentence fields (take, headline, digest sentence) are exempt:
+        recasting the sentence is the repair. They answer to
+        ``length_cap_exceeded`` instead.
+    ``length_cap_exceeded``
+        A recast take or headline is over its ratified word or character
+        cap and longer than the text it replaces.
     ``url_dropped``
         A source URL that was in the text is gone. A dropped link is a
         dropped attribution.
@@ -1135,15 +1175,24 @@ def validate_replacement(group: _FieldGroup, candidate: str) -> str:
             return "deletion_quote_survived"
 
     # --- containment: the edit must stay small ---------------------------
-    before_tokens = _tokenise(before)
-    after_tokens = _tokenise(after)
-    distance = _token_edit_distance(before_tokens, after_tokens)
-    allowance = max(
-        _MIN_EDIT_ALLOWANCE_TOKENS,
-        math.floor(_MAX_EDIT_RATIO * len(before_tokens)),
-    )
-    if distance > allowance:
-        return "edit_distance_exceeded"
+    # One-sentence fields are bounded by their own length budget instead
+    # (see ``_WHOLE_SENTENCE_FIELDS``); every other field by edit distance.
+    if group.target.field in _WHOLE_SENTENCE_FIELDS:
+        length_reason = _whole_sentence_length_reason(
+            group.target.field, before, after
+        )
+        if length_reason:
+            return length_reason
+    else:
+        before_tokens = _tokenise(before)
+        after_tokens = _tokenise(after)
+        distance = _token_edit_distance(before_tokens, after_tokens)
+        allowance = max(
+            _MIN_EDIT_ALLOWANCE_TOKENS,
+            math.floor(_MAX_EDIT_RATIO * len(before_tokens)),
+        )
+        if distance > allowance:
+            return "edit_distance_exceeded"
 
     # --- every pre-existing URL survives ---------------------------------
     for url in _URL_RE.findall(before):
@@ -1160,6 +1209,45 @@ def validate_replacement(group: _FieldGroup, candidate: str) -> str:
         return "numeral_invented"
 
     return ""
+
+
+def _whole_sentence_length_reason(field_name: str, before: str, after: str) -> str:
+    """Length budget for a recast one-sentence field.
+
+    Returns ``""`` or ``"length_cap_exceeded"``. The caps are summarise's
+    ratified ones, read from there so the two stages cannot drift apart.
+    A replacement over the cap is refused only when it is also LONGER than
+    the text it replaces: a field that was already over budget stays
+    revisable as long as the edit does not make it worse. The digest
+    sentence has no cap here -- ``_spec_violation_reason`` re-runs the
+    digest spec on it.
+    """
+    caps = _whole_sentence_caps(field_name)
+    if caps is None:
+        return ""
+    max_words, max_chars = caps
+    words_before, words_after = len(before.split()), len(after.split())
+    if words_after > max_words and words_after > words_before:
+        return "length_cap_exceeded"
+    if len(after) > max_chars and len(after) > len(before):
+        return "length_cap_exceeded"
+    return ""
+
+
+def _whole_sentence_caps(field_name: str) -> tuple[int, int] | None:
+    """``(max words, max characters)`` for a capped one-sentence field, or
+    ``None`` when the field has no cap enforced here."""
+    from src.summarise import (  # lazy: heavy module
+        _HEADLINE_MAX_CHARS,
+        _HEADLINE_MAX_WORDS,
+        _TAKE_MAX_CHARS,
+        _TAKE_MAX_WORDS,
+    )
+
+    return {
+        "take": (_TAKE_MAX_WORDS, _TAKE_MAX_CHARS),
+        "headline": (_HEADLINE_MAX_WORDS, _HEADLINE_MAX_CHARS),
+    }.get(field_name)
 
 
 def _spec_violation_reason(
