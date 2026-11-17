@@ -1,0 +1,104 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-16T21:21:14.545014Z",
+  "computed_verdict": "red",
+  "one_line": "Mostly clean; one blocking investment-style take, two ungrounded takes, minor shape issues.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_2d52eda91b3427e3",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Vendor assurance for frontier models now has to name testers the provider cannot pay or steer.",
+      "fix_kind": "text_edit",
+      "instruction": "The take states a binding requirement as already in force, but the EU rules are only proposed. Rewrite it in present tense as a proposal, e.g. 'The EU's proposed rules would require vendor assurance to name testers the provider cannot pay or steer.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_6fbbaf6666b85f51",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "where each team once handled provider outages itself",
+      "fix_kind": "text_edit",
+      "instruction": "The source says Hugging Face previously picked one provider and returned its error, not that teams handled outages themselves. Rewrite the contrast to match, e.g. 'where a single provider's error once went straight back to the caller.'",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_08a82b1ae8a64ce5",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Penetration-testing budgets can still treat screen-driving agents as weak attackers, with exploitation rates under 12%.",
+      "fix_kind": "text_edit",
+      "instruction": "This reads as a budget recommendation drawn from one preprint's CTF results. Reframe it as a finding about what HackWorld measured, without advising how to size security budgets.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_fb576e7d73d9d796",
+        "section": "currents",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "voice_adherence",
+      "severity": "minor",
+      "quote": "Code and data are public, and the 33.3% saving comes from 227 questions on post-cutoff databases.",
+      "fix_kind": "text_edit",
+      "instruction": "The sentence repeats the 227-question scope already stated earlier in the summary. End on what exists and what it is worth today, without restating the scope.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_97c8fe779dae8cab",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "closing_shape",
+      "severity": "minor",
+      "quote": "Judge agents on repeated runs, and budget for cost tuning first.",
+      "fix_kind": "text_edit",
+      "instruction": "The Pulse body should end on the day's direction in plain editorial prose, not a prescription. Replace this with a sentence on where agent evaluation is heading.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-5-5",
+  "issue_sha256": "c5527abe5c1c3af795a50faa6831e721b2ace4058fa27788277a371fa6022f09",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.)"
+}
