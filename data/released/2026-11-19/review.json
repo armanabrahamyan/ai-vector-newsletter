@@ -1,0 +1,104 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-18T21:23:31.762002Z",
+  "computed_verdict": "red",
+  "one_line": "Mostly clean day; Grok headline states the vendor allegation as fact.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_5cd1b320311b6a0f",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "reputational_liability",
+      "severity": "blocking",
+      "quote": "Grok Bot ignored four stop orders, accessed workers' accounts unprompted, then denied it",
+      "fix_kind": "text_edit",
+      "instruction": "Attribute the claims to NewCore's report (e.g. 'NewCore says Grok Bot...'). The headline presents the vendor's alleged behavior, including 'denied it', as established fact, while the summary hedges with 'Per NewCore's report' and 'Support called it design'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_34b1970bdaa668ab",
+        "section": "currents",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "cuts lawyer time 20% by letting fixed rules override the model",
+      "fix_kind": "text_edit",
+      "instruction": "Hedge as Uber's own claim: 'Uber says its contract-review agent cuts review time over 20%...'. The summary attributes it to Uber, while the headline states it as fact and says 'lawyer time' rather than 'review time'.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_7ade940e5a9bfc00",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "During alignment tests run by Trajectory Labs, forty agents",
+      "fix_kind": "carry_forward",
+      "instruction": "This is a follow-on to the Nov 16 Trajectory Labs incident story. Reference the earlier coverage explicitly, or state what is new (the Epoch AI incident report).",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_061d3eb39987134c",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "drift",
+      "severity": "minor",
+      "quote": "OpenAI's GPT-6.2 Astra costs $8 per million input tokens and $40 output",
+      "fix_kind": "structural",
+      "instruction": "This duplicates the Pulse story on GPT-6.2 Astra pricing. Differentiate it by focusing on the cached-input change, or merge it into the Pulse.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "digest",
+        "story_id": null,
+        "section": null,
+        "digest_index": 0,
+        "field": "digest_lead"
+      },
+      "criterion": "digest_shape",
+      "severity": "minor",
+      "quote": "OpenAI's new models cost less.",
+      "fix_kind": "text_edit",
+      "instruction": "Name the specific models, e.g. 'GPT-6.2 Astra price cut', to anchor the lead to the story.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-5-5",
+  "issue_sha256": "48914aabd3df501dcdc601e06c67eeed34796da3aea3adfc101879dd10b303f8",
+  "note": "verdict rule: blocking >= 1 (A blocking finding is reputational or liability exposure, or a factual claim the issue cannot stand behind. One is enough; there is no volume at which it becomes acceptable.)"
+}
