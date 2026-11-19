@@ -1,0 +1,86 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-19T21:24:22.084249Z",
+  "computed_verdict": "amber",
+  "one_line": "Mostly clean day; weak Pulse sourcing and one overstated Vercel headline.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_edf556c8ec994c68",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "By Anthropic's own account, merged pull requests more than doubled between June and September while reverts fell over 40%.",
+      "fix_kind": "text_edit",
+      "instruction": "The verification flag on this story is misattributed: it concerns Google's index score, not this story. Leave the sentence as is. Check the flag routing upstream.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_5f658beccb599748",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Vercel opens a shared task board where different companies' coding agents coordinate as one team",
+      "fix_kind": "text_edit",
+      "instruction": "The source says agents 'can collaborate as if they were a single harness'. Rewrite the headline to say agents from different vendors share one task board, and drop the literal claim that they coordinate as one team.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_b61cb9dd8bea6977",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "pulse_pick",
+      "severity": "major",
+      "quote": "The source excerpt was unavailable, so the figures are unknown.",
+      "fix_kind": "sourcing",
+      "instruction": "The Pulse story admits it has no source text, so there are no figures behind it. Obtain the OpenAI post and add the actual measurements, or replace the Pulse pick. Also remove the process note from the reader-facing prose.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_2a21d3d68b1e82e6",
+        "section": "currents",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Routing routine agent steps to small models cuts episode cost 75-91% across three benchmarks, a preprint shows.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body's figures. Rewrite it as a position the body does not state, for example what this means for how agent cost is budgeted.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-5-5",
+  "issue_sha256": "845723c83ab93ea2f205b9875be309cdd61d3309dfb9a29dc1d8c5cec571c75e",
+  "note": "verdict rule: major >= 1 (A reader would notice this. Ratifiable with notes, and worth a look before it ships.)"
+}
