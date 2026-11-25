@@ -1,0 +1,1565 @@
+{
+  "schema_version": 9,
+  "issue_number": 90,
+  "revision": 0,
+  "date": "2026-11-20",
+  "pulse": {
+    "schema_version": 4,
+    "name": "pulse",
+    "stories": [
+      {
+        "schema_version": 5,
+        "story_id": "c_b61cb9dd8bea6977",
+        "headline": "OpenAI measures how much coding agents speed up its own AI research",
+        "summary": "OpenAI has published its first measurement of how far coding agents accelerate its own research, finding the gains uneven: strong on some tasks, weak on others, hence the \"jagged frontier\". The source excerpt was unavailable, so the figures are unknown. The direction is toward task-by-task accounting of what agents can do inside a research pipeline, and away from a single headline number.",
+        "take": "OpenAI has now published measured agent speedups inside its own research, moving beyond benchmark scores as evidence.",
+        "take_route": "R1",
+        "source_urls": [
+          "https://openai.com/index/research-acceleration-jagged-frontier"
+        ],
+        "prior_coverage_ref": null,
+        "signal": "read",
+        "verification": {
+          "schema_version": 1,
+          "story_id": "c_b61cb9dd8bea6977",
+          "prompt_version": "v0.8",
+          "claims": [
+            {
+              "schema_version": 1,
+              "claim": "OpenAI measures how much coding agents speed up its own AI research",
+              "verdict": "unverifiable",
+              "location": "headline",
+              "summary_span": "OpenAI measures how much coding agents speed up its own AI research",
+              "source_span": "",
+              "note": "Source excerpt is empty; nothing to check against."
+            },
+            {
+              "schema_version": 1,
+              "claim": "OpenAI has published its first measurement of how far coding agents accelerate its own research",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "OpenAI has published its first measurement of how far coding agents accelerate its own research",
+              "source_span": "",
+              "note": "Source excerpt is empty; the 'first' claim cannot be checked."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The gains are uneven: strong on some tasks, weak on others",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "finding the gains uneven: strong on some tasks, weak on others",
+              "source_span": "",
+              "note": "Source excerpt is empty."
+            },
+            {
+              "schema_version": 1,
+              "claim": "The uneven gains are described as the \"jagged frontier\"",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "hence the \"jagged frontier\"",
+              "source_span": "",
+              "note": "Source excerpt is empty; the terminology cannot be confirmed."
+            },
+            {
+              "schema_version": 1,
+              "claim": "OpenAI has now published measured agent speedups inside its own research",
+              "verdict": "unverifiable",
+              "location": "body",
+              "summary_span": "OpenAI has now published measured agent speedups inside its own research, moving beyond benchmark scores as evidence.",
+              "source_span": "",
+              "note": "Source excerpt is empty; the claim cannot be confirmed or denied."
+            }
+          ],
+          "has_contradiction": false,
+          "has_unsupported": false,
+          "headline_flagged": false
+        }
+      }
+    ],
+    "intro_lead": null,
+    "intro_body": null,
+    "synthesis": null
+  },
+  "sections": [
+    {
+      "schema_version": 4,
+      "name": "big_picture",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_edf556c8ec994c68",
+          "headline": "Anthropic lets Claude Code changes merge with no human approval when the risk is low",
+          "summary": "Anthropic's Claude Code team routes human review by risk: none for documentation or flagged internal features, one approver for medium changes, two for high, always for CI workflows. By Anthropic's own account, merged pull requests more than doubled between June and September while reverts fell over 40%. When agents write the code, who in your organisation owns the risk tiers?",
+          "take": "Code-review policy now scales human approvals to a change's risk tier, where it once scaled to lines read.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.infoq.com/news/2026/11/claude-code-review/?utm_campaign=infoq_content&utm_source=infoq&utm_medium=feed&utm_term=AI%2C+ML+%26+Data+Engineering"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_edf556c8ec994c68",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Anthropic lets Claude Code changes merge with no human approval when the risk is low",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Anthropic lets Claude Code changes merge with no human approval when the risk is low",
+                "source_span": "Low-risk modifications, such as documentation updates or internal features behind feature flags, may require no human approval.",
+                "note": "Source says low-risk changes may need no human approval; headline compresses this fairly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Anthropic's Claude Code team routes human review by risk",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Anthropic's Claude Code team routes human review by risk",
+                "source_span": "Human involvement depends on the risk associated with a change.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Documentation or flagged internal features need no human review",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "none for documentation or flagged internal features",
+                "source_span": "Low-risk modifications, such as documentation updates or internal features behind feature flags, may require no human approval.",
+                "note": "The source's 'may require' hedge is a minor compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Medium-risk changes need one approver",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "one approver for medium changes",
+                "source_span": "Medium-risk changes require one person",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "High-risk changes need two approvers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "two for high",
+                "source_span": "high-risk modifications need two approvals",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "CI workflows always require human review",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "always for CI workflows",
+                "source_span": "Changes to particularly sensitive areas, including CI workflows, always require human oversight.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Merged pull requests more than doubled between June and September",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "merged pull requests more than doubled between June and September",
+                "source_span": "Between June and September, merged pull requests to the Claude Code repository more than doubled",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Reverts fell over 40%",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reverts fell over 40%",
+                "source_span": "the proportion of changes requiring a revert fell by over 40%",
+                "note": "The source gives a proportion; 'reverts fell' is a loose but acceptable paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The figures are by Anthropic's own account",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "By Anthropic's own account",
+                "source_span": "Anthropic has outlined how the Claude Code team handles code reviews",
+                "note": "The figures come from Anthropic's own description of its process, so the attribution is fair."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Code-review policy now scales human approvals to a change's risk tier, where it once scaled to lines read.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Code-review policy now scales human approvals to a change's risk tier, where it once scaled to lines read.",
+                "source_span": "optimize code review around the risks a change introduces rather than the amount of code a human has personally read",
+                "note": "Matches the source's central idea."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Anthropic's merge and revert figures come from its own team.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Anthropic's merge and revert figures come from its own team",
+                "source_span": "Between June and September, merged pull requests to the Claude Code repository more than doubled, while the proportion of changes requiring a revert fell by over 40%.",
+                "note": "synthesis: The article describes Anthropic's own Claude Code team's process and results, so the figures are self-reported by Anthropic."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google's index score is paired with safety reports.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Google's index score is paired with safety reports",
+                "source_span": "It scored 61 on the Artificial Analysis Intelligence Index",
+                "note": "synthesis: The score is in the excerpt, but no safety reports are mentioned."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Redwood Research questions Google's safety reports.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "safety reports Redwood Research questions",
+                "source_span": "",
+                "note": "synthesis: Redwood Research does not appear in the excerpt, so this cannot be checked."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Google's index score is supplied by the vendor itself.",
+                "verdict": "unsupported",
+                "location": "body",
+                "summary_span": "Both stories rest on numbers the vendor supplied itself",
+                "source_span": "It scored 61 on the Artificial Analysis Intelligence Index",
+                "note": "synthesis: The score is attributed to a third-party index, and the excerpt does not say Google supplied it."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_bdb3e20f2883efcf",
+          "headline": "Google's mid-tier Gemini scores 61 on a key index at $3 per million input tokens",
+          "summary": "Google's Gemini 4 Neon, a middle tier below its larger models, scores 61 on the Artificial Analysis Intelligence Index and costs $3 per million input tokens and $15 output. It is already on Vercel's AI Gateway. Redwood Research says Google's Gemini 4 safety reports for sibling models don't show low loss-of-control risk. When the cheaper tier is good enough, who in your organisation decides it replaces the premium one?",
+          "take": "Coding-agent budgets now have a mid-priced Google tier to test, where only premium models once qualified.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://latent.space/p/ainews-gemini-4-neon-gdm-s-opus-sol-contender/",
+            "https://tldr.tech/ai/2026-11-19",
+            "https://deepmind.google/blog/introducing-gemini-4-neon/"
+          ],
+          "prior_coverage_ref": "c_78eff221e943f9df",
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_bdb3e20f2883efcf",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Google's mid-tier Gemini scores 61 on a key index at $3 per million input tokens",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Google's mid-tier Gemini scores 61 on a key index at $3 per million input tokens",
+                "source_span": "It scored 61 on the Artificial Analysis Intelligence Index and is priced at $3 per million input tokens and $15 per million output tokens.",
+                "note": "Score and price match; 'mid-tier' is not stated in the excerpt but is a minor framing, and the headline's numeric facts are supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini 4 Neon is a middle tier below Google's larger models",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Google's Gemini 4 Neon, a middle tier below its larger models",
+                "source_span": "Google introduced Gemini 4 Neon, a fast, frontier-level model for complex coding, knowledge work, and science tasks.",
+                "note": "Source calls it frontier-level and never describes tier positioning."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini 4 Neon scores 61 on the Artificial Analysis Intelligence Index",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "scores 61 on the Artificial Analysis Intelligence Index",
+                "source_span": "It scored 61 on the Artificial Analysis Intelligence Index",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini 4 Neon costs $3 per million input tokens",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "costs $3 per million input tokens and $15 output",
+                "source_span": "priced at $3 per million input tokens and $15 per million output tokens",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini 4 Neon costs $15 per million output tokens",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "costs $3 per million input tokens and $15 output",
+                "source_span": "$15 per million output tokens",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Gemini 4 Neon is already on Vercel's AI Gateway",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "It is already on Vercel's AI Gateway.",
+                "source_span": "",
+                "note": "Vercel and AI Gateway are not mentioned in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Redwood Research says Gemini 4 safety reports for sibling models don't show low loss-of-control risk",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Redwood Research says Google's Gemini 4 safety reports for sibling models don't show low loss-of-control risk.",
+                "source_span": "",
+                "note": "Redwood Research is not mentioned in the excerpt."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Coding-agent budgets now have a mid-priced Google tier to test, where only premium models once qualified.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Coding-agent budgets now have a mid-priced Google tier to test, where only premium models once qualified.",
+                "source_span": "",
+                "note": "Mostly editorial; the claim that only premium models once qualified isn't checkable from the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Both stories rest on numbers the vendor supplied itself: Anthropic's merge and revert figures come from its own team, and Google's index score is paired with safety reports Redwood Research questions. Leaders are being asked to loosen oversight or switch tiers on thin evidence."
+    },
+    {
+      "schema_version": 4,
+      "name": "hands_on",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_5f658beccb599748",
+          "headline": "Vercel opens a shared task board where different companies' coding agents coordinate as one team",
+          "summary": "Vercel Board, now on all plans, gives agents one shared place to claim tasks, post updates and settle work, via CLI or JavaScript SDK, with two-way Slack and GitHub sync. Vercel says it rebuilt v0's software factory on Board, which now merges over 50% of pull requests. Run `npx skills add vercel/board` on one multi-agent workflow this week and swap it in for your Markdown task file.",
+          "take": "Multi-agent task tracking no longer has to live in a Markdown file each agent keeps privately.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://vercel.com/blog/introducing-vercel-board",
+            "https://vercel.com/changelog/vercel-board-is-now-available"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5f658beccb599748",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Vercel opens a shared task board where different companies' coding agents coordinate as one team",
+                "verdict": "unsupported",
+                "location": "headline",
+                "summary_span": "Vercel opens a shared task board where different companies' coding agents coordinate as one team",
+                "source_span": "Claude Code, Codex, Pi, OpenCode, eve, fx, Mastra, and LangChain can collaborate as if they were a single harness.",
+                "note": "Source says different agent harnesses/tools collaborate as one, not agents from different companies; Board is also described as experimental and built for Vercel's own needs."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel Board is now on all plans",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vercel Board, now on all plans",
+                "source_span": "Vercel Board is now available on all plans.",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Board gives agents one shared place to claim tasks, post updates and settle work",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "gives agents one shared place to claim tasks, post updates and settle work",
+                "source_span": "an agent can claim it, post updates, and record the result",
+                "note": "Paraphrase of source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agents access Board via CLI or JavaScript SDK",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "via CLI or JavaScript SDK",
+                "source_span": "Agents access Board through the Vercel CLI or JavaScript SDK.",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Board has two-way Slack and GitHub sync",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with two-way Slack and GitHub sync",
+                "source_span": "Messages and replies that sync both ways with Slack, GitHub, and other tools",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Vercel rebuilt v0's software factory on Board",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Vercel says it rebuilt v0's software factory on Board",
+                "source_span": "we rebuilt v0's software factory on it",
+                "note": "Stated by Vercel and attributed as such."
+              },
+              {
+                "schema_version": 1,
+                "claim": "v0's software factory now merges over 50% of pull requests",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "which now merges over 50% of pull requests",
+                "source_span": "it now merges over 50% of PRs",
+                "note": "Matches, attributed to Vercel."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Run `npx skills add vercel/board`",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Run `npx skills add vercel/board`",
+                "source_span": "npx skills add vercel/board",
+                "note": "Command matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Multi-agent task tracking no longer has to live in a Markdown file each agent keeps privately.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Multi-agent task tracking no longer has to live in a Markdown file each agent keeps privately.",
+                "source_span": "A single agent can track its work in a Markdown file, but there isn't a purpose-built primitive for tracking tasks",
+                "note": "Consistent with source framing of Board as the shared primitive."
+              },
+              {
+                "schema_version": 1,
+                "claim": "There are five releases in this section.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "All five releases",
+                "source_span": "",
+                "note": "synthesis: Sources cover Vercel Board, Genie ZeroOps, external sandboxes, and two OpenAI SDK releases (3.52/3.53), consistent with five items."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The releases cover coordination, repair, isolation, longer jobs and error handling.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "coordination, repair, isolation, longer jobs and error handling",
+                "source_span": "add 2-hour and 8-hour Responses background windows",
+                "note": "synthesis: Maps to Board (coordination), ZeroOps (repair), sandboxes (isolation), background windows (longer jobs), and Agents session errors as stream events (error handling)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "None of the releases is a capability jump.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "None is a capability jump",
+                "source_span": "",
+                "note": "synthesis: Editorial judgment, though Vercel's claim that Board lets v0's factory merge over 50% of PRs is not contradicted by it."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The evidence for the releases is mostly vendor-reported.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the evidence is mostly vendor-reported",
+                "source_span": "we rebuilt v0's software factory on it, and it now merges over 50% of PRs",
+                "note": "synthesis: Vercel and Databricks figures are self-reported by the vendors."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": true,
+            "headline_flagged": true
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_5e80b3082cd7c037",
+          "headline": "Databricks opens its autonomous pipeline-repair agent to public beta, with fixes sent as pull requests",
+          "summary": "Genie ZeroOps, Databricks' agent for broken data pipelines, is now in public beta. Across 80,000 customer issues in private preview, over half needed company-specific knowledge, so it adds custom instructions and one-click pull requests. It never changes production code without human review. Already on Databricks? Have an admin enable it, then add one custom instruction to filter noisy alerts.",
+          "take": "Pipeline on-call rotations now start from a drafted fix and pull request, not from raw logs.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.databricks.com/blog/genie-zeroops-now-public-beta-autonomous-agent-fixes-data-pipelines-lessons-80000-customer"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_5e80b3082cd7c037",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks opens its autonomous pipeline-repair agent to public beta, with fixes sent as pull requests",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Databricks opens its autonomous pipeline-repair agent to public beta, with fixes sent as pull requests",
+                "source_span": "Today, Genie ZeroOps is available in Public Beta",
+                "note": "Public beta and PR-based fixes are both stated in the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie ZeroOps is now in public beta",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Genie ZeroOps, Databricks' agent for broken data pipelines, is now in public beta.",
+                "source_span": "Today, Genie ZeroOps is available in Public Beta",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Genie ZeroOps is Databricks' agent for broken data pipelines",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Genie ZeroOps, Databricks' agent for broken data pipelines",
+                "source_span": "an autonomous agent that detects, investigates, and resolves data pipeline issues",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Private preview covered 80,000 customer issues",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Across 80,000 customer issues in private preview",
+                "source_span": "ZeroOps observed over 80,000 real customer issues across hundreds of companies",
+                "note": "Over 80,000 rounds to 80,000."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Over half of issues needed company-specific knowledge",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "over half needed company-specific knowledge",
+                "source_span": "over half of issues require organization-specific knowledge to properly triage, rank, and resolve",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ZeroOps adds custom instructions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it adds custom instructions and one-click pull requests",
+                "source_span": "the ability to add custom business instructions",
+                "note": "Stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ZeroOps adds one-click pull requests",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it adds custom instructions and one-click pull requests",
+                "source_span": "one-click PR creation",
+                "note": "Stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "ZeroOps never changes production code without human review",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It never changes production code without human review.",
+                "source_span": "It never changes production code or data without a person reviewing it first.",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "An admin must enable ZeroOps",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Have an admin enable it",
+                "source_span": "your workspace admin can turn it on from the workspace Previews page",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A custom instruction can filter noisy alerts",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "add one custom instruction to filter noisy alerts",
+                "source_span": "Add a custom instruction to filter out unwanted notifications",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "On-call rotations now start from a drafted fix and pull request, not raw logs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Pipeline on-call rotations now start from a drafted fix and pull request, not from raw logs.",
+                "source_span": "it investigates the failure, proposes a fix and can push that fix to a new branch for a pull request",
+                "note": "Consistent with the agent's automatic triggering and proposed fixes."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_ac8b4da9fed8785b",
+          "headline": "Simon Willison's external sandboxes keep coding agents outside and run their code inside",
+          "summary": "Simon Willison and Prime Radiant released three sandbox servers where the agent stays outside and its code runs inside a virtual machine. Each exposes one localhost API that Claude Code, Codex or Pi can call, plus a host allow-list proxy and credential replacement. Already running local models? Point Claude Code at the Quicksand version and try a prompt-injection test.",
+          "take": "Local-model experiments no longer need the agent's own machine as the blast radius for a bad command.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://simonwillison.net/2026/Nov/17/external-sandboxes-for-coding-agents/"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_ac8b4da9fed8785b",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Simon Willison's external sandboxes keep coding agents outside and run their code inside",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Simon Willison's external sandboxes keep coding agents outside and run their code inside",
+                "source_span": "code executed by the agent runs inside a dedicated sandbox while the agent itself lives outside of that sandbox",
+                "note": "Matches the external sandbox pattern described."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Simon Willison and Prime Radiant released three sandbox servers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Simon Willison and Prime Radiant released three sandbox servers where the agent stays outside and its code runs inside a virtual machine.",
+                "source_span": "To demonstrate this pattern we've released three sandbox server implementations",
+                "note": "Worked with Prime Radiant; three implementations released."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agent stays outside and its code runs inside a virtual machine",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "where the agent stays outside and its code runs inside a virtual machine",
+                "source_span": "runs Alpine Linux inside WebAssembly ... bundles QEMU and Alpine Linux",
+                "note": "Sandboxes are VM-like (v86, QEMU, Apple Containers); close enough compression."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each exposes one localhost API",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Each exposes one localhost API that Claude Code, Codex or Pi can call",
+                "source_span": "Each of these implementations offers the same localhost API.",
+                "note": "Directly stated."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Code, Codex or Pi can call the API",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Claude Code, Codex or Pi can call",
+                "source_span": "You can then configure Pi, Claude Code, or Codex to send API calls to that sandbox",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The sandboxes include a host allow-list proxy",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "plus a host allow-list proxy",
+                "source_span": "an optional HTTP/HTTPS allow-list proxy, so you can control exactly which hosts",
+                "note": "Source says optional; omission is minor."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The sandboxes include credential replacement",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "and credential replacement",
+                "source_span": "a credential replacement mechanism to make authenticated API calls without sharing a secret with the agent",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Quicksand version exists for pointing Claude Code at",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Point Claude Code at the Quicksand version",
+                "source_span": "external-sandbox-quicksand is another Python web server",
+                "note": "Quicksand implementation exists; the call to action is not a factual claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Local-model experiments no longer need the agent's own machine as the blast radius for a bad command.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Local-model experiments no longer need the agent's own machine as the blast radius for a bad command.",
+                "source_span": "making it safer to try out local models without worrying that a mistake or prompt injection attack might cause them to take damaging actions on a machine",
+                "note": "Consistent with the stated goal."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9294d8794a5d95ce",
+          "headline": "OpenAI's Python SDK now lets background agent jobs run for up to eight hours",
+          "summary": "OpenAI's Python SDK 3.53.0 adds 2-hour and 8-hour windows for Responses background jobs, so long agent tasks can finish without a babysitting loop. It also adds model identifiers for GPT-6.2 Sol, Astra and Astra Law. Already running long jobs? Upgrade, then move one that you currently chunk or poll into a single 8-hour background call.",
+          "take": "Long agent jobs now get a single eight-hour budget, where teams once stitched together shorter runs.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://github.com/openai/openai-python/releases/tag/v3.53.0"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9294d8794a5d95ce",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python SDK now lets background agent jobs run for up to eight hours",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "OpenAI's Python SDK now lets background agent jobs run for up to eight hours",
+                "source_span": "add 2-hour and 8-hour Responses background windows",
+                "note": "The release adds an 8-hour background window; 'agent jobs' is a plain-English gloss."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python SDK 3.53.0 adds 2-hour and 8-hour windows for Responses background jobs",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI's Python SDK 3.53.0 adds 2-hour and 8-hour windows for Responses background jobs",
+                "source_span": "add 2-hour and 8-hour Responses background windows",
+                "note": "Matches the release notes directly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The windows let long agent tasks finish without a babysitting loop",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "so long agent tasks can finish without a babysitting loop",
+                "source_span": "add 2-hour and 8-hour Responses background windows",
+                "note": "Reasonable paraphrase of the purpose of longer background windows."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SDK 3.53.0 adds a model identifier for GPT-6.2 Sol",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It also adds model identifiers for GPT-6.2 Sol, Astra and Astra Law.",
+                "source_span": "add the GPT-6.2 Sol model identifier",
+                "note": "Listed in the release notes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SDK 3.53.0 adds a model identifier for GPT-6.2 Astra",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It also adds model identifiers for GPT-6.2 Sol, Astra and Astra Law.",
+                "source_span": "add the GPT-6.2 Astra model identifier",
+                "note": "Listed in the release notes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SDK 3.53.0 adds a model identifier for GPT-6.2 Astra Law",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It also adds model identifiers for GPT-6.2 Sol, Astra and Astra Law.",
+                "source_span": "add the GPT-6.2 Astra Law Responses model identifier",
+                "note": "Listed in the release notes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Long agent jobs now get a single eight-hour budget",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Long agent jobs now get a single eight-hour budget, where teams once stitched together shorter runs.",
+                "source_span": "add 2-hour and 8-hour Responses background windows",
+                "note": "The 8-hour window is supported; the 'teams once stitched shorter runs' framing is editorial."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_6dc1ad3dfe11bd92",
+          "headline": "OpenAI's Python SDK now streams beta Agents errors instead of failing them separately",
+          "summary": "OpenAI's Python SDK 3.52.0 delivers beta Agents session errors as stream events, so a failure arrives in the same channel as the output. It also adds pause reasons for schedules, explaining why one stopped. Already streaming agent sessions? Upgrade, then move your error handling from separate calls to the stream.",
+          "take": "Agent session failures now arrive inside the output stream, where handlers once polled a separate error path.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://github.com/openai/openai-python/releases/tag/v3.52.0"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "try",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_6dc1ad3dfe11bd92",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python SDK now streams beta Agents errors instead of failing them separately",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "OpenAI's Python SDK now streams beta Agents errors instead of failing them separately",
+                "source_span": "deliver beta Agents session errors as stream events",
+                "note": "Release note says beta Agents session errors are delivered as stream events; 'instead of separately' is a reasonable paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "OpenAI's Python SDK 3.52.0 delivers beta Agents session errors as stream events",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "OpenAI's Python SDK 3.52.0 delivers beta Agents session errors as stream events",
+                "source_span": "api: deliver beta Agents session errors as stream events (#4281)",
+                "note": "Directly stated in the 3.52.0 release notes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "A failure arrives in the same channel as the output",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "so a failure arrives in the same channel as the output",
+                "source_span": "deliver beta Agents session errors as stream events",
+                "note": "Reasonable plain-English implication of errors being stream events."
+              },
+              {
+                "schema_version": 1,
+                "claim": "SDK 3.52.0 adds pause reasons for schedules",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It also adds pause reasons for schedules",
+                "source_span": "api: add schedule pause reasons (#4278)",
+                "note": "Directly stated in the release notes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Pause reasons explain why a schedule stopped",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "explaining why one stopped",
+                "source_span": "add schedule pause reasons",
+                "note": "Natural paraphrase of the purpose of pause reasons."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Error handling previously used separate calls",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "move your error handling from separate calls to the stream",
+                "source_span": "",
+                "note": "The excerpt does not describe how errors were previously delivered."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent session failures now arrive inside the output stream, where handlers once polled a separate error path.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agent session failures now arrive inside the output stream, where handlers once polled a separate error path.",
+                "source_span": "deliver beta Agents session errors as stream events",
+                "note": "The stream delivery is supported, but the prior polling of a separate error path is not described in the excerpt."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "All five releases are plumbing for agents that already run: coordination, repair, isolation, longer jobs and error handling. None is a capability jump, and the evidence is mostly vendor-reported. Most are small upgrades you can trial on one workflow this week."
+    },
+    {
+      "schema_version": 4,
+      "name": "currents",
+      "stories": [
+        {
+          "schema_version": 5,
+          "story_id": "c_7272ebe32d6ceac1",
+          "headline": "Databricks maps four ways to let AI agents work inside regulated, auditable systems",
+          "summary": "Databricks' forward-deployed engineers sort agent work into four patterns: deterministic controls stay in charge, agents iterate against a deterministic judge, humans own judgement calls, and bounded autonomy runs inside a set envelope. In a reconciliation, the agent investigates the failure; it cannot become the control. Sort your use cases into these four before granting agents authority.",
+          "take": "Agent sign-off in regulated firms now depends on who holds authority at each step, not just model accuracy.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://www.databricks.com/blog/ai-architecture-patterns-regulated-industries"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_7272ebe32d6ceac1",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Databricks maps four ways to let AI agents work inside regulated, auditable systems",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Databricks maps four ways to let AI agents work inside regulated, auditable systems",
+                "source_span": "These four patterns help architects decide where agents can reason, act, and remain subject to controls or human authority.",
+                "note": "Four patterns for agents in regulated, auditable enterprise systems; matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Databricks' forward-deployed engineers sort agent work into four patterns",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Databricks' forward-deployed engineers sort agent work into four patterns",
+                "source_span": "We as Forward Deployed Engineers work at this boundary... four patterns are emerging.",
+                "note": "'Sort' is a fair paraphrase of the source's framework."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Deterministic controls stay in charge",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "deterministic controls stay in charge",
+                "source_span": "The deterministic control still decides whether the reconciliation passed.",
+                "note": "Matches the first pattern."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agents iterate against a deterministic judge",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "agents iterate against a deterministic judge",
+                "source_span": "the agent receives the evidence, diagnoses the problem, corrects its work, and runs through validation again",
+                "note": "Matches the second pattern."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Humans own judgement calls",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "humans own judgement calls",
+                "source_span": "authority must remain with an accountable person",
+                "note": "Matches the third pattern."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Bounded autonomy runs inside a set envelope",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "bounded autonomy runs inside a set envelope",
+                "source_span": "the agent needs to act, but only within an explicit operating envelope",
+                "note": "Matches the fourth pattern."
+              },
+              {
+                "schema_version": 1,
+                "claim": "In a reconciliation, the agent investigates the failure",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "In a reconciliation, the agent investigates the failure",
+                "source_span": "When a reconciliation fails, an agent can gather evidence, inspect lineage and batch status",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The agent cannot become the control",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "it cannot become the control",
+                "source_span": "The agent can investigate the control. It cannot become the control.",
+                "note": "Verbatim match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Agent sign-off in regulated firms now depends on who holds authority at each step, not just model accuracy.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Agent sign-off in regulated firms now depends on who holds authority at each step, not just model accuracy.",
+                "source_span": "",
+                "note": "Editorial position; the source does not discuss sign-off trends, so there is nothing factual to check."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Each item splits agent work into smaller pieces, each with its own cheaper, checkable owner.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Each item here splits agent work into smaller pieces and gives each piece its own cheaper, checkable owner",
+                "source_span": "trains a single calibrated 4B pointer System-1 ... fall back to System-2 when confidence falls below a calibrated threshold",
+                "note": "synthesis: Matches the pattern across the stories: small models, deterministic judges, bounded envelopes."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Small models are among the owners (AnyS1 uses a 4B pointer model).",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "small models",
+                "source_span": "trains a single calibrated 4B pointer System-1 with label smoothing",
+                "note": "synthesis: Directly supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Separate judges are among the owners.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "separate judges",
+                "source_span": "A deterministic judge can test whether the code compiles, schemas conform, data reconciles",
+                "note": "synthesis: Supported by the Databricks piece and by GauntletScore's independent readers."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Text-readable assets are among the owners.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "text-readable assets",
+                "source_span": "UE6 will also store more game assets as text so an LLM can edit them directly.",
+                "note": "synthesis: Supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Bounded envelopes are among the owners.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "bounded envelopes",
+                "source_span": "The answer is bounded autonomy. ... Constrain the operating envelope.",
+                "note": "synthesis: Supported."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Almost all of these items rest on preprints or single-team claims.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Almost all rest on preprints or single-team claims",
+                "source_span": "Submitted on 17 Nov 2026",
+                "note": "synthesis: The papers are preprints and the Databricks piece is a single-team account, so 'almost all' is a fair characterisation."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_17021ef2ae669e67",
+          "headline": "PIPETTE defenders reach near-zero attack success on static attacks and resist adaptive ones",
+          "summary": "Attack success rate in red-teaming does not predict how robust an agent becomes. Two leading reinforcement-learning attackers, RL-Hammer and PISmith, keep rediscovering the same tricks. PIPETTE, an arXiv preprint, rewards attack variety and trains defenders on-policy, reaching near-zero attack success on AgentDojo and ASB while keeping task performance close to the undefended baseline.",
+          "take": "Red-team scorecards now need attack diversity, where raw success rate once stood as the proxy for hardening.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://huggingface.co/papers/2611.24362"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "discuss",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_17021ef2ae669e67",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "PIPETTE defenders reach near-zero attack success on static attacks and resist adaptive ones",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "PIPETTE defenders reach near-zero attack success on static attacks and resist adaptive ones",
+                "source_span": "PIPETTE produces defenders that achieve near-zero attack success rates on static attacks and can withstand strong adaptive attacks",
+                "note": "Matches the abstract, which is itself the authors' own claim."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Attack success rate in red-teaming does not predict how robust an agent becomes",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Attack success rate in red-teaming does not predict how robust an agent becomes.",
+                "source_span": "achieving high ASR during red-teaming does not guarantee robustness gains from subsequent adversarial training",
+                "note": "Fair paraphrase of 'does not guarantee'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "RL-Hammer and PISmith are two leading reinforcement-learning attackers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Two leading reinforcement-learning attackers, RL-Hammer and PISmith",
+                "source_span": "two state-of-the-art RL-based red-teaming methods, RL-Hammer and PISmith",
+                "note": "State-of-the-art paraphrased as leading."
+              },
+              {
+                "schema_version": 1,
+                "claim": "RL-Hammer and PISmith keep rediscovering the same tricks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "keep rediscovering the same tricks",
+                "source_span": "suffer from mode collapse, repeatedly discovering similar attack strategies",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PIPETTE is an arXiv preprint",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "PIPETTE, an arXiv preprint",
+                "source_span": "",
+                "note": "The excerpt is from Hugging Face Daily Papers and does not mention arXiv."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PIPETTE rewards attack variety",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "rewards attack variety",
+                "source_span": "dictionary learning-based reward that encourages broader coverage of attack strategies",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PIPETTE trains defenders on-policy",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "trains defenders on-policy",
+                "source_span": "integrates an on-policy adversarial training pipeline tailored to IPI defense",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PIPETTE reaches near-zero attack success on AgentDojo and ASB",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "reaching near-zero attack success on AgentDojo and ASB",
+                "source_span": "Extensive evaluations across agentic benchmarks (AgentDojo and ASB) demonstrate that PIPETTE produces defenders that achieve near-zero attack success rates on static attacks",
+                "note": "The body omits 'static attacks', but the headline includes it."
+              },
+              {
+                "schema_version": 1,
+                "claim": "PIPETTE keeps task performance close to the undefended baseline",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "keeping task performance close to the undefended baseline",
+                "source_span": "maintaining benign task utility close to that of the undefended baseline",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Red-team scorecards now need attack diversity, where raw success rate once stood as the proxy for hardening.",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "Red-team scorecards now need attack diversity, where raw success rate once stood as the proxy for hardening.",
+                "source_span": "",
+                "note": "Editorial position with nothing factual to check."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_78b845589c4a460a",
+          "headline": "Three AI readers from different providers fact-check text as well as the best single model",
+          "summary": "If this holds, fact-checking AI summaries may not need one strong model. GauntletScore, an arXiv preprint, asks three readers from different providers typed questions, logs each answer in an evidence ledger, and counts a contradiction only when two agree. It scores 79.51 balanced accuracy, level with the best published checker; per-claim predictions and the scoring script are public.",
+          "take": "Grounding checks for AI-written summaries now come with a per-claim evidence trail, where one model's verdict once stood alone.",
+          "take_route": "R2",
+          "source_urls": [
+            "https://arxiv.org/abs/2611.22027"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_78b845589c4a460a",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Three AI readers from different providers fact-check text as well as the best single model",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Three AI readers from different providers fact-check text as well as the best single model",
+                "source_span": "That places it level with the best of them, nimble-v4-max (79.45 from its published dataset scores; the engine's 95% interval, 78.47 to 80.53, contains it).",
+                "note": "Level with the best published checker, which is a single model; three readers is consistent with the source (Readers A and B plus a third)."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GauntletScore is an arXiv preprint",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "GauntletScore, an arXiv preprint",
+                "source_span": "Submitted on 17 Nov 2026",
+                "note": "Source is an arXiv submission."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GauntletScore asks three readers from different providers typed questions",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "asks three readers from different providers typed questions",
+                "source_span": "It puts typed questions to independent readers from different providers",
+                "note": "Three readers is implied by 'two of its three readers'."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GauntletScore logs each answer in an evidence ledger",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "logs each answer in an evidence ledger",
+                "source_span": "records each answer as a measurement in an evidence ledger",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GauntletScore counts a contradiction only when two readers agree",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "counts a contradiction only when two agree",
+                "source_span": "counts a contradiction only when two readers agree",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GauntletScore scores 79.51 balanced accuracy",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "It scores 79.51 balanced accuracy",
+                "source_span": "GauntletScore achieves 79.51 balanced accuracy",
+                "note": "Exact match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GauntletScore is level with the best published checker",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "level with the best published checker",
+                "source_span": "That places it level with the best of them, nimble-v4-max",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Per-claim predictions and the scoring script are public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "per-claim predictions and the scoring script are public",
+                "source_span": "We release per-claim predictions and the scoring script.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Grounding checks for AI-written summaries now come with a per-claim evidence trail",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Grounding checks for AI-written summaries now come with a per-claim evidence trail, where one model's verdict once stood alone.",
+                "source_span": "The engine also records the evidence behind every verdict, which a single model does not.",
+                "note": "The source says the engine records evidence behind every verdict, while single models do not."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_2a21d3d68b1e82e6",
+          "headline": "A small model handles routine agent decisions and cuts cost by up to 91%",
+          "summary": "Early signal that agents needn't call a large model at every step. AnyS1, an arXiv preprint, mines decision points from over 1,000 public skill documents and trains a 4B pointer model to pick routine options, escalating when unsure. Episode cost falls 75-91% across three benchmarks; the SkillDP dataset is public.",
+          "take": "Routing routine agent steps to small models cuts episode cost 75-91% across three benchmarks, a preprint shows.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://huggingface.co/papers/2611.23751"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_2a21d3d68b1e82e6",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A small model handles routine agent decisions and cuts cost by up to 91%",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A small model handles routine agent decisions and cuts cost by up to 91%",
+                "source_span": "trains a single calibrated 4B pointer System-1 ... cutting episode cost by 75-91%",
+                "note": "Small model resolves routine decisions; cost cut up to 91% matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AnyS1 is an arXiv preprint",
+                "verdict": "unverifiable",
+                "location": "body",
+                "summary_span": "AnyS1, an arXiv preprint",
+                "source_span": "",
+                "note": "Excerpt is from Hugging Face Daily Papers and does not mention arXiv or preprint status."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AnyS1 mines decision points from over 1,000 public skill documents",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "mines decision points from over 1,000 public skill documents",
+                "source_span": "AnyS1 mines grounded enumerable decisions across over 1,000 public skills",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "AnyS1 trains a 4B pointer model",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "trains a 4B pointer model to pick routine options",
+                "source_span": "trains a single calibrated 4B pointer System-1",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The model escalates to a large model when unsure",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "escalating when unsure",
+                "source_span": "fall back to System-2 when confidence falls below a calibrated threshold",
+                "note": "Paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Episode cost falls 75-91% across three benchmarks",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Episode cost falls 75-91% across three benchmarks",
+                "source_span": "Across three unseen benchmarks ... cutting episode cost by 75-91%",
+                "note": "Matches."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The SkillDP dataset is public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "the SkillDP dataset is public",
+                "source_span": "smSquirrel/SkillDP",
+                "note": "A dataset citing the paper is listed on the Hub, implying it is public; the excerpt does not state its visibility explicitly."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Routing routine agent steps to small models cuts episode cost 75-91% across three benchmarks, a preprint shows",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Routing routine agent steps to small models cuts episode cost 75-91% across three benchmarks, a preprint shows.",
+                "source_span": "cutting episode cost by 75-91% relative to an uncompiled System-2 agent",
+                "note": "Number and benchmark count match the abstract; the preprint label is a minor unverified detail."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_9064722f6e1186b2",
+          "headline": "A new benchmark tests whether AI can judge engineering designs without running a simulation",
+          "summary": "If this holds, engineering judgement is a gap leaderboards miss. EJBench, an arXiv preprint, draws tasks from battery cold-plate simulations; answers come from converged simulations, not LLM judges. The best of ten frontier models, GPT-6 Astra, scores 0.71, with similar confidence on right and wrong answers. Splits, harness and leaderboard are public.",
+          "take": "Engineering sign-off tests now ask what a model concludes from past runs, where they once scored software operation.",
+          "take_route": "R1",
+          "source_urls": [
+            "https://arxiv.org/abs/2611.21707"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_9064722f6e1186b2",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "A new benchmark tests whether AI can judge engineering designs without running a simulation",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "A new benchmark tests whether AI can judge engineering designs without running a simulation",
+                "source_span": "asks what an engineer would conclude without running a simulation",
+                "note": "Matches the abstract's description of EJBench."
+              },
+              {
+                "schema_version": 1,
+                "claim": "EJBench is an arXiv preprint",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "EJBench, an arXiv preprint",
+                "source_span": "Publisher: arXiv cs.CL",
+                "note": "Paper is posted on arXiv."
+              },
+              {
+                "schema_version": 1,
+                "claim": "EJBench draws tasks from battery cold-plate simulations",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "draws tasks from battery cold-plate simulations",
+                "source_span": "Its tasks come from a conjugate heat transfer design campaign for battery cold plates",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "EJBench answers come from converged simulations, not LLM judges",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "answers come from converged simulations, not LLM judges",
+                "source_span": "Every answer is taken from a converged simulation, not from an LLM judge.",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "The best of ten frontier models is GPT-6 Astra",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "The best of ten frontier models, GPT-6 Astra",
+                "source_span": "The best of ten frontier models, GPT-6 Astra, scores 0.71",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "GPT-6 Astra scores 0.71",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "GPT-6 Astra, scores 0.71",
+                "source_span": "GPT-6 Astra, scores 0.71",
+                "note": "Direct match."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Models show similar confidence on right and wrong answers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "with similar confidence on right and wrong answers",
+                "source_span": "models state almost the same confidence on tasks they get wrong as on tasks they get right",
+                "note": "Paraphrase of the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Splits, harness and leaderboard are public",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Splits, harness and leaderboard are public.",
+                "source_span": "We release the train, validation and test splits, the evaluation harness and the leaderboard.",
+                "note": "Matches the release statement."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Engineering sign-off tests now ask what a model concludes from past runs, where they once scored software operation.",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Engineering sign-off tests now ask what a model concludes from past runs, where they once scored software operation.",
+                "source_span": "Unlike engineering benchmarks that test whether an agent can operate simulation or CAD software, EJBench is software-agnostic",
+                "note": "Consistent with the contrast the source draws; the 'now' framing is mild editorial."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        },
+        {
+          "schema_version": 5,
+          "story_id": "c_34a642603d5ecdd4",
+          "headline": "Epic Games to remove Unreal Engine's visual scripting, citing AI agents, per IEEE Spectrum",
+          "summary": "Claude Code made an orphaned Unreal game, KinForge, playable without AWS servers in four hours of mostly hands-off work, per IEEE Spectrum. Epic's response: Unreal Engine 6 drops Blueprints for text-based Verse, and stores more assets as text. Early signal that engines are being redesigned for agents.",
+          "take": "Engine vendors now have to make project assets readable as text, or AI agents will skip their tools.",
+          "take_route": "R3",
+          "source_urls": [
+            "https://spectrum.ieee.org/epic-games-unreal-engine-ai"
+          ],
+          "prior_coverage_ref": null,
+          "signal": "watch",
+          "verification": {
+            "schema_version": 1,
+            "story_id": "c_34a642603d5ecdd4",
+            "prompt_version": "v0.8",
+            "claims": [
+              {
+                "schema_version": 1,
+                "claim": "Epic Games to remove Unreal Engine's visual scripting, citing AI agents, per IEEE Spectrum",
+                "verdict": "supported",
+                "location": "headline",
+                "summary_span": "Epic Games to remove Unreal Engine's visual scripting, citing AI agents, per IEEE Spectrum",
+                "source_span": "Epic will remove Blueprints in Unreal Engine 6 (UE6). Why? Blame LLMs.",
+                "note": "Blueprints is the visual scripting system; the source ties its removal to LLMs and AI tooling."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Code made an orphaned Unreal game, KinForge, playable without AWS servers",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Claude Code made an orphaned Unreal game, KinForge, playable without AWS servers in four hours of mostly hands-off work",
+                "source_span": "asked it to make KinForge playable without AWS. After four hours of mostly hands-off work he had a build that let players host their own games.",
+                "note": "The game was abandoned after the studio ran out of funding, so 'orphaned' is a fair paraphrase."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Claude Code took four hours of mostly hands-off work",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "in four hours of mostly hands-off work",
+                "source_span": "After four hours of mostly hands-off work he had a build",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Unreal Engine 6 drops Blueprints",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Unreal Engine 6 drops Blueprints for text-based Verse",
+                "source_span": "Epic will remove Blueprints in Unreal Engine 6 (UE6).",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Unreal Engine 6 moves code to text-based Verse",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "drops Blueprints for text-based Verse",
+                "source_span": "moving all code to Verse, a text-based programming language that will replace both Blueprints and Unreal Engine 5’s C++ gameplay framework",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Unreal Engine 6 stores more assets as text",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "stores more assets as text",
+                "source_span": "UE6 will also store more game assets as text so an LLM can edit them directly.",
+                "note": "Matches the source."
+              },
+              {
+                "schema_version": 1,
+                "claim": "Engine vendors must make project assets readable as text, or AI agents will skip their tools",
+                "verdict": "supported",
+                "location": "body",
+                "summary_span": "Engine vendors now have to make project assets readable as text, or AI agents will skip their tools.",
+                "source_span": "UE6 will also store more game assets as text so an LLM can edit them directly.",
+                "note": "This is mostly editorial. The source supports the Epic example, though the 'agents will skip tools' consequence is inferred."
+              }
+            ],
+            "has_contradiction": false,
+            "has_unsupported": false,
+            "headline_flagged": false
+          }
+        }
+      ],
+      "intro_lead": null,
+      "intro_body": null,
+      "synthesis": "Each item here splits agent work into smaller pieces and gives each piece its own cheaper, checkable owner: small models, separate judges, text-readable assets, bounded envelopes. Almost all rest on preprints or single-team claims, so they sit here until someone replicates them."
+    }
+  ],
+  "digest": null,
+  "generated_at": "2026-11-19T21:19:33.331409Z",
+  "prompt_versions": {
+    "rank": "v0.7",
+    "summarise": "v0.24",
+    "pulse": "v0.10"
+  },
+  "notes": "shape: green -- pulse: 1, big_picture: 2, hands_on: 5, currents: 6"
+}
