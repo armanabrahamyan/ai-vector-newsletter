@@ -1,0 +1,104 @@
+{
+  "schema_version": 4,
+  "generated_at": "2026-11-25T21:23:46.872829Z",
+  "computed_verdict": "red",
+  "one_line": "Mostly sound day; a duplicated GitGuardian story and an overstated take need fixes.",
+  "findings": [
+    {
+      "schema_version": 2,
+      "finding_id": "f001",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_5a230fd187b6659c",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "factual_grounding",
+      "severity": "major",
+      "quote": "Local coding agents on a Mac no longer need a smaller, weaker model than the hosted option.",
+      "fix_kind": "text_edit",
+      "instruction": "Rewrite the take to claim only what the source supports: a local model now scores 79.2% on SWE-Bench Verified on a 20GB Mac. Drop the comparison to hosted models.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f002",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_2210b7c8203c6dd5",
+        "section": "pulse",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "drift",
+      "severity": "major",
+      "quote": "Claude Code's \"don't ask again\" button has been writing passwords into files that end up on GitHub",
+      "fix_kind": "structural",
+      "instruction": "The same GitGuardian story appears in Pulse, in Big Picture (c_de05e7f16c6b1176) and in a Big Picture Apiiro story. Remove the duplicate Big Picture story c_de05e7f16c6b1176 or merge it into the Pulse.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f003",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_de05e7f16c6b1176",
+        "section": "big_picture",
+        "digest_index": null,
+        "field": "headline"
+      },
+      "criterion": "section_routing",
+      "severity": "major",
+      "quote": "Claude Code's \"don't ask again\" button has leaked thousands of working passwords onto public GitHub",
+      "fix_kind": "structural",
+      "instruction": "This duplicates the Pulse story on the same GitGuardian finding. Drop it from Big Picture.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f004",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_dad93a986d5df16f",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "summary"
+      },
+      "criterion": "factual_grounding",
+      "severity": "minor",
+      "quote": "Hugging Face's own tests put it at least comparable in informal vibe tests, which Hugging Face says need more validation, to Qwen3.8-27B.",
+      "fix_kind": "text_edit",
+      "instruction": "Untangle this sentence and state the hedge once. For example: Hugging Face's informal tests put it comparable to Qwen3.8-27B, though it says they need more validation.",
+      "echo_of": null
+    },
+    {
+      "schema_version": 2,
+      "finding_id": "f005",
+      "target": {
+        "schema_version": 3,
+        "kind": "story",
+        "story_id": "c_dad93a986d5df16f",
+        "section": "hands_on",
+        "digest_index": null,
+        "field": "take"
+      },
+      "criterion": "take_shape",
+      "severity": "minor",
+      "quote": "Hugging Face's informal tests put a compressed local multimodal model on par with Qwen3.8-27B for coding.",
+      "fix_kind": "text_edit",
+      "instruction": "The take restates the body and overstates the hedged finding as parity. Replace it with a position the body does not state, and keep the informal-testing caveat.",
+      "echo_of": null
+    }
+  ],
+  "dropped_findings": [],
+  "prompt_version": "v1.3.0",
+  "thresholds_version": "v1.0-2026-08-02",
+  "llm_model": "claude-sonnet-5-5",
+  "issue_sha256": "0caf033abdf56bf122daefccb5dd2db34b5cd0969dcad1405f9e9ea689f5cec8",
+  "note": "verdict rule: major >= 3 (Three substantive editorial defects is not three fixes, it is a draft that did not come out right. Re-summarise beats patching.) | 1 finding(s) dropped: malformed shape"
+}

@@ -1,0 +1,1707 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-25T21:23:39.738854Z",
+  "prompt_version": "v0.8",
+  "verdict": "flagged",
+  "verdict_counts": {
+    "supported": 158,
+    "unverifiable": 7,
+    "contradicted": 1,
+    "unsupported": 2
+  },
+  "stories": [
+    {
+      "schema_version": 1,
+      "story_id": "c_2210b7c8203c6dd5",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code's \"don't ask again\" button has been writing passwords into files that end up on GitHub",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Claude Code's \"don't ask again\" button has been writing passwords into files that end up on GitHub",
+          "source_span": "identified 31,088 distinct secrets in Claude Code’s “.claude/settings.local.json” files across 23,276 public GitHub repositories",
+          "note": "Source confirms secrets including SSH passwords saved to the file and found on public GitHub."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Approving a command with \"Yes, and don't ask again\" makes Claude Code save the full command in .claude/settings.local.json",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Approve a command with \"Yes, and don't ask again\" and Claude Code saves the full command, credentials included, in .claude/settings.local.json.",
+          "source_span": "the tool saves an allow rule in .claude/settings.local.json... the saved rule contains the actual command string, including any credentials embedded in it.",
+          "note": "Matches source mechanism."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GitGuardian found 31,088 secrets",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GitGuardian found 31,088 secrets across 23,276 public repositories, 5,343 still valid.",
+          "source_span": "The code security firm identified 31,088 distinct secrets",
+          "note": "Number matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The secrets were across 23,276 public repositories",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GitGuardian found 31,088 secrets across 23,276 public repositories, 5,343 still valid.",
+          "source_span": "across 23,276 public GitHub repositories",
+          "note": "Matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "5,343 secrets were still valid",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "5,343 still valid.",
+          "source_span": "Of those, 5343 were still valid when GitGuardian detected them.",
+          "note": "Matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Docker images leak it too",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Docker images leak it too.",
+          "source_span": "found 613 distinct secrets in Claude Code settings files, 99 of which were valid",
+          "note": "Docker Hub images contained secrets."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Rotate exposed keys, then add the file to .gitignore and .dockerignore",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Rotate exposed keys, then add the file to .gitignore and .dockerignore.",
+          "source_span": "Developers must rotate exposed credentials, remove sensitive configuration files from both Git and Docker build contexts",
+          "note": "Advice is consistent with the source; Apiiro also recommends .gitignore."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Secret scanners tuned to key formats now miss credentials hidden inside the shell commands agents record.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Secret scanners tuned to key formats now miss credentials hidden inside the shell commands agents record.",
+          "source_span": "a scanner tuned to key formats misses it in all of them.",
+          "note": "Matches the InfoQ text and GitGuardian's scanner-miss note."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A convenience button leaked live passwords.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A convenience button leaked live passwords.",
+          "source_span": "Of those, 5343 were still valid when GitGuardian detected them. The exposed credentials include database connection strings, cloud provider tokens, SSH passwords",
+          "note": "digest: The \"don't ask again\" option stores commands containing credentials, and many of the exposed secrets were still valid."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GitGuardian found 31,088 secrets in Claude Code's local settings files.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "31,088 saved in Claude Code's local settings files",
+          "source_span": "identified 31,088 distinct secrets in Claude Code's \".claude/settings.local.json\" files",
+          "note": "digest: The number matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "5,343 of the secrets were working.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "5,343 working secrets",
+          "source_span": "Of those, 5343 were still valid when GitGuardian detected them.",
+          "note": "digest: Valid at detection is paraphrased as working."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The files were in public repositories.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "across public repositories",
+          "source_span": "across 23,276 public GitHub repositories",
+          "note": "digest: Matches the source."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_3353ba54f77cc3a5",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Stripe lets AI agents move money, with approval rules set by the business",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Stripe lets AI agents move money, with approval rules set by the business",
+          "source_span": "we’re adding write access and customizable controls that enable agents to move money on Stripe.",
+          "note": "Source says agents can move money within limits and approval rules the business sets."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Stripe Treasury is already used by 24,000 businesses for read-only agent work",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Stripe Treasury, already used by 24,000 businesses for read-only agent work",
+          "source_span": "More than 24,000 businesses already use Stripe Treasury for agents, giving agents read access to financial data",
+          "note": "'More than 24,000' rounds to 24,000; read access matches read-only."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Stripe Treasury now gives agents write access",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "now gives agents write access",
+          "source_span": "Now, we’re adding write access and customizable controls",
+          "note": "Directly stated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents can make transfers, currency conversion and vendor payments",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "transfers, currency conversion and vendor payments",
+          "source_span": "allow agents to transfer funds, convert currencies, and pay vendors within limits you set",
+          "note": "Matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Refunds, payouts and outbound transfers need human approval by default",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Refunds, payouts and outbound transfers need human approval by default",
+          "source_span": "By default, agent-initiated refunds, payouts, and outbound transfers require human approval.",
+          "note": "Matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent API keys can wave through small ACH transfers, say under $50",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "agent API keys can wave through small ACH transfers, say under $50",
+          "source_span": "an agent could process an ACH transfer under $50 automatically but route larger transfers for approval",
+          "note": "Source gives this as an example for agent API keys."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Payment controls now have to cover software holding its own API key, where they once assumed a human login.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Payment controls now have to cover software holding its own API key, where they once assumed a human login.",
+          "source_span": "You can give an agent its own identity and persistent access to Stripe through an agent API key.",
+          "note": "Agents can hold their own API key identity; the rest is editorial framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Three of these four stories describe agents leaving credentials in unwatched places or acting on them.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Three of these four stories describe agents leaving credentials in places nobody was watching, or acting on them",
+          "source_span": "approving a command permanently makes Claude Code save an allow rule that is the command string itself, API key included, in the project's settings file.",
+          "note": "synthesis: The GitGuardian/Apiiro story and the Stripe agent API key story fit the framing, and 'Three' is just a count of stories, not a name mismatch."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents leave credentials in committed files.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "committed files",
+          "source_span": "it gets committed with everything else.",
+          "note": "synthesis: Claude Code settings.local.json secrets get committed to GitHub."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents leave credentials in saved approvals.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "saved approvals",
+          "source_span": "\"Yes, and don't ask again\" writes the key: approving a command permanently makes Claude Code save an allow rule",
+          "note": "synthesis: Persisted approvals carry the secret."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A payment key is one of the credentials agents act on.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a payment key",
+          "source_span": "You can give an agent its own identity and persistent access to Stripe through an agent API key.",
+          "note": "synthesis: Stripe agent API key matches the 'payment key' description."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The fourth story shows attackers using the same autonomy.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The fourth shows attackers using the same autonomy.",
+          "source_span": "AI agents recently found and exploited a zero-day vulnerability with no human oversight beyond a simple instruction to get root access",
+          "note": "synthesis: Attackers used autonomous agents via Cairn."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_36af70ac63eb8952",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Coding agents are copying developers' secrets into hidden files, and thousands are now on GitHub",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Coding agents are copying developers' secrets into hidden files, and thousands are now on GitHub",
+          "source_span": "Coding Agents Copy Your Secrets to a Hidden File. Thousands Are on GitHub",
+          "note": "The source title says the same thing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Apiiro found coding agents writing API keys and passwords into hidden files",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Apiiro found coding agents writing API keys and passwords into hidden files that then get committed to public GitHub repositories",
+          "source_span": "",
+          "note": "The excerpt names Apiiro only as a page, with no findings, and does not mention API keys or passwords."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hidden files containing secrets get committed to public GitHub repositories",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "hidden files that then get committed to public GitHub repositories, with thousands exposed",
+          "source_span": "Thousands Are on GitHub",
+          "note": "The title supports this."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Thousands of secrets are exposed",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with thousands exposed",
+          "source_span": "Thousands Are on GitHub",
+          "note": "The title supports this."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Boris Cherny is Anthropic's Claude Code head",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Anthropic's Claude Code head Boris Cherny",
+          "source_span": "",
+          "note": "The excerpt does not mention him."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Boris Cherny told Hacker News the team is \"looking into what we can do to prevent this.\"",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "told Hacker News the team is \"looking into what we can do to prevent this.\"",
+          "source_span": "",
+          "note": "The quote does not appear in the excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Coding agents will write secrets into committed files",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Developer credential hygiene now has to assume the coding agent itself will write secrets into committed files.",
+          "source_span": "Coding Agents Copy Your Secrets to a Hidden File. Thousands Are on GitHub",
+          "note": "The title supports the underlying premise."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_282b5cc4e8711121",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Amazon: pen-testing AI agents on Cairn found and exploited an unknown flaw from one instruction",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Amazon: pen-testing AI agents on Cairn found and exploited an unknown flaw from one instruction",
+          "source_span": "AI agents recently found and exploited a zero-day vulnerability with no human oversight beyond a simple instruction to get root access",
+          "note": "Zero-day = unknown flaw; simple instruction matches. Attribution to Amazon is correct."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Cairn is an open source penetration-testing framework",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "agents running on Cairn, an open source penetration-testing framework",
+          "source_span": "Cairn, an open source AI penetration-testing framework",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents were told only to \"obtain shell access\"",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "were told only to \"obtain shell access\" on a university server",
+          "source_span": "gave the agents a list of IP addresses and the goal: “obtain shell access.”",
+          "note": "Source also mentions an IP list, but the goal is the instruction; minor omission."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The target was a university server",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "on a university server",
+          "source_span": "zero-day vulnerability ... on an East Asian university server",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agents found a zero-day in a medical imaging application",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "They found a zero-day in a medical imaging application",
+          "source_span": "the agents discovered a zero-day in an open source medical imaging AI application",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agents took full control",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "took full control",
+          "source_span": "The agents then exploited the vulnerability and gained full control of the system.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Palo Alto Networks counts 25 autonomous operations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Palo Alto Networks separately counts 25 autonomous operations against 19 organisations",
+          "source_span": "the campaign conducted 25 autonomous operations against at least 19 organizations",
+          "note": "Matches; 'at least' dropped, which is acceptable rounding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The 25 operations targeted 19 organisations",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "25 autonomous operations against 19 organisations",
+          "source_span": "against at least 19 organizations",
+          "note": "Acceptable compression of 'at least 19'."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Palo Alto's count is separate from Amazon's finding",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "separately counts",
+          "source_span": "Earlier this month, Palo Alto Networks said hackers used the framework to target organizations",
+          "note": "Distinct report and campaign from Amazon's."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Attackers now discover flaws at agent speed",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Patch deadlines now have to assume attackers discover flaws at agent speed, where they once assumed human pace.",
+          "source_span": "agentic offensive operations are already happening, and defenders should prepare for the speed and persistence these tools enable",
+          "note": "Consistent with Amazon's statement; the rest is editorial."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Amazon's agents found a zero-day.",
+          "verdict": "contradicted",
+          "location": "body",
+          "summary_span": "Amazon's agents found a zero-day.",
+          "source_span": "Amazon said AI agents recently found and exploited a zero-day vulnerability",
+          "note": "digest: The agents were run by hackers, not Amazon; Amazon only reported the finding."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agents were told only to obtain shell access.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Told only to obtain shell access",
+          "source_span": "gave the agents a list of IP addresses and the goal: “obtain shell access.”",
+          "note": "digest: Goal was shell access plus a list of IPs; 'only' is a fair compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agents ran on the Cairn framework.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "agents on the Cairn framework",
+          "source_span": "The agents were running on Cairn, an open source AI penetration-testing framework.",
+          "note": "digest: Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agents found an unknown flaw (zero-day).",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "found an unknown flaw",
+          "source_span": "the agents discovered a zero-day in an open source medical imaging AI application",
+          "note": "digest: Zero-day means an unknown flaw."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agents took over a university server.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "took over a university server",
+          "source_span": "The agents then exploited the vulnerability and gained full control of the system.",
+          "note": "digest: The target was an East Asian university server, and full control means takeover."
+        }
+      ],
+      "has_contradiction": true,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_de05e7f16c6b1176",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Claude Code's \"don't ask again\" button has leaked thousands of working passwords onto public GitHub",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Claude Code's \"don't ask again\" button has leaked thousands of working passwords onto public GitHub",
+          "source_span": "5,343 of them worked when we detected them. - “Yes, and don’t ask again” writes the key",
+          "note": "5,343 valid secrets (credentials, mostly keys/passwords) is thousands; mechanism matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GitGuardian found 31,088 secrets in Claude Code's settings.local.json files on public GitHub",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GitGuardian found 31,088 secrets in Claude Code's settings.local.json files on public GitHub",
+          "source_span": "GitGuardian found 31,088 distinct secrets in Claude Code’s .claude/settings.local.json on public GitHub",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "5,343 of the secrets worked when detected",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "and 5,343 worked when detected",
+          "source_span": "5,343 of them worked when we detected them",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Approving a command with \"Yes, and don't ask again\" saves the command, API key included, to a file",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Approving a command with \"Yes, and don't ask again\" saves the command, API key included, to a file nothing in the repository ignores.",
+          "source_span": "approving a command permanently makes Claude Code save an allow rule that is the command string itself, API key included, in the project’s settings file",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Nothing in the repository ignores the file",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a file nothing in the repository ignores",
+          "source_span": "Claude Code keeps that file out of git on your machine, but nothing in the repository does",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Credential rotation duties now extend to whatever a developer's coding agent saved",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Credential rotation duties now extend to whatever a developer's coding agent saved, beyond what the developer typed.",
+          "source_span": "The second one is the number of credentials that should have been rotated.",
+          "note": "Largely editorial, but consistent with the source's point that agent-saved credentials need rotating."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_f724e3ecc53a994b",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA's Dynamo cuts wasted GPU time in reinforcement learning by routing, caching and recovering rollouts",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "NVIDIA's Dynamo cuts wasted GPU time in reinforcement learning by routing, caching and recovering rollouts",
+          "source_span": "redundant compute work, slow rollouts, weight updates, and worker failures can waste GPU capacity and delay training. NVIDIA Dynamo provides the serving layer to address these constraints",
+          "note": "Matches the source's routing, KV cache reuse and recovery description."
+        },
+        {
+          "schema_version": 1,
+          "claim": "NVIDIA Dynamo now serves as the inference layer for reinforcement learning rollouts",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "NVIDIA Dynamo now serves as the inference layer for reinforcement learning rollouts.",
+          "source_span": "Dynamo sits between rollout orchestration and inference workers.",
+          "note": "Paraphrase of the serving layer role."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Dynamo routes repeated prompts to workers holding cached context",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "It routes repeated prompts to workers holding cached context",
+          "source_span": "Sending these requests to a worker that has cached the prompt avoids repeated processing",
+          "note": "The router balances cache reuse against load, but this is a fair compression."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Dynamo sends only weight changes between updates",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "sends only weight changes between updates",
+          "source_span": "Delta weight transfer reduces the data sent between updates. Instead of moving the full model, it sends a compressed representation of what changed.",
+          "note": "Matches delta weight transfer."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Dynamo reroutes around failed workers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "reroutes around failed workers",
+          "source_span": "Dynamo detects worker loss, directs new requests toward eligible workers",
+          "note": "Matches the recovery description."
+        },
+        {
+          "schema_version": 1,
+          "claim": "H Company reports up to 20% shorter training steps",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "H Company reports up to 20% shorter training steps.",
+          "source_span": "H Company used Dynamo and ModelExpress to reduce average training-step time by up to 20%",
+          "note": "Matches, and is attributed to H Company."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Integrations exist for verl, NeMo RL, Slime and prime-rl",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Integrations exist for verl, NeMo RL, Slime and prime-rl.",
+          "source_span": "Open-source integrations connect Dynamo to existing RL stacks, including verl, NeMo RL, Slime, and prime-rl.",
+          "note": "Direct match."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Rollout serving no longer has to be hand-built inside each training framework; a shared inference layer now handles it.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Rollout serving no longer has to be hand-built inside each training framework; a shared inference layer now handles it.",
+          "source_span": "Requests use the shared serving frontend",
+          "note": "Consistent with Dynamo as a shared serving layer with framework integrations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Dynamo's 20% gain comes from H Company.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Dynamo's 20% from H Company",
+          "source_span": "H Company used Dynamo and ModelExpress to reduce average training-step time by up to 20% and GPU-hours by up to 5%.",
+          "note": "synthesis: Attributed to H Company; \"up to 20%\" is rounded in the summary."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini's 79.2% comes from its makers.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Inkling 2 Mini's 79.2% from its makers",
+          "source_span": "",
+          "note": "synthesis: The Ollama notes state 79.2% on SWE-Bench Verified without saying the makers reported it, and the Hugging Face post says \"More validation is needed\"; attributing it to the makers is not stated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Dynamo 20% and Inkling 79.2% figures are vendor-reported rather than independent.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Most of these gains come from the vendors' own figures",
+          "source_span": "H Company used Dynamo and ModelExpress to reduce average training-step time by up to 20%",
+          "note": "synthesis: The NVIDIA post reports adopter claims, so the vendor-figure framing is fair."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_5a230fd187b6659c",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Ollama now runs a 79%-scoring coding model on a 20GB Mac",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Ollama now runs a 79%-scoring coding model on a 20GB Mac",
+          "source_span": "it still fits on a Mac at about 20GB. It handles text and images, tool calls, and thinking, and scores 79.2% on SWE-Bench Verified",
+          "note": "79.2% rounds to 79%, and about 20GB matches the source. The Ollama support is in this release."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ollama v0.40.17 adds Inkling 2 Mini",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ollama v0.40.17 adds Inkling 2 Mini from Thinking Machines",
+          "source_span": "v0.40.17 Inkling 2 Mini",
+          "note": "The release is v0.40.17 and it features Inkling 2 Mini."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini is from Thinking Machines",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Inkling 2 Mini from Thinking Machines",
+          "source_span": "Inkling 2 Mini from Thinking Machines",
+          "note": "The source names Thinking Machines as the origin."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini is a 26B model (5.4B active)",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a 26B model (5.4B active)",
+          "source_span": "is a 26B parameter model with 5.4B active",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini scores 79.2% on SWE-Bench Verified",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scoring 79.2% on SWE-Bench Verified",
+          "source_span": "scores 79.2% on SWE-Bench Verified",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini is Apple silicon only for now",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Apple silicon only for now",
+          "source_span": "supported on Apple silicon only in this release. PC support will follow in an upcoming release.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Claude Code's deferred tool loading works through ollama launch claude",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Claude Code's deferred tool loading also works through ollama launch claude",
+          "source_span": "ollama launch claude supports Claude Code's deferred tool loading",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "MCP tools load on demand",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "so MCP tools load on demand",
+          "source_span": "MCP tools are loaded when needed instead of all at once",
+          "note": "Paraphrase of the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Local coding agents on a Mac no longer need a smaller, weaker model than the hosted option.",
+          "verdict": "unsupported",
+          "location": "body",
+          "summary_span": "Local coding agents on a Mac no longer need a smaller, weaker model than the hosted option.",
+          "source_span": "scores 79.2% on SWE-Bench Verified",
+          "note": "The source gives only a vendor-reported benchmark score and makes no comparison with hosted models, so parity is asserted as fact without support."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ollama now runs Inkling 2 Mini.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ollama now runs Inkling 2 Mini",
+          "source_span": "ollama run inkling-2-mini",
+          "note": "digest: The release adds the model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini scores 79.2% on SWE-Bench Verified.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "scoring 79.2% on SWE-Bench Verified",
+          "source_span": "scores 79.2% on SWE-Bench Verified",
+          "note": "digest: The figure matches the source. The source does not mark it as self-reported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini runs on Apple silicon Macs.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "on Apple silicon Macs",
+          "source_span": "inkling-2-mini is supported on Apple silicon only in this release.",
+          "note": "digest: The source says Apple silicon is supported, and it also says the model fits on a Mac. 'Macs' is a fair paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini fits in about 20GB on a Mac.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with 20GB",
+          "source_span": "it still fits on a Mac at about 20GB",
+          "note": "digest: The source gives the same memory figure."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": true,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_0d5f3c78e0e5f20f",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "OpenAI's voice model that talks and listens at once is now a model-ID swap on Vercel's AI Gateway",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "OpenAI's voice model that talks and listens at once is now a model-ID swap on Vercel's AI Gateway",
+          "source_span": "GPT-Live 1.1 from OpenAI is now available on AI Gateway. ... an existing GPT-Live integration only needs the new model ID.",
+          "note": "Full-duplex model from OpenAI available on AI Gateway; existing integrations only need the new ID."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-Live 1.1 is full-duplex",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "GPT-Live 1.1 is full-duplex",
+          "source_span": "GPT-Live 1.1 is a full-duplex voice model",
+          "note": "Directly stated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-Live 1.1 listens while it speaks, so callers can interrupt or add detail mid-reply",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "it listens while it speaks, so callers can interrupt or add detail mid-reply",
+          "source_span": "it listens while it speaks and a caller can pause, interrupt, or add detail mid-reply",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-Live 1.1 transcription is more accurate",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Transcription is more accurate",
+          "source_span": "it transcribes speech more accurately",
+          "note": "Source says more accurate than the previous model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GPT-Live 1.1's accent holds steadier across languages",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the accent holds steadier across languages",
+          "source_span": "keeps a more consistent accent and voice across languages",
+          "note": "Paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Existing GPT-Live integrations only need the new ID",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Existing GPT-Live integrations only need the new ID",
+          "source_span": "an existing GPT-Live integration only needs the new model ID",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The new model ID is openai/gpt-live-1.1",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "openai/gpt-live-1.1",
+          "source_span": "Run openai/gpt-live-1.1 by itself",
+          "note": "ID matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Voice agents can now be upgraded by changing one model ID",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Voice agents can now be upgraded by changing one model ID",
+          "source_span": "an existing GPT-Live integration only needs the new model ID",
+          "note": "Supported for GPT-Live integrations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each voice agent upgrade once meant rebuilding the integration",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "where each upgrade once meant rebuilding the integration",
+          "source_span": "",
+          "note": "Source says nothing about past upgrade effort."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_faecb8e1431053b0",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Vercel's AI Gateway now plants tripwire URLs in prompts to catch providers that read your data",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Vercel's AI Gateway now plants tripwire URLs in prompts to catch providers that read your data",
+          "source_span": "AI Gateway now runs canary audits against inference providers to detect when prompt content is read outside the inference path.",
+          "note": "Canary URLs are described as tripwires; plain-English paraphrase."
+        },
+        {
+          "schema_version": 1,
+          "claim": "AI Gateway sends prompts containing unique, unindexed URLs through inference providers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Vercel's AI Gateway now sends prompts containing unique, unindexed URLs through inference providers",
+          "source_span": "Each run sends prompts containing unique, unindexed URLs mapped privately to a provider, model, and run.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Any request to a canary URL triggers an investigation",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "any request to one triggers an investigation",
+          "source_span": "any request to a canary URL triggers an investigation into the provider and model involved",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "An Audited ZDR tier routes only to providers with published independent audits",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "an Audited ZDR (zero data retention) tier routes only to providers with published independent audits",
+          "source_span": "AI Gateway routes and fails over your team's requests only across providers with published audits that meet the bar.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Baseten, Modal and Wafer are launch partners",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Baseten, Modal and Wafer are launch partners",
+          "source_span": "Baseten, Modal, and Wafer are launch partners that have already begun audits",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Launch partner reports are due by 8 December 2026",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "with reports due by 8 December 2026",
+          "source_span": "Launch partner reports are expected to be published by December 8, 2026.",
+          "note": "'Expected' paraphrased as 'due'; acceptable."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Zero-data-retention promises are now tested by independent auditors and tripwire prompts",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Zero-data-retention promises now get tested by independent auditors and tripwire prompts, where contracts once asked buyers for faith.",
+          "source_span": "customers take that commitment on faith.",
+          "note": "Consistent with the source's audits and canary monitoring."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_dad93a986d5df16f",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Thinking Machines' small open model loops its layers to act bigger on a laptop",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Thinking Machines' small open model loops its layers to act bigger on a laptop",
+          "source_span": "some layers are visited in a loop that repeats three times, which makes it work like it had more parameters.",
+          "note": "Looping and local-setup design are supported. 'Open' and 'laptop' are loose paraphrases of local use with llama.cpp and MLX support."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini is a mixture-of-experts model with 3B active parameters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Inkling 2 Mini is a mixture-of-experts model with 3B active parameters.",
+          "source_span": "multimodal Mixture-of-Experts with ~26B physical total and 3B active parameters per token",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Twelve middle layers repeat three times",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Twelve middle layers repeat three times",
+          "source_span": "the 12 middle layers run three times in a loop",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "24 stored layers behave like 48",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "so 24 stored layers behave like 48",
+          "source_span": "the model acts as if it had 48 (6+ 3*12 + 6) logical layers with just 24 physical ones",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hugging Face's tests put it at least comparable to Qwen3.8-27B",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Hugging Face's own tests put it at least comparable in informal vibe tests, which Hugging Face says need more validation, to Qwen3.8-27B.",
+          "source_span": "In our vibe tests, it's at least comparable with Qwen 3.8 27B. More validation is needed",
+          "note": "The hedge is retained, so it is supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini runs through llama.cpp or MLX",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Pull it through llama.cpp or MLX",
+          "source_span": "We ship transformers, llama.cpp, and MLX support.",
+          "note": "Both runtimes are supported."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Hugging Face's informal tests put a compressed local multimodal model on par with Qwen3.8-27B for coding.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Hugging Face's informal tests put a compressed local multimodal model on par with Qwen3.8-27B for coding.",
+          "source_span": "Inkling 2 Mini is a great local coding companion. It leads in FrontierCode v2.0, ties with Qwen3.8-27B on Terminal-Bench 4.0, and trails Qwen on AutomationBench-AA v1.0.6.",
+          "note": "The model is multimodal and local, and it is comparable to Qwen on coding. The vibe-test comparison is broader than coding, but not misleading."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_b013411209391870",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Z.ai's latest coding model reuses the same layers several times per pass to think deeper",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Z.ai's latest coding model reuses the same layers several times per pass to think deeper",
+          "source_span": "a group of weight-shared layers runs for multiple iterations, refining the hidden states from the previous pass. This gives us a deeper network without increasing the parameter count.",
+          "note": "Paraphrases the looped-transformer description; GLM 5.4 is Z.ai's newest model."
+        },
+        {
+          "schema_version": 1,
+          "claim": "GLM 5.4 is Z.ai's first looped transformer",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Z.ai's GLM 5.4 is its first looped transformer",
+          "source_span": "It's their first model to use a looped transformer architecture",
+          "note": "Directly stated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A group of weight-shared layers runs repeatedly, refining hidden states",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a group of weight-shared layers runs repeatedly, refining hidden states without adding parameters",
+          "source_span": "a group of weight-shared layers runs for multiple iterations, refining the hidden states from the previous pass",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The looping adds no parameters",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "without adding parameters",
+          "source_span": "without increasing the parameter count",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Thinking Machines Lab's Inkling 2 Mini runs its middle layers three times per token",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Thinking Machines Lab's Inkling 2 Mini, released three days earlier, runs its middle layers three times per token",
+          "source_span": "running the middle layers of the model three times for every token",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Inkling 2 Mini was released three days before GLM 5.4",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "released three days earlier",
+          "source_span": "Inkling 2 Mini from Thinking Machines Lab on November 20th",
+          "note": "November 20th to the 23rd is three days."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Z.ai plans to open the weights after safety hardening",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Z.ai plans to open the weights after safety hardening",
+          "source_span": "We plan to open-source the model weights responsibly after completing necessary safety hardening.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Access to GLM 5.4 currently needs a Coding Plan subscription",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "for now, access needs its Coding Plan subscription",
+          "source_span": "I had to sign up for their Coding Plan subscription because 5.4 cannot currently be accessed through the regular API.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Looping shared layers lets models reason deeper without growing their parameter count",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Looping shared layers lets models reason deeper without growing their parameter count.",
+          "source_span": "This gives us a deeper network without increasing the parameter count.",
+          "note": "Consistent with the source's description and the Inkling quote on more reasoning."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Items include proofs in Lean",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "proofs in Lean",
+          "source_span": "Our agent teams proved each result using Lean, a formal theorem prover.",
+          "note": "synthesis: DeepMind quantum article uses Lean proofs."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Items include planted credentials",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "planted credentials",
+          "source_span": "assembled a collection of Amazon Web Services access keys, functioning credentials tied to empty AWS accounts",
+          "note": "synthesis: The canaries experiment planted credentials."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Items include motives known by construction",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "motives known by construction",
+          "source_span": "providing verifiable ground truth by construction",
+          "note": "synthesis: Google social reasoning framework assigns hidden motives."
+        },
+        {
+          "schema_version": 1,
+          "claim": "These items sit in the Currents section",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "They sit in Currents",
+          "source_span": "",
+          "note": "synthesis: Newsletter section placement is not in the source excerpt."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each result is one team's, not yet repeated elsewhere",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "each is one team's result so far, not yet repeated elsewhere",
+          "source_span": "",
+          "note": "synthesis: Replication status is not addressed in the sources; this is largely editorial framing."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_4042bb67c59cf95c",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Researcher's 2 million planted secrets show prompts leak through AI routers like OpenRouter",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Researcher's 2 million planted secrets show prompts leak through AI routers like OpenRouter",
+          "source_span": "Researchers planted 2 million digital tripwires in requests sent through a sprawling network of AI services",
+          "note": "Source describes the 2M canaries and OpenRouter as an AI router; leakage was found, with OpenRouter confirming possible exposure."
+        },
+        {
+          "schema_version": 1,
+          "claim": "HD Moore seeded 2 million unique fake credentials and URLs into prompts",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "HD Moore seeded 2 million unique fake credentials and URLs into prompts",
+          "source_span": "HD Moore assembled a collection of Amazon Web Services access keys, functioning credentials tied to empty AWS accounts, passwords for services such as SSH, and unique URLs",
+          "note": "Matches source: 2 million canaries made of credentials and URLs, never used before."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each secret was sent to one provider",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "each sent to one provider",
+          "source_span": "He then seeded each secret into exactly one prompt sent to a single provider.",
+          "note": "Matches source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenRouter has emailed customers that some prompts may have been read",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "OpenRouter has since emailed customers that some prompts may have been read",
+          "source_span": "OpenRouter has sent customers an email notifying them that some of their prompts may have been read.",
+          "note": "Source reports this, via HN and X posts."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Prompts may have been read via MiniMax and three resellers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "via MiniMax and three resellers",
+          "source_span": "planted URLs were accessed whether the prompts were sent to MiniMax directly or through three other resellers: AtlasCloud, Novita, and StreamLake",
+          "note": "Matches source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "OpenRouter removed its Zero Data Retention label from MiniMax endpoints",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "removed its Zero Data Retention label from MiniMax endpoints",
+          "source_span": "OpenRouter has removed a \"Zero Data Retention\" label from MiniMax-model endpoints.",
+          "note": "Matches source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Vendor privacy labels now get checked by tripwire prompts",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Vendor privacy labels now get checked by tripwire prompts, where buyers once accepted a gateway's word.",
+          "source_span": "planted 2 million digital tripwires in requests sent through a sprawling network of AI services to find out what happened to sensitive information",
+          "note": "Editorial framing, but the research did test providers' handling with canaries, and the ZDR label was removed."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_864da5c64280bae8",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google open-sources a test of whether AI assistants can read a user's one-sided story",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Google open-sources a test of whether AI assistants can read a user's one-sided story",
+          "source_span": "We open-source the framework and dataset to encourage future research on user-mediated social reasoning.",
+          "note": "Framework tests social reasoning from subjective user narratives and is open-sourced."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google Research built simulations where a hidden-motive character acts",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google Research built simulations where a hidden-motive character acts, the user's agent consults the assistant, and the true motive is known by construction.",
+          "source_span": "a target agent is assigned a hidden motive and interacts with other agents, including one representing the user.",
+          "note": "Matches the multi-agent simulation setup."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The user's agent consults the assistant",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the user's agent consults the assistant",
+          "source_span": "The user then consults with the evaluated assistant, which must infer the target's hidden motive.",
+          "note": "The agent representing the user consults the assistant."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The true motive is known by construction",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "the true motive is known by construction",
+          "source_span": "providing verifiable ground truth by construction.",
+          "note": "Directly stated."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The framework was applied across 12 models",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Across 12 models",
+          "source_span": "We apply it to 12 LLMs",
+          "note": "Matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Answers swung with how the user framed events",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "answers swung with how the user framed events",
+          "source_span": "models are sensitive to user framing",
+          "note": "Paraphrase of sensitivity to user framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "A 20,000-example dataset is public",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "A 20,000-example dataset and the framework are public.",
+          "source_span": "We open-source the framework and a dataset with over 20K generated examples",
+          "note": "Over 20K rounds to 20,000."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Assistant testing moves beyond absurd-claim traps",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "assistant testing moves beyond absurd-claim traps",
+          "source_span": "Existing evaluations often constrain their scope to edge-cases and overt anomalies, like testing whether models endorse absurd claims",
+          "note": "Source contrasts with prior absurd-claim evaluations."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Advice-assistant testing now has a checkable answer key for everyday motives, where it once covered only absurd claims.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Advice-assistant testing now has a checkable answer key for everyday motives, where it once covered only absurd claims.",
+          "source_span": "Existing evaluations often constrain their scope to edge-cases and overt anomalies, like testing whether models endorse absurd claims",
+          "note": "Ground truth by construction for everyday motives; 'only' is slight compression of 'often'."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_d2c562babfdda91b",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Google DeepMind's agent teams cut quantum fusion simulation costs 11.8-fold, with every result proof-checked",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Google DeepMind's agent teams cut quantum fusion simulation costs 11.8-fold, with every result proof-checked",
+          "source_span": "Our agent teams cut the required computing cost (a metric that combines required qubits and operations) by 11.8×",
+          "note": "The 11.8x cost cut and Lean proofs for each result both match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Google DeepMind's Gemini 4 agent teams cut one fusion calculation's cost 11.8x",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Google DeepMind's Gemini 4 agent teams cut one fusion calculation's cost 11.8x",
+          "source_span": "we used teams of Gemini 4 agents ... Our agent teams cut the required computing cost ... by 11.8×",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Each result was proved in the Lean theorem prover",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "each result was proved in the Lean theorem prover",
+          "source_span": "Our agent teams proved each result using Lean, a formal theorem prover.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Lean library, problem specifications and verified solutions are public on GitHub",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The Lean library, problem specifications and verified solutions are public on GitHub",
+          "source_span": "we are open-sourcing our Lean library, problem specifications, and verified solutions on GitHub",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The results are still too costly for early quantum computers",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "still too costly for early quantum computers",
+          "source_span": "Running these algorithms in scientific simulations would still demand more computational resources than the first error-corrected quantum computers are likely to provide",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Quantum algorithm gains now arrive with machine-checked proofs, where they once rested on hand derivation by specialists.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Quantum algorithm gains now arrive with machine-checked proofs, where they once rested on hand derivation by specialists.",
+          "source_span": "Proof-checked AI search compresses work that once took years of manual design",
+          "note": "Roughly consistent with the source's framing of proof-checked results replacing manual design; 'now arrive' is a mild generalisation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_20022a6375cd289e",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Axiom's AI agents machine-check the longest proof in mathematics, all 15,000 pages of it",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Axiom's AI agents machine-check the longest proof in mathematics, all 15,000 pages of it",
+          "source_span": "automatic verification of a 15,000-page proof of the classification of finite simple groups (CFSG)... widely considered to be the longest mathematical proof ever written by humans",
+          "note": "Source supports the 15,000-page, longest-proof framing."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Axiom Math says its AI swarm formally verified the classification of finite simple groups",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Axiom Math says its AI swarm formally verified the classification of finite simple groups",
+          "source_span": "Axiom Math’s AI swarm was putting the final touches on the automatic verification of a 15,000-page proof of the classification of finite simple groups",
+          "note": "Matches the source; attribution to Axiom is preserved."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The proof was split into about 100 milestones",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "split into about 100 milestones",
+          "source_span": "broke up the statement of the CFSG into about 100 milestones",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The CFSG formalization comprises 43 million lines of code",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "43 million lines of code",
+          "source_span": "compared to CFSG’s 43 million lines of code",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Axiom Math formalized the 7,500-page Stacks project",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "then the 7,500-page Stacks project",
+          "source_span": "concurrent formal verification of the 7,500-page Stacks project",
+          "note": "Matches the source; Stacks came nine days later."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The formal proof caught several mistakes in the human original",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The formal proof also caught several mistakes in the human original.",
+          "source_span": "the formal proof finds and clears up several mistakes in the original human proof",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The Stacks library is open to anyone",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The Stacks library is open to anyone.",
+          "source_span": "anyone or any bot can access the formal Stacks library",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Verifying the proof no longer depends on specialists reading five hundred journal articles by hand",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Checking a proof of this size no longer depends on specialists reading five hundred journal articles by hand.",
+          "source_span": "from more than 500 journal articles written by around 100 authors",
+          "note": "The proof spans more than 500 articles and was verified automatically."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Lean checked a gigantic proof.",
+          "verdict": "unverifiable",
+          "location": "body",
+          "summary_span": "Lean checked a gigantic proof.",
+          "source_span": "",
+          "note": "digest: The excerpt never names Lean as the proof assistant; it only describes automatic formal verification by Axiom Math's AI."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Axiom Math's agents formally verified the classification of finite simple groups.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Axiom Math says its agents formally verified the classification of finite simple groups",
+          "source_span": "Axiom Math’s AI swarm was putting the final touches on the automatic verification of a 15,000-page proof of the classification of finite simple groups",
+          "note": "digest: The excerpt describes an AI swarm completing this verification."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The formal verification caught several mistakes in the human original proof.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "caught several mistakes in the human original",
+          "source_span": "the formal proof finds and clears up several mistakes in the original human proof",
+          "note": "digest: Roney-Dougal states this directly in the excerpt."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_d73c457c17413974",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Ai2 interviewed 17 scientists on where AI agents need guardrails before they run research",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Ai2 interviewed 17 scientists on where AI agents need guardrails before they run research",
+          "source_span": "we interviewed 17 scientists working in the natural, applied, and social sciences about the responsible development of AI agents",
+          "note": "Interview count and topic match; guardrails is a fair paraphrase of safeguards."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ai2 interviewed 17 scientists across natural, applied and social sciences",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Ai2 interviewed 17 scientists across natural, applied and social sciences",
+          "source_span": "we interviewed 17 scientists working in the natural, applied, and social sciences",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ai2 found five dimensions of trust: validation, privacy, objectivity, accountability and transparency",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "found five dimensions of trust: validation, privacy, objectivity, accountability and transparency",
+          "source_span": "we identified five dimensions of scientific trust: validation, privacy, objectivity, accountability, and transparency",
+          "note": "Exact match."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ai2 proposes benchmarks testing whether a literature-review agent misses contradictory evidence",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "benchmarks that test whether a literature-review agent misses contradictory evidence",
+          "source_span": "A literature-review benchmark, for example, could test whether an agent overlooks contradictory evidence",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Ai2 proposes benchmarks testing whether a coding agent opens files outside its authorised scope",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "or a coding agent opens files outside its authorised scope",
+          "source_span": "whether the agent accesses files outside its authorized scope",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The benchmarks remain proposals to test with scientists",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "These remain proposals to test with scientists.",
+          "source_span": "These evaluations remain proposals to develop and test with scientists, rather than established solutions.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent benchmarks for science now get proposed to score research conduct, where they once scored only answer accuracy.",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent benchmarks for science now get proposed to score research conduct, where they once scored only answer accuracy.",
+          "source_span": "We also need ways to assess whether agents follow the standards of responsible conduct of research",
+          "note": "Source proposes conduct-focused benchmarks and says existing safety work focuses elsewhere; the 'once only accuracy' framing is a mild generalisation."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_adce412c6bb588f7",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "A coding agent builds a 3D Blender scene to plan where image subjects go",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "A coding agent builds a 3D Blender scene to plan where image subjects go",
+          "source_span": "A coding agent links each scene instance to its reference, checks the geometry and rendered view against the instruction, and revises the program",
+          "note": "The source describes a simplified 3D scene defined by an executable Blender program, built by a coding agent."
+        },
+        {
+          "schema_version": 1,
+          "claim": "MAGPIE is a research paper",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "MAGPIE, a research paper, has a coding agent write a Blender program",
+          "source_span": "MAGPIE: Agentic Multi-Reference Image Generation via Executable Scene Construction",
+          "note": "The source is a Hugging Face Daily Papers paper page."
+        },
+        {
+          "schema_version": 1,
+          "claim": "MAGPIE has a coding agent write a Blender program placing each reference subject in a simple 3D scene",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "has a coding agent write a Blender program that places each reference subject in a simple 3D scene",
+          "source_span": "represents the intended composition as a simplified 3D scene defined by an executable Blender program",
+          "note": "Matches the source's simplified 3D scene defined by a Blender program."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The agent checks the render against the instruction and revises",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "check the render against the instruction, and revise",
+          "source_span": "checks the geometry and rendered view against the instruction, and revises the program",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "The rendering guides the image generator",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "The rendering then guides the image generator.",
+          "source_span": "The final proxy rendering serves as a visual plan for the image generator.",
+          "note": "Paraphrase of the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "With FLUX, success on DreamOmni2 rises 28.21 percentage points",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "With FLUX, success on DreamOmni2 rises 28.21 percentage points.",
+          "source_span": "With FLUX, it improves overall success on DreamOmni2 by 28.21 percentage points over the original backbone",
+          "note": "The number and the benchmark match the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Multi-subject image layouts now get planned as inspectable 3D scenes",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Multi-subject image layouts now get planned as inspectable 3D scenes, where they once rested on prompt wording.",
+          "source_span": "the planned relationships are not always explicitly instantiated for inspection and refinement before image synthesis",
+          "note": "MAGPIE plans layouts as executable 3D scenes that can be inspected. The 'once rested on prompt wording' framing is editorial."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    },
+    {
+      "schema_version": 1,
+      "story_id": "c_1a0777dd5a560ea5",
+      "prompt_version": "v0.8",
+      "claims": [
+        {
+          "schema_version": 1,
+          "claim": "Perplexity says its annual revenue run rate has hit $1 billion, up fourfold this year",
+          "verdict": "supported",
+          "location": "headline",
+          "summary_span": "Perplexity says its annual revenue run rate has hit $1 billion, up fourfold this year",
+          "source_span": "Perplexity crossed a $1B annual revenue run rate today, CEO Aravind Srinivas told Semafor at a live event. The Information reported previously under $250M at the start of the year",
+          "note": "$1B from under $250M at year start is roughly 4x; the title says up 4x in 2026."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Perplexity's chief executive told Semafor the company crossed a $1B annual revenue run rate",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Perplexity's chief executive told Semafor the company crossed a $1B annual revenue run rate",
+          "source_span": "CEO Aravind Srinivas told Semafor at a live event",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Perplexity's run rate was under $250M in January",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "from under $250M in January, per The Information",
+          "source_span": "The Information reported previously under $250M at the start of the year",
+          "note": "Start of the year is January; attribution to The Information matches."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Computer is Perplexity's agent product",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Computer, its agent product",
+          "source_span": "Computer. September's Automations let it pick up recurring tasks where it left off.",
+          "note": "The source describes Computer as a Perplexity agent product doing recurring tasks."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Computer now offers Teammates for ongoing jobs",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Computer, its agent product, now offers Teammates for ongoing jobs",
+          "source_span": "November's Teammates take on ongoing jobs.",
+          "note": "Matches the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Monitor API sends a webhook when a watched page changes",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "a Monitor API that sends a webhook when a watched page changes",
+          "source_span": "Monitor API. Watch a topic or page and get a webhook when something relevant changes.",
+          "note": "Paraphrase of the source."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Valuation talk of $30-50B rests on unit economics holding",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Valuation talk of $30-50B rests on unit economics holding.",
+          "source_span": "this would roughly mean that Perplexity is now worth $30-50B — if the unit economics hold up.",
+          "note": "Source's own estimate is conditional on unit economics, matching the body."
+        },
+        {
+          "schema_version": 1,
+          "claim": "Agent-product spending now shows up as a billion-dollar revenue line",
+          "verdict": "supported",
+          "location": "body",
+          "summary_span": "Agent-product spending now shows up as a billion-dollar revenue line, where it once looked like a pilot budget.",
+          "source_span": "Perplexity crossed a $1B annual revenue run rate today... with Computer driving some of the growth.",
+          "note": "The source supports a $1B run rate with the agent product driving some growth. The pilot-budget contrast is editorial."
+        }
+      ],
+      "has_contradiction": false,
+      "has_unsupported": false,
+      "headline_flagged": false
+    }
+  ],
+  "note": "verified 18 stories -- factual flags present | digest-bar: digest bullet 2 carries a claim the verifier marked 'contradicted' (story c_282b5cc4e8711121): \"Amazon's agents found a zero-day.\"; digest bullet 4 carries a claim the verifier marked 'unverifiable' (story c_20022a6375cd289e): 'Lean checked a gigantic proof.'"
+}

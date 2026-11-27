@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Vector &mdash; Issue No. 91 &middot; 26 November 2026</title>
+<meta name="description" content="Claude Code&#39;s &#34;don&#39;t ask again&#34; button has been writing passwords into files that end up on GitHub. Issue No. 91 of AI Vector.">
+<meta name="theme-color" content="#faf9f5">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="mask-icon" href="../favicon.svg" color="#3b352d">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  --paper:oklch(0.987 0.004 95);--paper-2:oklch(0.965 0.006 90);
+  /* --ink-3 is 0.55, NOT the palette's 0.56. Measured on --paper, 0.56 gives
+     4.49:1 -- a hundredth under the 4.5:1 AA floor for normal text, and the
+     dateline, caveats and footer are all normal text at 11px. 0.55 gives
+     4.68:1. Held deliberately; see the colour note in READING_EXPERIENCE.md. */
+  --ink:oklch(0.255 0.012 60);--ink-2:oklch(0.46 0.012 62);--ink-3:oklch(0.55 0.010 66);
+  --line:oklch(0.905 0.006 80);--line-2:oklch(0.845 0.008 78);
+  /* Accent: warm vermilion (~#9f3b2e), 6.45:1 on --paper. The palette rule is
+     never blue, navy or black as an accent -- every accent on this page runs
+     through this one token, so the swap is this line plus a:hover. */
+  --accent:oklch(0.49 0.135 30);
+  /* Sanctioned semantic triad, for badge surfaces we have not built yet:
+       rust  oklch(0.55 0.090 45)  -- 4.84:1 on --paper
+       amber oklch(0.54 0.085 72)  -- 4.95:1 on --paper
+       sage  oklch(0.52 0.075 156) -- 5.11:1 on --paper
+     Deliberately NOT declared as tokens: the evidence chip they were built
+     for is deleted, and dead tokens in a permanent artifact are what got us
+     here. The authoritative record lives in READING_EXPERIENCE.md. */
+  /* The text measure. One token, so the operator banner below can track the
+     column instead of restating its width. */
+  --measure:620px;
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--paper-2);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:var(--serif);color:var(--ink);font-size:18px;line-height:1.65}
+a{color:var(--accent)}a:hover{color:oklch(0.40 0.135 30)}
+.page{max-width:812px;margin:0 auto;background:var(--paper);box-shadow:0 1px 3px rgba(12,12,12,.04),0 12px 60px rgba(12,12,12,.06);padding:64px 96px 76px}
+.measure{max-width:var(--measure);margin:0 auto;width:100%}
+/* Inline code. Real summaries carry literal `backticks` (six occurrences in
+   the released archive); the `code_spans` filter turns them into this. */
+code{font-family:var(--mono);font-size:.85em;background:var(--paper-2);padding:.1em .3em;border-radius:2px}
+.kicker{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.kicker.accent{color:var(--accent)}
+.rule{height:2px;background:var(--ink);border:0;margin:0}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.tag::before{content:'';width:14px;height:1.5px;background:var(--accent);display:inline-block}
+.src{position:relative;font-family:var(--mono);font-size:11px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.src .arw{color:var(--accent)}
+/* Quiet navigation links. Same register as .src -- mono, ink-2, a hairline
+   underline from --line-2, accent on hover. Reusing that pattern rather than
+   inventing one keeps the page to a single "this is a link" signal. */
+.navlink{font-family:var(--mono);color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:1px;white-space:nowrap}
+.navlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+/* The lockup is the home link. No visual change: colour is inherited so the
+   wordmark stays ink and the slash keeps its accent, and there is no underline
+   and no hover shift -- a 32px masthead recolouring on hover would be loud. */
+.brand a,.brand a:hover{color:inherit;text-decoration:none}
+.brand{font-family:var(--serif);font-weight:500;font-size:32px;letter-spacing:-.02em;margin:0}
+/* The mark. Ink, never accent -- the accent is spent on the slash. An
+   inline-block on the text baseline leaves .masthead's baseline alignment
+   (and so the meta line on the right) exactly where it was. */
+.brand .mark{display:inline-block;width:22px;height:22px;margin-right:14px;vertical-align:baseline;color:var(--ink)}
+.brand .mark svg{display:block;width:100%;height:100%;fill:currentColor}
+.brand .slash{color:var(--accent)}
+.mast-meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.mast-meta .navlink{font-size:11.5px}
+.skim-head,.full-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.skim-head .hr,.full-head .hr{flex:1}
+.skim p{margin:0 0 13px;font-size:18px;line-height:1.55}
+.skim p:last-child{margin-bottom:0}
+.skim strong{font-weight:600}
+.skim span{color:var(--ink-2)}
+h1{margin:0;font-weight:500;font-size:35px;line-height:1.12;letter-spacing:-.015em}
+.takeaway{margin:0;font-size:18.5px;line-height:1.65;font-weight:600}
+.dek{margin:0;font-size:17.5px;line-height:1.65;color:var(--ink-2)}
+.dek em{color:var(--ink-3)}
+.story-meta{display:flex;align-items:center;gap:18px;margin-top:2px}
+.story-meta .src{margin-left:auto}
+.section-head{border-top:2px solid var(--ink);padding-top:20px}
+.section-head .row{display:flex;align-items:baseline;justify-content:space-between}
+.section-head h2{margin:0;font-weight:500;font-size:27.5px;letter-spacing:-.01em}
+.section-head .synthesis{margin:12px 0 0;font-style:italic;font-size:17px;line-height:1.55;color:var(--ink-2)}
+article h3{margin:0;font-weight:500;font-size:24px;line-height:1.2;letter-spacing:-.008em}
+article .takeaway{font-size:18px}
+article .dek{font-size:17.5px}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* Stack rhythm: 12px holds headline+take together as one co-read unit; the
+   extra 6px opens the gap to 18px before the summary, so the eye sees a
+   group and then a body, not three evenly spaced paragraphs. */
+.stack>.takeaway{margin-bottom:6px}
+.gap14{display:flex;flex-direction:column;gap:14px}
+.issue{display:flex;flex-direction:column;gap:42px}
+.section{display:flex;flex-direction:column;gap:32px}
+/* Colophon: wordmark, by-line, ethos packed left on a 14px rhythm, with the
+   archive link pushed to the right edge by margin-left:auto -- the same trick
+   .story-meta .src already uses, so the page has one alignment idiom. Wraps
+   on narrow screens instead of overflowing. */
+footer.colophon{border-top:2px solid var(--ink);padding-top:16px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;row-gap:8px}
+footer.colophon .brand-sm{font-weight:500;font-size:19px}
+footer.colophon .by{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .ethos{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+footer.colophon .navlink{font-size:11px}
+/* The two nav links travel as one unit so a narrow measure wraps them
+   together to the next line rather than splitting them across two. */
+footer.colophon .colo-nav{margin-left:auto;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+@media(max-width:720px){.page{padding:44px 24px 52px}h1{font-size:28.5px}article h3{font-size:21px}.story-meta{flex-wrap:wrap}.story-meta .src{margin-left:0}
+/* Tap target. The visible source link is ~13px tall, far under the 44px
+   minimum. This overlay grows the hit area without moving a pixel of the
+   meta row: vertical padding plus a negative margin would have dragged the
+   border-bottom underline ~16px away from the text it underlines. */
+.src::after{content:'';position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:44px}}
+/* Phone. Without this the measure fell to roughly 38 characters per line. */
+@media(max-width:480px){.page{padding:34px 16px 44px}body{font-size:17px}h1{font-size:29px}article h3{font-size:21px}
+/* The meta line gained "All issues" and can no longer be guaranteed to fit on
+   one line on a small phone. Let it wrap rather than overflow the page. */
+.mast-meta{white-space:normal}}
+</style>
+</head>
+<body>
+<main class="page">
+<div class="issue">
+
+<header class="measure">
+  <div class="masthead">
+    <div class="brand"><a href="../index.html"><span class="mark" aria-hidden="true"><svg viewBox="0 0 100 100" role="presentation"><path fill-rule="evenodd" fill="currentColor" d="M0 0L100 0L100 100L0 100ZM18.37 0L36.37 84.7L100 16.46L100 0L93.47 0L45.63 51.3L34.72 0Z"/></svg></span>AI<span class="slash">/</span>Vector</a></div>
+    <span class="mast-meta">No. 91 &middot; 26 Nov &middot; 5 min &middot; <a class="navlink" href="../index.html">All issues &rarr;</a></span>
+  </div>
+  <hr class="rule" style="margin-top:14px">
+</header>
+
+<section class="measure">
+  <div class="skim-head"><span class="kicker accent">The 30-second read</span><hr class="hr"></div>
+  <div class="skim">
+    <p><strong>A convenience button leaked live passwords.</strong> <span>GitGuardian found 5,343 working secrets among 31,088 saved in Claude Code&#39;s local settings files across public repositories.</span></p>
+    <p><strong>Amazon&#39;s agents found a zero-day.</strong> <span>Told only to obtain shell access, agents on the Cairn framework found an unknown flaw and took over a university server.</span></p>
+    <p><strong>A capable coding model fits locally.</strong> <span>Ollama now runs Inkling 2 Mini, scoring 79.2% on SWE-Bench Verified, on Apple silicon Macs with 20GB.</span></p>
+    <p><strong>Lean checked a gigantic proof.</strong> <span>Axiom Math says its agents formally verified the classification of finite simple groups, and caught several mistakes in the human original.</span></p>
+  </div>
+</section>
+
+<section class="measure gap14">
+  <div class="full-head"><span class="kicker">The full read</span><hr class="hr"></div>
+  <div class="kicker accent" style="margin-top:10px">The Pulse &middot; Story of the day</div>
+  <h1>Claude Code&#39;s &#34;don&#39;t ask again&#34; button has been writing passwords into files that end up on GitHub</h1>
+  <p class="takeaway">Secret scanners tuned to key formats now miss credentials hidden inside the shell commands agents record.</p>
+  <p class="dek">Approve a command with &#34;Yes, and don&#39;t ask again&#34; and Claude Code saves the full command, credentials included, in .claude/settings.local.json. GitGuardian found 31,088 secrets across 23,276 public repositories, 5,343 still valid. Docker images leak it too. Rotate exposed keys, then add the file to .gitignore and .dockerignore.</p>
+  <div class="story-meta">
+    <a class="src" href="https://www.csoonline.com/article/4247336/claude-codes-dont-ask-again-button-has-a-secrets-spilling-problem.html" target="_blank" rel="noreferrer">csoonline.com <span class="arw">&rarr;</span></a>
+    <a class="src" href="https://www.infoq.com/news/2026/11/claude-code-leaking-secrets/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=AI%2C+ML+%26+Data+Engineering" target="_blank" rel="noreferrer">infoq.com <span class="arw">&rarr;</span></a>
+  </div>
+</section>
+<section class="section big_picture">
+  <div class="section-head measure">
+    <div class="row"><h2>The Big Picture</h2><span class="kicker">4 stories</span></div>
+    <p class="synthesis">Three of these four stories describe agents leaving credentials in places nobody was watching, or acting on them: committed files, saved approvals, a payment key. The fourth shows attackers using the same autonomy. Controls built around a person&#39;s login now sit one layer too high.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Stripe lets AI agents move money, with approval rules set by the business</h3>
+    <p class="takeaway">Payment controls now have to cover software holding its own API key, where they once assumed a human login.</p>
+    <p class="dek">Stripe Treasury, already used by 24,000 businesses for read-only agent work, now gives agents write access: transfers, currency conversion and vendor payments. Refunds, payouts and outbound transfers need human approval by default; agent API keys can wave through small ACH transfers, say under $50. When an agent pays, who in your organisation owns the approval threshold?</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://stripe.com/blog/give-your-agents-controlled-access-to-analyze-your-data-and-move-funds" target="_blank" rel="noreferrer">stripe.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Coding agents are copying developers&#39; secrets into hidden files, and thousands are now on GitHub</h3>
+    <p class="takeaway">Developer credential hygiene now has to assume the coding agent itself will write secrets into committed files.</p>
+    <p class="dek">Apiiro found coding agents writing API keys and passwords into hidden files that then get committed to public GitHub repositories, with thousands exposed. Anthropic&#39;s Claude Code head Boris Cherny told Hacker News the team is &#34;looking into what we can do to prevent this.&#34; When an agent commits a leaked key, who in your organisation answers for it?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://apiiro.com/blog/coding-agents-leaking-secrets-github-dont-ask-again" target="_blank" rel="noreferrer">apiiro.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Amazon: pen-testing AI agents on Cairn found and exploited an unknown flaw from one instruction</h3>
+    <p class="takeaway">Patch deadlines now have to assume attackers discover flaws at agent speed, where they once assumed human pace.</p>
+    <p class="dek">Amazon says agents running on Cairn, an open source penetration-testing framework, were told only to &#34;obtain shell access&#34; on a university server. They found a zero-day in a medical imaging application and took full control. Palo Alto Networks separately counts 25 autonomous operations against 19 organisations. When attackers run at agent speed, who in your organisation owns patch deadlines?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://arstechnica.com/security/2026/11/amazon-says-hackers-ai-agents-found-and-exploited-0-day-with-little-human-input/" target="_blank" rel="noreferrer">arstechnica.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Claude Code&#39;s &#34;don&#39;t ask again&#34; button has leaked thousands of working passwords onto public GitHub</h3>
+    <p class="takeaway">Credential rotation duties now extend to whatever a developer&#39;s coding agent saved, beyond what the developer typed.</p>
+    <p class="dek">GitGuardian found 31,088 secrets in Claude Code&#39;s settings.local.json files on public GitHub, and 5,343 worked when detected. Approving a command with &#34;Yes, and don&#39;t ask again&#34; saves the command, API key included, to a file nothing in the repository ignores. When agents write the config, who in your organisation owns rotating what they leak?</p>
+    <div class="story-meta"><span class="tag">act</span>
+      <a class="src" href="https://blog.gitguardian.com/claude-code-settings-local-json-secrets-docker-hub/" target="_blank" rel="noreferrer">blog.gitguardian.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section hands_on">
+  <div class="section-head measure">
+    <div class="row"><h2>Hands-On</h2><span class="kicker">5 stories</span></div>
+    <p class="synthesis">Most of these gains come from the vendors&#39; own figures: Dynamo&#39;s 20% from H Company, Inkling 2 Mini&#39;s 79.2% from its makers. The two voice and gateway items are cheap to try, so start there, and rerun the model claims on your own workloads.</p>
+  </div>
+  <article class="measure stack">
+    <h3>NVIDIA&#39;s Dynamo cuts wasted GPU time in reinforcement learning by routing, caching and recovering rollouts</h3>
+    <p class="takeaway">Rollout serving no longer has to be hand-built inside each training framework; a shared inference layer now handles it.</p>
+    <p class="dek">NVIDIA Dynamo now serves as the inference layer for reinforcement learning rollouts. It routes repeated prompts to workers holding cached context, sends only weight changes between updates, and reroutes around failed workers. H Company reports up to 20% shorter training steps. Integrations exist for verl, NeMo RL, Slime and prime-rl.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://developer.nvidia.com/blog/reducing-rollout-bottlenecks-in-reinforcement-learning-with-nvidia-dynamo/" target="_blank" rel="noreferrer">developer.nvidia.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Ollama now runs a 79%-scoring coding model on a 20GB Mac</h3>
+    <p class="takeaway">Local coding agents on a Mac no longer need a smaller, weaker model than the hosted option.</p>
+    <p class="dek">Ollama v0.40.17 adds Inkling 2 Mini from Thinking Machines, a 26B model (5.4B active) scoring 79.2% on SWE-Bench Verified, Apple silicon only for now. Claude Code&#39;s deferred tool loading also works through ollama launch claude, so MCP tools load on demand. Run ollama run inkling-2-mini on your Mac against one real repository task this week and compare it with your hosted model.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://github.com/ollama/ollama/releases/tag/v0.40.17" target="_blank" rel="noreferrer">github.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>OpenAI&#39;s voice model that talks and listens at once is now a model-ID swap on Vercel&#39;s AI Gateway</h3>
+    <p class="takeaway">Voice agents can now be upgraded by changing one model ID, where each upgrade once meant rebuilding the integration.</p>
+    <p class="dek">GPT-Live 1.1 is full-duplex: it listens while it speaks, so callers can interrupt or add detail mid-reply. Transcription is more accurate and the accent holds steadier across languages. Existing GPT-Live integrations only need the new ID, openai/gpt-live-1.1. Swap it into one staging voice route this week and replay your interruption-heavy call recordings.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://vercel.com/changelog/gpt-live-1-1-now-available-on-ai-gateway" target="_blank" rel="noreferrer">vercel.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Vercel&#39;s AI Gateway now plants tripwire URLs in prompts to catch providers that read your data</h3>
+    <p class="takeaway">Zero-data-retention promises now get tested by independent auditors and tripwire prompts, where contracts once asked buyers for faith.</p>
+    <p class="dek">Vercel&#39;s AI Gateway now sends prompts containing unique, unindexed URLs through inference providers; any request to one triggers an investigation. Separately, an Audited ZDR (zero data retention) tier routes only to providers with published independent audits. Baseten, Modal and Wafer are launch partners, with reports due by 8 December 2026. Switch the team-wide toggle on for regulated workloads once reports land.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://vercel.com/changelog/ai-gateway-now-runs-canary-zdr-audits" target="_blank" rel="noreferrer">vercel.com <span class="arw">&rarr;</span></a>
+      <a class="src" href="https://vercel.com/blog/introducing-audited-zdr-on-ai-gateway" target="_blank" rel="noreferrer">vercel.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Thinking Machines&#39; small open model loops its layers to act bigger on a laptop</h3>
+    <p class="takeaway">Hugging Face&#39;s informal tests put a compressed local multimodal model on par with Qwen3.8-27B for coding.</p>
+    <p class="dek">Thinking Machines Lab&#39;s Inkling 2 Mini is a mixture-of-experts model with 3B active parameters. Twelve middle layers repeat three times, so 24 stored layers behave like 48. Hugging Face&#39;s own tests put it at least comparable in informal vibe tests, which Hugging Face says need more validation, to Qwen3.8-27B. Pull it through llama.cpp or MLX and rerun your own coding tasks against your current local model.</p>
+    <div class="story-meta"><span class="tag">try</span>
+      <a class="src" href="https://huggingface.co/blog/inkling2mini" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<section class="section currents">
+  <div class="section-head measure">
+    <div class="row"><h2>Currents</h2><span class="kicker">8 items</span></div>
+    <p class="synthesis">Most of these items put a checkable answer behind a claim that used to rest on trust: proofs in Lean, planted credentials, motives known by construction. They sit in Currents because each is one team&#39;s result so far, not yet repeated elsewhere.</p>
+  </div>
+  <article class="measure stack">
+    <h3>Z.ai&#39;s latest coding model reuses the same layers several times per pass to think deeper</h3>
+    <p class="takeaway">Looping shared layers lets models reason deeper without growing their parameter count.</p>
+    <p class="dek">Z.ai&#39;s GLM 5.4 is its first looped transformer: a group of weight-shared layers runs repeatedly, refining hidden states without adding parameters. Thinking Machines Lab&#39;s Inkling 2 Mini, released three days earlier, runs its middle layers three times per token. Z.ai plans to open the weights after safety hardening; for now, access needs its Coding Plan subscription.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://simonwillison.net/2026/Nov/23/glm-54/" target="_blank" rel="noreferrer">simonwillison.net <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Researcher&#39;s 2 million planted secrets show prompts leak through AI routers like OpenRouter</h3>
+    <p class="takeaway">Vendor privacy labels now get checked by tripwire prompts, where buyers once accepted a gateway&#39;s word.</p>
+    <p class="dek">If this holds, the AI supply chain is leakier than vendors imply. HD Moore seeded 2 million unique fake credentials and URLs into prompts, each sent to one provider. OpenRouter has since emailed customers that some prompts may have been read via MiniMax and three resellers, and removed its Zero Data Retention label from MiniMax endpoints.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://arstechnica.com/security/2026/11/a-leaky-ai-supply-chain-is-exposing-secret-user-data-at-an-alarming-rate/" target="_blank" rel="noreferrer">arstechnica.com <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Google open-sources a test of whether AI assistants can read a user&#39;s one-sided story</h3>
+    <p class="takeaway">Advice-assistant testing now has a checkable answer key for everyday motives, where it once covered only absurd claims.</p>
+    <p class="dek">If this holds, assistant testing moves beyond absurd-claim traps. Google Research built simulations where a hidden-motive character acts, the user&#39;s agent consults the assistant, and the true motive is known by construction. Across 12 models, answers swung with how the user framed events. A 20,000-example dataset and the framework are public.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://research.google/blog/verifiable-social-reasoning-for-llm-assistants/" target="_blank" rel="noreferrer">research.google <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Google DeepMind&#39;s agent teams cut quantum fusion simulation costs 11.8-fold, with every result proof-checked</h3>
+    <p class="takeaway">Quantum algorithm gains now arrive with machine-checked proofs, where they once rested on hand derivation by specialists.</p>
+    <p class="dek">If this holds, proof-checking could make AI-found quantum circuits trustworthy before hardware exists. Google DeepMind&#39;s Gemini 4 agent teams cut one fusion calculation&#39;s cost 11.8x, and each result was proved in the Lean theorem prover. The Lean library, problem specifications and verified solutions are public on GitHub; still too costly for early quantum computers.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://deepmind.google/blog/finding-faster-quantum-algorithms-with-agents-and-formal-verification/" target="_blank" rel="noreferrer">deepmind.google <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Axiom&#39;s AI agents machine-check the longest proof in mathematics, all 15,000 pages of it</h3>
+    <p class="takeaway">Checking a proof of this size no longer depends on specialists reading five hundred journal articles by hand.</p>
+    <p class="dek">If this holds, proof-checking scales past what any human can absorb. Axiom Math says its AI swarm formally verified the classification of finite simple groups, split into about 100 milestones and 43 million lines of code, then the 7,500-page Stacks project. The formal proof also caught several mistakes in the human original. The Stacks library is open to anyone.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://spectrum.ieee.org/enormous-theorem-ai" target="_blank" rel="noreferrer">spectrum.ieee.org <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Ai2 interviewed 17 scientists on where AI agents need guardrails before they run research</h3>
+    <p class="takeaway">Agent benchmarks for science now get proposed to score research conduct, where they once scored only answer accuracy.</p>
+    <p class="dek">Ai2 interviewed 17 scientists across natural, applied and social sciences and found five dimensions of trust: validation, privacy, objectivity, accountability and transparency. Its proposals include benchmarks that test whether a literature-review agent misses contradictory evidence, or a coding agent opens files outside its authorised scope. These remain proposals to test with scientists.</p>
+    <div class="story-meta"><span class="tag">discuss</span>
+      <a class="src" href="https://huggingface.co/blog/allenai/where-scientists-draw-the-line-on-ai-agents" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>A coding agent builds a 3D Blender scene to plan where image subjects go</h3>
+    <p class="takeaway">Multi-subject image layouts now get planned as inspectable 3D scenes, where they once rested on prompt wording.</p>
+    <p class="dek">MAGPIE, a research paper, has a coding agent write a Blender program that places each reference subject in a simple 3D scene, check the render against the instruction, and revise. The rendering then guides the image generator. With FLUX, success on DreamOmni2 rises 28.21 percentage points. Worth watching as a layout-planning pattern.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://huggingface.co/papers/2611.32462" target="_blank" rel="noreferrer">huggingface.co <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+  <article class="measure stack">
+    <h3>Perplexity says its annual revenue run rate has hit $1 billion, up fourfold this year</h3>
+    <p class="takeaway">Agent-product spending now shows up as a billion-dollar revenue line, where it once looked like a pilot budget.</p>
+    <p class="dek">Perplexity&#39;s chief executive told Semafor the company crossed a $1B annual revenue run rate, from under $250M in January, per The Information. Computer, its agent product, now offers Teammates for ongoing jobs and a Monitor API that sends a webhook when a watched page changes. Valuation talk of $30-50B rests on unit economics holding.</p>
+    <div class="story-meta"><span class="tag">watch</span>
+      <a class="src" href="https://latent.space/p/ainews-perplexity-hits-a-1b-revenue-run-rate-up-4x-in-2026/" target="_blank" rel="noreferrer">latent.space <span class="arw">&rarr;</span></a>
+    </div>
+  </article>
+</section>
+
+<footer class="colophon measure">
+  <span class="brand-sm">AI<span class="slash" style="color:var(--accent)">/</span>Vector</span><span class="by"><a class="navlink" href="https://armanabrahamyan.com">Arman Abrahamyan</a></span>
+  <span class="ethos">Curated, not aggregated. AI-drafted, human-accountable.</span>
+  <span class="colo-nav"><a class="navlink" href="../how-its-made.html">how it's made &rarr;</a><a class="navlink" href="../index.html">all issues &rarr;</a></span>
+</footer>
+
+</div>
+</main>
+<script data-goatcounter="https://aivector.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
